@@ -3,11 +3,12 @@ import type { DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, 
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
+import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
 
-const ROUND_DECISIONS = [ROUND1_DECISIONS];
+const ROUND_DECISIONS = [ROUND1_DECISIONS, ROUND2_DECISIONS];
 
 function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
   const durations = room.round === 4 ? ROUND4_PHASE_DURATIONS : PHASE_DURATIONS;
