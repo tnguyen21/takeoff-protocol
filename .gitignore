@@ -1,0 +1,10 @@
+node_modules
+dist
+.vite
+*.tsbuildinfo
+.env
+.env.local
+.hive
+.hive.toml
+.hive-notes.jsonl
+.claude

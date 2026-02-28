@@ -1,0 +1,17 @@
+{
+  "name": "@takeoff/server",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.9",
+    "@takeoff/shared": "workspace:*",
+    "hono": "^4",
+    "socket.io": "^4"
+  }
+}

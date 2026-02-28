@@ -1,0 +1,29 @@
+{
+  "name": "@takeoff/client",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@takeoff/shared": "workspace:*",
+    "react": "^19",
+    "react-dom": "^19",
+    "socket.io-client": "^4",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "autoprefixer": "^10",
+    "postcss": "^8",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^6"
+  }
+}

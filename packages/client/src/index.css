@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+:root {
+  --menubar-height: 28px;
+  --dock-height: 64px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
