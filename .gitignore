@@ -8,3 +8,4 @@ dist
 .hive.toml
 .hive-notes.jsonl
 .claude
+.worktrees
