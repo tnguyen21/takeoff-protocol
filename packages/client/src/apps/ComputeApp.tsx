@@ -22,7 +22,7 @@ const STATUS_COLOR: Record<string, string> = {
   down: "text-red-400",
 };
 
-export const ComputeApp = React.memo(function ComputeApp(_: AppProps) {
+export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) {
   const totalGPUs = CLUSTERS.reduce((a, c) => a + c.gpus, 0);
   const avgUtil = Math.round(CLUSTERS.reduce((a, c) => a + c.util * c.gpus, 0) / totalGPUs);
 
@@ -78,6 +78,24 @@ export const ComputeApp = React.memo(function ComputeApp(_: AppProps) {
             ))}
           </div>
         </div>
+
+        {/* Intel metrics from game content */}
+        {content.filter((i) => i.type === "chart").length > 0 && (
+          <div>
+            <div className="text-xs text-neutral-500 font-semibold mb-2 uppercase tracking-wider">Intel Metrics</div>
+            <div className="space-y-2">
+              {content.filter((i) => i.type === "chart").map((item) => (
+                <div key={item.id} className="bg-[#111] border border-blue-900/30 rounded p-3">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-blue-300 text-xs font-semibold">{item.subject ?? item.sender ?? "Metric"}</span>
+                    <span className="text-neutral-600 text-[10px]">{item.timestamp}</span>
+                  </div>
+                  <p className="text-neutral-400 text-[11px] leading-relaxed">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Job queue */}
         <div>

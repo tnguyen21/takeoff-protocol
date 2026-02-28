@@ -18,7 +18,7 @@ const MESSAGES = [
   { sent: false, text: "数据已上传至服务器", time: "10:58" },
 ];
 
-export const WeChatApp = React.memo(function WeChatApp(_: AppProps) {
+export const WeChatApp = React.memo(function WeChatApp({ content }: AppProps) {
   return (
     <div className="flex h-full bg-[#1e1e1e] text-white text-sm">
       {/* Icon strip */}
@@ -67,6 +67,19 @@ export const WeChatApp = React.memo(function WeChatApp(_: AppProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 bg-[#1a1a1a]">
+          {/* Intel messages from game content */}
+          {content.filter((i) => i.type === "message").map((item) => (
+            <div key={item.id} className="flex justify-start">
+              <div className="w-7 h-7 rounded bg-blue-700 flex items-center justify-center text-xs font-bold shrink-0 mr-2 self-end">
+                {(item.sender ?? "?")[0]}
+              </div>
+              <div className="max-w-[65%] rounded px-3 py-2 text-xs leading-relaxed bg-[#1a2a3a] text-blue-100 border border-blue-800/30">
+                {item.sender && <p className="text-blue-400 text-[10px] mb-1 font-semibold">{item.sender}</p>}
+                <p>{item.body}</p>
+                <p className="text-[10px] mt-1 opacity-60 text-right">{item.timestamp}</p>
+              </div>
+            </div>
+          ))}
           {MESSAGES.map((m, i) => (
             <div key={i} className={`flex ${m.sent ? "justify-end" : "justify-start"}`}>
               {!m.sent && (

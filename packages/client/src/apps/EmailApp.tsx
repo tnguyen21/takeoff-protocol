@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { AppProps } from "./types.js";
 
-const EMAILS = [
+const STATIC_EMAILS = [
   {
     from: "Dr. Rachel Hayes",
     subject: "RE: Thursday Board Prep — Safety Metrics",
@@ -55,8 +55,24 @@ Recommend we discuss before Thursday.
 
 — Rachel`;
 
-export const EmailApp = React.memo(function EmailApp(_: AppProps) {
+export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
+  const docItems = content.filter((i) => i.type === "document");
+
+  const emails =
+    docItems.length > 0
+      ? docItems.map((item) => ({
+          from: item.sender ?? "Unknown",
+          subject: item.subject ?? "(no subject)",
+          preview: item.body.slice(0, 120),
+          time: item.timestamp,
+          read: false,
+          body: item.body,
+        }))
+      : STATIC_EMAILS.map((e) => ({ ...e, body: BODY }));
+
   const [selected, setSelected] = useState(0);
+  const safeSelected = Math.min(selected, emails.length - 1);
+  const selectedEmail = emails[safeSelected];
 
   return (
     <div className="flex h-full bg-[#111] text-white text-sm">
@@ -66,11 +82,11 @@ export const EmailApp = React.memo(function EmailApp(_: AppProps) {
           <div className="bg-[#1e1e1e] rounded px-2 py-1.5 text-neutral-500 text-xs">Search mail</div>
         </div>
         <div className="overflow-y-auto flex-1">
-          {EMAILS.map((e, i) => (
+          {emails.map((e, i) => (
             <div
               key={i}
               onClick={() => setSelected(i)}
-              className={`px-3 py-2.5 border-b border-white/5 cursor-pointer hover:bg-white/5 ${selected === i ? "bg-blue-900/30" : ""}`}
+              className={`px-3 py-2.5 border-b border-white/5 cursor-pointer hover:bg-white/5 ${safeSelected === i ? "bg-blue-900/30" : ""}`}
             >
               <div className="flex justify-between items-baseline mb-0.5">
                 <span className={`text-xs truncate ${e.read ? "text-neutral-400" : "text-white font-semibold"}`}>{e.from}</span>
@@ -85,13 +101,15 @@ export const EmailApp = React.memo(function EmailApp(_: AppProps) {
       </div>
 
       {/* Reading pane */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <h2 className="font-semibold text-base mb-1">{EMAILS[selected].subject}</h2>
-        <div className="text-xs text-neutral-500 mb-4">
-          From: <span className="text-neutral-300">{EMAILS[selected].from}</span> · {EMAILS[selected].time}
+      {selectedEmail && (
+        <div className="flex-1 overflow-y-auto p-4">
+          <h2 className="font-semibold text-base mb-1">{selectedEmail.subject}</h2>
+          <div className="text-xs text-neutral-500 mb-4">
+            From: <span className="text-neutral-300">{selectedEmail.from}</span> · {selectedEmail.time}
+          </div>
+          <pre className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed font-sans">{selectedEmail.body}</pre>
         </div>
-        <pre className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed font-sans">{BODY}</pre>
-      </div>
+      )}
     </div>
   );
 });

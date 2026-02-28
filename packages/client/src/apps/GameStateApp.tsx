@@ -42,7 +42,7 @@ const ACCURACY_TEXT: Record<Accuracy, string> = {
   hidden: "text-neutral-500",
 };
 
-export const GameStateApp = React.memo(function GameStateApp(_: AppProps) {
+export const GameStateApp = React.memo(function GameStateApp({ content: _ }: AppProps) {
   return (
     <div className="flex flex-col h-full bg-[#0d1117] text-white text-xs">
       <div className="px-4 py-2 border-b border-white/10 flex items-center gap-3 shrink-0">

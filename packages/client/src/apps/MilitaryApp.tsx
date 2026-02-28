@@ -26,7 +26,7 @@ const STATUS_COLORS: Record<string, string> = {
   "HIGH ALERT": "text-red-400",
 };
 
-export const MilitaryApp = React.memo(function MilitaryApp(_: AppProps) {
+export const MilitaryApp = React.memo(function MilitaryApp({ content }: AppProps) {
   return (
     <div className="flex flex-col h-full bg-[#0a0e14] text-white font-mono text-xs">
       {/* Header */}
@@ -96,6 +96,13 @@ export const MilitaryApp = React.memo(function MilitaryApp(_: AppProps) {
         {/* Recent events log */}
         <div className="border border-green-900 rounded">
           <div className="bg-green-900/30 px-3 py-1 text-green-500 font-bold tracking-widest text-[10px]">EVENT LOG</div>
+          {/* Intel events from game content */}
+          {content.filter((i) => i.type === "document" || i.type === "memo" || i.type === "message").map((item) => (
+            <div key={item.id} className="flex gap-3 px-3 py-1.5 border-b border-green-900/20 bg-yellow-900/10">
+              <span className="text-yellow-600 shrink-0 font-bold">[INTEL]</span>
+              <span className="text-yellow-300 text-[10px] leading-tight">{item.subject ?? item.body.slice(0, 120)}</span>
+            </div>
+          ))}
           {[
             ["1042Z", "CYBERCOM reports elevated foreign cyber activity targeting AI infrastructure"],
             ["0921Z", "7th Fleet: additional surface combatants ordered to W. Pacific"],

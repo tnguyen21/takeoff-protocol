@@ -44,7 +44,19 @@ const PAPERS = [
   },
 ];
 
-export const ArxivApp = React.memo(function ArxivApp(_: AppProps) {
+export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
+  const docItems = content.filter((i) => i.type === "document");
+  const papers =
+    docItems.length > 0
+      ? docItems.map((item) => ({
+          title: item.subject ?? item.body.split("\n")[0] ?? "(untitled)",
+          authors: item.sender ?? "Unknown",
+          date: item.timestamp,
+          category: "cs.AI",
+          abstract: item.subject ? item.body : item.body.slice(item.body.indexOf("\n") + 1),
+        }))
+      : PAPERS;
+
   return (
     <div className="flex flex-col h-full bg-white text-black text-sm">
       {/* Header */}
@@ -57,12 +69,12 @@ export const ArxivApp = React.memo(function ArxivApp(_: AppProps) {
       </div>
 
       <div className="flex items-center gap-2 px-4 py-2 border-b border-neutral-200 bg-neutral-50 shrink-0 text-xs text-neutral-600">
-        <span>Showing 5 of 847 results for <strong>alignment safety frontier</strong></span>
+        <span>Showing {papers.length} results for <strong>alignment safety frontier</strong></span>
         <span className="ml-auto">Sort: Relevance</span>
       </div>
 
       <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
-        {PAPERS.map((p, i) => (
+        {papers.map((p, i) => (
           <div key={i} className="px-4 py-4 hover:bg-neutral-50 cursor-pointer">
             <div className="flex items-start gap-2 mb-1">
               <span className="text-[10px] bg-[#b31b1b]/10 text-[#b31b1b] px-1.5 py-0.5 rounded font-mono shrink-0">{p.category}</span>

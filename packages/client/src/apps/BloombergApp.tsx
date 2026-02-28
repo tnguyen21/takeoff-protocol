@@ -11,7 +11,7 @@ const TICKERS = [
   { sym: "AMD", price: "178.32", chg: "+2.91", pct: "+1.66%", vol: "38.9M" },
 ];
 
-const HEADLINES = [
+const STATIC_HEADLINES = [
   "SENATE AI GOVERNANCE BILL ADVANCES — TECH SECTOR SELL-OFF DEEPENS",
   "OPENB DELAYS MODEL RELEASE CITING SAFETY REVIEW — STOCK +2.1%",
   "TSM FALLS ON TAIWAN STRAIT TENSION REPORTS — SUPPLY CHAIN CONCERNS",
@@ -26,7 +26,13 @@ const INDICES = [
   { name: "VIX", value: "22.41", chg: "+18.3%" },
 ];
 
-export const BloombergApp = React.memo(function BloombergApp(_: AppProps) {
+export const BloombergApp = React.memo(function BloombergApp({ content }: AppProps) {
+  const headlineItems = content.filter((i) => i.type === "headline");
+  const headlines =
+    headlineItems.length > 0
+      ? headlineItems.map((item) => (item.subject ?? item.body).toUpperCase())
+      : STATIC_HEADLINES;
+
   return (
     <div className="flex flex-col h-full bg-black text-green-400 font-mono text-xs">
       {/* Header */}
@@ -66,7 +72,7 @@ export const BloombergApp = React.memo(function BloombergApp(_: AppProps) {
         {/* Right: news */}
         <div className="w-56 overflow-y-auto">
           <div className="text-[#f26522] px-2 py-1 border-b border-green-900 text-[10px] tracking-widest">TOP STORIES</div>
-          {HEADLINES.map((h, i) => (
+          {headlines.map((h, i) => (
             <div key={i} className="px-2 py-2 border-b border-green-900/20 text-[10px] text-green-300 leading-tight hover:bg-green-900/10 cursor-pointer">
               {h}
             </div>

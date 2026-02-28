@@ -50,7 +50,7 @@ const SEV_BADGE: Record<string, string> = {
   info: "bg-neutral-700 text-neutral-300",
 };
 
-export const SecurityApp = React.memo(function SecurityApp(_: AppProps) {
+export const SecurityApp = React.memo(function SecurityApp({ content }: AppProps) {
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d] text-white text-sm">
       {/* Header */}
@@ -88,6 +88,23 @@ export const SecurityApp = React.memo(function SecurityApp(_: AppProps) {
 
       {/* Alerts */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {/* Intel alerts from game content */}
+        {content.filter((i) => i.type === "document" || i.type === "message").map((item) => (
+          <div key={item.id} className={`border rounded p-3 ${SEV_COLORS.high}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2 flex-1">
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0 ${SEV_BADGE.high}`}>
+                  INTEL
+                </span>
+                <div>
+                  <div className="text-xs font-semibold text-neutral-200">{item.subject ?? item.sender ?? "Security Alert"}</div>
+                  <div className="text-[10px] text-neutral-400 mt-1 leading-relaxed">{item.body}</div>
+                </div>
+              </div>
+              <span className="text-[10px] text-neutral-600 font-mono shrink-0">{item.timestamp}</span>
+            </div>
+          </div>
+        ))}
         {ALERTS.map((a, i) => (
           <div key={i} className={`border rounded p-3 ${SEV_COLORS[a.severity]}`}>
             <div className="flex items-start justify-between gap-2">

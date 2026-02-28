@@ -19,7 +19,7 @@ function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export const SlackApp = React.memo(function SlackApp(_: AppProps) {
+export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,10 +36,13 @@ export const SlackApp = React.memo(function SlackApp(_: AppProps) {
     (m) => m.isTeamChat && (myFaction === null || m.faction === myFaction)
   );
 
+  // Intel messages from game content (pre-scripted, grouped by channel)
+  const intelMessages = content.filter((i) => i.type === "message");
+
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [teamMessages.length]);
+  }, [teamMessages.length, intelMessages.length]);
 
   // Mark read when app is open
   useEffect(() => {
@@ -63,6 +66,8 @@ export const SlackApp = React.memo(function SlackApp(_: AppProps) {
     },
     [sendMessage]
   );
+
+  const hasAnyMessages = intelMessages.length > 0 || teamMessages.length > 0;
 
   return (
     <div className="flex h-full bg-[#1a1d21] text-white text-sm font-sans">
@@ -97,9 +102,26 @@ export const SlackApp = React.memo(function SlackApp(_: AppProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-          {teamMessages.length === 0 && (
+          {!hasAnyMessages && (
             <div className="text-neutral-600 text-xs text-center pt-8">No messages yet. Say hello!</div>
           )}
+          {/* Intel messages appear first as pre-existing channel content */}
+          {intelMessages.map((m) => (
+            <div key={m.id} className="flex gap-3">
+              <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
+                {initials(m.sender ?? "?")}
+              </div>
+              <div>
+                <div className="flex items-baseline gap-2">
+                  <span className="font-semibold text-xs text-blue-300">{m.sender ?? "System"}</span>
+                  <span className="text-neutral-500 text-xs">{m.timestamp}</span>
+                  {m.channel && <span className="text-neutral-600 text-[10px]">· {m.channel}</span>}
+                </div>
+                <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
+              </div>
+            </div>
+          ))}
+          {/* Live team chat messages */}
           {teamMessages.map((m) => (
             <div key={m.id} className="flex gap-3">
               <div className="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-xs font-bold shrink-0 text-white">

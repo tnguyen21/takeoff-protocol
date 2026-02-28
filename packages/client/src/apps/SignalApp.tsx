@@ -17,7 +17,7 @@ function initials(name: string): string {
     .slice(0, 2);
 }
 
-export const SignalApp = React.memo(function SignalApp(_: AppProps) {
+export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -81,6 +81,11 @@ export const SignalApp = React.memo(function SignalApp(_: AppProps) {
 
   const selectedPlayer = otherPlayers.find((p) => p.id === selectedPlayerId);
 
+  // Intel content: pre-scripted messages shown in a special "Intel Feed" contact
+  const intelMessages = content.filter((i) => i.type === "message");
+  const INTEL_CONTACT_ID = "__intel__";
+  const isIntelSelected = selectedPlayerId === INTEL_CONTACT_ID;
+
   return (
     <div className="flex h-full bg-[#1b1b1b] text-white text-sm">
       {/* Sidebar */}
@@ -89,7 +94,29 @@ export const SignalApp = React.memo(function SignalApp(_: AppProps) {
           <div className="bg-[#2a2a2a] rounded px-2 py-1.5 text-neutral-500 text-xs">Contacts</div>
         </div>
         <div className="overflow-y-auto flex-1">
-          {otherPlayers.length === 0 && (
+          {/* Intel Feed contact */}
+          {intelMessages.length > 0 && (
+            <div
+              onClick={() => setSelectedPlayerId(INTEL_CONTACT_ID)}
+              className={`flex items-start gap-3 px-3 py-3 cursor-pointer border-b border-white/5 hover:bg-white/5 ${isIntelSelected ? "bg-white/10" : ""}`}
+            >
+              <div className="w-9 h-9 rounded-full bg-amber-700 flex items-center justify-center text-xs font-bold shrink-0">
+                📡
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline">
+                  <span className="font-semibold text-xs truncate text-amber-300">Intel Feed</span>
+                  <div className="w-4 h-4 rounded-full bg-amber-600 flex items-center justify-center text-[10px] font-bold shrink-0 ml-1">
+                    {intelMessages.length}
+                  </div>
+                </div>
+                <p className="text-neutral-400 text-xs truncate mt-0.5">
+                  {intelMessages[intelMessages.length - 1]?.body.slice(0, 40)}
+                </p>
+              </div>
+            </div>
+          )}
+          {otherPlayers.length === 0 && intelMessages.length === 0 && (
             <div className="text-neutral-600 text-xs text-center px-3 pt-8">
               No contacts from other factions yet.
             </div>
@@ -138,7 +165,27 @@ export const SignalApp = React.memo(function SignalApp(_: AppProps) {
 
       {/* Chat pane */}
       <div className="flex flex-col flex-1 min-w-0">
-        {!selectedPlayer ? (
+        {/* Intel Feed view */}
+        {isIntelSelected ? (
+          <>
+            <div className="h-10 border-b border-white/10 flex items-center px-4 shrink-0">
+              <span className="text-amber-300 mr-2">📡</span>
+              <span className="font-semibold text-sm text-amber-300">Intel Feed</span>
+              <span className="text-neutral-500 text-xs ml-2">· encrypted intercepts</span>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {intelMessages.map((m) => (
+                <div key={m.id} className="flex justify-start">
+                  <div className="max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-amber-900/30 text-amber-100 border border-amber-800/40 rounded-bl-sm">
+                    {m.sender && <p className="text-amber-400 font-semibold text-[10px] mb-1">{m.sender}</p>}
+                    <p>{m.body}</p>
+                    <p className="text-amber-700 text-[10px] mt-1">{m.timestamp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : !selectedPlayer ? (
           <div className="flex-1 flex items-center justify-center text-neutral-600 text-xs">
             Select a contact to start a DM
           </div>

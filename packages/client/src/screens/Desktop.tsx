@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useGameStore } from "../stores/game.js";
+import { useGameStore, getContentForApp } from "../stores/game.js";
 import { useUIStore } from "../stores/ui.js";
 import { FACTIONS } from "@takeoff/shared";
 import { MenuBar } from "../desktop/MenuBar.js";
@@ -32,7 +32,7 @@ const APP_LABELS: Record<string, string> = {
 };
 
 export function Desktop() {
-  const { selectedFaction, isGM, phase } = useGameStore();
+  const { selectedFaction, isGM, phase, content } = useGameStore();
   const { windows, initWindows } = useUIStore();
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export function Desktop() {
             return (
               <Window key={w.id} windowState={w}>
                 {AppComponent ? (
-                  <AppComponent content={[]} />
+                  <AppComponent content={getContentForApp(content, w.appId as AppId)} />
                 ) : (
                   <div className="p-4 text-neutral-400 text-sm">
                     <p className="text-neutral-500">{w.title}</p>

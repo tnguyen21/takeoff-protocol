@@ -1,7 +1,7 @@
 import React from "react";
 import type { AppProps } from "./types.js";
 
-const STORIES = [
+const STATIC_STORIES = [
   {
     source: "Reuters",
     time: "11:04 UTC",
@@ -40,7 +40,19 @@ const STORIES = [
   },
 ];
 
-export const NewsApp = React.memo(function NewsApp(_: AppProps) {
+export const NewsApp = React.memo(function NewsApp({ content }: AppProps) {
+  const headlines = content.filter((i) => i.type === "headline");
+
+  const stories =
+    headlines.length > 0
+      ? headlines.map((item) => ({
+          source: item.sender ?? "Wire",
+          time: item.timestamp,
+          headline: item.subject ?? item.body.slice(0, 120),
+          summary: item.subject ? item.body : "",
+        }))
+      : STATIC_STORIES;
+
   return (
     <div className="flex flex-col h-full bg-[#0f0f0f] text-white">
       <div className="border-b border-neutral-700 px-4 py-2 flex items-center gap-4 shrink-0">
@@ -51,7 +63,7 @@ export const NewsApp = React.memo(function NewsApp(_: AppProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {STORIES.map((s, i) => (
+        {stories.map((s, i) => (
           <div key={i} className="px-4 py-3 border-b border-neutral-800 hover:bg-white/3 cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-mono text-neutral-500 bg-neutral-800 px-1.5 py-0.5 rounded uppercase tracking-wide">
@@ -60,7 +72,7 @@ export const NewsApp = React.memo(function NewsApp(_: AppProps) {
               <span className="text-[10px] font-mono text-neutral-600">{s.time}</span>
             </div>
             <h3 className="text-sm font-semibold text-neutral-100 leading-tight mb-1">{s.headline}</h3>
-            <p className="text-xs text-neutral-500 leading-relaxed">{s.summary}</p>
+            {s.summary && <p className="text-xs text-neutral-500 leading-relaxed">{s.summary}</p>}
           </div>
         ))}
       </div>

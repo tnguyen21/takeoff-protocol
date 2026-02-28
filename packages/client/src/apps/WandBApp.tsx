@@ -44,7 +44,9 @@ function FakePlot({ label, color }: { label: string; color: string }) {
   );
 }
 
-export const WandBApp = React.memo(function WandBApp(_: AppProps) {
+export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
+  const chartItems = content.filter((i) => i.type === "chart");
+
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d] text-white text-sm">
       {/* Header */}
@@ -58,6 +60,24 @@ export const WandBApp = React.memo(function WandBApp(_: AppProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Intel chart metrics */}
+        {chartItems.length > 0 && (
+          <div className="bg-[#111] rounded border border-white/10 p-3">
+            <div className="text-xs text-neutral-400 mb-3 font-medium uppercase tracking-wider">Intel Metrics</div>
+            <div className="space-y-3">
+              {chartItems.map((item) => (
+                <div key={item.id} className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-neutral-300 font-medium">{item.subject ?? item.sender ?? "Metric"}</span>
+                    <span className="text-neutral-500 text-[10px]">{item.timestamp}</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-500 leading-relaxed">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Run table */}
         <div className="bg-[#111] rounded border border-white/10 overflow-hidden">
           <div className="grid grid-cols-4 text-[10px] text-neutral-500 uppercase tracking-wider px-3 py-2 border-b border-white/5">

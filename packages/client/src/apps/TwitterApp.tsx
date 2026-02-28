@@ -1,7 +1,7 @@
 import React from "react";
 import type { AppProps } from "./types.js";
 
-const TWEETS = [
+const STATIC_TWEETS = [
   {
     name: "Sam Hartley",
     handle: "@s_hartley",
@@ -53,7 +53,22 @@ function fmt(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
-export const TwitterApp = React.memo(function TwitterApp(_: AppProps) {
+export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) {
+  const tweetItems = content.filter((i) => i.type === "tweet");
+
+  const tweets =
+    tweetItems.length > 0
+      ? tweetItems.map((item) => ({
+          name: item.sender ?? "Unknown",
+          handle: `@${(item.sender ?? "unknown").toLowerCase().replace(/[\s.]/g, "_")}`,
+          time: item.timestamp,
+          text: item.body,
+          likes: 0,
+          retweets: 0,
+          replies: 0,
+        }))
+      : STATIC_TWEETS;
+
   return (
     <div className="flex h-full bg-black text-white">
       {/* Sidebar */}
@@ -72,11 +87,11 @@ export const TwitterApp = React.memo(function TwitterApp(_: AppProps) {
           <span className="font-bold text-base">Home</span>
         </div>
 
-        {TWEETS.map((t, i) => (
+        {tweets.map((t, i) => (
           <div key={i} className="px-4 py-3 border-b border-white/10 hover:bg-white/3 cursor-pointer">
             <div className="flex gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold shrink-0">
-                {t.name[0]}
+                {(t.name[0] ?? "?").toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-1.5 flex-wrap">

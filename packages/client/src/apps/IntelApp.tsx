@@ -1,7 +1,37 @@
 import React from "react";
 import type { AppProps } from "./types.js";
 
-export const IntelApp = React.memo(function IntelApp(_: AppProps) {
+export const IntelApp = React.memo(function IntelApp({ content }: AppProps) {
+  const docItems = content.filter((i) => i.type === "document" || i.type === "memo");
+
+  if (docItems.length > 0) {
+    return (
+      <div className="flex flex-col h-full bg-[#f5f0e8] text-black font-mono text-xs overflow-y-auto">
+        <div className="bg-[#cc0000] text-white text-center py-1.5 font-bold tracking-[0.3em] text-sm shrink-0">
+          TOP SECRET // SCI // NOFORN
+        </div>
+        <div className="p-5 max-w-2xl mx-auto w-full space-y-6">
+          {docItems.map((item) => (
+            <div key={item.id} className="border border-black p-4">
+              {item.subject && (
+                <div className="font-bold text-sm mb-2 underline text-center tracking-wide">{item.subject}</div>
+              )}
+              {item.sender && (
+                <div className="text-[10px] mb-2">
+                  <span className="font-bold">SOURCE:</span> {item.sender} · {item.timestamp}
+                </div>
+              )}
+              <pre className="text-[11px] leading-relaxed whitespace-pre-wrap font-mono">{item.body}</pre>
+            </div>
+          ))}
+        </div>
+        <div className="bg-[#cc0000] text-white text-center py-1.5 font-bold tracking-[0.3em] text-sm shrink-0">
+          TOP SECRET // SCI // NOFORN
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-[#f5f0e8] text-black font-mono text-xs overflow-y-auto">
       {/* Classification banner */}

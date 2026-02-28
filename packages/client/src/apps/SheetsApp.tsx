@@ -16,7 +16,19 @@ const ROWS = [
 
 const COL_WIDTHS = [160, 100, 100, 100, 90, 90, 180];
 
-export const SheetsApp = React.memo(function SheetsApp(_: AppProps) {
+export const SheetsApp = React.memo(function SheetsApp({ content }: AppProps) {
+  const rowItems = content.filter((i) => i.type === "row");
+
+  // Build rows from content items or use static fallback
+  const rows =
+    rowItems.length > 0
+      ? rowItems.map((item) => {
+          const cols = item.body.split("\t");
+          // Pad to expected length or truncate
+          return cols.length > 0 ? cols : [item.subject ?? "Row", item.body];
+        })
+      : ROWS;
+
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] text-white text-xs">
       {/* Toolbar */}
@@ -55,12 +67,12 @@ export const SheetsApp = React.memo(function SheetsApp(_: AppProps) {
             </tr>
           </thead>
           <tbody>
-            {ROWS.map((row, ri) => (
+            {rows.map((row, ri) => (
               <tr
                 key={ri}
                 className={`
                   ${ri % 2 === 0 ? "bg-[#1e1e1e]" : "bg-[#212121]"}
-                  ${ri === ROWS.length - 1 ? "font-semibold bg-[#1a2a1a] border-t border-white/20" : ""}
+                  ${ri === rows.length - 1 ? "font-semibold bg-[#1a2a1a] border-t border-white/20" : ""}
                   hover:bg-blue-900/20 cursor-pointer
                 `}
               >

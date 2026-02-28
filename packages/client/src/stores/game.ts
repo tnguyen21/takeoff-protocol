@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, Faction, GamePhase, IndividualDecision, Player, Role, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, Faction, GamePhase, IndividualDecision, Player, Role, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 
 interface LobbyPlayer {
@@ -223,3 +223,10 @@ socket.on("gm:extend-ack", (data: { usesRemaining: number }) => {
 socket.on("gm:decision-status", (data: { submitted: string[] }) => {
   useGameStore.setState({ gmDecisionStatus: data.submitted });
 });
+
+// ── Selectors ──
+
+/** Filter the stored AppContent[] for a specific app, merging items from all matching entries. */
+export function getContentForApp(content: AppContent[], appId: AppId): ContentItem[] {
+  return content.filter((c) => c.app === appId).flatMap((c) => c.items);
+}

@@ -27,7 +27,24 @@ I wasn't alone in noticing. Several colleagues had similar experiences, though m
 
 And that's the thing about safety failures. They don't announce themselves. They accumulate quietly until they don't.`;
 
-export const SubstackApp = React.memo(function SubstackApp(_: AppProps) {
+export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
+  const docItems = content.filter((i) => i.type === "document" || i.type === "memo");
+  const [selectedIdx, setSelectedIdx] = React.useState(0);
+
+  const posts =
+    docItems.length > 0
+      ? docItems.map((item) => ({
+          title: item.subject ?? item.body.split("\n")[0] ?? "(untitled)",
+          date: item.timestamp,
+          status: "Published",
+          reads: "",
+          body: item.subject ? item.body : item.body.slice(item.body.indexOf("\n") + 1),
+        }))
+      : POSTS.map((p) => ({ ...p, body: EDITOR_CONTENT.slice(EDITOR_CONTENT.indexOf("\n") + 1) }));
+
+  const safeIdx = Math.min(selectedIdx, posts.length - 1);
+  const selected = posts[safeIdx];
+
   return (
     <div className="flex h-full bg-white text-black text-sm">
       {/* Sidebar */}
@@ -54,8 +71,12 @@ export const SubstackApp = React.memo(function SubstackApp(_: AppProps) {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Post list */}
         <div className="border-b border-neutral-200 shrink-0">
-          {POSTS.map((p, i) => (
-            <div key={i} className={`flex items-center gap-3 px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${i === 2 ? "bg-yellow-50" : ""}`}>
+          {posts.map((p, i) => (
+            <div
+              key={i}
+              onClick={() => setSelectedIdx(i)}
+              className={`flex items-center gap-3 px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${safeIdx === i ? "bg-blue-50" : ""}`}
+            >
               <div className="flex-1">
                 <div className="font-semibold text-xs text-neutral-800">{p.title}</div>
                 <div className="text-[10px] text-neutral-500 mt-0.5">{p.date} · {p.status}{p.reads ? ` · ${p.reads} reads` : ""}</div>
@@ -68,16 +89,15 @@ export const SubstackApp = React.memo(function SubstackApp(_: AppProps) {
         </div>
 
         {/* Editor */}
-        <div className="flex-1 overflow-y-auto p-5">
-          <div className="max-w-xl mx-auto">
-            <input
-              className="w-full text-xl font-bold text-neutral-800 border-none outline-none bg-transparent mb-3 placeholder-neutral-300"
-              defaultValue="Why I left my AI safety role (and what I learned)"
-            />
-            <div className="h-px bg-neutral-200 mb-4" />
-            <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-sans leading-relaxed">{EDITOR_CONTENT.slice(EDITOR_CONTENT.indexOf("\n") + 1)}</pre>
+        {selected && (
+          <div className="flex-1 overflow-y-auto p-5">
+            <div className="max-w-xl mx-auto">
+              <div className="text-xl font-bold text-neutral-800 mb-3">{selected.title}</div>
+              <div className="h-px bg-neutral-200 mb-4" />
+              <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-sans leading-relaxed">{selected.body}</pre>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Toolbar */}
         <div className="border-t border-neutral-200 px-4 py-2 flex gap-2 items-center shrink-0">
