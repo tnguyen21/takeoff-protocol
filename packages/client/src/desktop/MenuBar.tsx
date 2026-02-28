@@ -48,27 +48,83 @@ export function MenuBar() {
 
   return (
     <div
-      className="w-full flex items-center justify-between px-4 text-sm text-white/90 backdrop-blur-md bg-black/40 border-b border-white/10 select-none"
-      style={{ height: "var(--menubar-height)" }}
+      className="w-full flex items-center justify-between select-none"
+      style={{
+        height: "var(--menubar-height)",
+        background: "rgba(24, 24, 26, 0.72)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        paddingInline: "12px",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontSize: "13px",
+        fontWeight: 500,
+      }}
     >
-      <div className="flex items-center gap-4">
-        <span className="font-semibold">{factionLabel}</span>
+      {/* Left side: Apple logo + faction */}
+      <div className="flex items-center gap-3">
+        <span
+          style={{
+            fontSize: "16px",
+            lineHeight: 1,
+            color: "rgba(255,255,255,0.9)",
+            marginTop: "-1px",
+          }}
+          aria-hidden="true"
+        >
+          {"\uF8FF"}
+        </span>
+        <span style={{ color: "rgba(255,255,255,0.90)", fontWeight: 600 }}>
+          {factionLabel}
+        </span>
         {phase && phase !== "lobby" && (
-          <span className="text-white/50">
-            {phase.charAt(0).toUpperCase() + phase.slice(1)}
-          </span>
+          <>
+            <span style={{ color: "rgba(255,255,255,0.25)" }}>|</span>
+            <span style={{ color: "rgba(255,255,255,0.45)", fontWeight: 400 }}>
+              {phase.charAt(0).toUpperCase() + phase.slice(1)}
+            </span>
+          </>
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      {/* Right side: round info + timer */}
+      <div className="flex items-center gap-3">
         {round > 0 && (
           <>
-            <span className="text-white/60">{ROUND_DATES[round]}</span>
-            <span className="text-white/40">R{round}: {ROUND_NAMES[round]}</span>
+            <span
+              style={{
+                color: "rgba(255,255,255,0.45)",
+                fontSize: "12px",
+              }}
+            >
+              {ROUND_DATES[round]}
+            </span>
+            <span
+              style={{
+                color: "rgba(255,255,255,0.30)",
+                fontSize: "11px",
+              }}
+            >
+              R{round}: {ROUND_NAMES[round]}
+            </span>
           </>
         )}
         {timeLeft && (
-          <span className="font-mono text-white/80 tabular-nums">{timeLeft}</span>
+          <span
+            style={{
+              fontFamily: "'SF Mono', 'Menlo', 'Monaco', monospace",
+              fontSize: "12px",
+              color: "rgba(255,255,255,0.85)",
+              background: "rgba(255,255,255,0.08)",
+              borderRadius: "5px",
+              padding: "1px 7px",
+              border: "1px solid rgba(255,255,255,0.10)",
+              letterSpacing: "0.02em",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {timeLeft}
+          </span>
         )}
       </div>
     </div>

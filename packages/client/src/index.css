@@ -2,11 +2,19 @@
 
 :root {
   --menubar-height: 28px;
-  --dock-height: 64px;
+  /* Dock floats 8px above bottom; reserve space = icon height + padding + gap */
+  --dock-height: 84px;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   user-select: none;
+}
+
+/* Ensure buttons in the dock don't get default outline */
+button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
 }

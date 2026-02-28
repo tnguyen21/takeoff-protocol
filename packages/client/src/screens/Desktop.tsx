@@ -55,7 +55,12 @@ export function Desktop() {
     <div
       className="h-screen w-screen overflow-hidden relative"
       style={{
-        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+        background: `
+          radial-gradient(ellipse 120% 80% at 20% 0%, rgba(45,25,100,0.85) 0%, transparent 60%),
+          radial-gradient(ellipse 80% 60% at 85% 15%, rgba(10,50,120,0.70) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 50% at 60% 90%, rgba(20,60,100,0.55) 0%, transparent 50%),
+          linear-gradient(175deg, #0d0d1a 0%, #111827 40%, #0a1628 70%, #060d1f 100%)
+        `,
       }}
     >
       <MenuBar />
