@@ -1,6 +1,7 @@
 import type { Server } from "socket.io";
 import type { GamePhase, GameRoom } from "@takeoff/shared";
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView } from "@takeoff/shared";
+import { getContentForPlayer } from "./content/loader.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
@@ -91,6 +92,11 @@ export function advancePhase(io: Server, room: GameRoom) {
   });
 
   emitStateViews(io, room);
+
+  if (room.phase === "intel") {
+    emitContent(io, room);
+  }
+
   setPhaseTimer(io, room);
 }
 
@@ -103,5 +109,17 @@ function emitStateViews(io: Server, room: GameRoom) {
   // GM gets full state
   if (room.gmId) {
     io.to(room.gmId).emit("game:state", { view: room.state, isFull: true });
+  }
+}
+
+function emitContent(io: Server, room: GameRoom) {
+  for (const [socketId, player] of Object.entries(room.players)) {
+    try {
+      const content = getContentForPlayer(room.round, player.faction, player.role, room.state);
+      io.to(socketId).emit("game:content", { content });
+    } catch (err) {
+      // Round content file may not exist yet (future rounds) — silently skip
+      console.warn(`[content] No content for round ${room.round}:`, err);
+    }
   }
 }

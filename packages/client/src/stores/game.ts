@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Faction, GamePhase, Player, Role, StateView } from "@takeoff/shared";
+import type { AppContent, Faction, GamePhase, Player, Role, StateView } from "@takeoff/shared";
 import { socket } from "../socket.js";
 
 interface LobbyPlayer {
@@ -28,6 +28,7 @@ interface GameStore {
   round: number;
   timer: { endsAt: number; pausedAt?: number };
   stateView: StateView | null;
+  content: AppContent[];
 
   // Actions
   setPlayerName: (name: string) => void;
@@ -50,6 +51,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   round: 0,
   timer: { endsAt: 0 },
   stateView: null,
+  content: [],
 
   setPlayerName: (name) => set({ playerName: name }),
 
@@ -124,4 +126,8 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
 
 socket.on("game:state", (data: { view: StateView }) => {
   useGameStore.setState({ stateView: data.view });
+});
+
+socket.on("game:content", (data: { content: AppContent[] }) => {
+  useGameStore.setState({ content: data.content });
 });
