@@ -70,10 +70,11 @@ export function Briefing() {
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center"
+      className="absolute inset-0 flex items-center justify-center"
       style={{
         background: "rgba(0, 0, 0, 0.88)",
         backdropFilter: "blur(4px)",
+        zIndex: 1000,
       }}
     >
       <div

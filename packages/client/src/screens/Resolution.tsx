@@ -124,12 +124,13 @@ export function Resolution() {
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-start justify-center overflow-y-auto"
+      className="absolute inset-0 flex items-start justify-center overflow-y-auto"
       style={{
         background: "rgba(0, 0, 0, 0.88)",
         backdropFilter: "blur(4px)",
         paddingTop: "32px",
         paddingBottom: "32px",
+        zIndex: 1000,
       }}
     >
       <div
