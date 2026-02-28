@@ -7,6 +7,7 @@ import { Dock } from "../desktop/Dock.js";
 import { Window } from "../desktop/Window.js";
 import { APP_COMPONENTS } from "../apps/index.js";
 import type { AppId } from "@takeoff/shared";
+import { Decision } from "./Decision.js";
 
 const APP_LABELS: Record<string, string> = {
   slack: "Slack",
@@ -89,6 +90,9 @@ export function Desktop() {
       </div>
 
       <Dock />
+
+      {/* Decision phase modal overlay */}
+      <Decision />
     </div>
   );
 }

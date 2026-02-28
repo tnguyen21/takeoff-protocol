@@ -1,10 +1,13 @@
 import type { Server } from "socket.io";
-import type { GamePhase, GameRoom } from "@takeoff/shared";
+import type { GamePhase, GameRoom, IndividualDecision, TeamDecision } from "@takeoff/shared";
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView } from "@takeoff/shared";
 import { getContentForPlayer } from "./content/loader.js";
+import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
+
+const ROUND_DECISIONS = [ROUND1_DECISIONS];
 
 function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
   const durations = room.round === 4 ? ROUND4_PHASE_DURATIONS : PHASE_DURATIONS;
@@ -97,7 +100,23 @@ export function advancePhase(io: Server, room: GameRoom) {
     emitContent(io, room);
   }
 
+  if (room.phase === "decision") {
+    emitDecisions(io, room);
+  }
+
   setPhaseTimer(io, room);
+}
+
+function emitDecisions(io: Server, room: GameRoom) {
+  const roundDecisions = ROUND_DECISIONS[room.round - 1];
+  if (!roundDecisions) return;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const [socketId, player] of Object.entries(room.players) as [string, any][]) {
+    const individual: IndividualDecision | undefined = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role);
+    const team: TeamDecision | undefined = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction);
+    io.to(socketId).emit("game:decisions", { individual: individual ?? null, team: team ?? null });
+  }
 }
 
 function emitStateViews(io: Server, room: GameRoom) {
