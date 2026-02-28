@@ -1,5 +1,6 @@
 import { useCallback, useRef, type ReactNode, type PointerEvent } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
+import { getAppIcon } from "../apps/icons.js";
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 200;
@@ -202,7 +203,13 @@ export function Window({ windowState: w, children }: WindowProps) {
           />
         </div>
 
-        <span className="text-white/60 text-xs flex-1 text-center">{w.title}</span>
+        <span className="text-white/60 text-xs flex-1 flex items-center justify-center gap-1">
+          {(() => {
+            const Icon = getAppIcon(w.appId);
+            return Icon ? <Icon size={14} strokeWidth={1.5} /> : null;
+          })()}
+          {w.title}
+        </span>
       </div>
 
       {/* Content */}

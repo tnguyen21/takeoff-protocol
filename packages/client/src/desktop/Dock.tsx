@@ -1,32 +1,13 @@
 import { useRef, useState } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { useMessagesStore } from "../stores/messages.js";
-
-const APP_ICONS: Record<string, string> = {
-  slack: "#",
-  signal: "◆",
-  wandb: "▲",
-  news: "◉",
-  twitter: "𝕏",
-  email: "✉",
-  sheets: "▦",
-  gamestate: "◎",
-  security: "⛨",
-  bloomberg: "$",
-  briefing: "◼",
-  wechat: "◇",
-  intel: "◈",
-  military: "★",
-  arxiv: "α",
-  substack: "▣",
-  memo: "▤",
-  compute: "▥",
-};
+import { getAppIcon } from "../apps/icons.js";
 
 const ICON_SIZE = 52;
 const ICON_GAP = 6;
 const MAX_SCALE = 1.6;
 const MAG_RADIUS = 100; // px from center to full fall-off
+const LUCIDE_SIZE = 28; // base icon size inside the dock button
 
 function getIconScale(mouseX: number | null, iconCenter: number): number {
   if (mouseX === null) return 1;
@@ -86,6 +67,7 @@ export function Dock() {
           const iconCenter = index * (ICON_SIZE + ICON_GAP) + ICON_SIZE / 2;
           const scale = getIconScale(mouseX, iconCenter);
           const unread = unreadCounts[w.appId] ?? 0;
+          const IconComponent = getAppIcon(w.appId);
 
           return (
             <button
@@ -100,7 +82,6 @@ export function Dock() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "22px",
                 borderRadius: "12px",
                 border: "none",
                 cursor: "pointer",
@@ -128,7 +109,11 @@ export function Dock() {
                   : "rgba(255,255,255,0.55)";
               }}
             >
-              {APP_ICONS[w.appId] ?? "□"}
+              {IconComponent ? (
+                <IconComponent size={LUCIDE_SIZE} strokeWidth={1.5} />
+              ) : (
+                <span style={{ fontSize: "22px" }}>□</span>
+              )}
 
               {/* Unread badge */}
               {unread > 0 && (
