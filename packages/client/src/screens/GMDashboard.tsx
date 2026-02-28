@@ -1,0 +1,558 @@
+import { useState, useEffect, useRef } from "react";
+import { useGameStore } from "../stores/game.js";
+import { useMessagesStore } from "../stores/messages.js";
+import { FACTIONS } from "@takeoff/shared";
+import type { StateVariables } from "@takeoff/shared";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(ms: number): string {
+  if (ms <= 0) return "0:00";
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function formatTimestamp(ts: number): string {
+  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+const PHASE_LABELS: Record<string, string> = {
+  briefing: "Briefing",
+  intel: "Intel Gathering",
+  deliberation: "Deliberation",
+  decision: "Decision",
+  resolution: "Resolution",
+  ending: "Ending",
+};
+
+const FACTION_COLORS: Record<string, string> = {
+  openbrain: "#8b5cf6",
+  prometheus: "#06b6d4",
+  china: "#ef4444",
+  external: "#f59e0b",
+};
+
+const STATE_LABELS: Record<keyof StateVariables, string> = {
+  obCapability: "OB Capability",
+  promCapability: "Prom Capability",
+  chinaCapability: "China Capability",
+  usChinaGap: "US-China Gap (mo)",
+  obPromGap: "OB-Prom Gap (mo)",
+  alignmentConfidence: "Alignment Confidence",
+  misalignmentSeverity: "Misalignment Severity",
+  publicAwareness: "Public Awareness",
+  publicSentiment: "Public Sentiment",
+  economicDisruption: "Economic Disruption",
+  taiwanTension: "Taiwan Tension",
+  obInternalTrust: "OB Internal Trust",
+  securityLevelOB: "Security Level (OB)",
+  securityLevelProm: "Security Level (Prom)",
+  intlCooperation: "Intl Cooperation",
+};
+
+// State variable ranges for bar rendering
+const STATE_RANGES: Record<keyof StateVariables, [number, number]> = {
+  obCapability: [0, 100],
+  promCapability: [0, 100],
+  chinaCapability: [0, 100],
+  usChinaGap: [-24, 24],
+  obPromGap: [-12, 12],
+  alignmentConfidence: [0, 100],
+  misalignmentSeverity: [0, 100],
+  publicAwareness: [0, 100],
+  publicSentiment: [-100, 100],
+  economicDisruption: [0, 100],
+  taiwanTension: [0, 100],
+  obInternalTrust: [0, 100],
+  securityLevelOB: [1, 5],
+  securityLevelProm: [1, 5],
+  intlCooperation: [0, 100],
+};
+
+function barPct(key: keyof StateVariables, value: number): number {
+  const [min, max] = STATE_RANGES[key];
+  return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+}
+
+function barColor(key: keyof StateVariables, value: number): string {
+  // Danger variables — high is bad
+  const danger = ["misalignmentSeverity", "economicDisruption", "taiwanTension"] as (keyof StateVariables)[];
+  // Neutral range variables
+  const neutral = ["usChinaGap", "obPromGap", "publicSentiment"] as (keyof StateVariables)[];
+
+  if (danger.includes(key)) {
+    const pct = barPct(key, value);
+    if (pct > 66) return "#ef4444";
+    if (pct > 33) return "#f59e0b";
+    return "#34d399";
+  }
+  if (neutral.includes(key)) return "#60a5fa";
+  // Default: high is good
+  const pct = barPct(key, value);
+  if (pct > 66) return "#34d399";
+  if (pct > 33) return "#f59e0b";
+  return "#ef4444";
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function TimerDisplay({
+  endsAt,
+  pausedAt,
+  isPaused,
+}: {
+  endsAt: number;
+  pausedAt?: number;
+  isPaused: boolean;
+}) {
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    const tick = () => {
+      const now = Date.now();
+      const effectiveEnd = pausedAt ? endsAt - (now - pausedAt) : endsAt;
+      setRemaining(Math.max(0, effectiveEnd - now));
+    };
+    tick();
+    if (isPaused) return; // don't need interval when paused
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [endsAt, pausedAt, isPaused]);
+
+  const color = remaining <= 30_000 ? "#ef4444" : remaining <= 60_000 ? "#f59e0b" : "#34d399";
+
+  return (
+    <div style={{ fontFamily: "monospace", fontSize: "56px", fontWeight: 700, color, lineHeight: 1, letterSpacing: "-2px" }}>
+      {formatTime(isPaused && pausedAt ? Math.max(0, endsAt - (Date.now() - pausedAt)) : remaining)}
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+export function GMDashboard() {
+  const {
+    roomCode,
+    phase,
+    round,
+    timer,
+    lobbyPlayers,
+    gmRawState,
+    gmDecisionStatus,
+    gmExtendUsesRemaining,
+    gmAdvance,
+    gmPause,
+    gmExtend,
+  } = useGameStore();
+
+  const { messages } = useMessagesStore();
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  const isPaused = !!timer.pausedAt;
+  const connectedCount = lobbyPlayers.filter((p) => p.connected).length;
+
+  // Auto-scroll message feed
+  useEffect(() => {
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
+  }, [messages.length]);
+
+  return (
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        background: "linear-gradient(160deg, #0a0a14 0%, #0d1117 50%, #060912 100%)",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        color: "#e5e7eb",
+        overflow: "hidden",
+      }}
+    >
+      {/* ── Header ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "24px",
+          padding: "12px 24px",
+          background: "rgba(255,255,255,0.03)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          flexShrink: 0,
+        }}
+      >
+        {/* GM badge */}
+        <div
+          style={{
+            padding: "3px 10px",
+            borderRadius: "6px",
+            background: "rgba(239,68,68,0.15)",
+            border: "1px solid rgba(239,68,68,0.4)",
+            color: "#f87171",
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}
+        >
+          GM
+        </div>
+
+        {/* Room code */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ color: "#6b7280", fontSize: "12px" }}>Room</span>
+          <span style={{ fontFamily: "monospace", fontSize: "18px", fontWeight: 700, letterSpacing: "0.15em", color: "#e5e7eb" }}>
+            {roomCode ?? "—"}
+          </span>
+        </div>
+
+        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.1)" }} />
+
+        {/* Round + Phase */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ color: "#9ca3af", fontSize: "13px" }}>
+            Round <strong style={{ color: "#e5e7eb" }}>{round}</strong>
+          </span>
+          <span
+            style={{
+              padding: "2px 10px",
+              borderRadius: "20px",
+              background: "rgba(139,92,246,0.15)",
+              border: "1px solid rgba(139,92,246,0.35)",
+              color: "#c4b5fd",
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
+          >
+            {PHASE_LABELS[phase ?? ""] ?? phase ?? "—"}
+          </span>
+        </div>
+
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              width: "7px",
+              height: "7px",
+              borderRadius: "50%",
+              background: connectedCount > 0 ? "#34d399" : "#6b7280",
+            }}
+          />
+          <span style={{ color: "#9ca3af", fontSize: "12px" }}>
+            {connectedCount} / {lobbyPlayers.length} connected
+          </span>
+        </div>
+      </div>
+
+      {/* ── Main content ── */}
+      <div
+        style={{
+          flex: 1,
+          display: "grid",
+          gridTemplateColumns: "300px 1fr 280px",
+          gridTemplateRows: "auto 1fr",
+          gap: "1px",
+          background: "rgba(255,255,255,0.06)",
+          overflow: "hidden",
+        }}
+      >
+        {/* ── Timer + Controls (spans first column) ── */}
+        <div
+          style={{
+            gridColumn: "1",
+            gridRow: "1 / 3",
+            background: "#0a0a14",
+            padding: "24px 20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+            overflow: "auto",
+          }}
+        >
+          <div>
+            <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+              Phase Timer
+            </div>
+            <TimerDisplay endsAt={timer.endsAt} pausedAt={timer.pausedAt} isPaused={isPaused} />
+            {isPaused && (
+              <div style={{ marginTop: "8px", color: "#f59e0b", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                ⏸ Paused
+              </div>
+            )}
+          </div>
+
+          {/* Timer controls */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <button
+              onClick={gmPause}
+              style={btnStyle(isPaused ? "#34d399" : "#f59e0b")}
+            >
+              {isPaused ? "▶ Resume" : "⏸ Pause"}
+            </button>
+
+            <button
+              onClick={gmExtend}
+              disabled={gmExtendUsesRemaining <= 0}
+              style={btnStyle("#60a5fa", gmExtendUsesRemaining <= 0)}
+            >
+              +60s Extend
+              <span
+                style={{
+                  marginLeft: "8px",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  padding: "1px 5px",
+                  borderRadius: "4px",
+                  background: gmExtendUsesRemaining > 0 ? "rgba(96,165,250,0.2)" : "rgba(255,255,255,0.05)",
+                  color: gmExtendUsesRemaining > 0 ? "#93c5fd" : "#4b5563",
+                }}
+              >
+                {gmExtendUsesRemaining} left
+              </span>
+            </button>
+
+            <button
+              onClick={gmAdvance}
+              style={btnStyle("#ef4444")}
+            >
+              ⏭ Advance Phase
+            </button>
+          </div>
+
+          {/* Player Panel */}
+          <div style={{ flex: 1, overflow: "auto" }}>
+            <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+              Players
+            </div>
+
+            {FACTIONS.map((faction) => {
+              const factionPlayers = lobbyPlayers.filter((p) => p.faction === faction.id);
+              if (factionPlayers.length === 0) return null;
+
+              return (
+                <div key={faction.id} style={{ marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: FACTION_COLORS[faction.id] ?? "#9ca3af",
+                      marginBottom: "6px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                    }}
+                  >
+                    {faction.name}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {factionPlayers.map((p) => {
+                      const roleConfig = faction.roles.find((r) => r.id === p.role);
+                      const hasSubmitted = gmDecisionStatus.includes(p.id);
+
+                      return (
+                        <div
+                          key={p.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            background: "rgba(255,255,255,0.03)",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          {/* Connection dot */}
+                          <div
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              borderRadius: "50%",
+                              background: p.connected ? "#34d399" : "#ef4444",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "12px", fontWeight: 600, color: "#e5e7eb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                            <div style={{ fontSize: "10px", color: "#6b7280" }}>{roleConfig?.label ?? p.role}</div>
+                          </div>
+                          {/* Decision submitted indicator */}
+                          {phase === "decision" && (
+                            <div
+                              style={{
+                                fontSize: "10px",
+                                fontWeight: 600,
+                                padding: "1px 5px",
+                                borderRadius: "4px",
+                                background: hasSubmitted ? "rgba(52,211,153,0.15)" : "rgba(107,114,128,0.15)",
+                                color: hasSubmitted ? "#34d399" : "#6b7280",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {hasSubmitted ? "✓" : "…"}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── State Panel ── */}
+        <div
+          style={{
+            gridColumn: "2",
+            gridRow: "1 / 3",
+            background: "#0a0a14",
+            padding: "20px 24px",
+            overflow: "auto",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "16px" }}>
+            World State (True Values — GM Only)
+          </div>
+
+          {gmRawState ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
+                const value = gmRawState[key];
+                const pct = barPct(key, value);
+                const color = barColor(key, value);
+
+                return (
+                  <div key={key}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                      <span style={{ color: "#9ca3af", fontSize: "12px" }}>{STATE_LABELS[key]}</span>
+                      <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color }}>
+                        {value}
+                      </span>
+                    </div>
+                    <div style={{ height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.07)" }}>
+                      <div
+                        style={{
+                          height: "100%",
+                          borderRadius: "2px",
+                          background: color,
+                          width: `${pct}%`,
+                          transition: "width 0.4s ease, background 0.4s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ color: "#4b5563", fontSize: "13px", fontStyle: "italic" }}>
+              Waiting for game state…
+            </div>
+          )}
+        </div>
+
+        {/* ── Message Feed ── */}
+        <div
+          style={{
+            gridColumn: "3",
+            gridRow: "1 / 3",
+            background: "#0a0a14",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
+            <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              All Messages
+            </div>
+            {phase === "decision" && (
+              <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ color: "#9ca3af", fontSize: "11px" }}>
+                  Decisions submitted:{" "}
+                  <strong style={{ color: "#e5e7eb" }}>{gmDecisionStatus.length}</strong>
+                  {" / "}
+                  <strong style={{ color: "#e5e7eb" }}>{lobbyPlayers.length}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div
+            ref={feedRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "12px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            {messages.length === 0 ? (
+              <div style={{ color: "#4b5563", fontSize: "12px", fontStyle: "italic", textAlign: "center", marginTop: "20px" }}>
+                No messages yet
+              </div>
+            ) : (
+              messages.map((msg) => {
+                const factionColor = FACTION_COLORS[msg.faction] ?? "#9ca3af";
+                return (
+                  <div
+                    key={msg.id}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
+                      <span style={{ color: "#4b5563", fontSize: "10px", fontFamily: "monospace" }}>
+                        {formatTimestamp(msg.timestamp)}
+                      </span>
+                      <span style={{ color: factionColor, fontWeight: 700, fontSize: "11px" }}>
+                        {msg.fromName}
+                      </span>
+                      <span style={{ color: "#4b5563", fontSize: "10px" }}>
+                        → {msg.isTeamChat ? "team chat" : "DM"}
+                      </span>
+                    </div>
+                    <div style={{ color: "#d1d5db", lineHeight: 1.4 }}>{msg.content}</div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Style helper ──────────────────────────────────────────────────────────────
+
+function btnStyle(color: string, disabled = false): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "10px 14px",
+    borderRadius: "8px",
+    border: disabled ? "1px solid rgba(255,255,255,0.08)" : `1px solid ${color}55`,
+    background: disabled ? "rgba(255,255,255,0.03)" : `${color}18`,
+    color: disabled ? "#4b5563" : color,
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: disabled ? "not-allowed" : "pointer",
+    textAlign: "left" as const,
+    display: "flex",
+    alignItems: "center",
+    transition: "all 0.15s",
+    opacity: disabled ? 0.6 : 1,
+  };
+}

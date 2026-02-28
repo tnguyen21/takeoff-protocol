@@ -3,6 +3,9 @@ import type { Faction, Role } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, selectRole, getLobbyState } from "./rooms.js";
 import { advancePhase, startGame } from "./game.js";
 
+// Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
+const extendUses = new Map<string, number>();
+
 export function registerGameEvents(io: Server, socket: Socket) {
   // ── Room Management ──
 
@@ -91,6 +94,29 @@ export function registerGameEvents(io: Server, socket: Socket) {
     });
   });
 
+  socket.on("gm:extend", () => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) return;
+
+    const key = `${code}:${room.round}:${room.phase}`;
+    const uses = extendUses.get(key) ?? 0;
+    if (uses >= 2) return; // max 2 extends per phase
+
+    extendUses.set(key, uses + 1);
+    room.timer.endsAt += 60_000;
+
+    io.to(code).emit("game:phase", {
+      phase: room.phase,
+      round: room.round,
+      timer: room.timer,
+    });
+
+    // Notify GM of remaining extend uses
+    io.to(socket.id).emit("gm:extend-ack", { usesRemaining: 2 - (uses + 1) });
+  });
+
   // ── Decisions ──
 
   socket.on("decision:submit", ({ individual, teamVote }: { individual: string; teamVote?: string }) => {
@@ -123,6 +149,13 @@ export function registerGameEvents(io: Server, socket: Socket) {
           }
         }
       }
+    }
+
+    // Notify GM of current decision submission status
+    if (room.gmId) {
+      io.to(room.gmId).emit("gm:decision-status", {
+        submitted: Object.keys(room.decisions),
+      });
     }
   });
 

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, Faction, GamePhase, IndividualDecision, Player, Role, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, Faction, GamePhase, IndividualDecision, Player, Role, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 
 interface LobbyPlayer {
@@ -37,6 +37,11 @@ interface GameStore {
   teamVotes: Record<string, string>; // playerId → optionId (leader only)
   teamLocked: boolean; // true after leader submits final team decision
 
+  // GM-specific
+  gmRawState: StateVariables | null; // true unfogged state (GM only)
+  gmDecisionStatus: string[]; // player IDs that have submitted (GM only)
+  gmExtendUsesRemaining: number; // 2 initially, decrements on extend (GM only)
+
   // Actions
   setPlayerName: (name: string) => void;
   createRoom: () => Promise<string | null>;
@@ -45,6 +50,9 @@ interface GameStore {
   startGame: () => void;
   submitDecision: (individual: string, teamVote?: string) => void;
   submitLeaderDecision: (teamDecision: string) => void;
+  gmAdvance: () => void;
+  gmPause: () => void;
+  gmExtend: () => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -66,6 +74,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   teamVotes: {},
   teamLocked: false,
   briefingText: null,
+  gmRawState: null,
+  gmDecisionStatus: [],
+  gmExtendUsesRemaining: 2,
 
   setPlayerName: (name) => set({ playerName: name }),
 
@@ -138,6 +149,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.emit("decision:leader-submit", { teamDecision });
     set({ teamLocked: true });
   },
+
+  gmAdvance: () => {
+    socket.emit("gm:advance");
+  },
+
+  gmPause: () => {
+    socket.emit("gm:pause");
+  },
+
+  gmExtend: () => {
+    socket.emit("gm:extend");
+  },
 }));
 
 // ── Socket Listeners ──
@@ -163,11 +186,18 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
     decisionSubmitted: false,
     teamVotes: {},
     teamLocked: false,
+    // Reset GM per-phase state
+    gmExtendUsesRemaining: 2,
+    gmDecisionStatus: [],
   });
 });
 
-socket.on("game:state", (data: { view: StateView }) => {
-  useGameStore.setState({ stateView: data.view });
+socket.on("game:state", (data: { view: StateView; isFull?: boolean }) => {
+  if (data.isFull) {
+    useGameStore.setState({ gmRawState: data.view as unknown as StateVariables, stateView: data.view });
+  } else {
+    useGameStore.setState({ stateView: data.view });
+  }
 });
 
 socket.on("game:content", (data: { content: AppContent[] }) => {
@@ -184,4 +214,12 @@ socket.on("decision:votes", (data: { faction: string; votes: Record<string, stri
 
 socket.on("game:briefing", (data: { text: string }) => {
   useGameStore.setState({ briefingText: data.text });
+});
+
+socket.on("gm:extend-ack", (data: { usesRemaining: number }) => {
+  useGameStore.setState({ gmExtendUsesRemaining: data.usesRemaining });
+});
+
+socket.on("gm:decision-status", (data: { submitted: string[] }) => {
+  useGameStore.setState({ gmDecisionStatus: data.submitted });
 });
