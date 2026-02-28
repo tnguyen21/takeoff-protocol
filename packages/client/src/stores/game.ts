@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, AppId, ContentItem, Faction, GamePhase, IndividualDecision, Player, ResolutionData, Role, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, EndingArc, Faction, GamePhase, IndividualDecision, Player, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 
 interface LobbyPlayer {
@@ -45,6 +45,12 @@ interface GameStore {
   gmDecisionStatus: string[]; // player IDs that have submitted (GM only)
   gmExtendUsesRemaining: number; // 2 initially, decrements on extend (GM only)
 
+  // Ending
+  endingArcs: EndingArc[];
+  endingHistory: RoundHistory[];
+  endingFinalState: StateVariables | null;
+  endingPlayers: Record<string, Player>;
+
   // Actions
   setPlayerName: (name: string) => void;
   createRoom: () => Promise<string | null>;
@@ -81,6 +87,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gmRawState: null,
   gmDecisionStatus: [],
   gmExtendUsesRemaining: 2,
+  endingArcs: [],
+  endingHistory: [],
+  endingFinalState: null,
+  endingPlayers: {},
 
   setPlayerName: (name) => set({ playerName: name }),
 
@@ -230,6 +240,15 @@ socket.on("gm:extend-ack", (data: { usesRemaining: number }) => {
 
 socket.on("gm:decision-status", (data: { submitted: string[] }) => {
   useGameStore.setState({ gmDecisionStatus: data.submitted });
+});
+
+socket.on("game:ending", (data: { arcs: EndingArc[]; history: RoundHistory[]; finalState: StateVariables; players: Record<string, Player> }) => {
+  useGameStore.setState({
+    endingArcs: data.arcs,
+    endingHistory: data.history,
+    endingFinalState: data.finalState,
+    endingPlayers: data.players,
+  });
 });
 
 // ── Selectors ──

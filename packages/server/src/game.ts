@@ -1,6 +1,6 @@
 import type { Server } from "socket.io";
 import type { DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, ResolutionData, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
-import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions } from "@takeoff/shared";
+import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 
@@ -79,6 +79,16 @@ export function advancePhase(io: Server, room: GameRoom) {
           round: room.round,
           timer: { endsAt: 0 },
         });
+
+        // Compute and emit ending data with fog of war lifted
+        const arcs = computeEndingArcs(room.state);
+        io.to(room.code).emit("game:ending", {
+          arcs,
+          history: room.history,
+          finalState: room.state,
+          players: room.players,
+        });
+
         return;
       }
 
