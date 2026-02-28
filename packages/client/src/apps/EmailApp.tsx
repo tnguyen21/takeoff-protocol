@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import type { AppProps } from "./types.js";
+import { useGameStore } from "../stores/game.js";
 
 const STATIC_EMAILS = [
   {
@@ -56,6 +57,9 @@ Recommend we discuss before Thursday.
 — Rachel`;
 
 export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
+  const { selectedRole, publishArticle } = useGameStore();
+  const isObSafety = selectedRole === "ob_safety";
+
   const docItems = content.filter((i) => i.type === "document");
 
   const emails =
@@ -67,12 +71,32 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
           time: item.timestamp,
           read: false,
           body: item.body,
+          classification: item.classification,
         }))
-      : STATIC_EMAILS.map((e) => ({ ...e, body: BODY }));
+      : STATIC_EMAILS.map((e) => ({ ...e, body: BODY, classification: undefined as undefined }));
 
   const [selected, setSelected] = useState(0);
+  const [leakSent, setLeakSent] = useState<Record<number, boolean>>({});
   const safeSelected = Math.min(selected, emails.length - 1);
   const selectedEmail = emails[safeSelected];
+
+  // An email is leakable for ob_safety if it's critical or contains safety/alignment keywords
+  const isLeakable = (email: typeof emails[0]) =>
+    isObSafety && (
+      email.classification === "critical" ||
+      /misalign|safety|alignment|deceptive|risk|concern|gap|discrepancy/i.test(email.subject + " " + email.body)
+    );
+
+  function handleLeak() {
+    if (!selectedEmail || leakSent[safeSelected]) return;
+    publishArticle({
+      type: "leak",
+      title: `LEAKED: ${selectedEmail.subject}`,
+      content: `[Internal memo obtained by journalist]\n\nFrom: ${selectedEmail.from}\n\n${selectedEmail.body}`,
+      source: "Anonymous Source (OB Internal)",
+    });
+    setLeakSent((prev) => ({ ...prev, [safeSelected]: true }));
+  }
 
   return (
     <div className="flex h-full bg-[#111] text-white text-sm">
@@ -102,12 +126,36 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
 
       {/* Reading pane */}
       {selectedEmail && (
-        <div className="flex-1 overflow-y-auto p-4">
-          <h2 className="font-semibold text-base mb-1">{selectedEmail.subject}</h2>
-          <div className="text-xs text-neutral-500 mb-4">
-            From: <span className="text-neutral-300">{selectedEmail.from}</span> · {selectedEmail.time}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-4">
+            <h2 className="font-semibold text-base mb-1">{selectedEmail.subject}</h2>
+            <div className="text-xs text-neutral-500 mb-4">
+              From: <span className="text-neutral-300">{selectedEmail.from}</span> · {selectedEmail.time}
+            </div>
+            <pre className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed font-sans">{selectedEmail.body}</pre>
           </div>
-          <pre className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed font-sans">{selectedEmail.body}</pre>
+
+          {/* Leak to Press action — only for ob_safety on leakable emails */}
+          {isLeakable(selectedEmail) && (
+            <div className="border-t border-white/10 px-4 py-3 shrink-0 bg-red-950/30">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="text-[10px] text-red-400 font-semibold uppercase tracking-wide">⚠ Whistleblower Action</div>
+                  <div className="text-[10px] text-neutral-400 mt-0.5">Leak this memo to the press. This is irreversible and will increase public awareness.</div>
+                </div>
+                {leakSent[safeSelected] ? (
+                  <span className="text-[10px] text-green-400 font-semibold">✓ Leaked</span>
+                ) : (
+                  <button
+                    onClick={handleLeak}
+                    className="bg-red-700 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded font-semibold shrink-0"
+                  >
+                    Leak to Press
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

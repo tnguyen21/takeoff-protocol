@@ -30,6 +30,7 @@ export function createRoom(gmSocketId: string): GameRoom {
     teamDecisions: {},
     teamVotes: {},
     history: [],
+    publications: [],
   };
 
   rooms.set(code, room);

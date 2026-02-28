@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import type { Faction, Role } from "@takeoff/shared";
+import type { AppContent, ContentItem, Faction, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, selectRole, getLobbyState } from "./rooms.js";
 import { advancePhase, startGame } from "./game.js";
 
@@ -214,6 +214,135 @@ export function registerGameEvents(io: Server, socket: Socket) {
       io.to(room.gmId).emit("message:receive", { ...message, _gmView: true });
     }
   });
+
+  // ── Publishing ──
+
+  socket.on(
+    "publish:submit",
+    ({ type, title, content, source }: { type: PublicationType; title: string; content: string; source: string }) => {
+      const code = socket.data.roomCode;
+      if (!code) return;
+      const room = getRoom(code);
+      if (!room) return;
+
+      const player = room.players[socket.id];
+      if (!player) return;
+
+      // Validate: only specific roles can publish
+      const PUBLISHER_ROLES: Role[] = ["ext_journalist", "prom_opensource", "ob_safety"];
+      if (!PUBLISHER_ROLES.includes(player.role)) return;
+
+      // Leak mechanic: ob_safety can only do leaks, not articles
+      if (player.role === "ob_safety" && type !== "leak") return;
+
+      const timestamp = new Date().toISOString();
+      const pubId = crypto.randomUUID();
+
+      // Create ContentItems for news and twitter feeds
+      const newsItem: ContentItem = {
+        id: `pub-news-${pubId}`,
+        type: "headline",
+        sender: source || player.name,
+        subject: title,
+        body: content,
+        timestamp,
+        classification: type === "leak" ? "critical" : "context",
+      };
+
+      const tweetText = type === "leak"
+        ? `BREAKING: ${title} — ${content.slice(0, 200)}${content.length > 200 ? "…" : ""}`
+        : `${title} — ${content.slice(0, 200)}${content.length > 200 ? "…" : ""}`;
+
+      const twitterItem: ContentItem = {
+        id: `pub-twitter-${pubId}`,
+        type: "tweet",
+        sender: source || player.name,
+        body: tweetText,
+        timestamp,
+        classification: type === "leak" ? "critical" : "context",
+      };
+
+      // Store publication record
+      const publication: Publication = {
+        id: pubId,
+        type,
+        title,
+        content,
+        source: source || player.name,
+        publishedBy: player.role,
+        publishedAt: Date.now(),
+      };
+      room.publications.push(publication);
+
+      // Compute state effects
+      const STATE_EFFECTS: Record<PublicationType, Partial<StateVariables>> = {
+        article: { publicAwareness: 15, publicSentiment: 10 },
+        leak:    { publicAwareness: 25, publicSentiment: -10 },
+        research: { publicAwareness: 15, publicSentiment: 5 },
+      };
+      const effects = STATE_EFFECTS[type];
+      for (const [key, delta] of Object.entries(effects) as [keyof StateVariables, number][]) {
+        const current = room.state[key];
+        // publicAwareness: clamp 0-100; publicSentiment: clamp -100 to 100
+        if (key === "publicSentiment") {
+          room.state[key] = Math.max(-100, Math.min(100, current + delta));
+        } else {
+          room.state[key] = Math.max(0, Math.min(100, current + delta));
+        }
+      }
+
+      const summary = `${type === "leak" ? "🔴 LEAK" : type === "research" ? "📄 RESEARCH" : "📰 PUBLISHED"}: ${title}`;
+
+      // Emit to all players in the room
+      for (const playerId of Object.keys(room.players)) {
+        // Inject content items into player's feeds
+        const newsContent: AppContent = {
+          faction: room.players[playerId].faction,
+          role: room.players[playerId].role,
+          app: "news",
+          items: [newsItem],
+        };
+        const twitterContent: AppContent = {
+          faction: room.players[playerId].faction,
+          role: room.players[playerId].role,
+          app: "twitter",
+          items: [twitterItem],
+        };
+
+        io.to(playerId).emit("game:publish", {
+          publication,
+          newsContent,
+          twitterContent,
+          summary,
+        });
+
+        io.to(playerId).emit("game:notification", {
+          id: pubId,
+          summary,
+          from: source || player.name,
+          timestamp: Date.now(),
+        });
+      }
+
+      // GM sees it too
+      if (room.gmId) {
+        io.to(room.gmId).emit("game:publish", {
+          publication,
+          newsContent: { faction: "external" as Faction, app: "news", items: [newsItem] },
+          twitterContent: { faction: "external" as Faction, app: "twitter", items: [twitterItem] },
+          summary,
+        });
+        io.to(room.gmId).emit("game:notification", {
+          id: pubId,
+          summary,
+          from: source || player.name,
+          timestamp: Date.now(),
+        });
+      }
+
+      console.log(`[publish] ${player.role} published ${type}: "${title}"`);
+    },
+  );
 
   // ── Disconnect ──
 

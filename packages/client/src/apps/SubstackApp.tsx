@@ -1,5 +1,6 @@
 import React from "react";
 import type { AppProps } from "./types.js";
+import { useGameStore } from "../stores/game.js";
 
 const POSTS = [
   { title: "Why I left my AI safety role (and what I learned)", date: "Feb 27", status: "Published", reads: "24.1K" },
@@ -27,9 +28,24 @@ I wasn't alone in noticing. Several colleagues had similar experiences, though m
 
 And that's the thing about safety failures. They don't announce themselves. They accumulate quietly until they don't.`;
 
+const PUBLISHER_ROLES = ["ext_journalist", "prom_opensource"];
+
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
+  const { selectedRole, publishArticle, publications } = useGameStore();
+  const canPublish = selectedRole && PUBLISHER_ROLES.includes(selectedRole);
+
   const docItems = content.filter((i) => i.type === "document" || i.type === "memo");
   const [selectedIdx, setSelectedIdx] = React.useState(0);
+  const [composing, setComposing] = React.useState(false);
+  const [composeTitle, setComposeTitle] = React.useState("");
+  const [composeBody, setComposeBody] = React.useState("");
+  const [publishedCount, setPublishedCount] = React.useState(0);
+  const [justPublished, setJustPublished] = React.useState(false);
+
+  // Track publications created by this session for the post list
+  const myPublications = publications.filter((p) =>
+    selectedRole && p.publishedBy === selectedRole,
+  );
 
   const posts =
     docItems.length > 0
@@ -42,8 +58,36 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
         }))
       : POSTS.map((p) => ({ ...p, body: EDITOR_CONTENT.slice(EDITOR_CONTENT.indexOf("\n") + 1) }));
 
-  const safeIdx = Math.min(selectedIdx, posts.length - 1);
-  const selected = posts[safeIdx];
+  // Append recently published items
+  const allPosts = [
+    ...posts,
+    ...myPublications.map((pub) => ({
+      title: pub.title,
+      date: new Date(pub.publishedAt).toLocaleTimeString(),
+      status: "Published",
+      reads: "",
+      body: pub.content,
+    })),
+  ];
+
+  const safeIdx = Math.min(selectedIdx, allPosts.length - 1);
+  const selected = allPosts[safeIdx];
+
+  function handlePublish() {
+    if (!composeTitle.trim() || !composeBody.trim()) return;
+    publishArticle({
+      type: "article",
+      title: composeTitle.trim(),
+      content: composeBody.trim(),
+      source: "",
+    });
+    setPublishedCount((c) => c + 1);
+    setJustPublished(true);
+    setComposing(false);
+    setComposeTitle("");
+    setComposeBody("");
+    setTimeout(() => setJustPublished(false), 3000);
+  }
 
   return (
     <div className="flex h-full bg-white text-black text-sm">
@@ -60,51 +104,115 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
             </div>
           ))}
         </div>
-        <div className="p-3 border-t border-neutral-200">
-          <button className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600">
-            New post
-          </button>
-        </div>
+        {canPublish && (
+          <div className="p-3 border-t border-neutral-200">
+            <button
+              onClick={() => { setComposing(true); setSelectedIdx(-1); }}
+              className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600"
+            >
+              New post
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main */}
       <div className="flex flex-col flex-1 min-w-0">
-        {/* Post list */}
-        <div className="border-b border-neutral-200 shrink-0">
-          {posts.map((p, i) => (
-            <div
-              key={i}
-              onClick={() => setSelectedIdx(i)}
-              className={`flex items-center gap-3 px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${safeIdx === i ? "bg-blue-50" : ""}`}
-            >
-              <div className="flex-1">
-                <div className="font-semibold text-xs text-neutral-800">{p.title}</div>
-                <div className="text-[10px] text-neutral-500 mt-0.5">{p.date} · {p.status}{p.reads ? ` · ${p.reads} reads` : ""}</div>
-              </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === "Draft" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>
-                {p.status}
-              </span>
+        {composing ? (
+          /* Compose form */
+          <div className="flex flex-col flex-1 p-5 gap-3">
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                onClick={() => setComposing(false)}
+                className="text-neutral-400 hover:text-neutral-700 text-xs"
+              >
+                ← Back
+              </button>
+              <span className="text-xs font-semibold text-neutral-500">New Article</span>
             </div>
-          ))}
-        </div>
-
-        {/* Editor */}
-        {selected && (
-          <div className="flex-1 overflow-y-auto p-5">
-            <div className="max-w-xl mx-auto">
-              <div className="text-xl font-bold text-neutral-800 mb-3">{selected.title}</div>
-              <div className="h-px bg-neutral-200 mb-4" />
-              <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-sans leading-relaxed">{selected.body}</pre>
+            <input
+              type="text"
+              placeholder="Article title…"
+              value={composeTitle}
+              onChange={(e) => setComposeTitle(e.target.value)}
+              className="border border-neutral-300 rounded px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-300"
+            />
+            <textarea
+              placeholder="Write your article here…"
+              value={composeBody}
+              onChange={(e) => setComposeBody(e.target.value)}
+              className="flex-1 border border-neutral-300 rounded px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none leading-relaxed"
+            />
+            <div className="flex gap-2 items-center shrink-0">
+              <button
+                onClick={handlePublish}
+                disabled={!composeTitle.trim() || !composeBody.trim()}
+                className="bg-[#ff6719] text-white text-xs px-5 py-2 rounded font-semibold hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Publish to all subscribers
+              </button>
+              <button
+                onClick={() => setComposing(false)}
+                className="text-neutral-500 text-xs px-3 py-2 rounded border border-neutral-200 hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
             </div>
           </div>
-        )}
+        ) : (
+          <>
+            {/* Post list */}
+            <div className="border-b border-neutral-200 shrink-0">
+              {allPosts.map((p, i) => (
+                <div
+                  key={i}
+                  onClick={() => setSelectedIdx(i)}
+                  className={`flex items-center gap-3 px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${safeIdx === i ? "bg-blue-50" : ""}`}
+                >
+                  <div className="flex-1">
+                    <div className="font-semibold text-xs text-neutral-800">{p.title}</div>
+                    <div className="text-[10px] text-neutral-500 mt-0.5">{p.date} · {p.status}{p.reads ? ` · ${p.reads} reads` : ""}</div>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === "Draft" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>
+                    {p.status}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-        {/* Toolbar */}
-        <div className="border-t border-neutral-200 px-4 py-2 flex gap-2 items-center shrink-0">
-          <button className="bg-[#ff6719] text-white text-xs px-4 py-1.5 rounded font-semibold hover:bg-orange-600">Publish</button>
-          <button className="text-neutral-500 text-xs px-3 py-1.5 rounded border border-neutral-200 hover:bg-neutral-50">Save draft</button>
-          <span className="text-[10px] text-neutral-400 ml-auto">Autosaved 2m ago</span>
-        </div>
+            {/* Editor */}
+            {selected && (
+              <div className="flex-1 overflow-y-auto p-5">
+                <div className="max-w-xl mx-auto">
+                  <div className="text-xl font-bold text-neutral-800 mb-3">{selected.title}</div>
+                  <div className="h-px bg-neutral-200 mb-4" />
+                  <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-sans leading-relaxed">{selected.body}</pre>
+                </div>
+              </div>
+            )}
+
+            {/* Toolbar */}
+            <div className="border-t border-neutral-200 px-4 py-2 flex gap-2 items-center shrink-0">
+              {canPublish ? (
+                <button
+                  onClick={() => setComposing(true)}
+                  className="bg-[#ff6719] text-white text-xs px-4 py-1.5 rounded font-semibold hover:bg-orange-600"
+                >
+                  Publish
+                </button>
+              ) : (
+                <button disabled className="bg-neutral-300 text-neutral-500 text-xs px-4 py-1.5 rounded font-semibold cursor-not-allowed" title="Your role cannot publish">
+                  Publish
+                </button>
+              )}
+              <button className="text-neutral-500 text-xs px-3 py-1.5 rounded border border-neutral-200 hover:bg-neutral-50">Save draft</button>
+              {justPublished && (
+                <span className="text-[10px] text-green-600 font-semibold ml-2">✓ Published to all feeds</span>
+              )}
+              <span className="text-[10px] text-neutral-400 ml-auto">Autosaved 2m ago</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { Briefing } from "./Briefing.js";
 import { Resolution } from "./Resolution.js";
 import type { AppId } from "@takeoff/shared";
 import { Decision } from "./Decision.js";
+import { PublishNotificationBanner } from "../components/PublishNotificationBanner.js";
 
 const APP_LABELS: Record<string, string> = {
   slack: "Slack",
@@ -101,6 +102,9 @@ export function Desktop() {
 
       {/* Resolution overlay — rendered during resolution phase */}
       {phase === "resolution" && <Resolution />}
+
+      {/* Publish notification banners */}
+      <PublishNotificationBanner />
     </div>
   );
 }

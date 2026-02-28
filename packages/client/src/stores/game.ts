@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, AppId, ContentItem, EndingArc, Faction, GamePhase, IndividualDecision, Player, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 
 interface LobbyPlayer {
@@ -51,8 +51,14 @@ interface GameStore {
   endingFinalState: StateVariables | null;
   endingPlayers: Record<string, Player>;
 
+  // Publications & Notifications
+  publications: Publication[];
+  notifications: GameNotification[];
+
   // Actions
   setPlayerName: (name: string) => void;
+  publishArticle: (payload: { type: PublicationType; title: string; content: string; source: string }) => void;
+  dismissNotification: (id: string) => void;
   createRoom: () => Promise<string | null>;
   joinRoom: (code: string) => Promise<boolean>;
   selectRole: (faction: Faction, role: Role) => Promise<boolean>;
@@ -91,8 +97,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   endingHistory: [],
   endingFinalState: null,
   endingPlayers: {},
+  publications: [],
+  notifications: [],
 
   setPlayerName: (name) => set({ playerName: name }),
+
+  publishArticle: ({ type, title, content, source }) => {
+    socket.emit("publish:submit", { type, title, content, source });
+  },
+
+  dismissNotification: (id) => {
+    set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) }));
+  },
 
   createRoom: () =>
     new Promise((resolve) => {
@@ -249,6 +265,23 @@ socket.on("game:ending", (data: { arcs: EndingArc[]; history: RoundHistory[]; fi
     endingFinalState: data.finalState,
     endingPlayers: data.players,
   });
+});
+
+socket.on(
+  "game:publish",
+  (data: { publication: Publication; newsContent: AppContent; twitterContent: AppContent; summary: string }) => {
+    useGameStore.setState((state) => ({
+      publications: [...state.publications, data.publication],
+      // Inject news and twitter content items into the content array
+      content: [...state.content, data.newsContent, data.twitterContent],
+    }));
+  },
+);
+
+socket.on("game:notification", (data: GameNotification) => {
+  useGameStore.setState((state) => ({
+    notifications: [...state.notifications, data],
+  }));
 });
 
 // ── Selectors ──

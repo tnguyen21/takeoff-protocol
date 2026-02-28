@@ -187,6 +187,29 @@ export interface GameMessage {
   isTeamChat: boolean;
 }
 
+// ── Publications ──
+
+export type PublicationType = "article" | "leak" | "research";
+
+export interface Publication {
+  id: string;
+  type: PublicationType;
+  title: string;
+  content: string;
+  source: string;
+  publishedBy: Role;
+  publishedAt: number;
+}
+
+// ── Notifications ──
+
+export interface GameNotification {
+  id: string;
+  summary: string;
+  from: string;
+  timestamp: number;
+}
+
 // ── Room & Game ──
 
 export interface GameRoom {
@@ -201,6 +224,7 @@ export interface GameRoom {
   teamDecisions: Record<string, string>; // faction → chosen optionId
   teamVotes: Record<string, Record<string, string>>; // faction → { playerId → optionId }
   history: RoundHistory[];
+  publications: Publication[];
 }
 
 export interface RoundHistory {
