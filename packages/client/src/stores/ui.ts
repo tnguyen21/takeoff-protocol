@@ -10,6 +10,7 @@ export interface WindowState {
   zIndex: number;
   isMinimized: boolean;
   isMaximized: boolean;
+  preMaximize?: { position: { x: number; y: number }; size: { width: number; height: number } };
 }
 
 interface UIStore {
@@ -23,6 +24,7 @@ interface UIStore {
   focusWindow: (id: string) => void;
   moveWindow: (id: string, x: number, y: number) => void;
   resizeWindow: (id: string, width: number, height: number) => void;
+  moveResizeWindow: (id: string, x: number, y: number, width: number, height: number) => void;
   minimizeWindow: (id: string) => void;
   maximizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
@@ -39,6 +41,9 @@ interface Notification {
 
 const DEFAULT_SIZE = { width: 520, height: 400 };
 const OFFSET_STEP = 30;
+const MENUBAR_H = 28;
+const DOCK_H = 64;
+const MAX_VISIBLE_WINDOWS = 6;
 
 export const useUIStore = create<UIStore>((set, get) => ({
   windows: [],
@@ -64,35 +69,45 @@ export const useUIStore = create<UIStore>((set, get) => ({
     const { windows, topZ } = get();
     const existing = windows.find((w) => w.id === appId);
 
+    // Count currently visible (open + not minimized) windows, excluding the target window
+    const visibleWindows = windows.filter((w) => w.isOpen && !w.isMinimized && w.id !== appId);
+
+    // If opening this window would exceed the cap, auto-minimize the oldest visible window
+    const isNewlyVisible = !existing || !existing.isOpen || existing.isMinimized;
+    let updatedWindows = windows;
+
+    if (isNewlyVisible && visibleWindows.length >= MAX_VISIBLE_WINDOWS) {
+      const oldest = visibleWindows.reduce((a, b) => (a.zIndex < b.zIndex ? a : b));
+      updatedWindows = updatedWindows.map((w) => (w.id === oldest.id ? { ...w, isMinimized: true } : w));
+    }
+
+    const newTopZ = topZ + 1;
+
     if (existing) {
       // Already exists — focus and unminimize
-      set({
-        topZ: topZ + 1,
-        windows: windows.map((w) =>
-          w.id === appId ? { ...w, isOpen: true, isMinimized: false, zIndex: topZ + 1 } : w,
-        ),
-      });
+      updatedWindows = updatedWindows.map((w) =>
+        w.id === appId ? { ...w, isOpen: true, isMinimized: false, zIndex: newTopZ } : w,
+      );
     } else {
       // Create new
       const offset = windows.length * OFFSET_STEP;
-      set({
-        topZ: topZ + 1,
-        windows: [
-          ...windows,
-          {
-            id: appId,
-            appId,
-            title,
-            isOpen: true,
-            position: { x: 80 + offset, y: 60 + offset },
-            size: { ...DEFAULT_SIZE },
-            zIndex: topZ + 1,
-            isMinimized: false,
-            isMaximized: false,
-          },
-        ],
-      });
+      updatedWindows = [
+        ...updatedWindows,
+        {
+          id: appId,
+          appId,
+          title,
+          isOpen: true,
+          position: { x: 80 + offset, y: 60 + offset },
+          size: { ...DEFAULT_SIZE },
+          zIndex: newTopZ,
+          isMinimized: false,
+          isMaximized: false,
+        },
+      ];
     }
+
+    set({ topZ: newTopZ, windows: updatedWindows });
   },
 
   closeWindow: (id) =>
@@ -118,6 +133,11 @@ export const useUIStore = create<UIStore>((set, get) => ({
       windows: s.windows.map((w) => (w.id === id ? { ...w, size: { width, height } } : w)),
     })),
 
+  moveResizeWindow: (id, x, y, width, height) =>
+    set((s) => ({
+      windows: s.windows.map((w) => (w.id === id ? { ...w, position: { x, y }, size: { width, height } } : w)),
+    })),
+
   minimizeWindow: (id) =>
     set((s) => ({
       windows: s.windows.map((w) => (w.id === id ? { ...w, isMinimized: true } : w)),
@@ -126,14 +146,30 @@ export const useUIStore = create<UIStore>((set, get) => ({
   maximizeWindow: (id) =>
     set((s) => ({
       windows: s.windows.map((w) =>
-        w.id === id ? { ...w, isMaximized: true, position: { x: 0, y: 28 }, size: { width: window.innerWidth, height: window.innerHeight - 28 - 64 } } : w,
+        w.id === id
+          ? {
+              ...w,
+              isMaximized: true,
+              preMaximize: { position: { ...w.position }, size: { ...w.size } },
+              position: { x: 0, y: 0 },
+              size: { width: window.innerWidth, height: window.innerHeight - MENUBAR_H - DOCK_H },
+            }
+          : w,
       ),
     })),
 
   restoreWindow: (id) =>
     set((s) => ({
       windows: s.windows.map((w) =>
-        w.id === id ? { ...w, isMaximized: false, position: { x: 80, y: 60 }, size: { ...DEFAULT_SIZE } } : w,
+        w.id === id
+          ? {
+              ...w,
+              isMaximized: false,
+              position: w.preMaximize ? { ...w.preMaximize.position } : { x: 80, y: 60 },
+              size: w.preMaximize ? { ...w.preMaximize.size } : { ...DEFAULT_SIZE },
+              preMaximize: undefined,
+            }
+          : w,
       ),
     })),
 }));
