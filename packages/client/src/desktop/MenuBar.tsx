@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useGameStore } from "../stores/game.js";
+import { TokenDisplay } from "../components/TokenDisplay.js";
 
 const ROUND_NAMES: Record<number, string> = {
   1: "The Race Heats Up",
@@ -18,7 +19,7 @@ const ROUND_DATES: Record<number, string> = {
 };
 
 export function MenuBar() {
-  const { phase, round, timer, selectedFaction } = useGameStore();
+  const { phase, round, timer, selectedFaction, isGM } = useGameStore();
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -87,8 +88,9 @@ export function MenuBar() {
         )}
       </div>
 
-      {/* Right side: round info + timer */}
+      {/* Right side: token count + round info + timer */}
       <div className="flex items-center gap-3">
+        {!isGM && <TokenDisplay />}
         {round > 0 && (
           <>
             <span

@@ -1,7 +1,10 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, ContentItem, Faction, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
-import { createRoom, getRoom, joinRoom, selectRole, getLobbyState } from "./rooms.js";
+import type { AppContent, ContentItem, Faction, GameMessage, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
+import { createRoom, getRoom, joinRoom, selectRole, getLobbyState, spendToken, awardToken } from "./rooms.js";
 import { advancePhase, startGame } from "./game.js";
+
+// In-memory message store: roomCode → messageId → message (for reveal_dm)
+const roomMessages = new Map<string, Map<string, GameMessage>>();
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -196,6 +199,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
       isTeamChat: to === null,
     };
 
+    // Store message for potential reveal_dm use
+    if (!roomMessages.has(code)) roomMessages.set(code, new Map());
+    roomMessages.get(code)!.set(message.id, message);
+
     if (to === null) {
       // Team chat: send to all players in same faction
       for (const [pid, p] of Object.entries(room.players)) {
@@ -343,6 +350,64 @@ export function registerGameEvents(io: Server, socket: Socket) {
       console.log(`[publish] ${player.role} published ${type}: "${title}"`);
     },
   );
+
+  // ── Influence Tokens ──
+
+  socket.on("token:use", (payload: { action: "block_info" | "reveal_dm"; targetFaction?: Faction; contentId?: string; messageId?: string }) => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room) return;
+
+    const player = room.players[socket.id];
+    if (!player) return;
+
+    const spent = spendToken(room, socket.id);
+    if (!spent) {
+      io.to(socket.id).emit("token:used", { ok: false, error: "No tokens remaining", tokensRemaining: player.influenceTokens });
+      return;
+    }
+
+    if (payload.action === "block_info") {
+      // Store block for this round (content already delivered; GM-mediated in current design)
+      console.log(`[token] ${player.name} blocked content ${payload.contentId} from ${payload.targetFaction}`);
+      io.to(socket.id).emit("token:used", {
+        ok: true,
+        action: "block_info",
+        tokensRemaining: player.influenceTokens,
+      });
+    } else if (payload.action === "reveal_dm") {
+      const msgs = roomMessages.get(code);
+      const msg = payload.messageId ? msgs?.get(payload.messageId) : undefined;
+      if (msg) {
+        // Broadcast the DM to all players in the spender's faction
+        for (const [pid, p] of Object.entries(room.players)) {
+          if (p.faction === player.faction) {
+            io.to(pid).emit("token:dm-revealed", { message: msg, revealedBy: player.name });
+          }
+        }
+      }
+      io.to(socket.id).emit("token:used", {
+        ok: true,
+        action: "reveal_dm",
+        tokensRemaining: player.influenceTokens,
+      });
+    }
+  });
+
+  socket.on("gm:award-token", ({ playerId }: { playerId: string }) => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) return;
+
+    const awarded = awardToken(room, playerId);
+    if (awarded) {
+      const player = room.players[playerId];
+      console.log(`[token] GM awarded token to ${player.name} (now ${player.influenceTokens})`);
+      io.to(playerId).emit("token:awarded", { tokensRemaining: player.influenceTokens });
+    }
+  });
 
   // ── Disconnect ──
 
