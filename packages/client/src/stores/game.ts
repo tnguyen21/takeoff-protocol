@@ -29,6 +29,7 @@ interface GameStore {
   timer: { endsAt: number; pausedAt?: number };
   stateView: StateView | null;
   content: AppContent[];
+  briefingText: string | null;
 
   // Decisions
   decisions: { individual: IndividualDecision | null; team: TeamDecision | null } | null;
@@ -64,6 +65,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   decisionSubmitted: false,
   teamVotes: {},
   teamLocked: false,
+  briefingText: null,
 
   setPlayerName: (name) => set({ playerName: name }),
 
@@ -178,5 +180,8 @@ socket.on("game:decisions", (data: { individual: IndividualDecision | null; team
 
 socket.on("decision:votes", (data: { faction: string; votes: Record<string, string> }) => {
   useGameStore.setState({ teamVotes: data.votes });
+});
 
+socket.on("game:briefing", (data: { text: string }) => {
+  useGameStore.setState({ briefingText: data.text });
 });

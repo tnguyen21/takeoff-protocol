@@ -6,6 +6,7 @@ import { MenuBar } from "../desktop/MenuBar.js";
 import { Dock } from "../desktop/Dock.js";
 import { Window } from "../desktop/Window.js";
 import { APP_COMPONENTS } from "../apps/index.js";
+import { Briefing } from "./Briefing.js";
 import type { AppId } from "@takeoff/shared";
 import { Decision } from "./Decision.js";
 
@@ -31,7 +32,7 @@ const APP_LABELS: Record<string, string> = {
 };
 
 export function Desktop() {
-  const { selectedFaction, isGM } = useGameStore();
+  const { selectedFaction, isGM, phase } = useGameStore();
   const { windows, initWindows } = useUIStore();
 
   useEffect(() => {
@@ -93,6 +94,9 @@ export function Desktop() {
 
       {/* Decision phase modal overlay */}
       <Decision />
+
+      {/* Briefing overlay — rendered on top of desktop chrome */}
+      {phase === "briefing" && <Briefing />}
     </div>
   );
 }

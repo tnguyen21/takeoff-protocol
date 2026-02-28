@@ -1,7 +1,7 @@
 import type { Server } from "socket.io";
 import type { GamePhase, GameRoom, IndividualDecision, TeamDecision } from "@takeoff/shared";
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView } from "@takeoff/shared";
-import { getContentForPlayer } from "./content/loader.js";
+import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
@@ -45,6 +45,9 @@ export function startGame(io: Server, room: GameRoom) {
 
   // Emit fog-of-war views to each player
   emitStateViews(io, room);
+
+  // Emit briefing text (faction-specific)
+  emitBriefing(io, room);
 
   setPhaseTimer(io, room);
 }
@@ -96,6 +99,10 @@ export function advancePhase(io: Server, room: GameRoom) {
 
   emitStateViews(io, room);
 
+  if (room.phase === "briefing") {
+    emitBriefing(io, room);
+  }
+
   if (room.phase === "intel") {
     emitContent(io, room);
   }
@@ -128,6 +135,26 @@ function emitStateViews(io: Server, room: GameRoom) {
   // GM gets full state
   if (room.gmId) {
     io.to(room.gmId).emit("game:state", { view: room.state, isFull: true });
+  }
+}
+
+function emitBriefing(io: Server, room: GameRoom) {
+  try {
+    const roundContent = loadRound(room.round);
+    const { common, factionVariants } = roundContent.briefing;
+
+    for (const [socketId, player] of Object.entries(room.players)) {
+      const variant = factionVariants?.[player.faction];
+      const text = variant ? `${common}\n\n${variant}` : common;
+      io.to(socketId).emit("game:briefing", { text });
+    }
+
+    // GM gets the common briefing
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:briefing", { text: common });
+    }
+  } catch (err) {
+    console.warn(`[briefing] No briefing content for round ${room.round}:`, err);
   }
 }
 
