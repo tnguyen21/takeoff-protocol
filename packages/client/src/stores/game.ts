@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameMessage, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
+import { useNotificationsStore } from "./notifications.js";
 
 interface LobbyPlayer {
   id: string;
@@ -220,8 +221,28 @@ socket.on("disconnect", () => {
 });
 
 socket.on("room:state", (data: { players: LobbyPlayer[] }) => {
+  const prev = useGameStore.getState().lobbyPlayers;
   useGameStore.setState({ lobbyPlayers: data.players });
+
+  // Notify on join/disconnect during active game
+  if (useGameStore.getState().phase && useGameStore.getState().phase !== "lobby") {
+    for (const player of data.players) {
+      const prevPlayer = prev.find((p) => p.id === player.id);
+      if (prevPlayer && prevPlayer.connected && !player.connected) {
+        useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Player Disconnected", body: `${player.name} has disconnected.` });
+      } else if (prevPlayer && !prevPlayer.connected && player.connected) {
+        useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Player Reconnected", body: `${player.name} has reconnected.` });
+      } else if (!prevPlayer && player.connected) {
+        useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Player Joined", body: `${player.name} has joined.` });
+      }
+    }
+  }
 });
+
+// Timer warning intervals — cleared on each new phase
+let _timerWarningInterval: ReturnType<typeof setInterval> | null = null;
+let _warnedAt60 = false;
+let _warnedAt30 = false;
 
 socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsAt: number; pausedAt?: number } }) => {
   useGameStore.setState({
@@ -236,6 +257,44 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
     gmExtendUsesRemaining: 2,
     gmDecisionStatus: [],
   });
+
+  // Phase transition notification (skip lobby)
+  if (data.phase !== "lobby") {
+    const phaseLabels: Record<string, string> = {
+      briefing: "Briefing Phase",
+      play: "Play Phase",
+      decision: "Decision Phase",
+      resolution: "Resolution Phase",
+    };
+    const label = phaseLabels[data.phase] ?? data.phase;
+    const hasTimer = data.timer.endsAt > Date.now();
+    const body = hasTimer
+      ? `${label} — ${Math.round((data.timer.endsAt - Date.now()) / 60000)} minutes remaining`
+      : label;
+    useNotificationsStore.getState().addNotification({ appId: "gamestate", title: label, body });
+  }
+
+  // Set up timer warnings
+  if (_timerWarningInterval) clearInterval(_timerWarningInterval);
+  _warnedAt60 = false;
+  _warnedAt30 = false;
+
+  if (data.timer.endsAt > Date.now() && !data.timer.pausedAt) {
+    _timerWarningInterval = setInterval(() => {
+      const remaining = data.timer.endsAt - Date.now();
+      if (!_warnedAt60 && remaining <= 60000 && remaining > 30000) {
+        _warnedAt60 = true;
+        useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Time Warning", body: "60 seconds remaining in this phase." });
+      }
+      if (!_warnedAt30 && remaining <= 30000 && remaining > 0) {
+        _warnedAt30 = true;
+        useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Time Warning", body: "30 seconds remaining in this phase." });
+      }
+      if (remaining <= 0) {
+        if (_timerWarningInterval) clearInterval(_timerWarningInterval);
+      }
+    }, 1000);
+  }
 });
 
 socket.on("game:state", (data: { view: StateView; isFull?: boolean }) => {
@@ -248,6 +307,16 @@ socket.on("game:state", (data: { view: StateView; isFull?: boolean }) => {
 
 socket.on("game:content", (data: { content: AppContent[] }) => {
   useGameStore.setState({ content: data.content });
+});
+
+// Published content notification (server emits game:publish with article/research/leak metadata)
+socket.on("game:publish", (data: { publication?: { type?: string; headline?: string; title?: string }; summary?: string }) => {
+  const pub = data.publication;
+  if (pub) {
+    const headline = pub.headline ?? pub.title ?? "New publication";
+    const type = pub.type === "leak" ? "LEAK" : pub.type === "research" ? "Research" : "BREAKING";
+    useNotificationsStore.getState().addNotification({ appId: "news", title: `${type}: ${headline}`, body: data.summary ?? "" });
+  }
 });
 
 socket.on("game:decisions", (data: { individual: IndividualDecision | null; team: TeamDecision | null }) => {

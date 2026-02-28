@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { GameMessage } from "@takeoff/shared";
 import { socket } from "../socket.js";
+import { useNotificationsStore } from "./notifications.js";
+import { useUIStore } from "./ui.js";
 
 interface MessagesStore {
   messages: GameMessage[];
@@ -28,4 +30,21 @@ socket.on("message:receive", (message: GameMessage) => {
       [appId]: (s.unreadCounts[appId] ?? 0) + 1,
     },
   }));
+
+  // Notify only if that app window is not currently focused (open + not minimized)
+  const windows = useUIStore.getState().windows;
+  const win = windows.find((w) => w.id === appId);
+  const isFocused = win ? win.isOpen && !win.isMinimized : false;
+
+  if (!isFocused) {
+    const appLabel = appId === "slack" ? "Slack" : "Signal";
+    const sender = message.fromName ?? "Unknown";
+    const body = message.content ? (message.content.length > 80 ? message.content.slice(0, 80) + "…" : message.content) : "";
+    useNotificationsStore.getState().addNotification({
+      appId,
+      title: `${appLabel}: ${sender}`,
+      body,
+      onClick: () => useUIStore.getState().openWindow(appId, appLabel),
+    });
+  }
 });

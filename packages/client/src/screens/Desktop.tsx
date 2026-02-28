@@ -11,6 +11,7 @@ import { Resolution } from "./Resolution.js";
 import type { AppId } from "@takeoff/shared";
 import { Decision } from "./Decision.js";
 import { PublishNotificationBanner } from "../components/PublishNotificationBanner.js";
+import { Notifications } from "../desktop/Notifications.js";
 
 const APP_LABELS: Record<string, string> = {
   slack: "Slack",
@@ -105,6 +106,9 @@ export function Desktop() {
 
       {/* Publish notification banners */}
       <PublishNotificationBanner />
+
+      {/* Toast notifications — top-right corner */}
+      <Notifications />
     </div>
   );
 }
