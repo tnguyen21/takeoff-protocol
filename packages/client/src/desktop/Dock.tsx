@@ -1,27 +1,16 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { getAppIcon } from "../apps/icons.js";
 
-const ICON_SIZE = 52;
-const ICON_GAP = 6;
-const MAX_SCALE = 1.6;
-const MAG_RADIUS = 100; // px from center to full fall-off
-const LUCIDE_SIZE = 28; // base icon size inside the dock button
-
-function getIconScale(mouseX: number | null, iconCenter: number): number {
-  if (mouseX === null) return 1;
-  const dist = Math.abs(mouseX - iconCenter);
-  if (dist >= MAG_RADIUS) return 1;
-  // Smooth cosine fall-off
-  return 1 + (MAX_SCALE - 1) * Math.pow(1 - dist / MAG_RADIUS, 2);
-}
+const ICON_SIZE = 44;
+const ICON_GAP = 4;
+const LUCIDE_SIZE = 24;
 
 export function Dock() {
   const { windows, openWindow, focusWindow, minimizeWindow } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
-  const [mouseX, setMouseX] = useState<number | null>(null);
-  const dockRef = useRef<HTMLDivElement>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const handleClick = (w: WindowState) => {
     if (w.isOpen && !w.isMinimized) {
@@ -31,49 +20,37 @@ export function Dock() {
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!dockRef.current) return;
-    const rect = dockRef.current.getBoundingClientRect();
-    setMouseX(e.clientX - rect.left);
-  };
-
-  const handleMouseLeave = () => setMouseX(null);
-
   return (
     <div
       className="absolute left-0 right-0 flex justify-center"
       style={{ bottom: "8px", pointerEvents: "none" }}
     >
       <div
-        ref={dockRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
         style={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "center",
           gap: `${ICON_GAP}px`,
-          padding: "8px 12px",
+          padding: "6px 10px",
           background: "rgba(28, 28, 30, 0.68)",
           backdropFilter: "blur(40px) saturate(180%)",
           WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          borderRadius: "18px",
+          borderRadius: "14px",
           border: "1px solid rgba(255,255,255,0.14)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.06) inset",
           pointerEvents: "all",
         }}
       >
-        {windows.map((w, index) => {
-          // Compute center of this icon within the dock content area
-          const iconCenter = index * (ICON_SIZE + ICON_GAP) + ICON_SIZE / 2;
-          const scale = getIconScale(mouseX, iconCenter);
+        {windows.map((w) => {
           const unread = unreadCounts[w.appId] ?? 0;
           const IconComponent = getAppIcon(w.appId);
+          const isHovered = hoveredId === w.id;
 
           return (
             <button
               key={w.id}
               onClick={() => handleClick(w)}
-              title={w.title}
+              onMouseEnter={() => setHoveredId(w.id)}
+              onMouseLeave={() => setHoveredId(null)}
               style={{
                 position: "relative",
                 width: `${ICON_SIZE}px`,
@@ -82,37 +59,50 @@ export function Dock() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "12px",
+                borderRadius: "10px",
                 border: "none",
                 cursor: "pointer",
-                transform: `scale(${scale})`,
-                transformOrigin: "bottom center",
-                transition: mouseX === null ? "transform 0.25s cubic-bezier(0.34,1.56,0.64,1)" : "transform 0.08s ease-out",
-                background: w.isOpen
-                  ? "rgba(255,255,255,0.16)"
-                  : "rgba(255,255,255,0.06)",
-                color: w.isOpen ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
-                willChange: "transform",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = w.isOpen
-                  ? "rgba(255,255,255,0.22)"
-                  : "rgba(255,255,255,0.12)";
-                (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.95)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = w.isOpen
-                  ? "rgba(255,255,255,0.16)"
-                  : "rgba(255,255,255,0.06)";
-                (e.currentTarget as HTMLButtonElement).style.color = w.isOpen
+                background: isHovered
+                  ? "rgba(255,255,255,0.18)"
+                  : w.isOpen
+                    ? "rgba(255,255,255,0.12)"
+                    : "rgba(255,255,255,0.04)",
+                color: isHovered || w.isOpen
                   ? "rgba(255,255,255,0.95)"
-                  : "rgba(255,255,255,0.55)";
+                  : "rgba(255,255,255,0.50)",
+                transition: "background 0.15s, color 0.15s",
               }}
             >
               {IconComponent ? (
                 <IconComponent size={LUCIDE_SIZE} strokeWidth={1.5} />
               ) : (
-                <span style={{ fontSize: "22px" }}>□</span>
+                <span style={{ fontSize: "18px" }}>□</span>
+              )}
+
+              {/* Tooltip */}
+              {isHovered && (
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: "calc(100% + 8px)",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    whiteSpace: "nowrap",
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                    color: "rgba(255,255,255,0.9)",
+                    background: "rgba(30, 30, 32, 0.85)",
+                    backdropFilter: "blur(12px)",
+                    padding: "4px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {w.title}
+                </span>
               )}
 
               {/* Unread badge */}
