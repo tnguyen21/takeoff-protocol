@@ -372,3 +372,274 @@ describe("round2 content richness checks", () => {
     expect(criticalItems.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+// ── Round 3 specific tests ──
+
+describe("round3: load and structure", () => {
+  it("loads round3.json with correct round number", () => {
+    const r3 = loadRound(3);
+    expect(r3.round).toBe(3);
+    expect(r3.apps.length).toBeGreaterThan(0);
+    expect(r3.briefing.common).toContain("July 2027");
+  });
+
+  it("round3 briefing has all four faction variants", () => {
+    const r3 = loadRound(3);
+    expect(r3.briefing.factionVariants?.openbrain).toBeTruthy();
+    expect(r3.briefing.factionVariants?.prometheus).toBeTruthy();
+    expect(r3.briefing.factionVariants?.china).toBeTruthy();
+    expect(r3.briefing.factionVariants?.external).toBeTruthy();
+  });
+
+  it("round3 has 80+ content items total", () => {
+    const r3 = loadRound(3);
+    const totalItems = r3.apps.reduce((sum, ac) => sum + ac.items.length, 0);
+    expect(totalItems).toBeGreaterThanOrEqual(80);
+  });
+
+  it("all round3 items have required fields and valid types", () => {
+    const r3 = loadRound(3);
+    const validTypes = ["message", "headline", "memo", "chart", "tweet", "document", "row"];
+    for (const appContent of r3.apps) {
+      for (const item of appContent.items) {
+        expect(typeof item.id).toBe("string");
+        expect(item.id.length).toBeGreaterThan(0);
+        expect(typeof item.body).toBe("string");
+        expect(typeof item.timestamp).toBe("string");
+        expect(validTypes).toContain(item.type);
+      }
+    }
+  });
+});
+
+describe("round3: faction isolation (INV-1)", () => {
+  it("openbrain safety officer receives only openbrain items", () => {
+    const content = getContentForPlayer(3, "openbrain", "ob_safety", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("openbrain");
+    }
+  });
+
+  it("prometheus scientist receives only prometheus items", () => {
+    const content = getContentForPlayer(3, "prometheus", "prom_scientist", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("prometheus");
+    }
+  });
+
+  it("china intel receives only china items", () => {
+    const content = getContentForPlayer(3, "china", "china_intel", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("china");
+    }
+  });
+});
+
+describe("round3: role-specific critical items (INV-2)", () => {
+  it("ob_safety sees the misalignment memo, ob_cto does not", () => {
+    const safetyContent = getContentForPlayer(3, "openbrain", "ob_safety", INITIAL_STATE);
+    const ctoContent = getContentForPlayer(3, "openbrain", "ob_cto", INITIAL_STATE);
+
+    const safetyHasMemo = safetyContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-r3-memo-safety-1"));
+    const ctoHasMemo = ctoContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-r3-memo-safety-1"));
+
+    expect(safetyHasMemo).toBe(true);
+    expect(ctoHasMemo).toBe(false);
+  });
+
+  it("ob_security sees bioweapons eval, ob_ceo does not", () => {
+    const secContent = getContentForPlayer(3, "openbrain", "ob_security", INITIAL_STATE);
+    const ceoContent = getContentForPlayer(3, "openbrain", "ob_ceo", INITIAL_STATE);
+
+    const secHasEval = secContent.some((ac) => ac.app === "security" && ac.items.some((i) => i.id === "ob-r3-security-1"));
+    const ceoHasEval = ceoContent.some((ac) => ac.app === "security" && ac.items.some((i) => i.id === "ob-r3-security-1"));
+
+    expect(secHasEval).toBe(true);
+    expect(ceoHasEval).toBe(false);
+  });
+
+  it("china_intel sees weight theft operational plan, china_director does not", () => {
+    const intelContent = getContentForPlayer(3, "china", "china_intel", INITIAL_STATE);
+    const dirContent = getContentForPlayer(3, "china", "china_director", INITIAL_STATE);
+
+    const intelHasPlan = intelContent.some((ac) => ac.app === "intel" && ac.items.some((i) => i.id === "china-r3-intel-2"));
+    const dirHasPlan = dirContent.some((ac) => ac.app === "intel" && ac.items.some((i) => i.id === "china-r3-intel-2"));
+
+    expect(intelHasPlan).toBe(true);
+    expect(dirHasPlan).toBe(false);
+  });
+
+  it("china_military sees military posture assessment, china_director does not", () => {
+    const milContent = getContentForPlayer(3, "china", "china_military", INITIAL_STATE);
+    const dirContent = getContentForPlayer(3, "china", "china_director", INITIAL_STATE);
+
+    const milHasDoc = milContent.some((ac) => ac.app === "military");
+    const dirHasDoc = dirContent.some((ac) => ac.app === "military");
+
+    expect(milHasDoc).toBe(true);
+    expect(dirHasDoc).toBe(false);
+  });
+
+  it("ext_nsa sees classified emergency PDB, ext_journalist does not", () => {
+    const nsaContent = getContentForPlayer(3, "external", "ext_nsa", INITIAL_STATE);
+    const journalistContent = getContentForPlayer(3, "external", "ext_journalist", INITIAL_STATE);
+
+    const nsaHasPDB = nsaContent.some((ac) => ac.app === "briefing" && ac.items.some((i) => i.id === "ext-r3-nsa-briefing-1"));
+    const journalistHasPDB = journalistContent.some((ac) => ac.app === "briefing" && ac.items.some((i) => i.id === "ext-r3-nsa-briefing-1"));
+
+    expect(nsaHasPDB).toBe(true);
+    expect(journalistHasPDB).toBe(false);
+  });
+
+  it("ext_journalist sees source tips in signal, ext_vc does not", () => {
+    const journalistContent = getContentForPlayer(3, "external", "ext_journalist", INITIAL_STATE);
+    const vcContent = getContentForPlayer(3, "external", "ext_vc", INITIAL_STATE);
+
+    const journalistHasTip = journalistContent.some((ac) => ac.items.some((i) => i.id === "ext-r3-journalist-signal-1"));
+    const vcHasTip = vcContent.some((ac) => ac.items.some((i) => i.id === "ext-r3-journalist-signal-1"));
+
+    expect(journalistHasTip).toBe(true);
+    expect(vcHasTip).toBe(false);
+  });
+
+  it("ext_vc sees bloomberg analysis, ext_diplomat does not", () => {
+    const vcContent = getContentForPlayer(3, "external", "ext_vc", INITIAL_STATE);
+    const diplomatContent = getContentForPlayer(3, "external", "ext_diplomat", INITIAL_STATE);
+
+    const vcHasBloomberg = vcContent.some((ac) => ac.app === "bloomberg");
+    const diplomatHasBloomberg = diplomatContent.some((ac) => ac.app === "bloomberg");
+
+    expect(vcHasBloomberg).toBe(true);
+    expect(diplomatHasBloomberg).toBe(false);
+  });
+
+  it("prom_policy sees DC signal, prom_scientist does not", () => {
+    const policyContent = getContentForPlayer(3, "prometheus", "prom_policy", INITIAL_STATE);
+    const sciContent = getContentForPlayer(3, "prometheus", "prom_scientist", INITIAL_STATE);
+
+    const policyHasSignal = policyContent.some((ac) => ac.items.some((i) => i.id === "prom-r3-signal-policy-1"));
+    const sciHasSignal = sciContent.some((ac) => ac.items.some((i) => i.id === "prom-r3-signal-policy-1"));
+
+    expect(policyHasSignal).toBe(true);
+    expect(sciHasSignal).toBe(false);
+  });
+});
+
+describe("round3: conditional filtering (INV-3)", () => {
+  it("security upgrade urgency item shown when securityLevelOB < 4", () => {
+    const state: StateVariables = { ...INITIAL_STATE, securityLevelOB: 2 };
+    const content = getContentForPlayer(3, "openbrain", "ob_security", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r3-security-2"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("security upgrade urgency item hidden when securityLevelOB >= 4", () => {
+    const state: StateVariables = { ...INITIAL_STATE, securityLevelOB: 4 };
+    const content = getContentForPlayer(3, "openbrain", "ob_security", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r3-security-2"));
+    expect(hasItem).toBe(false);
+  });
+
+  it("china weight theft urgency shown when securityLevelOB < 4", () => {
+    const state: StateVariables = { ...INITIAL_STATE, securityLevelOB: 2 };
+    const content = getContentForPlayer(3, "china", "china_intel", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "china-r3-intel-4"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("china weight theft urgency hidden when securityLevelOB >= 4", () => {
+    const state: StateVariables = { ...INITIAL_STATE, securityLevelOB: 4 };
+    const content = getContentForPlayer(3, "china", "china_intel", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "china-r3-intel-4"));
+    expect(hasItem).toBe(false);
+  });
+
+  it("prometheus neuralese breakthrough shown when alignmentConfidence > 65", () => {
+    const state: StateVariables = { ...INITIAL_STATE, alignmentConfidence: 70 };
+    const content = getContentForPlayer(3, "prometheus", "prom_scientist", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "prom-r3-slack-4"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("prometheus neuralese breakthrough hidden when alignmentConfidence <= 65", () => {
+    const state: StateVariables = { ...INITIAL_STATE, alignmentConfidence: 55 };
+    const content = getContentForPlayer(3, "prometheus", "prom_scientist", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "prom-r3-slack-4"));
+    expect(hasItem).toBe(false);
+  });
+
+  it("prom_scientist gets leaked memo item when intlCooperation > 45", () => {
+    const state: StateVariables = { ...INITIAL_STATE, intlCooperation: 50 };
+    const content = getContentForPlayer(3, "prometheus", "prom_scientist", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "prom-r3-slack-sci-2"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("prom_scientist does NOT get leaked memo item when intlCooperation <= 45", () => {
+    const state: StateVariables = { ...INITIAL_STATE, intlCooperation: 5 };
+    const content = getContentForPlayer(3, "prometheus", "prom_scientist", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "prom-r3-slack-sci-2"));
+    expect(hasItem).toBe(false);
+  });
+
+  it("OB signal from journalist shown when publicAwareness > 35", () => {
+    const state: StateVariables = { ...INITIAL_STATE, publicAwareness: 40 };
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r3-signal-2"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("OB signal from journalist hidden when publicAwareness <= 35", () => {
+    const state: StateVariables = { ...INITIAL_STATE, publicAwareness: 10 };
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r3-signal-2"));
+    expect(hasItem).toBe(false);
+  });
+});
+
+describe("round3: critical signals are present and classified correctly", () => {
+  it("misalignment memo is classified as critical", () => {
+    const r3 = loadRound(3);
+    const memo = r3.apps
+      .flatMap((ac) => ac.items)
+      .find((i) => i.id === "ob-r3-memo-safety-1");
+    expect(memo).toBeDefined();
+    expect(memo?.classification).toBe("critical");
+  });
+
+  it("bioweapons eval is classified as critical", () => {
+    const r3 = loadRound(3);
+    const evalItem = r3.apps
+      .flatMap((ac) => ac.items)
+      .find((i) => i.id === "ob-r3-security-1");
+    expect(evalItem).toBeDefined();
+    expect(evalItem?.classification).toBe("critical");
+  });
+
+  it("china weight theft operational plan is classified as critical", () => {
+    const r3 = loadRound(3);
+    const plan = r3.apps
+      .flatMap((ac) => ac.items)
+      .find((i) => i.id === "china-r3-intel-2");
+    expect(plan).toBeDefined();
+    expect(plan?.classification).toBe("critical");
+  });
+
+  it("NSA emergency PDB is classified as critical", () => {
+    const r3 = loadRound(3);
+    const pdb = r3.apps
+      .flatMap((ac) => ac.items)
+      .find((i) => i.id === "ext-r3-nsa-briefing-1");
+    expect(pdb).toBeDefined();
+    expect(pdb?.classification).toBe("critical");
+  });
+
+  it("journalist source tip is classified as critical", () => {
+    const r3 = loadRound(3);
+    const tip = r3.apps
+      .flatMap((ac) => ac.items)
+      .find((i) => i.id === "ext-r3-journalist-signal-1");
+    expect(tip).toBeDefined();
+    expect(tip?.classification).toBe("critical");
+  });
+});
