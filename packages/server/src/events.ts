@@ -9,6 +9,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
   socket.on("room:create", ({ gmName }: { gmName: string }, callback) => {
     const room = createRoom(socket.id);
     socket.join(room.code);
+    socket.data.roomCode = room.code;
     console.log(`[room] created ${room.code} by ${gmName}`);
     callback({ ok: true, code: room.code });
   });

@@ -57,32 +57,46 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   createRoom: () =>
     new Promise((resolve) => {
-      socket.connect();
-      socket.emit("room:create", { gmName: get().playerName ?? "GM" }, (res: { ok: boolean; code?: string }) => {
-        if (res.ok && res.code) {
-          set({ roomCode: res.code, isGM: true, playerId: socket.id });
-          resolve(res.code);
-        } else {
-          resolve(null);
-        }
-      });
+      const doCreate = () => {
+        socket.emit("room:create", { gmName: get().playerName ?? "GM" }, (res: { ok: boolean; code?: string }) => {
+          if (res.ok && res.code) {
+            set({ roomCode: res.code, isGM: true, playerId: socket.id });
+            resolve(res.code);
+          } else {
+            resolve(null);
+          }
+        });
+      };
+      if (socket.connected) {
+        doCreate();
+      } else {
+        socket.connect();
+        socket.once("connect", doCreate);
+      }
     }),
 
   joinRoom: (code) =>
     new Promise((resolve) => {
-      socket.connect();
-      socket.emit(
-        "room:join",
-        { code, name: get().playerName ?? "Player" },
-        (res: { ok: boolean; player?: Player }) => {
-          if (res.ok) {
-            set({ roomCode: code.toUpperCase(), playerId: socket.id });
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        },
-      );
+      const doJoin = () => {
+        socket.emit(
+          "room:join",
+          { code, name: get().playerName ?? "Player" },
+          (res: { ok: boolean; player?: Player }) => {
+            if (res.ok) {
+              set({ roomCode: code.toUpperCase(), playerId: socket.id });
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          },
+        );
+      };
+      if (socket.connected) {
+        doJoin();
+      } else {
+        socket.connect();
+        socket.once("connect", doJoin);
+      }
     }),
 
   selectRole: (faction, role) =>
