@@ -7,6 +7,7 @@ import { Dock } from "../desktop/Dock.js";
 import { Window } from "../desktop/Window.js";
 import { APP_COMPONENTS } from "../apps/index.js";
 import { Briefing } from "./Briefing.js";
+import { Resolution } from "./Resolution.js";
 import type { AppId } from "@takeoff/shared";
 import { Decision } from "./Decision.js";
 
@@ -97,6 +98,9 @@ export function Desktop() {
 
       {/* Briefing overlay — rendered on top of desktop chrome */}
       {phase === "briefing" && <Briefing />}
+
+      {/* Resolution overlay — rendered during resolution phase */}
+      {phase === "resolution" && <Resolution />}
     </div>
   );
 }

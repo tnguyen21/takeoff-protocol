@@ -211,6 +211,23 @@ export interface RoundHistory {
   stateAfter: StateVariables;
 }
 
+// ── Resolution ──
+
+export interface StateDelta {
+  variable: keyof StateVariables;
+  label: string;
+  oldValue: number;
+  newValue: number;
+  delta: number;
+  accuracy: Accuracy;
+}
+
+export interface ResolutionData {
+  narrative: string;
+  stateDeltas: StateDelta[];
+  teamDecisions: Record<string, { optionId: string; label: string }>;
+}
+
 // ── Ending Arcs ──
 
 export type EndingArcId =

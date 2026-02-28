@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, AppId, ContentItem, Faction, GamePhase, IndividualDecision, Player, Role, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, Faction, GamePhase, IndividualDecision, Player, ResolutionData, Role, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 
 interface LobbyPlayer {
@@ -37,6 +37,9 @@ interface GameStore {
   teamVotes: Record<string, string>; // playerId → optionId (leader only)
   teamLocked: boolean; // true after leader submits final team decision
 
+  // Resolution
+  resolution: ResolutionData | null;
+
   // GM-specific
   gmRawState: StateVariables | null; // true unfogged state (GM only)
   gmDecisionStatus: string[]; // player IDs that have submitted (GM only)
@@ -73,6 +76,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   decisionSubmitted: false,
   teamVotes: {},
   teamLocked: false,
+  resolution: null,
   briefingText: null,
   gmRawState: null,
   gmDecisionStatus: [],
@@ -214,6 +218,10 @@ socket.on("decision:votes", (data: { faction: string; votes: Record<string, stri
 
 socket.on("game:briefing", (data: { text: string }) => {
   useGameStore.setState({ briefingText: data.text });
+});
+
+socket.on("game:resolution", (data: ResolutionData) => {
+  useGameStore.setState({ resolution: data });
 });
 
 socket.on("gm:extend-ack", (data: { usesRemaining: number }) => {

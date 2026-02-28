@@ -1,6 +1,6 @@
 import type { Server } from "socket.io";
-import type { GamePhase, GameRoom, IndividualDecision, TeamDecision } from "@takeoff/shared";
-import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView } from "@takeoff/shared";
+import type { DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, ResolutionData, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
+import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 
@@ -111,6 +111,10 @@ export function advancePhase(io: Server, room: GameRoom) {
     emitDecisions(io, room);
   }
 
+  if (room.phase === "resolution") {
+    emitResolution(io, room);
+  }
+
   setPhaseTimer(io, room);
 }
 
@@ -167,5 +171,141 @@ function emitContent(io: Server, room: GameRoom) {
       // Round content file may not exist yet (future rounds) — silently skip
       console.warn(`[content] No content for round ${room.round}:`, err);
     }
+  }
+}
+
+// ── Human-readable labels for state variables ──
+
+const STATE_LABELS: Record<keyof StateVariables, string> = {
+  obCapability: "OpenBrain Capability",
+  promCapability: "Prometheus Capability",
+  chinaCapability: "China Capability",
+  usChinaGap: "US–China Gap (months)",
+  obPromGap: "OB–Prometheus Gap (months)",
+  alignmentConfidence: "Alignment Confidence",
+  misalignmentSeverity: "Misalignment Severity",
+  publicAwareness: "Public Awareness",
+  publicSentiment: "Public Sentiment",
+  economicDisruption: "Economic Disruption",
+  taiwanTension: "Taiwan Tension",
+  obInternalTrust: "OB Internal Trust",
+  securityLevelOB: "OB Security Level",
+  securityLevelProm: "Prometheus Security Level",
+  intlCooperation: "International Cooperation",
+};
+
+function buildNarrative(
+  teamDecisions: Record<string, { optionId: string; label: string }>,
+  round: number,
+): string {
+  const factionNames: Record<string, string> = {
+    openbrain: "OpenBrain",
+    prometheus: "Prometheus",
+    china: "China (DeepCent)",
+    external: "External Stakeholders",
+  };
+
+  const lines: string[] = [`Round ${round} decisions are in. The world shifts.`];
+
+  for (const [faction, decision] of Object.entries(teamDecisions)) {
+    const name = factionNames[faction] ?? faction;
+    lines.push(`${name} chose to ${decision.label.toLowerCase()}.`);
+  }
+
+  lines.push("The consequences ripple through the system. See the state changes below.");
+
+  return lines.join("\n\n");
+}
+
+function emitResolution(io: Server, room: GameRoom) {
+  const roundDecisions = ROUND_DECISIONS[room.round - 1];
+  const stateBefore = { ...room.state };
+
+  // Collect all chosen DecisionOption objects
+  const chosenOptions: DecisionOption[] = [];
+
+  // Individual decisions: playerId → optionId
+  for (const [playerId, optionId] of Object.entries(room.decisions)) {
+    const player = room.players[playerId];
+    if (!player || !roundDecisions) continue;
+
+    // Search all individual decisions for this option
+    for (const indiv of roundDecisions.individual) {
+      const opt = indiv.options.find((o) => o.id === optionId);
+      if (opt) {
+        chosenOptions.push(opt);
+        break;
+      }
+    }
+  }
+
+  // Team decisions: faction → optionId
+  const teamDecisionSummary: Record<string, { optionId: string; label: string }> = {};
+  for (const [faction, optionId] of Object.entries(room.teamDecisions)) {
+    if (!roundDecisions) continue;
+    const teamDec = roundDecisions.team.find((t) => t.faction === (faction as Faction));
+    if (!teamDec) continue;
+    const opt = teamDec.options.find((o) => o.id === optionId);
+    if (opt) {
+      chosenOptions.push(opt);
+      teamDecisionSummary[faction] = { optionId: opt.id, label: opt.label };
+    }
+  }
+
+  // Apply decisions to state
+  const stateAfter = resolveDecisions(stateBefore, chosenOptions);
+  room.state = stateAfter;
+
+  // Emit updated state views now that state changed
+  emitStateViews(io, room);
+
+  // Build full deltas list (accuracy will be set per-player)
+  const changedKeys = (Object.keys(STATE_LABELS) as (keyof StateVariables)[]).filter(
+    (key) => stateAfter[key] !== stateBefore[key],
+  );
+
+  const narrative = buildNarrative(teamDecisionSummary, room.round);
+
+  // Emit fog-filtered resolution to each player
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const [socketId, player] of Object.entries(room.players) as [string, any][]) {
+    const fogView = computeFogView(stateAfter, player.faction, player.role, room.round);
+
+    const filteredDeltas: StateDelta[] = changedKeys
+      .filter((key) => fogView[key].accuracy !== "hidden")
+      .map((key) => ({
+        variable: key,
+        label: STATE_LABELS[key],
+        oldValue: stateBefore[key],
+        newValue: stateAfter[key],
+        delta: stateAfter[key] - stateBefore[key],
+        accuracy: fogView[key].accuracy,
+      }));
+
+    const resolutionData: ResolutionData = {
+      narrative,
+      stateDeltas: filteredDeltas,
+      teamDecisions: teamDecisionSummary,
+    };
+
+    io.to(socketId).emit("game:resolution", resolutionData);
+  }
+
+  // GM gets full resolution with all deltas (unfogged)
+  if (room.gmId) {
+    const fullDeltas: StateDelta[] = changedKeys.map((key) => ({
+      variable: key,
+      label: STATE_LABELS[key],
+      oldValue: stateBefore[key],
+      newValue: stateAfter[key],
+      delta: stateAfter[key] - stateBefore[key],
+      accuracy: "exact" as const,
+    }));
+    const gmResolution: ResolutionData = {
+      narrative,
+      stateDeltas: fullDeltas,
+      teamDecisions: teamDecisionSummary,
+    };
+    io.to(room.gmId).emit("game:resolution", gmResolution);
   }
 }
