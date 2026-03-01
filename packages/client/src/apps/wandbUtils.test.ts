@@ -1,0 +1,135 @@
+/**
+ * Tests for WandBApp pure helper functions.
+ *
+ * Invariants tested:
+ * - INV-1: getRunStatusColor returns correct CSS class per status string
+ * - INV-2: buildCapData returns null for empty state, correct shape when populated
+ */
+
+import { describe, expect, it } from "bun:test";
+import { getRunStatusColor, buildCapData } from "./wandbUtils.js";
+import type { StateView } from "@takeoff/shared";
+
+function makeView(
+  obVal: number,
+  promVal: number,
+  chinaVal: number,
+  accuracy: "exact" | "estimate" | "hidden" = "exact",
+): StateView {
+  const fog = (v: number) => ({ value: v, accuracy } as const);
+  return {
+    obCapability: fog(obVal),
+    promCapability: fog(promVal),
+    chinaCapability: fog(chinaVal),
+    usChinaGap: fog(0),
+    obPromGap: fog(0),
+    alignmentConfidence: fog(50),
+    misalignmentSeverity: fog(0),
+    publicAwareness: fog(50),
+    publicSentiment: fog(0),
+    economicDisruption: fog(20),
+    taiwanTension: fog(30),
+    obInternalTrust: fog(80),
+    securityLevelOB: fog(3),
+    securityLevelProm: fog(3),
+    intlCooperation: fog(50),
+    marketIndex: fog(100),
+    regulatoryPressure: fog(30),
+    globalMediaCycle: fog(0),
+    chinaWeightTheftProgress: fog(0),
+    aiAutonomyLevel: fog(20),
+    whistleblowerPressure: fog(10),
+    openSourceMomentum: fog(40),
+    doomClockDistance: fog(5),
+    obMorale: fog(75),
+    obBurnRate: fog(30),
+    obBoardConfidence: fog(70),
+    promMorale: fog(70),
+    promBurnRate: fog(35),
+    promBoardConfidence: fog(65),
+    promSafetyBreakthroughProgress: fog(10),
+    cdzComputeUtilization: fog(80),
+    ccpPatience: fog(60),
+    domesticChipProgress: fog(25),
+  };
+}
+
+describe("getRunStatusColor", () => {
+  it("INV-1: running → green-400", () => {
+    expect(getRunStatusColor("running")).toBe("text-green-400");
+  });
+
+  it("INV-1: crashed → red-400", () => {
+    expect(getRunStatusColor("crashed")).toBe("text-red-400");
+  });
+
+  it("INV-1: finished → neutral (default case)", () => {
+    expect(getRunStatusColor("finished")).toBe("text-neutral-400");
+  });
+
+  it("INV-1: unknown status falls through to neutral", () => {
+    expect(getRunStatusColor("pending")).toBe("text-neutral-400");
+    expect(getRunStatusColor("")).toBe("text-neutral-400");
+  });
+});
+
+describe("buildCapData", () => {
+  it("INV-2: returns null for empty history and null stateView", () => {
+    expect(buildCapData({}, 0, null)).toBeNull();
+  });
+
+  it("INV-2: returns null when round=0 even if stateView provided", () => {
+    expect(buildCapData({}, 0, makeView(50, 60, 40))).toBeNull();
+  });
+
+  it("INV-2: includes stateView in data when round > 0", () => {
+    const sv = makeView(70, 60, 50);
+    const result = buildCapData({}, 1, sv);
+    expect(result).not.toBeNull();
+    expect(result!.data).toHaveLength(1);
+    expect(result!.data[0].ob).toBe(70);
+    expect(result!.data[0].prom).toBe(60);
+    expect(result!.data[0].china).toBe(50);
+  });
+
+  it("INV-2: hidden accuracy sets data values to null", () => {
+    const sv = makeView(70, 60, 50, "hidden");
+    const result = buildCapData({}, 1, sv);
+    expect(result).not.toBeNull();
+    expect(result!.data[0].ob).toBeNull();
+    expect(result!.data[0].prom).toBeNull();
+    expect(result!.data[0].china).toBeNull();
+  });
+
+  it("INV-2: multiple history rounds produce sorted data by round", () => {
+    const hist = {
+      3: makeView(70, 60, 50),
+      1: makeView(40, 35, 30),
+      2: makeView(55, 45, 38),
+    };
+    const result = buildCapData(hist, 0, null);
+    expect(result).not.toBeNull();
+    expect(result!.data).toHaveLength(3);
+    expect(result!.data[0].round).toBe(1);
+    expect(result!.data[1].round).toBe(2);
+    expect(result!.data[2].round).toBe(3);
+  });
+
+  it("INV-2: accuracy fields reflect the latest round entry", () => {
+    const hist = { 1: makeView(40, 35, 30, "exact") };
+    const result = buildCapData(hist, 0, null);
+    expect(result!.obAcc).toBe("exact");
+    expect(result!.promAcc).toBe("exact");
+    expect(result!.chinaAcc).toBe("exact");
+  });
+
+  it("INV-2: stateView round overrides/adds to history when round > 0", () => {
+    const hist = { 1: makeView(40, 35, 30) };
+    const sv = makeView(80, 70, 60);
+    const result = buildCapData(hist, 2, sv);
+    expect(result).not.toBeNull();
+    expect(result!.data).toHaveLength(2);
+    // Second data point should be from sv at round 2
+    expect(result!.data[1].ob).toBe(80);
+  });
+});
