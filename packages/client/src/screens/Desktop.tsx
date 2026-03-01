@@ -12,6 +12,7 @@ import type { AppId } from "@takeoff/shared";
 import { Decision } from "./Decision.js";
 import { PublishNotificationBanner } from "../components/PublishNotificationBanner.js";
 import { Notifications } from "../desktop/Notifications.js";
+import { RoleBadge } from "../desktop/RoleBadge.js";
 
 const APP_LABELS: Record<string, string> = {
   slack: "Slack",
@@ -124,6 +125,9 @@ export function Desktop() {
           Connection lost — reconnecting…
         </div>
       )}
+
+      {/* Role badge — fixed top-right, always visible above overlays */}
+      <RoleBadge />
 
       {/* Toast notifications — top-right corner */}
       <Notifications />
