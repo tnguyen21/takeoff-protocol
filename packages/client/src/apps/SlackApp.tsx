@@ -4,8 +4,7 @@ import { useMessagesStore } from "../stores/messages.js";
 import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
 import { soundManager } from "../sounds/index.js";
-
-const CHANNELS = ["#general", "#research", "#alignment", "#safety", "#announcements", "#ops", "#random"];
+import { SLACK_CHANNELS, assignChannelToMessage, getChannelMessages, computeUnreadCounts } from "./slackUtils.js";
 
 function initials(name: string): string {
   return name
@@ -20,8 +19,33 @@ function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+// Message hover toolbar — emoji react, thread reply, bookmark (visual-only)
+function MessageToolbar() {
+  return (
+    <div className="absolute -top-5 right-2 flex items-center gap-0.5 bg-[#1a1d21] border border-white/10 rounded px-1 py-0.5 shadow-lg z-10">
+      <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Add reaction">
+        😊
+      </button>
+      <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Reply in thread">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M1 2.5A1.5 1.5 0 012.5 1h11A1.5 1.5 0 0115 2.5v8A1.5 1.5 0 0113.5 12H9.621l-2.56 2.56A.5.5 0 016.5 14.5V12H2.5A1.5 1.5 0 011 10.5v-8z" />
+        </svg>
+      </button>
+      <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Bookmark">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M2 2a2 2 0 012-2h8a2 2 0 012 2v13.5a.5.5 0 01-.777.416L8 13.101l-5.223 2.815A.5.5 0 012 15.5V2z" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   const [input, setInput] = useState("");
+  const [activeChannel, setActiveChannel] = useState("#general");
+  // Channels the user has visited (starts with only #general seen)
+  const [seenChannels, setSeenChannels] = useState<Set<string>>(() => new Set(["#general"]));
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +56,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   const me = lobbyPlayers.find((p) => p.id === playerId);
   const myFaction = me?.faction ?? null;
 
-  // Filter to team chat messages for my faction
+  // Filter to team chat messages for my faction — always shown in #general
   const teamMessages = messages.filter(
     (m) => m.isTeamChat && (myFaction === null || m.faction === myFaction)
   );
@@ -40,10 +64,31 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   // Intel messages from game content (pre-scripted, grouped by channel)
   const intelMessages = content.filter((i) => i.type === "message");
 
+  // Messages for the active channel
+  const channelIntelMessages = getChannelMessages(intelMessages, activeChannel);
+  // Team chat always in #general
+  const channelTeamMessages = activeChannel === "#general" ? teamMessages : [];
+
+  // Unread counts per channel
+  const unreadCounts = computeUnreadCounts(intelMessages, seenChannels, activeChannel);
+
+  // Faction teammates for DM section (same faction, not self)
+  const factionTeammates = lobbyPlayers.filter((p) => p.id !== playerId && p.faction === myFaction);
+
+  // Handle channel click
+  const handleChannelClick = useCallback((ch: string) => {
+    setActiveChannel(ch);
+    setSeenChannels((prev) => {
+      const next = new Set(prev);
+      next.add(ch);
+      return next;
+    });
+  }, []);
+
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [teamMessages.length, intelMessages.length]);
+  }, [channelTeamMessages.length, channelIntelMessages.length]);
 
   // Mark read when app is open
   useEffect(() => {
@@ -69,12 +114,24 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     [sendMessage]
   );
 
-  const hasAnyMessages = intelMessages.length > 0 || teamMessages.length > 0;
+  const hasAnyMessages = channelIntelMessages.length > 0 || channelTeamMessages.length > 0;
+
+  // Group consecutive intel messages by same sender for thread indicator
+  type IntelGroup = { messages: typeof intelMessages; key: string };
+  const intelGroups: IntelGroup[] = [];
+  for (const m of channelIntelMessages) {
+    const last = intelGroups[intelGroups.length - 1];
+    if (last && last.messages[0].sender === m.sender) {
+      last.messages.push(m);
+    } else {
+      intelGroups.push({ messages: [m], key: m.id });
+    }
+  }
 
   return (
     <div className="flex h-full bg-[#1a1d21] text-white text-sm font-sans">
       {/* Sidebar */}
-      <div className="w-48 bg-[#3f0f40] flex flex-col shrink-0">
+      <div className="w-52 bg-[#3f0f40] flex flex-col shrink-0">
         <div className="px-3 py-3 border-b border-white/10">
           <div className="font-bold text-white text-sm">OpenBrain</div>
           <div className="text-green-400 text-xs flex items-center gap-1 mt-0.5">
@@ -83,53 +140,133 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
           </div>
         </div>
 
-        <div className="px-2 py-2 space-y-0.5 overflow-y-auto flex-1">
-          <div className="text-[#c9b9c9] text-xs font-semibold px-2 py-1 uppercase tracking-wide">Channels</div>
-          {CHANNELS.map((ch) => (
-            <div
-              key={ch}
-              className={`px-2 py-1 rounded cursor-pointer text-[#c9b9c9] hover:bg-white/10 text-xs ${ch === "#general" ? "bg-white/20 text-white font-semibold" : ""}`}
-            >
-              {ch}
+        <div className="px-2 py-2 overflow-y-auto flex-1 space-y-3">
+          {/* Channels section */}
+          <div>
+            <div className="text-[#c9b9c9] text-[10px] font-semibold px-2 py-1 uppercase tracking-wide">Channels</div>
+            <div className="space-y-0.5">
+              {SLACK_CHANNELS.map((ch) => {
+                const isActive = ch === activeChannel;
+                const unread = unreadCounts[ch] ?? 0;
+                return (
+                  <div
+                    key={ch}
+                    onClick={() => handleChannelClick(ch)}
+                    className={`flex items-center justify-between px-2 py-1 rounded cursor-pointer text-xs transition-colors ${
+                      isActive
+                        ? "bg-white/20 text-white font-semibold"
+                        : unread > 0
+                        ? "text-white font-semibold hover:bg-white/10"
+                        : "text-[#c9b9c9] hover:bg-white/10"
+                    }`}
+                  >
+                    <span>{ch}</span>
+                    {unread > 0 && !isActive && (
+                      <span className="ml-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                        {unread > 99 ? "99+" : unread}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </div>
+
+          {/* Direct Messages section */}
+          <div>
+            <div className="text-[#c9b9c9] text-[10px] font-semibold px-2 py-1 uppercase tracking-wide">Direct Messages</div>
+            <div className="space-y-0.5">
+              {factionTeammates.length === 0 && (
+                <div className="text-[#c9b9c9]/50 text-[10px] px-2 py-1">No teammates online</div>
+              )}
+              {factionTeammates.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-[#c9b9c9] hover:bg-white/10 text-xs transition-colors"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${p.connected ? "bg-green-400" : "bg-neutral-500"}`}
+                  />
+                  <span className="truncate">{p.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main */}
       <div className="flex flex-col flex-1 min-w-0">
         <div className="h-9 border-b border-white/10 flex items-center px-4 bg-[#1a1d21] shrink-0">
-          <span className="font-semibold text-white">#general</span>
-          <span className="text-neutral-500 ml-2 text-xs">· team chat</span>
+          <span className="font-semibold text-white">{activeChannel}</span>
+          <span className="text-neutral-500 ml-2 text-xs">
+            {activeChannel === "#general" ? "· team chat" : `· ${channelIntelMessages.length} messages`}
+          </span>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
           {!hasAnyMessages && (
-            <div className="text-neutral-600 text-xs text-center pt-8">No messages yet. Say hello!</div>
+            <div className="text-neutral-600 text-xs text-center pt-8">
+              {activeChannel === "#general" ? "No messages yet. Say hello!" : `No messages in ${activeChannel}`}
+            </div>
           )}
-          {/* Intel messages appear first as pre-existing channel content */}
-          {intelMessages.map((m) => (
-            <div key={m.id} className="flex gap-3">
-              <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
-                {initials(m.sender ?? "?")}
-              </div>
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-semibold text-xs text-blue-300">{m.sender ?? "System"}</span>
-                  <span className="text-neutral-500 text-xs">{m.timestamp}</span>
-                  {m.channel && <span className="text-neutral-600 text-[10px]">· {m.channel}</span>}
+
+          {/* Intel messages grouped by sender cluster */}
+          {intelGroups.map((group) => (
+            <div key={group.key}>
+              {group.messages.map((m, i) => (
+                <div
+                  key={m.id}
+                  className="relative flex gap-3 group"
+                  onMouseEnter={() => setHoveredMessageId(m.id)}
+                  onMouseLeave={() => setHoveredMessageId(null)}
+                >
+                  {/* Only show avatar for first message in cluster */}
+                  {i === 0 ? (
+                    <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
+                      {initials(m.sender ?? "?")}
+                    </div>
+                  ) : (
+                    <div className="w-8 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {i === 0 && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-semibold text-xs text-blue-300">{m.sender ?? "System"}</span>
+                        <span className="text-neutral-500 text-xs">{m.timestamp}</span>
+                        {m.channel && assignChannelToMessage(m) !== "#general" && (
+                          <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(m)}</span>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
+                  </div>
+                  {hoveredMessageId === m.id && <MessageToolbar />}
                 </div>
-                <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
-              </div>
+              ))}
+              {/* Thread indicator for clusters with multiple messages */}
+              {group.messages.length > 1 && (
+                <div className="ml-11 mt-1">
+                  <button className="text-[10px] text-blue-400 hover:text-blue-300 hover:underline transition-colors">
+                    {group.messages.length} replies
+                  </button>
+                </div>
+              )}
             </div>
           ))}
-          {/* Live team chat messages */}
-          {teamMessages.map((m) => (
-            <div key={m.id} className="flex gap-3">
+
+          {/* Live team chat messages (always in #general) */}
+          {channelTeamMessages.map((m) => (
+            <div
+              key={m.id}
+              className="relative flex gap-3 group"
+              onMouseEnter={() => setHoveredMessageId(m.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
+            >
               <div className="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-xs font-bold shrink-0 text-white">
                 {initials(m.fromName)}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
                   <span className={`font-semibold text-xs ${m.from === playerId ? "text-yellow-300" : "text-white"}`}>
                     {m.fromName}
@@ -138,6 +275,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
                 </div>
                 <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.content}</p>
               </div>
+              {hoveredMessageId === m.id && <MessageToolbar />}
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -148,7 +286,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             <input
               ref={inputRef}
               className="flex-1 bg-transparent text-xs text-neutral-200 placeholder-neutral-500 outline-none"
-              placeholder="Message #general"
+              placeholder={`Message ${activeChannel}`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
