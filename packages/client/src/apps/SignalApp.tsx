@@ -4,6 +4,12 @@ import { useMessagesStore } from "../stores/messages.js";
 import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
 import { soundManager } from "../sounds/index.js";
+import {
+  getReadReceiptStatus,
+  hasDisappearingTimer,
+  NPC_CONTACTS,
+  NPC_IDS,
+} from "./signalUtils.js";
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -18,11 +24,67 @@ function initials(name: string): string {
     .slice(0, 2);
 }
 
+// ── Read-receipt checkmark renderer ─────────────────────────────────────────
+
+function ReadReceipt({ status }: { status: "sent" | "delivered" | "read" }) {
+  if (status === "sent") {
+    return <span className="text-[9px] text-blue-300/50 ml-1">✓</span>;
+  }
+  if (status === "delivered") {
+    return <span className="text-[9px] text-blue-300/50 ml-1">✓✓</span>;
+  }
+  // read
+  return <span className="text-[9px] text-blue-300 ml-1">✓✓</span>;
+}
+
+// ── Typing indicator dots ────────────────────────────────────────────────────
+
+function TypingDots() {
+  return (
+    <div className="flex justify-start">
+      <div className="bg-[#2a2a2a] rounded-2xl rounded-bl-sm px-3 py-2.5">
+        <div className="flex gap-1 items-center">
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
+            style={{ animationDelay: "0ms", animationDuration: "800ms" }}
+          />
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
+            style={{ animationDelay: "150ms", animationDuration: "800ms" }}
+          />
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce"
+            style={{ animationDelay: "300ms", animationDuration: "800ms" }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── E2E encrypted banner ─────────────────────────────────────────────────────
+
+function EncryptedBanner() {
+  return (
+    <div className="flex justify-center py-3 px-4 shrink-0">
+      <p className="text-center text-neutral-600 text-[10px] leading-snug max-w-[260px]">
+        <span className="mr-1">🔒</span>
+        Messages and calls are end-to-end encrypted. No one outside of this chat, not even Signal, can read or listen to them.
+      </p>
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+
 export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [showTyping, setShowTyping] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { messages, markRead } = useMessagesStore();
   const { playerId, lobbyPlayers } = useGameStore();
@@ -55,12 +117,53 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [dmMessages.length]);
+  }, [dmMessages.length, showTyping]);
 
   // Mark signal read when open
   useEffect(() => {
     markRead("signal");
   }, [markRead, dmMessages.length]);
+
+  // Update `now` every 5s so read-receipt statuses refresh
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Typing indicator: fires every ~20-30s for active real-player conversations
+  const isNpcSelected = selectedPlayerId ? NPC_IDS.has(selectedPlayerId) : false;
+  const INTEL_CONTACT_ID = "__intel__";
+  const isIntelSelected = selectedPlayerId === INTEL_CONTACT_ID;
+  const isRealDmActive = !!selectedPlayerId && !isNpcSelected && !isIntelSelected;
+
+  useEffect(() => {
+    if (!isRealDmActive) {
+      setShowTyping(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const cycle = () => {
+      const delay = 20_000 + Math.random() * 10_000; // 20–30s
+      typingTimerRef.current = setTimeout(() => {
+        if (cancelled) return;
+        setShowTyping(true);
+        typingTimerRef.current = setTimeout(() => {
+          if (cancelled) return;
+          setShowTyping(false);
+          cycle();
+        }, 3_000);
+      }, delay);
+    };
+
+    cycle();
+    return () => {
+      cancelled = true;
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      setShowTyping(false);
+    };
+  }, [isRealDmActive]);
 
   const sendMessage = useCallback(() => {
     const text = input.trim();
@@ -85,8 +188,11 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
 
   // Intel content: pre-scripted messages shown in a special "Intel Feed" contact
   const intelMessages = content.filter((i) => i.type === "message");
-  const INTEL_CONTACT_ID = "__intel__";
-  const isIntelSelected = selectedPlayerId === INTEL_CONTACT_ID;
+
+  // NPC contact selected
+  const selectedNpc = isNpcSelected
+    ? NPC_CONTACTS.find((c) => c.id === selectedPlayerId)
+    : null;
 
   return (
     <div className="flex h-full bg-[#1b1b1b] text-white text-sm">
@@ -118,11 +224,46 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
               </div>
             </div>
           )}
-          {otherPlayers.length === 0 && intelMessages.length === 0 && (
+
+          {/* NPC contacts */}
+          {NPC_CONTACTS.map((npc) => {
+            const isActive = npc.id === selectedPlayerId;
+            const lastMsg = npc.messages.at(-1);
+            return (
+              <div
+                key={npc.id}
+                onClick={() => setSelectedPlayerId(npc.id)}
+                className={`flex items-start gap-3 px-3 py-3 cursor-pointer border-b border-white/5 hover:bg-white/5 ${isActive ? "bg-white/10" : ""}`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-full ${npc.avatarColor} flex items-center justify-center text-xs font-bold shrink-0`}
+                >
+                  {initials(npc.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-semibold text-xs truncate">{npc.name}</span>
+                    {lastMsg && (
+                      <span className="text-neutral-500 text-[10px] shrink-0 ml-1">
+                        {formatTime(lastMsg.timestamp)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-neutral-400 text-xs truncate mt-0.5">
+                    {lastMsg ? lastMsg.content : npc.subtitle}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+
+          {otherPlayers.length === 0 && intelMessages.length === 0 && NPC_CONTACTS.length === 0 && (
             <div className="text-neutral-600 text-xs text-center px-3 pt-8">
               No contacts from other factions yet.
             </div>
           )}
+
+          {/* Real player contacts */}
           {otherPlayers.map((p) => {
             const unread = unreadPerPlayer[p.id] ?? 0;
             const isActive = p.id === selectedPlayerId;
@@ -187,11 +328,50 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
               ))}
             </div>
           </>
+        ) : selectedNpc ? (
+          /* NPC contact view */
+          <>
+            <div className="h-10 border-b border-white/10 flex items-center px-4 shrink-0">
+              <div
+                className={`w-7 h-7 rounded-full ${selectedNpc.avatarColor} flex items-center justify-center text-xs font-bold mr-2`}
+              >
+                {initials(selectedNpc.name)}
+              </div>
+              <span className="font-semibold text-sm">{selectedNpc.name}</span>
+              <span className="text-neutral-500 text-xs ml-2">{selectedNpc.subtitle}</span>
+            </div>
+
+            <EncryptedBanner />
+
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+              {selectedNpc.messages.map((m) => (
+                <div key={m.id} className="flex justify-start">
+                  <div className="max-w-[70%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-[#2a2a2a] text-neutral-200 rounded-bl-sm">
+                    <p>
+                      {m.content}
+                      {hasDisappearingTimer(m.id) && (
+                        <span className="ml-1.5 opacity-40" title="Disappears after viewing">⏱</span>
+                      )}
+                    </p>
+                    <p className="text-neutral-500 text-[10px] mt-1">{formatTime(m.timestamp)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* No compose input for NPC contacts — read only */}
+            <div className="px-4 py-2 border-t border-white/10 flex gap-2 shrink-0">
+              <div className="flex-1 bg-[#2a2a2a] rounded-full px-3 py-1.5 text-xs text-neutral-600 border border-white/10 select-none">
+                Cannot reply to this contact
+              </div>
+            </div>
+          </>
         ) : !selectedPlayer ? (
           <div className="flex-1 flex items-center justify-center text-neutral-600 text-xs">
             Select a contact to start a DM
           </div>
         ) : (
+          /* Real player DM view */
           <>
             <div className="h-10 border-b border-white/10 flex items-center px-4 shrink-0">
               <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold mr-2">
@@ -201,12 +381,15 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
               <span className="text-neutral-500 text-xs ml-2">· {selectedPlayer.faction}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            <EncryptedBanner />
+
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
               {dmMessages.length === 0 && (
                 <div className="text-neutral-600 text-xs text-center pt-8">No messages yet.</div>
               )}
               {dmMessages.map((m) => {
                 const sent = m.from === playerId;
+                const receiptStatus = sent ? getReadReceiptStatus(m.timestamp, now) : null;
                 return (
                   <div key={m.id} className={`flex ${sent ? "justify-end" : "justify-start"}`}>
                     <div
@@ -214,14 +397,26 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                         sent ? "bg-blue-600 text-white rounded-br-sm" : "bg-[#2a2a2a] text-neutral-200 rounded-bl-sm"
                       }`}
                     >
-                      <p>{m.content}</p>
-                      <p className={`text-[10px] mt-1 ${sent ? "text-blue-200" : "text-neutral-500"}`}>
-                        {formatTime(m.timestamp)}
+                      <p>
+                        {m.content}
+                        {!sent && hasDisappearingTimer(m.id) && (
+                          <span className="ml-1.5 opacity-40" title="Disappears after viewing">⏱</span>
+                        )}
                       </p>
+                      <div className={`flex items-center gap-0.5 mt-1 ${sent ? "justify-end" : ""}`}>
+                        <span className={`text-[10px] ${sent ? "text-blue-200" : "text-neutral-500"}`}>
+                          {formatTime(m.timestamp)}
+                        </span>
+                        {sent && hasDisappearingTimer(m.id) && (
+                          <span className="text-[9px] text-blue-200/50 ml-1" title="Disappears after viewing">⏱</span>
+                        )}
+                        {receiptStatus && <ReadReceipt status={receiptStatus} />}
+                      </div>
                     </div>
                   </div>
                 );
               })}
+              {showTyping && <TypingDots />}
               <div ref={messagesEndRef} />
             </div>
 
