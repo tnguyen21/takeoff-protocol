@@ -1,19 +1,7 @@
 import React, { useState } from "react";
 import type { AppProps } from "./types.js";
-
-interface Paper {
-  title: string;
-  authors: string;
-  fullAuthors?: string;
-  date: string;
-  submitted?: string;
-  category: string;
-  categories: string[];
-  abstract: string;
-  subjects?: string;
-  comments?: string;
-  citations: number;
-}
+import { assignStableIds, computeArxivId } from "./arxivUtils.js";
+import type { Paper, PaperWithId } from "./arxivUtils.js";
 
 const PAPERS: Paper[] = [
   {
@@ -194,7 +182,7 @@ export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
   const [activeCategory, setActiveCategory] = useState("All");
 
   const docItems = content.filter((i) => i.type === "document");
-  const basePapers: Paper[] =
+  const basePapers: PaperWithId[] = assignStableIds(
     docItems.length > 0
       ? docItems.map((item) => ({
           title: item.subject ?? item.body.split("\n")[0] ?? "(untitled)",
@@ -205,7 +193,8 @@ export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
           abstract: item.subject ? item.body : item.body.slice(item.body.indexOf("\n") + 1),
           citations: 0,
         }))
-      : PAPERS;
+      : PAPERS,
+  );
 
   const filteredPapers = basePapers.filter((p) => {
     const matchesCategory = activeCategory === "All" || p.categories.includes(activeCategory);
@@ -266,12 +255,12 @@ export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto divide-y divide-neutral-200">
-        {filteredPapers.map((p, i) => {
-          const arxivId = `arXiv:2602.${10000 + i}`;
-          const isExpanded = expandedPaperId === i;
+        {filteredPapers.map((p) => {
+          const arxivId = computeArxivId(p.stableId);
+          const isExpanded = expandedPaperId === p.stableId;
 
           return (
-            <div key={i} className="px-4 py-4 hover:bg-neutral-50">
+            <div key={p.stableId} className="px-4 py-4 hover:bg-neutral-50">
               <div className="flex items-start gap-2 mb-1">
                 {p.categories.map((cat) => (
                   <span key={cat} className="text-[10px] bg-[#b31b1b]/10 text-[#b31b1b] px-1.5 py-0.5 rounded font-mono shrink-0">
@@ -283,7 +272,7 @@ export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
               </div>
               <h3
                 className="text-sm font-semibold text-blue-700 hover:underline leading-tight mb-1 cursor-pointer"
-                onClick={() => setExpandedPaperId(isExpanded ? null : i)}
+                onClick={() => setExpandedPaperId(isExpanded ? null : p.stableId)}
               >
                 {p.title}
               </h3>
