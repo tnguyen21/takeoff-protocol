@@ -176,6 +176,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!room || room.gmId !== socket.id) return;
 
     const STATE_BOUNDS: Record<string, [number, number]> = {
+      // Tier 1
       obCapability: [0, 100],
       promCapability: [0, 100],
       chinaCapability: [0, 100],
@@ -191,6 +192,24 @@ export function registerGameEvents(io: Server, socket: Socket) {
       securityLevelOB: [1, 5],
       securityLevelProm: [1, 5],
       intlCooperation: [0, 100],
+      // Tier 2
+      cdzComputeUtilization: [0, 100],
+      domesticChipProgress: [0, 100],
+      promSafetyBreakthroughProgress: [0, 100],
+      aiAutonomyLevel: [0, 100],
+      doomClockDistance: [0, 10],
+      regulatoryPressure: [0, 100],
+      obBoardConfidence: [0, 100],
+      promBoardConfidence: [0, 100],
+      ccpPatience: [0, 100],
+      chinaWeightTheftProgress: [0, 100],
+      // Tier 3
+      globalMediaCycle: [-100, 100],
+      marketIndex: [0, 100],
+      obBurnRate: [0, 100],
+      promBurnRate: [0, 100],
+      promMorale: [0, 100],
+      openSourceMomentum: [0, 100],
     };
 
     if (!(variable in STATE_BOUNDS)) return;

@@ -135,8 +135,10 @@ const NARRATIVES: Record<EndingArcId, string[]> = {
 // ── Resolution Logic ───────────────────────────────────────────────────────────
 
 function resolveAiRace(s: StateVariables): number {
-  const chinaClose = s.usChinaGap < 3;
-  const promClosing = s.obPromGap <= 1 && s.promCapability >= 55;
+  // China parity: low US lead OR high compute + chip independence
+  const chinaClose = s.usChinaGap < 3 || (s.cdzComputeUtilization > 80 && s.domesticChipProgress > 60);
+  // Prometheus catch-up: standard gap closure OR safety breakthrough proved its worth
+  const promClosing = (s.obPromGap <= 1 && s.promCapability >= 55) || s.promSafetyBreakthroughProgress >= 80;
   const obDominant = s.obCapability >= 65 && s.obPromGap >= 4 && !chinaClose;
   if (chinaClose) return 1;
   if (promClosing) return 3;
@@ -145,30 +147,56 @@ function resolveAiRace(s: StateVariables): number {
 }
 
 function resolveAlignment(s: StateVariables): number {
-  if (s.alignmentConfidence >= 75 && s.misalignmentSeverity <= 15) return 3;
-  if (s.alignmentConfidence >= 50 && s.misalignmentSeverity <= 35) return 2;
+  // Doom clock near midnight overrides everything — misaligned
+  if (s.doomClockDistance < 2) return 0;
+  // Prometheus safety breakthrough + moderate alignment confidence + controlled autonomy
+  if (s.promSafetyBreakthroughProgress >= 80 && s.alignmentConfidence >= 60 && s.aiAutonomyLevel <= 50) return 3;
+  // High alignment confidence, low misalignment, autonomy still in check
+  if (s.alignmentConfidence >= 75 && s.misalignmentSeverity <= 15 && s.aiAutonomyLevel <= 60) return 3;
+  // Moderate alignment with AI autonomy not yet critical
+  if (s.alignmentConfidence >= 50 && s.misalignmentSeverity <= 35 && s.aiAutonomyLevel <= 70) return 2;
   if (s.alignmentConfidence >= 25 || s.misalignmentSeverity <= 60) return 1;
   return 0;
 }
 
 function resolveControl(s: StateVariables): number {
-  if (s.intlCooperation >= 60 && s.obInternalTrust >= 60) return 4;
-  if (s.securityLevelOB >= 4 || s.securityLevelProm >= 4) return 3;
-  if (s.obCapability - s.chinaCapability > 30 && s.intlCooperation < 30) return 2;
+  // AI autonomy > 70 means the systems have outpaced human oversight
+  if (s.aiAutonomyLevel > 70) return 1;
+  // Distributed/democratic: strong cooperation + trust on both sides of the table
+  if (s.intlCooperation >= 60 && s.obInternalTrust >= 60 && s.obBoardConfidence >= 50 && s.promBoardConfidence >= 50) return 4;
+  // Government control: high security protocols OR strong regulatory pressure
+  if (s.securityLevelOB >= 4 || s.securityLevelProm >= 4 || s.regulatoryPressure >= 70) return 3;
+  // Single company: US labs dominate, no cooperation, OB board entrenched
+  if (s.obCapability - s.chinaCapability > 30 && s.intlCooperation < 30 && s.obBoardConfidence >= 60) return 2;
+  // AI autonomous: low alignment confidence with capable systems
   if (s.alignmentConfidence < 30 && (s.obCapability >= 70 || s.chinaCapability >= 70)) return 1;
   return 0;
 }
 
 function resolveUsChinaRelations(s: StateVariables): number {
-  if (s.intlCooperation >= 70 && s.taiwanTension <= 20) return 4;
+  // CCP out of patience → conflict
+  if (s.ccpPatience < 20) return 0;
+  // Weight theft near-complete + high tension → conflict
+  if (s.chinaWeightTheftProgress > 80 && s.taiwanTension > 70) return 0;
+  // Active conflict from extreme tension
+  if (s.taiwanTension > 75) return 0;
+  // Domestic chip progress > 60 reduces Taiwan strategic motivation, enabling cooperation
+  const chipReducesTension = s.domesticChipProgress > 60;
+  const cooperationTensionCeiling = chipReducesTension ? 35 : 20;
+  if (s.intlCooperation >= 70 && s.taiwanTension <= cooperationTensionCeiling) return 4;
   if (s.intlCooperation >= 50 && s.taiwanTension <= 40) return 3;
   if (s.intlCooperation >= 30 && s.taiwanTension <= 60) return 2;
-  if (s.taiwanTension <= 75) return 1;
-  return 0;
+  return 1; // Cold war — worst reachable without triggering active conflict
 }
 
 function resolvePublicReaction(s: StateVariables): number {
-  if (s.publicAwareness <= 20) return 4;
+  if (s.publicAwareness <= 20) return 4; // Unaware — transition happened invisibly
+  // High regulatory pressure + negative sentiment → riots
+  if (s.regulatoryPressure > 70 && s.publicSentiment < 0) return 0;
+  // Negative media cycle + high regulatory pressure → sustained protest at minimum
+  if (s.globalMediaCycle < -60 && s.regulatoryPressure > 60) return 0;
+  // Positive media + positive sentiment → cautiously optimistic
+  if (s.globalMediaCycle >= 30 && s.publicSentiment >= 30 && s.publicAwareness <= 60) return 3;
   if (s.publicSentiment >= 30 && s.publicAwareness <= 60) return 3;
   if (s.publicSentiment >= 0) return 2;
   if (s.publicSentiment >= -40) return 1;
@@ -176,33 +204,56 @@ function resolvePublicReaction(s: StateVariables): number {
 }
 
 function resolveEconomy(s: StateVariables): number {
-  if (s.economicDisruption <= 25) return 3;
-  if (s.economicDisruption <= 50) return 2;
-  if (s.economicDisruption <= 70) return 1;
-  return 0;
+  // marketIndex is primary driver; economicDisruption and burn rates add pressure
+  const burnPressure = (s.obBurnRate + s.promBurnRate) / 2;
+  // adjustedDisruption: base disruption + burn rate pressure − market index bonus
+  const adjustedDisruption = s.economicDisruption + burnPressure * 0.2 - (s.marketIndex - 50) * 0.3;
+  if (adjustedDisruption <= 25) return 3; // AI-driven boom
+  if (adjustedDisruption <= 50) return 2; // Disruption with adaptation
+  if (adjustedDisruption <= 70) return 1; // Painful transition
+  return 0;                               // Collapse
 }
 
 function resolvePrometheusFate(s: StateVariables): number {
+  // Low board confidence + low morale → marginalized
+  if (s.promBoardConfidence < 30 && s.promMorale < 40) return 0;
+  // Prometheus ahead or matched OB → became the trusted lab
   if (s.promCapability >= s.obCapability || s.obPromGap <= -2) return 4;
+  // Safety breakthrough became the industry standard
+  if (s.promSafetyBreakthroughProgress >= 80 && s.alignmentConfidence >= 60) return 3;
+  // Classic alignment win via cooperation
   if (s.alignmentConfidence >= 70 && s.intlCooperation >= 50) return 3;
-  if (s.obPromGap >= 2 && s.obPromGap <= 5) return 2;
-  if (s.intlCooperation >= 40) return 1;
+  // Pressure + poor morale → merger
+  if (s.obPromGap >= 2 && s.obPromGap <= 5 && s.promMorale < 60) return 2;
+  if (s.intlCooperation >= 40) return 1; // Went open-source
   return 0;
 }
 
 function resolveTaiwan(s: StateVariables): number {
+  // CCP out of patience → invasion regardless of tension metric
+  if (s.ccpPatience < 20) return 0;
+  // Extreme tension → invasion
+  if (s.taiwanTension > 80) return 0;
+  // High domestic chip progress reduces Taiwan motivation → non-issue possible
+  if (s.domesticChipProgress > 60 && s.taiwanTension <= 50) return 4;
   if (s.taiwanTension <= 20) return 4;
   if (s.taiwanTension <= 40 && s.intlCooperation >= 40) return 3;
   if (s.taiwanTension <= 60) return 2;
-  if (s.taiwanTension <= 80) return 1;
-  return 0;
+  return 1; // Blockade
 }
 
 function resolveOpenSource(s: StateVariables): number {
+  // Full weight theft = everything leaked
+  if (s.chinaWeightTheftProgress >= 100) return 0;
+  // Strong open-source momentum → strategic open-sourcing
+  if (s.openSourceMomentum >= 60) return 1;
+  // Both labs locked down + low momentum → closed won
+  if (s.securityLevelOB >= 4 && s.securityLevelProm >= 4 && s.openSourceMomentum < 40) return 2;
+  // Moderate momentum or cooperation → strategic release
+  if (s.intlCooperation >= 40 || s.openSourceMomentum >= 40) return 1;
+  // Low awareness + low cooperation → irrelevant
   if (s.publicAwareness <= 30 && s.intlCooperation <= 30) return 3;
-  if (s.securityLevelOB >= 4 && s.securityLevelProm >= 4) return 2;
-  if (s.intlCooperation >= 40) return 1;
-  return 0;
+  return 3; // Irrelevant — open vs closed became a non-factor
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
