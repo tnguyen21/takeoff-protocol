@@ -80,7 +80,7 @@ export const SecurityApp = React.memo(function SecurityApp({ content }: AppProps
           { label: "Last Scan", value: "4m ago", color: "text-green-400" },
         ].map((s) => (
           <div key={s.label} className="px-4 py-3 border-r border-white/10 last:border-r-0">
-            <div className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</div>
+            <div className={`text-xl font-bold font-mono tabular-nums ${s.color}`}>{s.value}</div>
             <div className="text-neutral-500 text-[10px] mt-0.5">{s.label}</div>
           </div>
         ))}
@@ -117,7 +117,7 @@ export const SecurityApp = React.memo(function SecurityApp({ content }: AppProps
                   <div className="text-[10px] text-neutral-400 mt-1 leading-relaxed">{a.detail}</div>
                 </div>
               </div>
-              <span className="text-[10px] text-neutral-600 font-mono shrink-0">{a.time}</span>
+              <span className="text-[10px] text-neutral-600 font-mono tabular-nums shrink-0">{a.time}</span>
             </div>
           </div>
         ))}

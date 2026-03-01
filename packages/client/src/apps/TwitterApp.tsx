@@ -107,7 +107,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
         </div>
 
         {tweets.map((t, i) => (
-          <div key={i} className="px-4 py-3 border-b border-white/10 hover:bg-white/3 cursor-pointer">
+          <div key={i} className="px-4 py-3 border-b border-white/10 hover:bg-white/[0.03] cursor-pointer">
             <div className="flex gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold shrink-0">
                 {(t.name[0] ?? "?").toUpperCase()}
@@ -119,7 +119,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
                   <span className="text-neutral-500 text-xs">· {t.time}</span>
                 </div>
                 <p className="text-sm mt-1 leading-relaxed text-neutral-200">{t.text}</p>
-                <div className="flex gap-6 mt-2 text-neutral-500 text-xs">
+                <div className="flex gap-6 mt-2 text-neutral-500 text-xs tabular-nums">
                   <span className="hover:text-blue-400 cursor-pointer">💬 {fmt(t.replies)}</span>
                   <span className="hover:text-green-400 cursor-pointer">🔁 {fmt(t.retweets)}</span>
                   <span className="hover:text-red-400 cursor-pointer">♥ {fmt(t.likes)}</span>

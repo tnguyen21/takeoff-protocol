@@ -119,7 +119,7 @@ export const SheetsApp = React.memo(function SheetsApp({ content }: AppProps) {
                     className={`border border-white/10 px-2 py-1 text-[11px]
                       ${ci === 5 && cell.startsWith("▲") ? "text-red-400" : ""}
                       ${ci === 5 && cell.startsWith("▼") ? "text-green-400" : ""}
-                      ${ci > 0 && ci < 5 && !cell.startsWith("—") ? "text-neutral-300 font-mono" : "text-neutral-400"}
+                      ${ci > 0 && ci < 5 && !cell.startsWith("—") ? "text-neutral-300 font-mono tabular-nums" : "text-neutral-400"}
                     `}
                   >
                     {cell}

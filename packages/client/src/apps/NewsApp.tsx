@@ -64,7 +64,7 @@ export const NewsApp = React.memo(function NewsApp({ content }: AppProps) {
 
       <div className="flex-1 overflow-y-auto">
         {stories.map((s, i) => (
-          <div key={i} className="px-4 py-3 border-b border-neutral-800 hover:bg-white/3 cursor-pointer">
+          <div key={i} className="px-4 py-3 border-b border-neutral-800 hover:bg-white/[0.03] cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-mono text-neutral-500 bg-neutral-800 px-1.5 py-0.5 rounded uppercase tracking-wide">
                 {s.source}

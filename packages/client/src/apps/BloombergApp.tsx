@@ -96,7 +96,7 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
       {/* Index bar */}
       <div className="flex gap-6 px-3 py-1 bg-[#0a0a0a] border-b border-green-900 shrink-0 flex-wrap">
         {INDICES.map((idx) => (
-          <span key={idx.name} className="flex gap-2">
+          <span key={idx.name} className="flex gap-2 tabular-nums">
             <span className="text-[#f26522] font-bold">{idx.name}</span>
             <span className="text-amber-300">{idx.value}</span>
             <span className={idx.chg.startsWith("+") ? "text-green-400" : "text-red-400"}>{idx.chg}</span>
@@ -173,7 +173,7 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
             <span>TICKER</span><span>LAST</span><span>CHG</span><span>%CHG</span><span>VOL</span>
           </div>
           {TICKERS.map((t) => (
-            <div key={t.sym} className="grid grid-cols-5 px-2 py-1 border-b border-green-900/30 hover:bg-green-900/10 cursor-pointer">
+            <div key={t.sym} className="grid grid-cols-5 px-2 py-1 border-b border-green-900/30 hover:bg-green-900/10 cursor-pointer tabular-nums">
               <span className="text-amber-300 font-bold">{t.sym}</span>
               <span className="text-green-300">{t.price}</span>
               <span className={t.chg.startsWith("+") ? "text-green-400" : "text-red-400"}>{t.chg}</span>

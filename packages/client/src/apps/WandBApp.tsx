@@ -95,13 +95,13 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
             <span>Run</span><span>Status</span><span>Loss</span><span>Step</span>
           </div>
           {RUNS.map((r) => (
-            <div key={r.name} className="grid grid-cols-4 text-xs px-3 py-2 border-b border-white/5 hover:bg-white/5 cursor-pointer">
+            <div key={r.name} className="grid grid-cols-4 text-xs px-3 py-2 border-b border-white/5 hover:bg-white/5 cursor-pointer tabular-nums">
               <span className="text-blue-400 truncate">{r.name}</span>
               <span className={r.status === "running" ? "text-green-400" : r.status === "crashed" ? "text-red-400" : "text-neutral-400"}>
                 {r.status}
               </span>
-              <span className="text-neutral-300">{r.loss}</span>
-              <span className="text-neutral-400">{r.step}</span>
+              <span className="text-neutral-300 font-mono">{r.loss}</span>
+              <span className="text-neutral-400 font-mono">{r.step}</span>
             </div>
           ))}
         </div>
@@ -221,7 +221,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
                 <div className="flex-1 bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                   <div className="h-full bg-yellow-500 rounded-full" style={{ width: val }} />
                 </div>
-                <span className="text-neutral-400 w-8 text-right">{val}</span>
+                <span className="text-neutral-400 w-8 text-right tabular-nums">{val}</span>
               </div>
             ))}
           </div>

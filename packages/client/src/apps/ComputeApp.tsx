@@ -179,8 +179,8 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
                       style={{ width: `${c.util}%` }}
                     />
                   </div>
-                  <span className="text-xs text-neutral-400 w-10 text-right font-mono">{c.util}%</span>
-                  <span className="text-xs text-neutral-600 w-16 text-right font-mono">{c.gpus} GPU</span>
+                  <span className="text-xs text-neutral-400 w-10 text-right font-mono tabular-nums">{c.util}%</span>
+                  <span className="text-xs text-neutral-600 w-16 text-right font-mono tabular-nums">{c.gpus} GPU</span>
                 </div>
               </div>
             ))}
@@ -213,7 +213,7 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
               <span>Job ID</span><span>Cluster</span><span>GPUs</span><span>Elapsed</span><span>ETA</span>
             </div>
             {JOBS.map((j) => (
-              <div key={j.id} className="grid grid-cols-5 text-xs px-3 py-2 border-b border-white/5 last:border-0 hover:bg-white/3">
+              <div key={j.id} className="grid grid-cols-5 text-xs px-3 py-2 border-b border-white/5 last:border-0 hover:bg-white/[0.03] tabular-nums">
                 <span className="text-blue-400 truncate">{j.id}</span>
                 <span className="text-neutral-400">{j.cluster}</span>
                 <span className="text-neutral-300 font-mono">{j.gpus}</span>

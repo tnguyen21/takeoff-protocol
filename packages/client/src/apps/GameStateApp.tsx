@@ -192,7 +192,7 @@ export const GameStateApp = React.memo(function GameStateApp({ content: _ }: App
               </div>
 
               {/* Value */}
-              <div className={`w-16 text-right font-mono text-[11px] shrink-0 ${ACCURACY_TEXT[accuracy]}`}>
+              <div className={`w-16 text-right font-mono tabular-nums text-[11px] shrink-0 ${ACCURACY_TEXT[accuracy]}`}>
                 {isHidden ? (
                   <span className="text-neutral-600">██████</span>
                 ) : (
