@@ -31,7 +31,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     callback({ ok: true, player: result.player });
   });
 
-  socket.on("room:rejoin", ({ code, playerId: oldSocketId }: { code: string; playerId: string }, callback?: (res: { ok: boolean; error?: string; player?: { faction: Faction; role: Role; isLeader: boolean; influenceTokens: number } }) => void) => {
+  socket.on("room:rejoin", ({ code, playerId: oldSocketId }: { code: string; playerId: string }, callback?: (res: { ok: boolean; error?: string; player?: { faction: Faction | null; role: Role | null; isLeader: boolean; influenceTokens: number } }) => void) => {
     const room = getRoom(code);
     if (!room) {
       callback?.({ ok: false, error: "Room not found" });
@@ -48,7 +48,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     }
 
     // Get messages for this player (team chats + DMs) before reassigning socket ID
-    const messages = oldPlayer ? getPlayerMessages(room, oldPlayer.faction, oldSocketId) : [];
+    const messages = oldPlayer?.faction ? getPlayerMessages(room, oldPlayer.faction, oldSocketId) : [];
 
     // Reassign socket ID
     const result = rejoinRoom(code, socket.id, oldSocketId);
@@ -184,7 +184,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     // Record team vote
     if (teamVote) {
       const player = room.players[socket.id];
-      if (player) {
+      if (player && player.faction) {
         if (!room.teamVotes[player.faction]) {
           room.teamVotes[player.faction] = {};
         }
@@ -217,7 +217,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!room || room.phase !== "decision") return;
 
     const player = room.players[socket.id];
-    if (!player?.isLeader) return;
+    if (!player?.isLeader || !player.faction) return;
 
     room.teamDecisions[player.faction] = teamDecision;
     io.to(code).emit("decision:team-locked", {
@@ -234,7 +234,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!room) return;
 
     const sender = room.players[socket.id];
-    if (!sender) return;
+    if (!sender || !sender.faction) return;
 
     const message = {
       id: crypto.randomUUID(),
@@ -280,7 +280,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       if (!room) return;
 
       const player = room.players[socket.id];
-      if (!player) return;
+      if (!player || !player.role || !player.faction) return;
 
       // Validate: only specific roles can publish
       const PUBLISHER_ROLES: Role[] = ["ext_journalist", "prom_opensource", "ob_safety"];
@@ -349,16 +349,18 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
       // Emit to all players in the room
       for (const playerId of Object.keys(room.players)) {
+        const recipient = room.players[playerId];
+        if (!recipient.faction) continue;
         // Inject content items into player's feeds
         const newsContent: AppContent = {
-          faction: room.players[playerId].faction,
-          role: room.players[playerId].role,
+          faction: recipient.faction,
+          role: recipient.role ?? undefined,
           app: "news",
           items: [newsItem],
         };
         const twitterContent: AppContent = {
-          faction: room.players[playerId].faction,
-          role: room.players[playerId].role,
+          faction: recipient.faction,
+          role: recipient.role ?? undefined,
           app: "twitter",
           items: [twitterItem],
         };
@@ -407,7 +409,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!room) return;
 
     const player = room.players[socket.id];
-    if (!player) return;
+    if (!player || !player.faction) return;
 
     const spent = spendToken(room, socket.id);
     if (!spent) {

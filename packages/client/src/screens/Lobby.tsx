@@ -188,7 +188,8 @@ export function Lobby() {
 
   // ── Step 3: Room lobby — role selection ──
   const MIN_PLAYERS = 8;
-  const canStart = isGM && (lobbyPlayers.length >= MIN_PLAYERS || allowOverride);
+  const allPlayersHaveRoles = lobbyPlayers.length > 0 && lobbyPlayers.every(p => p.faction !== null && p.role !== null);
+  const canStart = isGM && allPlayersHaveRoles && (lobbyPlayers.length >= MIN_PLAYERS || allowOverride);
 
   return (
     <div className="min-h-screen w-screen bg-neutral-950 flex flex-col">
@@ -330,24 +331,31 @@ export function Lobby() {
           ) : (
             <div className="flex flex-wrap gap-2">
               {lobbyPlayers.map((p) => {
-                const theme = FACTION_THEMES[p.faction];
-                const factionRole = FACTIONS.find((f) => f.id === p.faction)?.roles.find((r) => r.id === p.role);
+                const theme = p.faction ? FACTION_THEMES[p.faction] : null;
+                const factionRole = p.faction && p.role
+                  ? FACTIONS.find((f) => f.id === p.faction)?.roles.find((r) => r.id === p.role)
+                  : null;
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${theme.cardBorder} ${theme.cardBg}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${
+                      theme ? `${theme.cardBorder} ${theme.cardBg}` : "border-neutral-800 bg-neutral-900/40"
+                    }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${p.connected ? theme.dot : "bg-neutral-700"}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${p.connected ? (theme?.dot ?? "bg-neutral-400") : "bg-neutral-700"}`} />
                     <span className="text-neutral-200 font-medium">{p.name}</span>
-                    {factionRole && (
+                    {factionRole && theme && (
                       <span className={`text-xs ${theme.badgeText}`}>
                         {factionRole.label}
                       </span>
                     )}
-                    {!factionRole && p.faction !== "external" && (
+                    {!factionRole && p.faction && theme && (
                       <span className={`text-xs ${theme.badgeText}`}>
                         {FACTION_SHORT_NAMES[p.faction]}
                       </span>
+                    )}
+                    {!p.faction && (
+                      <span className="text-xs text-neutral-600">no role selected</span>
                     )}
                   </div>
                 );
@@ -363,9 +371,11 @@ export function Lobby() {
               <div>
                 <h3 className="text-white font-semibold mb-1">Start Exercise</h3>
                 <p className="text-neutral-500 text-sm">
-                  {lobbyPlayers.length < MIN_PLAYERS && !allowOverride
-                    ? `Waiting for ${MIN_PLAYERS - lobbyPlayers.length} more player${MIN_PLAYERS - lobbyPlayers.length !== 1 ? "s" : ""} (${lobbyPlayers.length}/${MIN_PLAYERS})`
-                    : `${lobbyPlayers.length} player${lobbyPlayers.length !== 1 ? "s" : ""} ready`}
+                  {!allPlayersHaveRoles && lobbyPlayers.length > 0
+                    ? `${lobbyPlayers.filter(p => !p.faction || !p.role).length} player(s) still need to select a role`
+                    : lobbyPlayers.length < MIN_PLAYERS && !allowOverride
+                      ? `Waiting for ${MIN_PLAYERS - lobbyPlayers.length} more player${MIN_PLAYERS - lobbyPlayers.length !== 1 ? "s" : ""} (${lobbyPlayers.length}/${MIN_PLAYERS})`
+                      : `${lobbyPlayers.length} player${lobbyPlayers.length !== 1 ? "s" : ""} ready`}
                 </p>
               </div>
               <div className="flex items-center gap-4">

@@ -41,6 +41,10 @@ function setPhaseTimer(io: Server, room: GameRoom) {
 }
 
 export function startGame(io: Server, room: GameRoom) {
+  // Validate all players have selected roles
+  const allReady = Object.values(room.players).every(p => p.faction && p.role);
+  if (!allReady) return;
+
   room.round = 1;
   room.phase = "briefing";
   room.decisions = {};
@@ -143,8 +147,8 @@ function emitDecisions(io: Server, room: GameRoom) {
   const roundDecisions = ROUND_DECISIONS[room.round - 1];
   if (!roundDecisions) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const [socketId, player] of Object.entries(room.players) as [string, any][]) {
+  for (const [socketId, player] of Object.entries(room.players)) {
+    if (!player.faction || !player.role) continue;
     const individual: IndividualDecision | undefined = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role);
     const team: TeamDecision | undefined = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction);
     io.to(socketId).emit("game:decisions", { individual: individual ?? null, team: team ?? null });
@@ -153,6 +157,7 @@ function emitDecisions(io: Server, room: GameRoom) {
 
 function emitStateViews(io: Server, room: GameRoom) {
   for (const [socketId, player] of Object.entries(room.players)) {
+    if (!player.faction || !player.role) continue;
     const view = computeFogView(room.state, player.faction, player.role, room.round);
     io.to(socketId).emit("game:state", { view });
   }
@@ -169,6 +174,7 @@ function emitBriefing(io: Server, room: GameRoom) {
     const { common, factionVariants } = roundContent.briefing;
 
     for (const [socketId, player] of Object.entries(room.players)) {
+      if (!player.faction) continue;
       const variant = factionVariants?.[player.faction];
       const text = variant ? `${common}\n\n${variant}` : common;
       io.to(socketId).emit("game:briefing", { text });
@@ -185,6 +191,7 @@ function emitBriefing(io: Server, room: GameRoom) {
 
 function emitContent(io: Server, room: GameRoom) {
   for (const [socketId, player] of Object.entries(room.players)) {
+    if (!player.faction || !player.role) continue;
     try {
       const content = getContentForPlayer(room.round, player.faction, player.role, room.state);
       io.to(socketId).emit("game:content", { content });
@@ -288,8 +295,8 @@ function emitResolution(io: Server, room: GameRoom) {
   const narrative = buildNarrative(teamDecisionSummary, room.round);
 
   // Emit fog-filtered resolution to each player
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const [socketId, player] of Object.entries(room.players) as [string, any][]) {
+  for (const [socketId, player] of Object.entries(room.players)) {
+    if (!player.faction || !player.role) continue;
     const fogView = computeFogView(stateAfter, player.faction, player.role, room.round);
 
     const filteredDeltas: StateDelta[] = changedKeys
@@ -339,6 +346,7 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
   if (room.phase === "lobby") return;
 
   if (player) {
+    if (!player.faction || !player.role) return;
     // Fog-of-war state view
     const view = computeFogView(room.state, player.faction, player.role, room.round);
     socket.emit("game:state", { view });

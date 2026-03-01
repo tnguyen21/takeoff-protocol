@@ -24,8 +24,8 @@ export type GamePhase =
 export interface Player {
   id: string;
   name: string;
-  faction: Faction;
-  role: Role;
+  faction: Faction | null;
+  role: Role | null;
   isLeader: boolean;
   influenceTokens: number;
   connected: boolean;

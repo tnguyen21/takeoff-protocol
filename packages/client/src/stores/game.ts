@@ -43,8 +43,8 @@ function clearSession(): void {
 interface LobbyPlayer {
   id: string;
   name: string;
-  faction: Faction;
-  role: Role;
+  faction: Faction | null;
+  role: Role | null;
   connected: boolean;
 }
 
@@ -211,7 +211,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.emit(
       "room:rejoin",
       { code, playerId: oldPlayerId },
-      (res: { ok: boolean; player?: { faction: Faction; role: Role; isLeader: boolean; influenceTokens: number } }) => {
+      (res: { ok: boolean; player?: { faction: Faction | null; role: Role | null; isLeader: boolean; influenceTokens: number } }) => {
         if (res.ok) {
           const updates: Partial<GameStore> = {
             reconnecting: false,

@@ -49,8 +49,8 @@ export function joinRoom(
   const player: Player = {
     id: socketId,
     name,
-    faction: "external" as Faction, // default, changed during role select
-    role: "ext_journalist" as Role, // default, changed during role select
+    faction: null,
+    role: null,
     isLeader: false,
     influenceTokens: 2,
     connected: true,
