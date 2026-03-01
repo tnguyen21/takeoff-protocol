@@ -565,14 +565,6 @@ Some actions narrow confidence intervals:
 
 ## 9. Core Mechanics
 
-### Influence Tokens
-
-Each player starts with **2 influence tokens**. Can spend to:
-
-- Block one piece of information from reaching another faction
-- Force a cross-faction DM to be revealed to your whole team
-- GM award for creative play (+1 at GM discretion)
-
 ### State Resolution
 
 Each decision has pre-defined impact on state variables:
@@ -705,7 +697,23 @@ People building the future — AI researchers, engineers, founders, investors, a
 
 ---
 
-## 16. References
+## 16. Parked Mechanics
+
+Mechanics removed from v1 implementation. May be restored in v2.
+
+### Influence Tokens
+
+Each player starts with **2 influence tokens**. Can spend to:
+
+- Block one piece of information from reaching another faction
+- Force a cross-faction DM to be revealed to your whole team
+- GM award for creative play (+1 at GM discretion)
+
+*Removed from v1 implementation. May be restored in v2.*
+
+---
+
+## 17. References
 
 - [AI 2027 Scenario](https://ai-2027.com)
 - [AI 2027 Summary](https://ai-2027.com/summary)

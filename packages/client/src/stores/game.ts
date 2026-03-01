@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameMessage, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { soundManager } from "../sounds/index.js";
@@ -94,10 +94,6 @@ interface GameStore {
   publications: Publication[];
   notifications: GameNotification[];
 
-  // Influence Tokens
-  influenceTokens: number;
-  revealedDMs: Array<{ message: GameMessage; revealedBy: string }>;
-
   // Actions
   setPlayerName: (name: string) => void;
   publishArticle: (payload: { type: PublicationType; title: string; content: string; source: string }) => void;
@@ -112,8 +108,6 @@ interface GameStore {
   gmAdvance: () => void;
   gmPause: () => void;
   gmExtend: () => void;
-  spendToken: (action: "block_info" | "reveal_dm", payload: { targetFaction?: Faction; contentId?: string; messageId?: string }) => void;
-  gmAwardToken: (playerId: string) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -146,8 +140,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   endingPlayers: {},
   publications: [],
   notifications: [],
-  influenceTokens: 2,
-  revealedDMs: [],
 
   setPlayerName: (name) => set({ playerName: name }),
 
@@ -211,7 +203,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.emit(
       "room:rejoin",
       { code, playerId: oldPlayerId },
-      (res: { ok: boolean; player?: { faction: Faction | null; role: Role | null; isLeader: boolean; influenceTokens: number } }) => {
+      (res: { ok: boolean; player?: { faction: Faction | null; role: Role | null; isLeader: boolean } }) => {
         if (res.ok) {
           const updates: Partial<GameStore> = {
             reconnecting: false,
@@ -220,7 +212,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
           if (res.player) {
             updates.selectedFaction = res.player.faction;
             updates.selectedRole = res.player.role;
-            updates.influenceTokens = res.player.influenceTokens;
           }
           set(updates);
           // Update persisted session with new socket ID
@@ -273,14 +264,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gmExtend: () => {
     socket.emit("gm:extend");
-  },
-
-  spendToken: (action, payload) => {
-    socket.emit("token:use", { action, ...payload });
-  },
-
-  gmAwardToken: (playerId) => {
-    socket.emit("gm:award-token", { playerId });
   },
 }));
 
@@ -469,22 +452,6 @@ socket.on(
 socket.on("game:notification", (data: GameNotification) => {
   useGameStore.setState((state) => ({
     notifications: [...state.notifications, data],
-  }));
-});
-
-socket.on("token:used", (data: { ok: boolean; action?: string; tokensRemaining?: number; error?: string }) => {
-  if (data.ok && data.tokensRemaining !== undefined) {
-    useGameStore.setState({ influenceTokens: data.tokensRemaining });
-  }
-});
-
-socket.on("token:awarded", (data: { tokensRemaining: number }) => {
-  useGameStore.setState({ influenceTokens: data.tokensRemaining });
-});
-
-socket.on("token:dm-revealed", (data: { message: GameMessage; revealedBy: string }) => {
-  useGameStore.setState((s) => ({
-    revealedDMs: [...s.revealedDMs, data],
   }));
 });
 
