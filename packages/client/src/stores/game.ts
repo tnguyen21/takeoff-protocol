@@ -361,18 +361,28 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
 
   // Phase transition notification (skip lobby)
   if (data.phase !== "lobby") {
-    const phaseLabels: Record<string, string> = {
-      briefing: "Briefing Phase",
-      play: "Play Phase",
-      decision: "Decision Phase",
-      resolution: "Resolution Phase",
-    };
-    const label = phaseLabels[data.phase] ?? data.phase;
-    const hasTimer = data.timer.endsAt > Date.now();
-    const body = hasTimer
-      ? `${label} — ${Math.round((data.timer.endsAt - Date.now()) / 60000)} minutes remaining`
-      : label;
-    useNotificationsStore.getState().addNotification({ appId: "gamestate", title: label, body });
+    // Special notification for Round 4 cross-faction negotiation
+    if (data.round === 4 && data.phase === "deliberation") {
+      useNotificationsStore.getState().addNotification({
+        appId: "signal",
+        title: "Cross-Faction Negotiation Open",
+        body: "Cross-faction negotiation is open — use Signal to message other factions. You have 7 minutes.",
+      });
+    } else {
+      const phaseLabels: Record<string, string> = {
+        briefing: "Briefing Phase",
+        play: "Play Phase",
+        decision: "Decision Phase",
+        resolution: "Resolution Phase",
+        deliberation: "Deliberation Phase",
+      };
+      const label = phaseLabels[data.phase] ?? data.phase;
+      const hasTimer = data.timer.endsAt > Date.now();
+      const body = hasTimer
+        ? `${label} — ${Math.round((data.timer.endsAt - Date.now()) / 60000)} minutes remaining`
+        : label;
+      useNotificationsStore.getState().addNotification({ appId: "gamestate", title: label, body });
+    }
   }
 
   // Set up timer warnings

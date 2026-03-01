@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { useMessagesStore } from "../stores/messages.js";
+import { useGameStore } from "../stores/game.js";
 import { getAppIcon } from "../apps/icons.js";
 
 const ICON_SIZE = 44;
@@ -10,7 +11,10 @@ const LUCIDE_SIZE = 24;
 export function Dock() {
   const { windows, openWindow, focusWindow, minimizeWindow } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
+  const { round, phase } = useGameStore((s) => ({ round: s.round, phase: s.phase }));
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const isNegotiationPhase = round === 4 && phase === "deliberation";
 
   const handleClick = (w: WindowState) => {
     if (w.isOpen && !w.isMinimized) {
@@ -45,12 +49,15 @@ export function Dock() {
           const IconComponent = getAppIcon(w.appId);
           const isHovered = hoveredId === w.id;
 
+          const isSignalPulsing = isNegotiationPhase && w.appId === "signal";
+
           return (
             <button
               key={w.id}
               onClick={() => handleClick(w)}
               onMouseEnter={() => setHoveredId(w.id)}
               onMouseLeave={() => setHoveredId(null)}
+              className={isSignalPulsing ? "negotiation-pulse" : undefined}
               style={{
                 position: "relative",
                 width: `${ICON_SIZE}px`,
