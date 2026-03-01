@@ -14,6 +14,7 @@ import {
   computeLikeCount,
   computeRetweetCount,
   isVerifiedHandle,
+  assignStableIds,
 } from "./twitterUtils.js";
 import type { TweetInteraction } from "./twitterUtils.js";
 
@@ -83,6 +84,70 @@ describe("computeRetweetCount", () => {
   it("INV-2: retweet then un-retweet produces original count", () => {
     expect(computeRetweetCount(42, RETWEETED)).toBe(43);
     expect(computeRetweetCount(42, NOT_LIKED)).toBe(42);
+  });
+});
+
+// ---- assignStableIds --------------------------------------------------------
+
+// Minimal tweet-like objects for testing
+const RAW_TWEETS = [
+  { handle: "@alice", verified: false },
+  { handle: "@bob", verified: true },
+  { handle: "@carol", verified: true },
+];
+
+describe("assignStableIds", () => {
+  it("INV-3: each tweet receives a unique id", () => {
+    const tweets = assignStableIds(RAW_TWEETS, "static");
+    const ids = tweets.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("INV-3: id format matches prefix_index pattern", () => {
+    const tweets = assignStableIds(RAW_TWEETS, "static");
+    expect(tweets[0].id).toBe("static_0");
+    expect(tweets[1].id).toBe("static_1");
+    expect(tweets[2].id).toBe("static_2");
+  });
+
+  it("INV-1+2: ids are stable — same item at same index always has the same id", () => {
+    const first = assignStableIds(RAW_TWEETS, "static");
+    const second = assignStableIds(RAW_TWEETS, "static");
+    expect(first[0].id).toBe(second[0].id);
+    expect(first[1].id).toBe(second[1].id);
+  });
+
+  it("INV-1+2: filtering the result does not change the ids of surviving items", () => {
+    const allTweets = assignStableIds(RAW_TWEETS, "static");
+    const verified = allTweets.filter((t) => t.verified);
+    // @bob and @carol are verified; their ids must stay as assigned at build time
+    expect(verified[0].id).toBe("static_1");
+    expect(verified[1].id).toBe("static_2");
+  });
+
+  it("INV-1: interaction map keyed by id survives a tab-switch filter", () => {
+    // Simulate: allTweets shown on For-You tab; verified subset on Following tab.
+    const allTweets = assignStableIds(RAW_TWEETS, "static");
+    const interactions = new Map<string, TweetInteraction>();
+
+    // Like the first tweet in Following tab (which is allTweets[1] — @bob, verified)
+    const followingTweets = allTweets.filter((t) => t.verified);
+    const firstInFollowing = followingTweets[0]; // static_1
+    interactions.set(firstInFollowing.id, { liked: true, retweeted: false });
+
+    // Switch back to For-You tab — allTweets[0] (@alice) must NOT be liked
+    const aliceInteraction = interactions.get(allTweets[0].id) ?? { liked: false, retweeted: false };
+    expect(aliceInteraction.liked).toBe(false);
+
+    // @bob (@static_1) must still be liked
+    const bobInteraction = interactions.get(allTweets[1].id) ?? { liked: false, retweeted: false };
+    expect(bobInteraction.liked).toBe(true);
+  });
+
+  it("preserves all original properties alongside id", () => {
+    const tweets = assignStableIds(RAW_TWEETS, "t");
+    expect(tweets[0].handle).toBe("@alice");
+    expect(tweets[1].verified).toBe(true);
   });
 });
 

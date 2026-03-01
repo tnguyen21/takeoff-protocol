@@ -1,8 +1,9 @@
 import React from "react";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
+import { assignStableIds } from "./twitterUtils.js";
 
-const STATIC_TWEETS = [
+const STATIC_TWEETS = assignStableIds([
   {
     name: "Sam Hartley",
     handle: "@s_hartley",
@@ -153,7 +154,7 @@ const STATIC_TWEETS = [
     replies: 412,
     verified: false,
   },
-];
+], "static");
 
 const VERIFIED_HANDLES = new Set([
   "@techpolicywatch",
@@ -244,6 +245,7 @@ interface TweetState {
 }
 
 interface Tweet {
+  id: string;
   name: string;
   handle: string;
   time: string;
@@ -262,20 +264,24 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
 
   const baseTweets: Tweet[] =
     tweetItems.length > 0
-      ? tweetItems.map((item) => ({
-          name: item.sender ?? "Unknown",
-          handle: `@${(item.sender ?? "unknown").toLowerCase().replace(/[\s.]/g, "_")}`,
-          time: item.timestamp,
-          text: item.body,
-          likes: 0,
-          retweets: 0,
-          replies: 0,
-          verified: VERIFIED_HANDLES.has(`@${(item.sender ?? "unknown").toLowerCase().replace(/[\s.]/g, "_")}`),
-        }))
+      ? tweetItems.map((item, i) => {
+          const handle = `@${(item.sender ?? "unknown").toLowerCase().replace(/[\s.]/g, "_")}`;
+          return {
+            id: `content_${i}`,
+            name: item.sender ?? "Unknown",
+            handle,
+            time: item.timestamp,
+            text: item.body,
+            likes: 0,
+            retweets: 0,
+            replies: 0,
+            verified: VERIFIED_HANDLES.has(handle),
+          };
+        })
       : STATIC_TWEETS;
 
-  // Local interaction state per tweet
-  const [tweetInteractions, setTweetInteractions] = React.useState<Map<number, TweetState>>(new Map());
+  // Local interaction state per tweet — keyed by stable tweet id, not array index
+  const [tweetInteractions, setTweetInteractions] = React.useState<Map<string, TweetState>>(new Map());
 
   // Compose state
   const [composing, setComposing] = React.useState(false);
@@ -298,26 +304,26 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
     ? allTweets.filter((t) => t.verified).slice(0, 8)
     : allTweets;
 
-  function getInteraction(idx: number): TweetState {
-    return tweetInteractions.get(idx) ?? { liked: false, retweeted: false };
+  function getInteraction(id: string): TweetState {
+    return tweetInteractions.get(id) ?? { liked: false, retweeted: false };
   }
 
-  function toggleLike(idx: number, e: React.MouseEvent) {
+  function toggleLike(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    const current = getInteraction(idx);
+    const current = getInteraction(id);
     setTweetInteractions((prev) => {
       const next = new Map(prev);
-      next.set(idx, { ...current, liked: !current.liked });
+      next.set(id, { ...current, liked: !current.liked });
       return next;
     });
   }
 
-  function toggleRetweet(idx: number, e: React.MouseEvent) {
+  function toggleRetweet(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    const current = getInteraction(idx);
+    const current = getInteraction(id);
     setTweetInteractions((prev) => {
       const next = new Map(prev);
-      next.set(idx, { ...current, retweeted: !current.retweeted });
+      next.set(id, { ...current, retweeted: !current.retweeted });
       return next;
     });
   }
@@ -332,6 +338,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
       source: "twitter",
     });
     const newTweet: Tweet = {
+      id: `posted_${Date.now()}`,
       name: "You",
       handle: "@you",
       time: "now",
@@ -464,14 +471,14 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
           </div>
         )}
 
-        {displayTweets.map((t, i) => {
-          const interaction = getInteraction(i);
+        {displayTweets.map((t) => {
+          const interaction = getInteraction(t.id);
           const likeCount = t.likes + (interaction.liked ? 1 : 0);
           const rtCount = t.retweets + (interaction.retweeted ? 1 : 0);
           const isVerified = t.verified || VERIFIED_HANDLES.has(t.handle);
 
           return (
-            <div key={i} className="px-4 py-3 border-b border-white/10 hover:bg-white/[0.03] cursor-pointer">
+            <div key={t.id} className="px-4 py-3 border-b border-white/10 hover:bg-white/[0.03] cursor-pointer">
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold shrink-0">
                   {(t.name[0] ?? "?").toUpperCase()}
@@ -494,7 +501,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
                     </button>
                     {/* Retweet */}
                     <button
-                      onClick={(e) => toggleRetweet(i, e)}
+                      onClick={(e) => toggleRetweet(t.id, e)}
                       className={`flex items-center gap-1 transition-colors group ${interaction.retweeted ? "text-green-400" : "hover:text-green-400"}`}
                     >
                       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -507,7 +514,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
                     </button>
                     {/* Like */}
                     <button
-                      onClick={(e) => toggleLike(i, e)}
+                      onClick={(e) => toggleLike(t.id, e)}
                       className={`flex items-center gap-1 transition-colors group ${interaction.liked ? "text-red-500" : "hover:text-red-400"}`}
                     >
                       <svg viewBox="0 0 24 24" width="15" height="15" fill={interaction.liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">

@@ -8,6 +8,17 @@ export interface TweetInteraction {
   retweeted: boolean;
 }
 
+/**
+ * Assign stable string IDs to an array of items at build time.
+ * IDs are `${prefix}_${index}` and are invariant under subsequent
+ * filtering or sorting of the resulting array — keys never shift.
+ *
+ * INV: every returned item has a unique, non-empty id.
+ */
+export function assignStableIds<T extends object>(items: T[], prefix: string): (T & { id: string })[] {
+  return items.map((item, i) => ({ ...item, id: `${prefix}_${i}` }));
+}
+
 const VERIFIED_HANDLES = new Set([
   "@techpolicywatch",
   "@linwei_ml",
