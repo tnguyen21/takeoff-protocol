@@ -160,7 +160,7 @@ export function advancePhase(io: Server, room: GameRoom) {
   setPhaseTimer(io, room);
 }
 
-function emitDecisions(io: Server, room: GameRoom) {
+export function emitDecisions(io: Server, room: GameRoom) {
   const roundDecisions = ROUND_DECISIONS[room.round - 1];
   if (!roundDecisions) return;
 
@@ -185,7 +185,7 @@ export function emitStateViews(io: Server, room: GameRoom) {
   }
 }
 
-function emitBriefing(io: Server, room: GameRoom) {
+export function emitBriefing(io: Server, room: GameRoom) {
   try {
     const roundContent = loadRound(room.round);
     const { common, factionVariants } = roundContent.briefing;
@@ -206,7 +206,7 @@ function emitBriefing(io: Server, room: GameRoom) {
   }
 }
 
-function emitContent(io: Server, room: GameRoom) {
+export function emitContent(io: Server, room: GameRoom) {
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
     try {

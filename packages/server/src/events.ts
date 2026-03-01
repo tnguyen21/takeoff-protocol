@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
+import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, jumpToPhase, startGame, replayPlayerState, emitStateViews } from "./game.js";
+import { advancePhase, jumpToPhase, startGame, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -470,6 +470,83 @@ export function registerGameEvents(io: Server, socket: Socket) {
       io.to(room.gmId).emit("gm:activity", { playerId: socket.id, opened });
     }
   });
+
+  // ── Dev Bootstrap (dev/test only) ──
+
+  if (process.env.NODE_ENV !== "production") {
+    socket.on(
+      "dev:bootstrap",
+      (
+        {
+          faction,
+          role,
+          round,
+          phase,
+          stateOverrides,
+        }: {
+          faction: Faction;
+          role: Role;
+          round: number;
+          phase: GamePhase;
+          stateOverrides?: Record<string, number>;
+        },
+        callback: (res: { ok: boolean; code?: string; error?: string }) => void,
+      ) => {
+        // Create room with a dummy GM id (no real GM for solo dev testing)
+        const room = createRoom("dev-gm");
+        socket.join(room.code);
+        socket.data.roomCode = room.code;
+
+        // Add the player directly (bypass lobby join flow)
+        const player: Player = {
+          id: socket.id,
+          name: "Dev",
+          faction,
+          role,
+          isLeader: ["ob_ceo", "prom_ceo", "china_director"].includes(role),
+          connected: true,
+        };
+        room.players[socket.id] = player;
+
+        // Jump to the target round and phase
+        room.round = round;
+        room.phase = phase;
+        room.decisions = {};
+        room.teamDecisions = {};
+        room.teamVotes = {};
+
+        // Apply state overrides
+        if (stateOverrides) {
+          for (const [key, value] of Object.entries(stateOverrides)) {
+            if (key in room.state) {
+              (room.state as unknown as Record<string, number>)[key] = value;
+            }
+          }
+        }
+
+        // Emit phase
+        socket.emit("game:phase", { phase: room.phase, round: room.round, timer: { endsAt: 0 } });
+
+        // Emit fog-filtered state view
+        emitStateViews(io, room);
+
+        // Emit phase-appropriate content
+        if (phase === "briefing") {
+          emitBriefing(io, room);
+        }
+        if (phase === "intel" || phase === "deliberation") {
+          emitContent(io, room);
+        }
+        if (phase === "decision") {
+          emitContent(io, room);
+          emitDecisions(io, room);
+        }
+
+        console.log(`[dev:bootstrap] room=${room.code} faction=${faction} role=${role} round=${round} phase=${phase}`);
+        callback({ ok: true, code: room.code });
+      },
+    );
+  }
 
   // ── Disconnect ──
 
