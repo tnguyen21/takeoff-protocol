@@ -50,6 +50,29 @@ const STATE_LABELS: Record<keyof StateVariables, string> = {
   securityLevelOB: "Security Level (OB)",
   securityLevelProm: "Security Level (Prom)",
   intlCooperation: "Intl Cooperation",
+  // Tier 1
+  marketIndex: "Market Index",
+  regulatoryPressure: "Regulatory Pressure",
+  globalMediaCycle: "Global Media Cycle",
+  // Tier 2
+  chinaWeightTheftProgress: "China Weight Theft",
+  aiAutonomyLevel: "AI Autonomy Level",
+  whistleblowerPressure: "Whistleblower Pressure",
+  openSourceMomentum: "Open Source Momentum",
+  doomClockDistance: "Doom Clock Distance",
+  // Tier 3 — OpenBrain
+  obMorale: "OB Morale",
+  obBurnRate: "OB Burn Rate",
+  obBoardConfidence: "OB Board Confidence",
+  // Tier 3 — Prometheus
+  promMorale: "Prom Morale",
+  promBurnRate: "Prom Burn Rate",
+  promBoardConfidence: "Prom Board Confidence",
+  promSafetyBreakthroughProgress: "Prom Safety Breakthrough",
+  // Tier 3 — China
+  cdzComputeUtilization: "CDZ Compute Utilization",
+  ccpPatience: "CCP Patience",
+  domesticChipProgress: "Domestic Chip Progress",
 };
 
 // State variable ranges for bar rendering
@@ -69,6 +92,29 @@ const STATE_RANGES: Record<keyof StateVariables, [number, number]> = {
   securityLevelOB: [1, 5],
   securityLevelProm: [1, 5],
   intlCooperation: [0, 100],
+  // Tier 1
+  marketIndex: [0, 200],
+  regulatoryPressure: [0, 100],
+  globalMediaCycle: [0, 5],
+  // Tier 2
+  chinaWeightTheftProgress: [0, 100],
+  aiAutonomyLevel: [0, 100],
+  whistleblowerPressure: [0, 100],
+  openSourceMomentum: [0, 100],
+  doomClockDistance: [0, 5],
+  // Tier 3 — OpenBrain
+  obMorale: [0, 100],
+  obBurnRate: [0, 100],
+  obBoardConfidence: [0, 100],
+  // Tier 3 — Prometheus
+  promMorale: [0, 100],
+  promBurnRate: [0, 100],
+  promBoardConfidence: [0, 100],
+  promSafetyBreakthroughProgress: [0, 100],
+  // Tier 3 — China
+  cdzComputeUtilization: [0, 100],
+  ccpPatience: [0, 100],
+  domesticChipProgress: [0, 100],
 };
 
 function barPct(key: keyof StateVariables, value: number): number {

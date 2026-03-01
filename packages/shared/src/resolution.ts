@@ -48,6 +48,30 @@ function clampState(state: StateVariables): void {
   state.securityLevelOB = clamp(state.securityLevelOB, 1, 5);
   state.securityLevelProm = clamp(state.securityLevelProm, 1, 5);
   state.intlCooperation = clamp(state.intlCooperation, 0, 100);
+
+  // ── Tier 1: Public-Facing ──
+  state.marketIndex = clamp(state.marketIndex, 0, 200);
+  state.regulatoryPressure = clamp(state.regulatoryPressure, 0, 100);
+  state.globalMediaCycle = clamp(state.globalMediaCycle, 0, 5);
+
+  // ── Tier 2: Hidden Engine ──
+  state.chinaWeightTheftProgress = clamp(state.chinaWeightTheftProgress, 0, 100);
+  state.aiAutonomyLevel = clamp(state.aiAutonomyLevel, 0, 100);
+  state.whistleblowerPressure = clamp(state.whistleblowerPressure, 0, 100);
+  state.openSourceMomentum = clamp(state.openSourceMomentum, 0, 100);
+  state.doomClockDistance = clamp(state.doomClockDistance, 0, 5);
+
+  // ── Tier 3: Per-Faction Internal ──
+  state.obMorale = clamp(state.obMorale, 0, 100);
+  state.obBurnRate = clamp(state.obBurnRate, 0, 100);
+  state.obBoardConfidence = clamp(state.obBoardConfidence, 0, 100);
+  state.promMorale = clamp(state.promMorale, 0, 100);
+  state.promBurnRate = clamp(state.promBurnRate, 0, 100);
+  state.promBoardConfidence = clamp(state.promBoardConfidence, 0, 100);
+  state.promSafetyBreakthroughProgress = clamp(state.promSafetyBreakthroughProgress, 0, 100);
+  state.cdzComputeUtilization = clamp(state.cdzComputeUtilization, 0, 100);
+  state.ccpPatience = clamp(state.ccpPatience, 0, 100);
+  state.domesticChipProgress = clamp(state.domesticChipProgress, 0, 100);
 }
 
 /**

@@ -14,6 +14,7 @@ interface StateRow {
 }
 
 const STATE_ROW_DEFS: StateRow[] = [
+  // Core variables
   { label: "OB Capability", key: "obCapability", min: 0, max: 100, unit: "pts" },
   { label: "Prometheus Capability", key: "promCapability", min: 0, max: 100 },
   { label: "China Capability", key: "chinaCapability", min: 0, max: 100 },
@@ -28,6 +29,29 @@ const STATE_ROW_DEFS: StateRow[] = [
   { label: "OB Internal Trust", key: "obInternalTrust", min: 0, max: 100 },
   { label: "Security Level OB", key: "securityLevelOB", min: 1, max: 5, unit: "SL" },
   { label: "Intl Cooperation", key: "intlCooperation", min: 0, max: 100 },
+  // Tier 1: Public-Facing
+  { label: "Market Index", key: "marketIndex", min: 0, max: 200 },
+  { label: "Regulatory Pressure", key: "regulatoryPressure", min: 0, max: 100 },
+  { label: "Global Media Cycle", key: "globalMediaCycle", min: 0, max: 5 },
+  // Tier 2: Hidden Engine
+  { label: "China Weight Theft", key: "chinaWeightTheftProgress", min: 0, max: 100 },
+  { label: "AI Autonomy Level", key: "aiAutonomyLevel", min: 0, max: 100 },
+  { label: "Whistleblower Pressure", key: "whistleblowerPressure", min: 0, max: 100 },
+  { label: "Open Source Momentum", key: "openSourceMomentum", min: 0, max: 100 },
+  { label: "Doom Clock Distance", key: "doomClockDistance", min: 0, max: 5 },
+  // Tier 3: OpenBrain Internal
+  { label: "OB Morale", key: "obMorale", min: 0, max: 100 },
+  { label: "OB Burn Rate", key: "obBurnRate", min: 0, max: 100 },
+  { label: "OB Board Confidence", key: "obBoardConfidence", min: 0, max: 100 },
+  // Tier 3: Prometheus Internal
+  { label: "Prom Morale", key: "promMorale", min: 0, max: 100 },
+  { label: "Prom Burn Rate", key: "promBurnRate", min: 0, max: 100 },
+  { label: "Prom Board Confidence", key: "promBoardConfidence", min: 0, max: 100 },
+  { label: "Prom Safety Breakthrough", key: "promSafetyBreakthroughProgress", min: 0, max: 100 },
+  // Tier 3: China Internal
+  { label: "CDZ Compute Utilization", key: "cdzComputeUtilization", min: 0, max: 100 },
+  { label: "CCP Patience", key: "ccpPatience", min: 0, max: 100 },
+  { label: "Domestic Chip Progress", key: "domesticChipProgress", min: 0, max: 100 },
 ];
 
 // Fallback static values used when stateView is null (matches previous mock)
@@ -47,6 +71,29 @@ const STATIC_FALLBACK: Record<keyof StateView, { value: number; accuracy: Accura
   securityLevelOB: { value: 3, accuracy: "exact" },
   securityLevelProm: { value: 3, accuracy: "exact" },
   intlCooperation: { value: 44, accuracy: "estimate", confidence: 7 },
+  // Tier 1
+  marketIndex: { value: 140, accuracy: "estimate", confidence: 10 },
+  regulatoryPressure: { value: 10, accuracy: "estimate", confidence: 10 },
+  globalMediaCycle: { value: 0, accuracy: "estimate", confidence: 1 },
+  // Tier 2
+  chinaWeightTheftProgress: { value: 0, accuracy: "hidden" },
+  aiAutonomyLevel: { value: 10, accuracy: "hidden" },
+  whistleblowerPressure: { value: 5, accuracy: "hidden" },
+  openSourceMomentum: { value: 15, accuracy: "hidden" },
+  doomClockDistance: { value: 5, accuracy: "hidden" },
+  // Tier 3 — OpenBrain
+  obMorale: { value: 75, accuracy: "hidden" },
+  obBurnRate: { value: 50, accuracy: "hidden" },
+  obBoardConfidence: { value: 70, accuracy: "hidden" },
+  // Tier 3 — Prometheus
+  promMorale: { value: 80, accuracy: "hidden" },
+  promBurnRate: { value: 40, accuracy: "hidden" },
+  promBoardConfidence: { value: 65, accuracy: "hidden" },
+  promSafetyBreakthroughProgress: { value: 20, accuracy: "hidden" },
+  // Tier 3 — China
+  cdzComputeUtilization: { value: 40, accuracy: "hidden" },
+  ccpPatience: { value: 60, accuracy: "hidden" },
+  domesticChipProgress: { value: 15, accuracy: "hidden" },
 };
 
 const ACCURACY_COLOR: Record<Accuracy, string> = {

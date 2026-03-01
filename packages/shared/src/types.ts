@@ -48,6 +48,33 @@ export interface StateVariables {
   securityLevelOB: number;     // 1-5 (SL1-SL5)
   securityLevelProm: number;   // 1-5
   intlCooperation: number;     // 0-100
+
+  // ── Tier 1: Public-Facing ──
+  marketIndex: number;           // 0-200, stock market proxy
+  regulatoryPressure: number;    // 0-100
+  globalMediaCycle: number;      // 0-5 enum: 0=ai-hype, 1=ai-fear, 2=ai-crisis, 3=ai-war, 4=ai-regulation, 5=ai-normalized
+
+  // ── Tier 2: Hidden Engine ──
+  chinaWeightTheftProgress: number; // 0-100
+  aiAutonomyLevel: number;          // 0-100
+  whistleblowerPressure: number;    // 0-100
+  openSourceMomentum: number;       // 0-100
+  doomClockDistance: number;        // 0-5, counts DOWN (5=safe, 0=catastrophe)
+
+  // ── Tier 3: Per-Faction Internal ──
+  // OpenBrain
+  obMorale: number;              // 0-100
+  obBurnRate: number;            // 0-100
+  obBoardConfidence: number;     // 0-100
+  // Prometheus
+  promMorale: number;            // 0-100
+  promBurnRate: number;          // 0-100
+  promBoardConfidence: number;   // 0-100
+  promSafetyBreakthroughProgress: number; // 0-100
+  // China
+  cdzComputeUtilization: number; // 0-100
+  ccpPatience: number;           // 0-100
+  domesticChipProgress: number;  // 0-100
 }
 
 // ── Fog of War ──

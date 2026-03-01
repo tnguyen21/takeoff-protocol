@@ -20,6 +20,29 @@ const BASE_STATE: StateVariables = {
   securityLevelOB: 3,
   securityLevelProm: 3,
   intlCooperation: 40,
+  // Tier 1
+  marketIndex: 140,
+  regulatoryPressure: 10,
+  globalMediaCycle: 0,
+  // Tier 2
+  chinaWeightTheftProgress: 0,
+  aiAutonomyLevel: 10,
+  whistleblowerPressure: 5,
+  openSourceMomentum: 15,
+  doomClockDistance: 5,
+  // Tier 3 — OpenBrain
+  obMorale: 75,
+  obBurnRate: 50,
+  obBoardConfidence: 70,
+  // Tier 3 — Prometheus
+  promMorale: 80,
+  promBurnRate: 40,
+  promBoardConfidence: 65,
+  promSafetyBreakthroughProgress: 20,
+  // Tier 3 — China
+  cdzComputeUtilization: 40,
+  ccpPatience: 60,
+  domesticChipProgress: 15,
 };
 
 // ── resolveDecisions ──────────────────────────────────────────────────────────
@@ -178,6 +201,15 @@ describe("computeFogView", () => {
       "publicAwareness", "publicSentiment", "economicDisruption",
       "taiwanTension", "obInternalTrust", "securityLevelOB",
       "securityLevelProm", "intlCooperation",
+      // Tier 1
+      "marketIndex", "regulatoryPressure", "globalMediaCycle",
+      // Tier 2
+      "chinaWeightTheftProgress", "aiAutonomyLevel", "whistleblowerPressure",
+      "openSourceMomentum", "doomClockDistance",
+      // Tier 3
+      "obMorale", "obBurnRate", "obBoardConfidence",
+      "promMorale", "promBurnRate", "promBoardConfidence", "promSafetyBreakthroughProgress",
+      "cdzComputeUtilization", "ccpPatience", "domesticChipProgress",
     ];
     for (const key of expectedKeys) {
       expect(view[key]).toBeDefined();

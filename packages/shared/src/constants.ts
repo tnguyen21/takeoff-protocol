@@ -111,6 +111,30 @@ export const INITIAL_STATE: StateVariables = {
   securityLevelOB: 2,         // SL2-3
   securityLevelProm: 3,
   intlCooperation: 5,
+
+  // ── Tier 1: Public-Facing ──
+  marketIndex: 140,
+  regulatoryPressure: 10,
+  globalMediaCycle: 0,        // ai-hype
+
+  // ── Tier 2: Hidden Engine ──
+  chinaWeightTheftProgress: 0,
+  aiAutonomyLevel: 10,
+  whistleblowerPressure: 5,
+  openSourceMomentum: 15,
+  doomClockDistance: 5,       // safe at start
+
+  // ── Tier 3: Per-Faction Internal ──
+  obMorale: 75,
+  obBurnRate: 50,
+  obBoardConfidence: 70,
+  promMorale: 80,
+  promBurnRate: 40,
+  promBoardConfidence: 65,
+  promSafetyBreakthroughProgress: 20,
+  cdzComputeUtilization: 40,
+  ccpPatience: 60,
+  domesticChipProgress: 15,
 };
 
 // ── Round Count ──

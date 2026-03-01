@@ -303,6 +303,29 @@ const STATE_LABELS: Record<keyof StateVariables, string> = {
   securityLevelOB: "OB Security Level",
   securityLevelProm: "Prometheus Security Level",
   intlCooperation: "International Cooperation",
+  // Tier 1
+  marketIndex: "Market Index",
+  regulatoryPressure: "Regulatory Pressure",
+  globalMediaCycle: "Global Media Cycle",
+  // Tier 2
+  chinaWeightTheftProgress: "China Weight Theft Progress",
+  aiAutonomyLevel: "AI Autonomy Level",
+  whistleblowerPressure: "Whistleblower Pressure",
+  openSourceMomentum: "Open Source Momentum",
+  doomClockDistance: "Doom Clock Distance",
+  // Tier 3 — OpenBrain
+  obMorale: "OB Morale",
+  obBurnRate: "OB Burn Rate",
+  obBoardConfidence: "OB Board Confidence",
+  // Tier 3 — Prometheus
+  promMorale: "Prometheus Morale",
+  promBurnRate: "Prometheus Burn Rate",
+  promBoardConfidence: "Prometheus Board Confidence",
+  promSafetyBreakthroughProgress: "Prom Safety Breakthrough Progress",
+  // Tier 3 — China
+  cdzComputeUtilization: "CDZ Compute Utilization",
+  ccpPatience: "CCP Patience",
+  domesticChipProgress: "Domestic Chip Progress",
 };
 
 // ── Activity Penalties ──

@@ -23,6 +23,30 @@ const FOG_MATRIX: FogMatrix = {
   securityLevelOB:       { openbrain: { accuracy: "exact" },     prometheus: { accuracy: "estimate", confidence: 1 },  china: { accuracy: "estimate", confidence: 1 },  external: { accuracy: "estimate", confidence: 1 } },
   securityLevelProm:     { openbrain: { accuracy: "estimate", confidence: 1 },  prometheus: { accuracy: "exact" },     china: { accuracy: "estimate", confidence: 1 },  external: { accuracy: "estimate", confidence: 1 } },
   intlCooperation:       { openbrain: { accuracy: "hidden" },    prometheus: { accuracy: "estimate", confidence: 10 }, china: { accuracy: "estimate", confidence: 10 }, external: { accuracy: "exact" } },
+
+  // ── Tier 1: Public-Facing ──
+  marketIndex:           { openbrain: { accuracy: "estimate", confidence: 10 }, prometheus: { accuracy: "estimate", confidence: 10 }, china: { accuracy: "hidden" }, external: { accuracy: "exact" } },
+  regulatoryPressure:    { openbrain: { accuracy: "estimate", confidence: 10 }, prometheus: { accuracy: "estimate", confidence: 10 }, china: { accuracy: "hidden" }, external: { accuracy: "exact" } },
+  globalMediaCycle:      { openbrain: { accuracy: "estimate", confidence: 1 },  prometheus: { accuracy: "estimate", confidence: 1 },  china: { accuracy: "hidden" }, external: { accuracy: "exact" } },
+
+  // ── Tier 2: Hidden Engine ──
+  chinaWeightTheftProgress: { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  aiAutonomyLevel:          { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  whistleblowerPressure:    { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  openSourceMomentum:       { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "estimate", confidence: 10 }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  doomClockDistance:        { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+
+  // ── Tier 3: Per-Faction Internal ──
+  obMorale:              { openbrain: { accuracy: "exact" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  obBurnRate:            { openbrain: { accuracy: "exact" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  obBoardConfidence:     { openbrain: { accuracy: "exact" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  promMorale:            { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "exact" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  promBurnRate:          { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "exact" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  promBoardConfidence:   { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "exact" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  promSafetyBreakthroughProgress: { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "exact" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  cdzComputeUtilization: { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "exact" }, external: { accuracy: "hidden" } },
+  ccpPatience:           { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "exact" }, external: { accuracy: "hidden" } },
+  domesticChipProgress:  { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "exact" }, external: { accuracy: "hidden" } },
 };
 
 /**
