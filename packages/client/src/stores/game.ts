@@ -113,6 +113,7 @@ interface GameStore {
   gmAdvance: () => void;
   gmPause: () => void;
   gmExtend: () => void;
+  gmSetState: (variable: keyof StateVariables, value: number) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -271,6 +272,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gmExtend: () => {
     socket.emit("gm:extend");
+  },
+
+  gmSetState: (variable, value) => {
+    socket.emit("gm:set-state", { variable, value });
   },
 }));
 

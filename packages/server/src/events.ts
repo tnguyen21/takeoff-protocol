@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, startGame, replayPlayerState } from "./game.js";
+import { advancePhase, startGame, replayPlayerState, emitStateViews } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -143,6 +143,40 @@ export function registerGameEvents(io: Server, socket: Socket) {
       round: room.round,
       timer: room.timer,
     });
+  });
+
+  socket.on("gm:set-state", ({ variable, value }: { variable: string; value: number }) => {
+    if (process.env.NODE_ENV === "production") return;
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) return;
+
+    const STATE_BOUNDS: Record<string, [number, number]> = {
+      obCapability: [0, 100],
+      promCapability: [0, 100],
+      chinaCapability: [0, 100],
+      usChinaGap: [-24, 24],
+      obPromGap: [-24, 24],
+      alignmentConfidence: [0, 100],
+      misalignmentSeverity: [0, 100],
+      publicAwareness: [0, 100],
+      publicSentiment: [-100, 100],
+      economicDisruption: [0, 100],
+      taiwanTension: [0, 100],
+      obInternalTrust: [0, 100],
+      securityLevelOB: [1, 5],
+      securityLevelProm: [1, 5],
+      intlCooperation: [0, 100],
+    };
+
+    if (!(variable in STATE_BOUNDS)) return;
+    const key = variable as keyof StateVariables;
+    const [min, max] = STATE_BOUNDS[variable];
+    room.state[key] = Math.max(min, Math.min(max, value));
+
+    emitStateViews(io, room);
+    console.log(`[gm:set-state] ${variable} = ${room.state[key]}`);
   });
 
   socket.on("gm:extend", () => {

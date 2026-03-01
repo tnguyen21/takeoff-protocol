@@ -58,7 +58,7 @@ const STATE_RANGES: Record<keyof StateVariables, [number, number]> = {
   promCapability: [0, 100],
   chinaCapability: [0, 100],
   usChinaGap: [-24, 24],
-  obPromGap: [-12, 12],
+  obPromGap: [-24, 24],
   alignmentConfidence: [0, 100],
   misalignmentSeverity: [0, 100],
   publicAwareness: [0, 100],
@@ -130,6 +130,112 @@ function TimerDisplay({
   );
 }
 
+// ── Dev State Panel (DEV only) ────────────────────────────────────────────────
+
+function DevStatePanel({
+  gmRawState,
+  gmSetState,
+}: {
+  gmRawState: StateVariables;
+  gmSetState: (variable: keyof StateVariables, value: number) => void;
+}) {
+  const [pending, setPending] = useState<Partial<Record<keyof StateVariables, number>>>({});
+
+  const getValue = (key: keyof StateVariables) => pending[key] ?? gmRawState[key];
+
+  return (
+    <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid rgba(239,68,68,0.25)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          marginBottom: "14px",
+        }}
+      >
+        <div
+          style={{
+            padding: "2px 7px",
+            borderRadius: "4px",
+            background: "rgba(239,68,68,0.15)",
+            border: "1px solid rgba(239,68,68,0.4)",
+            color: "#f87171",
+            fontSize: "9px",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+          }}
+        >
+          DEV
+        </div>
+        <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+          State Overrides
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
+          const [min, max] = STATE_RANGES[key];
+          const value = getValue(key);
+          const hasPending = pending[key] !== undefined;
+
+          return (
+            <div key={key}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <span style={{ color: "#9ca3af", fontSize: "11px" }}>{STATE_LABELS[key]}</span>
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: hasPending ? "#f59e0b" : "#6b7280",
+                  }}
+                >
+                  {value}
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  step={1}
+                  value={value}
+                  onChange={(e) => setPending((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
+                  style={{ flex: 1, accentColor: "#8b5cf6", cursor: "pointer" }}
+                />
+                <button
+                  onClick={() => {
+                    gmSetState(key, value);
+                    setPending((prev) => {
+                      const next = { ...prev };
+                      delete next[key];
+                      return next;
+                    });
+                  }}
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(139,92,246,0.4)",
+                    background: "rgba(139,92,246,0.15)",
+                    color: "#c4b5fd",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  Set
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function GMDashboard() {
@@ -146,6 +252,7 @@ export function GMDashboard() {
     gmAdvance,
     gmPause,
     gmExtend,
+    gmSetState,
   } = useGameStore();
 
   const { messages } = useMessagesStore();
@@ -467,6 +574,10 @@ export function GMDashboard() {
             <div style={{ color: "#4b5563", fontSize: "13px", fontStyle: "italic" }}>
               Waiting for game state…
             </div>
+          )}
+
+          {import.meta.env.DEV && gmRawState && (
+            <DevStatePanel gmRawState={gmRawState} gmSetState={gmSetState} />
           )}
         </div>
 

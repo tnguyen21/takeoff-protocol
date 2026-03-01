@@ -172,7 +172,7 @@ function emitDecisions(io: Server, room: GameRoom) {
   }
 }
 
-function emitStateViews(io: Server, room: GameRoom) {
+export function emitStateViews(io: Server, room: GameRoom) {
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
     const view = computeFogView(room.state, player.faction, player.role, room.round);
