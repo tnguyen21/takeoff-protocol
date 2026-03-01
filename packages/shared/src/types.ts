@@ -116,7 +116,6 @@ export type AppId =
   | "security"
   | "bloomberg"
   | "briefing"
-  | "wechat"
   | "intel"
   | "military"
   | "arxiv"

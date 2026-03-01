@@ -158,7 +158,7 @@ describe("content richness checks", () => {
     const content = getContentForPlayer(1, "china", "china_director", INITIAL_STATE);
     const apps = content.map((ac) => ac.app);
     expect(apps).toContain("compute");
-    expect(apps).toContain("wechat");
+    expect(apps).toContain("signal");
   });
 
   it("all items have required fields", () => {
@@ -341,7 +341,7 @@ describe("round2 content richness checks", () => {
     const content = getContentForPlayer(2, "china", "china_director", INITIAL_STATE);
     const apps = content.map((ac) => ac.app);
     expect(apps).toContain("compute");
-    expect(apps).toContain("wechat");
+    expect(apps).toContain("signal");
   });
 
   it("prometheus player receives wandb and slack content", () => {
@@ -885,7 +885,7 @@ describe("round5: content richness and critical signals", () => {
   it("china director gets wechat and compute content", () => {
     const content = getContentForPlayer(5, "china", "china_director", INITIAL_STATE);
     const apps = content.map((ac) => ac.app);
-    expect(apps).toContain("wechat");
+    expect(apps).toContain("signal");
     expect(apps).toContain("compute");
   });
 
@@ -1245,7 +1245,7 @@ describe("round4: content richness checks", () => {
     const content = getContentForPlayer(4, "china", "china_director", INITIAL_STATE);
     const apps = content.map((ac) => ac.app);
     expect(apps).toContain("compute");
-    expect(apps).toContain("wechat");
+    expect(apps).toContain("signal");
   });
 
   it("ob_safety memo items are classified as critical", () => {

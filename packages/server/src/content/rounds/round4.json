@@ -537,7 +537,7 @@
     },
     {
       "faction": "china",
-      "app": "wechat",
+      "app": "signal",
       "items": [
         {
           "id": "china4-wechat-1",
@@ -744,7 +744,7 @@
     {
       "faction": "china",
       "role": "china_director",
-      "app": "wechat",
+      "app": "signal",
       "items": [
         {
           "id": "china4-wechat-dir-1",

@@ -25,7 +25,6 @@ const APP_LABELS: Record<string, string> = {
   security: "Security",
   bloomberg: "Bloomberg",
   briefing: "Briefing",
-  wechat: "WeChat",
   intel: "Intel",
   military: "Military",
   arxiv: "arXiv",

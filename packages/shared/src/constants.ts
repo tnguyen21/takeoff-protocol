@@ -52,11 +52,11 @@ export const FACTIONS: FactionConfig[] = [
     name: "China (DeepCent + CCP)",
     minPlayers: 2,
     maxPlayers: 3,
-    apps: ["wechat", "compute", "intel", "military", "wandb", "news", "gamestate"],
+    apps: ["signal", "compute", "intel", "military", "wandb", "news", "gamestate"],
     roles: [
-      { id: "china_director", label: "DeepCent Director", description: "Brilliant engineer. Can do more with less.", isLeader: true, optional: false, primaryApps: ["compute", "wechat", "wandb"] },
-      { id: "china_intel", label: "CCP Intelligence Chief", description: "The spymaster. Eyes on both US labs.", isLeader: false, optional: false, primaryApps: ["intel", "wechat"] },
-      { id: "china_military", label: "Military Strategist", description: "Taiwan is always on the table.", isLeader: false, optional: true, primaryApps: ["military", "wechat"] },
+      { id: "china_director", label: "DeepCent Director", description: "Brilliant engineer. Can do more with less.", isLeader: true, optional: false, primaryApps: ["compute", "signal", "wandb"] },
+      { id: "china_intel", label: "CCP Intelligence Chief", description: "The spymaster. Eyes on both US labs.", isLeader: false, optional: false, primaryApps: ["intel", "signal"] },
+      { id: "china_military", label: "Military Strategist", description: "Taiwan is always on the table.", isLeader: false, optional: true, primaryApps: ["military", "signal"] },
     ],
   },
   {

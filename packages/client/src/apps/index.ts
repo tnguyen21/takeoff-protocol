@@ -13,7 +13,6 @@ export { EmailApp } from "./EmailApp.js";
 export { SheetsApp } from "./SheetsApp.js";
 export { GameStateApp } from "./GameStateApp.js";
 export { BloombergApp } from "./BloombergApp.js";
-export { WeChatApp } from "./WeChatApp.js";
 export { IntelApp } from "./IntelApp.js";
 export { SecurityApp } from "./SecurityApp.js";
 export { MilitaryApp } from "./MilitaryApp.js";
@@ -32,7 +31,6 @@ import { EmailApp } from "./EmailApp.js";
 import { SheetsApp } from "./SheetsApp.js";
 import { GameStateApp } from "./GameStateApp.js";
 import { BloombergApp } from "./BloombergApp.js";
-import { WeChatApp } from "./WeChatApp.js";
 import { IntelApp } from "./IntelApp.js";
 import { SecurityApp } from "./SecurityApp.js";
 import { MilitaryApp } from "./MilitaryApp.js";
@@ -54,7 +52,6 @@ export const APP_COMPONENTS: Record<AppId, React.ComponentType<{ content: Conten
   security: SecurityApp,
   bloomberg: BloombergApp,
   briefing: BriefingApp,
-  wechat: WeChatApp,
   intel: IntelApp,
   military: MilitaryApp,
   arxiv: ArxivApp,
