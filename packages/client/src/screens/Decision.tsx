@@ -341,93 +341,95 @@ export function Decision() {
                 <p style={{ color: "#d1d5db", fontSize: "13px", lineHeight: 1.6, marginBottom: "16px" }}>
                   {team.prompt}
                 </p>
-                <RadioGroup
-                  groupName="team-vote"
-                  options={team.options}
-                  selected={teamVoteChoice}
-                  onSelect={setTeamVoteChoice}
-                  disabled={isSubmitDisabled}
-                />
 
-                {/* Leader: vote tallies + final submit */}
-                {isLeader && (
-                  <div
-                    style={{
-                      marginTop: "20px",
-                      padding: "14px",
-                      background: "rgba(251,191,36,0.05)",
-                      border: "1px solid rgba(251,191,36,0.15)",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    <div style={{ color: "#fbbf24", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "10px" }}>
-                      Team Vote Tallies
-                    </div>
-                    {team.options.map((opt) => {
-                      const count = voteTallies[opt.id] ?? 0;
-                      const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-                      return (
-                        <div key={opt.id} style={{ marginBottom: "8px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-                            <span style={{ color: "#e5e7eb", fontSize: "12px" }}>{opt.label}</span>
-                            <span style={{ color: "#9ca3af", fontSize: "12px" }}>{count} vote{count !== 1 ? "s" : ""} ({pct}%)</span>
-                          </div>
-                          <div style={{ height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.08)" }}>
-                            <div
-                              style={{
-                                height: "100%",
-                                borderRadius: "2px",
-                                background: "#fbbf24",
-                                width: `${pct}%`,
-                                transition: "width 0.4s ease",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* Leader final decision — can override popular vote */}
-                    <div style={{ marginTop: "16px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "14px" }}>
-                      <div style={{ color: "#fbbf24", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
-                        Final Decision (your call — overrides vote)
-                      </div>
-                      <RadioGroup
-                        groupName="leader-final"
-                        options={team.options}
-                        selected={leaderFinalChoice}
-                        onSelect={setLeaderFinalChoice}
-                        disabled={teamLocked}
-                      />
-                      <button
-                        onClick={() => {
-                          if (leaderFinalChoice && !teamLocked) {
-                            submitLeaderDecision(leaderFinalChoice);
-                          }
-                        }}
-                        disabled={!leaderFinalChoice || teamLocked}
+                {isLeader ? (
+                  /* Leader sees: vote tallies + direct decision picker */
+                  <>
+                    {/* Vote tallies */}
+                    {totalVotes > 0 && (
+                      <div
                         style={{
-                          marginTop: "12px",
-                          width: "100%",
-                          padding: "9px",
-                          borderRadius: "8px",
-                          border: "1px solid rgba(251,191,36,0.4)",
-                          background: teamLocked
-                            ? "rgba(255,255,255,0.03)"
-                            : leaderFinalChoice
-                            ? "rgba(251,191,36,0.15)"
-                            : "rgba(255,255,255,0.03)",
-                          color: teamLocked ? "#6b7280" : leaderFinalChoice ? "#fbbf24" : "#6b7280",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          cursor: teamLocked || !leaderFinalChoice ? "not-allowed" : "pointer",
-                          transition: "all 0.15s",
+                          marginBottom: "16px",
+                          padding: "12px 14px",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: "10px",
                         }}
                       >
-                        {teamLocked ? "Team Decision Locked ✓" : "Lock Team Decision"}
-                      </button>
-                    </div>
-                  </div>
+                        <div style={{ color: "#9ca3af", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                          Team Votes
+                        </div>
+                        {team.options.map((opt) => {
+                          const count = voteTallies[opt.id] ?? 0;
+                          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                          return (
+                            <div key={opt.id} style={{ marginBottom: "6px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                                <span style={{ color: "#d1d5db", fontSize: "12px" }}>{opt.label}</span>
+                                <span style={{ color: "#6b7280", fontSize: "11px" }}>{count} ({pct}%)</span>
+                              </div>
+                              <div style={{ height: "3px", borderRadius: "2px", background: "rgba(255,255,255,0.06)" }}>
+                                <div
+                                  style={{
+                                    height: "100%",
+                                    borderRadius: "2px",
+                                    background: "rgba(251,191,36,0.6)",
+                                    width: `${pct}%`,
+                                    transition: "width 0.4s ease",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Leader's decision */}
+                    <RadioGroup
+                      groupName="leader-final"
+                      options={team.options}
+                      selected={leaderFinalChoice}
+                      onSelect={setLeaderFinalChoice}
+                      disabled={teamLocked}
+                    />
+                    <button
+                      onClick={() => {
+                        if (leaderFinalChoice && !teamLocked) {
+                          submitLeaderDecision(leaderFinalChoice);
+                        }
+                      }}
+                      disabled={!leaderFinalChoice || teamLocked}
+                      style={{
+                        marginTop: "12px",
+                        width: "100%",
+                        padding: "9px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(251,191,36,0.4)",
+                        background: teamLocked
+                          ? "rgba(255,255,255,0.03)"
+                          : leaderFinalChoice
+                          ? "rgba(251,191,36,0.15)"
+                          : "rgba(255,255,255,0.03)",
+                        color: teamLocked ? "#6b7280" : leaderFinalChoice ? "#fbbf24" : "#6b7280",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: teamLocked || !leaderFinalChoice ? "not-allowed" : "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {teamLocked ? "Team Decision Locked ✓" : "Lock Team Decision"}
+                    </button>
+                  </>
+                ) : (
+                  /* Non-leader sees: just the vote */
+                  <RadioGroup
+                    groupName="team-vote"
+                    options={team.options}
+                    selected={teamVoteChoice}
+                    onSelect={setTeamVoteChoice}
+                    disabled={isSubmitDisabled}
+                  />
                 )}
               </>
             ) : (
