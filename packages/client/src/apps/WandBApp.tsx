@@ -52,11 +52,9 @@ function buildCapData(stateHistory: Record<number, StateView>, round: number, sv
 
 export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const chartItems = content.filter((i) => i.type === "chart");
-  const { stateView, stateHistory, round } = useGameStore((s) => ({
-    stateView: s.stateView,
-    stateHistory: s.stateHistory,
-    round: s.round,
-  }));
+  const stateView = useGameStore((s) => s.stateView);
+  const stateHistory = useGameStore((s) => s.stateHistory);
+  const round = useGameStore((s) => s.round);
 
   const capData = buildCapData(stateHistory, round, stateView);
 

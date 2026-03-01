@@ -49,11 +49,9 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
       ? headlineItems.map((item) => (item.subject ?? item.body).toUpperCase())
       : STATIC_HEADLINES;
 
-  const { stateView, stateHistory, round } = useGameStore((s) => ({
-    stateView: s.stateView,
-    stateHistory: s.stateHistory,
-    round: s.round,
-  }));
+  const stateView = useGameStore((s) => s.stateView);
+  const stateHistory = useGameStore((s) => s.stateHistory);
+  const round = useGameStore((s) => s.round);
 
   const econData = buildEconData(stateHistory, round, stateView);
   const econAccuracy = stateView?.economicDisruption.accuracy ?? null;

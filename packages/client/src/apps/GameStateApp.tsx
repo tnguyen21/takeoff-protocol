@@ -85,10 +85,8 @@ function Sparkline({ data, accuracy }: { data: Array<{ v: number | null }>; accu
 }
 
 export const GameStateApp = React.memo(function GameStateApp({ content: _ }: AppProps) {
-  const { stateView, stateHistory } = useGameStore((s) => ({
-    stateView: s.stateView,
-    stateHistory: s.stateHistory,
-  }));
+  const stateView = useGameStore((s) => s.stateView);
+  const stateHistory = useGameStore((s) => s.stateHistory);
 
   const rounds = Object.keys(stateHistory).map(Number).sort((a, b) => a - b);
 

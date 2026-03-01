@@ -22,7 +22,10 @@ const PULSE_STYLE = `
 export function Dock() {
   const { windows, openWindow, focusWindow, minimizeWindow, openedThisRound } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
-  const { round, phase, selectedFaction, selectedRole } = useGameStore((s) => ({ round: s.round, phase: s.phase, selectedFaction: s.selectedFaction, selectedRole: s.selectedRole }));
+  const round = useGameStore((s) => s.round);
+  const phase = useGameStore((s) => s.phase);
+  const selectedFaction = useGameStore((s) => s.selectedFaction);
+  const selectedRole = useGameStore((s) => s.selectedRole);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const isNegotiationPhase = round === 4 && phase === "deliberation";
