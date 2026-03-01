@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useGameStore } from "../stores/game.js";
-import { TokenDisplay } from "../components/TokenDisplay.js";
 import { useSoundEffects } from "../sounds/index.js";
 import { Volume2, VolumeX } from "lucide-react";
 
@@ -21,7 +20,7 @@ const ROUND_DATES: Record<number, string> = {
 };
 
 export function MenuBar() {
-  const { phase, round, timer, selectedFaction, isGM } = useGameStore();
+  const { phase, round, timer, selectedFaction } = useGameStore();
   const { muted, toggleMute } = useSoundEffects();
   const [timeLeft, setTimeLeft] = useState("");
 
@@ -91,9 +90,8 @@ export function MenuBar() {
         )}
       </div>
 
-      {/* Right side: token count + round info + timer + mute */}
+      {/* Right side: round info + timer + mute */}
       <div className="flex items-center gap-3">
-        {!isGM && <TokenDisplay />}
         <button
           onClick={toggleMute}
           title={muted ? "Unmute sounds" : "Mute sounds"}

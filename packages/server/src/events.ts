@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
-import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, spendToken, awardToken } from "./rooms.js";
+import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
 import { advancePhase, startGame, replayPlayerState } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
@@ -31,7 +31,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     callback({ ok: true, player: result.player });
   });
 
-  socket.on("room:rejoin", ({ code, playerId: oldSocketId }: { code: string; playerId: string }, callback?: (res: { ok: boolean; error?: string; player?: { faction: Faction | null; role: Role | null; isLeader: boolean; influenceTokens: number } }) => void) => {
+  socket.on("room:rejoin", ({ code, playerId: oldSocketId }: { code: string; playerId: string }, callback?: (res: { ok: boolean; error?: string; player?: { faction: Faction | null; role: Role | null; isLeader: boolean } }) => void) => {
     const room = getRoom(code);
     if (!room) {
       callback?.({ ok: false, error: "Room not found" });
@@ -78,7 +78,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     callback?.({
       ok: true,
-      player: player ? { faction: player.faction, role: player.role, isLeader: player.isLeader, influenceTokens: player.influenceTokens } : undefined,
+      player: player ? { faction: player.faction, role: player.role, isLeader: player.isLeader } : undefined,
     });
   });
 
@@ -399,63 +399,6 @@ export function registerGameEvents(io: Server, socket: Socket) {
       console.log(`[publish] ${player.role} published ${type}: "${title}"`);
     },
   );
-
-  // ── Influence Tokens ──
-
-  socket.on("token:use", (payload: { action: "block_info" | "reveal_dm"; targetFaction?: Faction; contentId?: string; messageId?: string }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room) return;
-
-    const player = room.players[socket.id];
-    if (!player || !player.faction) return;
-
-    const spent = spendToken(room, socket.id);
-    if (!spent) {
-      io.to(socket.id).emit("token:used", { ok: false, error: "No tokens remaining", tokensRemaining: player.influenceTokens });
-      return;
-    }
-
-    if (payload.action === "block_info") {
-      // Store block for this round (content already delivered; GM-mediated in current design)
-      console.log(`[token] ${player.name} blocked content ${payload.contentId} from ${payload.targetFaction}`);
-      io.to(socket.id).emit("token:used", {
-        ok: true,
-        action: "block_info",
-        tokensRemaining: player.influenceTokens,
-      });
-    } else if (payload.action === "reveal_dm") {
-      const msg = payload.messageId ? room.messages.find((m) => m.id === payload.messageId) : undefined;
-      if (msg) {
-        // Broadcast the DM to all players in the spender's faction
-        for (const [pid, p] of Object.entries(room.players)) {
-          if (p.faction === player.faction) {
-            io.to(pid).emit("token:dm-revealed", { message: msg, revealedBy: player.name });
-          }
-        }
-      }
-      io.to(socket.id).emit("token:used", {
-        ok: true,
-        action: "reveal_dm",
-        tokensRemaining: player.influenceTokens,
-      });
-    }
-  });
-
-  socket.on("gm:award-token", ({ playerId }: { playerId: string }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
-
-    const awarded = awardToken(room, playerId);
-    if (awarded) {
-      const player = room.players[playerId];
-      console.log(`[token] GM awarded token to ${player.name} (now ${player.influenceTokens})`);
-      io.to(playerId).emit("token:awarded", { tokensRemaining: player.influenceTokens });
-    }
-  });
 
   // ── Disconnect ──
 

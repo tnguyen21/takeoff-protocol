@@ -27,7 +27,6 @@ export interface Player {
   faction: Faction | null;
   role: Role | null;
   isLeader: boolean;
-  influenceTokens: number;
   connected: boolean;
 }
 

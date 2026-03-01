@@ -52,7 +52,6 @@ export function joinRoom(
     faction: null,
     role: null,
     isLeader: false,
-    influenceTokens: 2,
     connected: true,
   };
 
@@ -93,19 +92,6 @@ export function getRoom(code: string): GameRoom | undefined {
   return rooms.get(code.toUpperCase());
 }
 
-export function spendToken(room: GameRoom, playerId: string): boolean {
-  const player = room.players[playerId];
-  if (!player || player.influenceTokens <= 0) return false;
-  player.influenceTokens--;
-  return true;
-}
-
-export function awardToken(room: GameRoom, playerId: string): boolean {
-  const player = room.players[playerId];
-  if (!player) return false;
-  player.influenceTokens++;
-  return true;
-}
 
 export function getLobbyState(room: GameRoom) {
   return {
