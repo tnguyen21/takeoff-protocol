@@ -1,6 +1,7 @@
 import React from "react";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
+import { isPublisherRole, estimateReadTime, renderMarkdown } from "./substackUtils.js";
 
 const POSTS = [
   { title: "Why I left my AI safety role (and what I learned)", date: "Feb 27", status: "Published", reads: "24.1K" },
@@ -28,11 +29,47 @@ I wasn't alone in noticing. Several colleagues had similar experiences, though m
 
 And that's the thing about safety failures. They don't announce themselves. They accumulate quietly until they don't.`;
 
-const PUBLISHER_ROLES = ["ext_journalist", "prom_opensource"];
+const STATIC_COMMENTS = [
+  {
+    author: "Dr. Priya Nair",
+    initial: "P",
+    timestamp: "Feb 27",
+    text: "This resonates deeply. The 'competitive pressure as existential threat' framing is one I've heard from almost everyone I've interviewed at frontier labs. Thank you for putting it into words.",
+    likes: 87,
+  },
+  {
+    author: "Marcus Chen",
+    initial: "M",
+    timestamp: "Feb 27",
+    text: "The safety timeline compression you describe is real. At two different orgs I've worked at, the standard was 'we'll do more safety testing after launch.' The institutional logic makes sense in the moment and is terrifying in aggregate.",
+    likes: 64,
+  },
+  {
+    author: "alignment_lurker_9",
+    initial: "A",
+    timestamp: "Feb 28",
+    text: "What would actually fix this? Genuine question. External audit? Liability? Or are we just too early in the capability curve for any governance to matter?",
+    likes: 23,
+  },
+  {
+    author: "Isabel Ferreira",
+    initial: "I",
+    timestamp: "Mar 1",
+    text: "I left last year for similar reasons. The hardest part wasn't the decision — it was watching colleagues rationalize each compromise as necessary. Miss the work, not the environment.",
+    likes: 41,
+  },
+];
+
+const RECOMMENDED = [
+  "Alignment Forum Weekly",
+  "The GPU Report",
+  "China AI Watcher",
+  "Compute & Capital",
+];
 
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
   const { selectedRole, publishArticle, publications } = useGameStore();
-  const canPublish = selectedRole && PUBLISHER_ROLES.includes(selectedRole);
+  const canPublish = isPublisherRole(selectedRole);
 
   const docItems = content.filter((i) => i.type === "document" || i.type === "memo");
   const [selectedIdx, setSelectedIdx] = React.useState(0);
@@ -41,11 +78,10 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   const [composeBody, setComposeBody] = React.useState("");
   const [publishedCount, setPublishedCount] = React.useState(0);
   const [justPublished, setJustPublished] = React.useState(false);
+  const [liked, setLiked] = React.useState(false);
 
   // Track publications created by this session for the post list
-  const myPublications = publications.filter((p) =>
-    selectedRole && p.publishedBy === selectedRole,
-  );
+  const myPublications = publications.filter((p) => selectedRole && p.publishedBy === selectedRole);
 
   const posts =
     docItems.length > 0
@@ -89,6 +125,124 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
     setTimeout(() => setJustPublished(false), 3000);
   }
 
+  // ── Reader view (non-publisher roles) ──
+  if (!canPublish) {
+    const readTime = selected ? estimateReadTime(selected.body) : 1;
+    const baseLikes = 1248;
+    const displayLikes = baseLikes + (liked ? 1 : 0);
+
+    return (
+      <div className="flex h-full bg-white text-black text-sm">
+        {/* Reader Sidebar */}
+        <div className="w-52 bg-neutral-50 border-r border-neutral-200 flex flex-col shrink-0">
+          <div className="p-3 border-b border-neutral-200">
+            <div className="font-bold text-sm">AI Safety Notes</div>
+            <div className="text-neutral-500 text-xs">Dr. Rachel Hayes · 24.1K subs</div>
+          </div>
+          <div className="overflow-y-auto flex-1 p-2 space-y-1">
+            {allPosts.map((p, i) => (
+              <div
+                key={i}
+                onClick={() => setSelectedIdx(i)}
+                className={`px-2 py-1.5 rounded cursor-pointer text-xs ${safeIdx === i ? "bg-orange-50 font-semibold text-orange-800" : "text-neutral-600 hover:bg-neutral-100"}`}
+              >
+                <div className="truncate">{p.title}</div>
+                <div className="text-[10px] text-neutral-400 mt-0.5">{p.date}</div>
+              </div>
+            ))}
+          </div>
+          {/* Recommended section */}
+          <div className="p-3 border-t border-neutral-200">
+            <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wide mb-2">Recommended</div>
+            <div className="space-y-1">
+              {RECOMMENDED.map((name) => (
+                <div key={name} className="text-[11px] text-neutral-600 hover:text-orange-700 cursor-pointer truncate">{name}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Reader Main */}
+        <div className="flex-1 overflow-y-auto">
+          {selected && (
+            <div className="max-w-2xl mx-auto px-8 py-8">
+              {/* Article title — large serif */}
+              <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: "1.75rem", fontWeight: 700, lineHeight: 1.2, color: "#111", marginBottom: "1rem" }}>
+                {selected.title}
+              </h1>
+
+              {/* Author metadata */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-[#ff6719] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  R
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-neutral-800">Dr. Rachel Hayes</div>
+                  <div className="text-xs text-neutral-500">
+                    {selected.date} · {readTime} min read · ♥ 1,248 · 💬 86
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px bg-neutral-200 mb-6" />
+
+              {/* Markdown-rendered article body */}
+              <div
+                className="text-neutral-800 leading-relaxed"
+                style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontSize: "1rem",
+                  lineHeight: 1.7,
+                }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body) }}
+              />
+
+              {/* Like button + Subscribe CTA */}
+              <div className="mt-8 flex items-center gap-4">
+                <button
+                  onClick={() => setLiked((v) => !v)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-colors ${liked ? "bg-red-50 border-red-300 text-red-600" : "border-neutral-300 text-neutral-600 hover:border-red-300 hover:text-red-500"}`}
+                >
+                  {liked ? "♥" : "♡"} {displayLikes.toLocaleString()}
+                </button>
+                <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#ff6719] text-white text-sm font-semibold hover:bg-orange-600">
+                  Subscribe
+                </button>
+              </div>
+
+              {/* Comments section */}
+              <div className="mt-10 border-t border-neutral-200 pt-6">
+                <div className="text-base font-bold text-neutral-800 mb-5">
+                  {STATIC_COMMENTS.length} comments
+                </div>
+                <div className="space-y-5">
+                  {STATIC_COMMENTS.map((c, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="w-7 h-7 rounded-full bg-neutral-300 text-neutral-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                        {c.initial}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="text-xs font-semibold text-neutral-800">{c.author}</span>
+                          <span className="text-[10px] text-neutral-400">{c.timestamp}</span>
+                        </div>
+                        <div className="text-xs text-neutral-700 leading-relaxed">{c.text}</div>
+                        <div className="mt-1.5 flex items-center gap-1 text-[11px] text-neutral-400">
+                          <span>♥ {c.likes}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Writer/publisher view (original layout) ──
   return (
     <div className="flex h-full bg-white text-black text-sm">
       {/* Sidebar */}
@@ -104,16 +258,14 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
             </div>
           ))}
         </div>
-        {canPublish && (
-          <div className="p-3 border-t border-neutral-200">
-            <button
-              onClick={() => { setComposing(true); setSelectedIdx(-1); }}
-              className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600"
-            >
-              New post
-            </button>
-          </div>
-        )}
+        <div className="p-3 border-t border-neutral-200">
+          <button
+            onClick={() => { setComposing(true); setSelectedIdx(-1); }}
+            className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600"
+          >
+            New post
+          </button>
+        </div>
       </div>
 
       {/* Main */}
@@ -193,18 +345,12 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
 
             {/* Toolbar */}
             <div className="border-t border-neutral-200 px-4 py-2 flex gap-2 items-center shrink-0">
-              {canPublish ? (
-                <button
-                  onClick={() => setComposing(true)}
-                  className="bg-[#ff6719] text-white text-xs px-4 py-1.5 rounded font-semibold hover:bg-orange-600"
-                >
-                  Publish
-                </button>
-              ) : (
-                <button disabled className="bg-neutral-300 text-neutral-500 text-xs px-4 py-1.5 rounded font-semibold cursor-not-allowed" title="Your role cannot publish">
-                  Publish
-                </button>
-              )}
+              <button
+                onClick={() => setComposing(true)}
+                className="bg-[#ff6719] text-white text-xs px-4 py-1.5 rounded font-semibold hover:bg-orange-600"
+              >
+                Publish
+              </button>
               <button className="text-neutral-500 text-xs px-3 py-1.5 rounded border border-neutral-200 hover:bg-neutral-50">Save draft</button>
               {justPublished && (
                 <span className="text-[10px] text-green-600 font-semibold ml-2">✓ Published to all feeds</span>
