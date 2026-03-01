@@ -289,33 +289,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
 socket.on("connect", () => {
   useGameStore.setState({ connected: true, playerId: socket.id });
 
-  // Auto-rejoin if we have a stored session (handles page refresh mid-game)
+  // Auto-rejoin if we have a stored session (handles page refresh or network reconnect)
   const state = useGameStore.getState();
   const session = loadSession();
 
-  const shouldRejoin =
-    session &&
-    // Either we were already reconnecting (network hiccup) or we just loaded with a session (page refresh)
-    (state.reconnecting || (session.roomCode && !state.phase));
+  // Rejoin if we have a saved session AND either:
+  // - we were reconnecting (network hiccup during active game), OR
+  // - we have a room code (page refresh / socket reconnect during lobby or game)
+  const shouldRejoin = session && (state.reconnecting || !!session.roomCode);
 
   if (shouldRejoin && session) {
-    // Restore player name from session so Desktop can render correctly
     useGameStore.setState({
       reconnecting: true,
       playerName: session.playerName,
       roomCode: session.roomCode,
       isGM: session.isGM,
     });
-    socket.connect(); // ensure connected (may already be)
     useGameStore.getState().rejoinRoom(session.roomCode, session.playerId);
   }
 });
 
 socket.on("disconnect", () => {
   const state = useGameStore.getState();
-  // Only show reconnecting if we were actively in a game session
-  const inGame = state.roomCode !== null && state.phase !== null && state.phase !== "lobby";
-  useGameStore.setState({ connected: false, reconnecting: inGame });
+  // Reconnect whenever we're in a room (lobby or active game)
+  const inRoom = state.roomCode !== null;
+  useGameStore.setState({ connected: false, reconnecting: inRoom });
 });
 
 socket.on("room:state", (data: { players: LobbyPlayer[] }) => {
