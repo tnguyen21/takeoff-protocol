@@ -136,7 +136,7 @@ const NARRATIVES: Record<EndingArcId, string[]> = {
 
 function resolveAiRace(s: StateVariables): number {
   // China parity: low US lead OR high compute + chip independence
-  const chinaClose = s.usChinaGap < 3 || (s.cdzComputeUtilization > 80 && s.domesticChipProgress > 60);
+  const chinaClose = s.usChinaGap < -2 || (s.cdzComputeUtilization > 80 && s.domesticChipProgress > 60);
   // Prometheus catch-up: standard gap closure OR safety breakthrough proved its worth
   const promClosing = (s.obPromGap <= 1 && s.promCapability >= 55) || s.promSafetyBreakthroughProgress >= 80;
   const obDominant = s.obCapability >= 65 && s.obPromGap >= 4 && !chinaClose;
@@ -196,8 +196,8 @@ function resolvePublicReaction(s: StateVariables): number {
   // Negative media cycle + high regulatory pressure → sustained protest at minimum
   if (s.globalMediaCycle < -60 && s.regulatoryPressure > 60) return 0;
   // Positive media + positive sentiment → cautiously optimistic
-  if (s.globalMediaCycle >= 30 && s.publicSentiment >= 30 && s.publicAwareness <= 60) return 3;
-  if (s.publicSentiment >= 30 && s.publicAwareness <= 60) return 3;
+  if (s.globalMediaCycle >= 30 && s.publicSentiment >= 30 && s.publicAwareness <= 90) return 3;
+  if (s.publicSentiment >= 30 && s.publicAwareness <= 90) return 3;
   if (s.publicSentiment >= 0) return 2;
   if (s.publicSentiment >= -40) return 1;
   return 0;
@@ -218,7 +218,7 @@ function resolvePrometheusFate(s: StateVariables): number {
   // Low board confidence + low morale → marginalized
   if (s.promBoardConfidence < 30 && s.promMorale < 40) return 0;
   // Prometheus ahead or matched OB → became the trusted lab
-  if (s.promCapability >= s.obCapability || s.obPromGap <= -2) return 4;
+  if ((s.promCapability >= s.obCapability && s.promCapability >= 50) || s.obPromGap <= -5) return 4;
   // Safety breakthrough became the industry standard
   if (s.promSafetyBreakthroughProgress >= 80 && s.alignmentConfidence >= 60) return 3;
   // Classic alignment win via cooperation
