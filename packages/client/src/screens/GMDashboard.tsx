@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
-import { FACTIONS } from "@takeoff/shared";
-import type { StateVariables } from "@takeoff/shared";
+import { FACTIONS, computeEndingArcs } from "@takeoff/shared";
+import type { StateVariables, EndingArc } from "@takeoff/shared";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -236,6 +236,102 @@ function DevStatePanel({
   );
 }
 
+// ── Endings Preview ───────────────────────────────────────────────────────────
+
+function outcomeColor(index: number, total: number): string {
+  // spectrum is ordered worst→best; last index is best
+  const position = index / Math.max(1, total - 1); // 0 = worst, 1 = best
+  if (position >= 0.7) return "#34d399"; // green — favorable
+  if (position >= 0.4) return "#f59e0b"; // yellow — mixed
+  return "#ef4444"; // red — catastrophic
+}
+
+function EndingsPreview({ arcs }: { arcs: EndingArc[] }) {
+  return (
+    <div
+      style={{
+        marginTop: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      {arcs.map((arc) => (
+        <div
+          key={arc.id}
+          style={{
+            borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.02)",
+            overflow: "hidden",
+          }}
+        >
+          {/* Arc header */}
+          <div
+            style={{
+              padding: "8px 12px",
+              background: "rgba(255,255,255,0.04)",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "#c4b5fd",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            {arc.label}
+          </div>
+          {/* Outcome spectrum */}
+          <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+            {arc.spectrum.map((outcome, i) => {
+              const isSelected = i === arc.result;
+              const color = outcomeColor(i, arc.spectrum.length);
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "8px",
+                    padding: isSelected ? "6px 8px" : "4px 8px",
+                    borderRadius: "6px",
+                    background: isSelected ? `${color}18` : "transparent",
+                    border: isSelected ? `1px solid ${color}55` : "1px solid transparent",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {/* Indicator dot */}
+                  <div
+                    style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "50%",
+                      background: isSelected ? color : "rgba(255,255,255,0.12)",
+                      flexShrink: 0,
+                      marginTop: "4px",
+                      boxShadow: isSelected ? `0 0 6px ${color}88` : "none",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: isSelected ? color : "#6b7280",
+                      fontWeight: isSelected ? 600 : 400,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {outcome}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function GMDashboard() {
@@ -257,6 +353,7 @@ export function GMDashboard() {
 
   const { messages } = useMessagesStore();
   const feedRef = useRef<HTMLDivElement>(null);
+  const [showEndings, setShowEndings] = useState(false);
 
   const isPaused = !!timer.pausedAt;
   const connectedCount = lobbyPlayers.filter((p) => p.connected).length;
@@ -429,7 +526,26 @@ export function GMDashboard() {
             >
               ⏭ Advance Phase
             </button>
+
+            {import.meta.env.DEV && (
+              <button
+                onClick={() => setShowEndings((v) => !v)}
+                style={btnStyle("#a78bfa")}
+              >
+                {showEndings ? "▲ Hide Endings" : "▼ Preview Endings"}
+              </button>
+            )}
           </div>
+
+          {/* Endings Preview Panel */}
+          {import.meta.env.DEV && showEndings && gmRawState && (
+            <div>
+              <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+                Ending Arc Preview
+              </div>
+              <EndingsPreview arcs={computeEndingArcs(gmRawState)} />
+            </div>
+          )}
 
           {/* Player Panel */}
           <div style={{ flex: 1, overflow: "auto" }}>
