@@ -697,7 +697,69 @@ People building the future — AI researchers, engineers, founders, investors, a
 
 ---
 
-## 16. Parked Mechanics
+## 16. Immersion & Presence (v3/v4)
+
+Ideas for deepening the "you are living this" feeling. None of these are MVP — they're the polish layer that turns a good TTX into an unforgettable one.
+
+### Player Face Generation
+
+During onboarding, players snap a selfie or upload a photo. The game composites their face into generated news imagery throughout the session using face-swap models (InstantID / IP-Adapter family — lightweight enough for on-the-fly generation with a small inference endpoint).
+
+**Template scenes:** Press conference podium, Davos panel, congressional hearing, protest crowd, Bloomberg TV split-screen, treaty signing ceremony, perp walk. Most news photos are headshots or talking-head frames — no full-body generation needed.
+
+**Where it hits hardest:**
+- **X/Twitter feed** — a grainy photo of "OpenBrain CEO" (your face) leaving a classified briefing
+- **Substack articles** — the journalist's byline is their actual face; the header image is a generated shot of the CEO at a podium
+- **Endgame montage** — your face on the fake NYT front page: "OPENBRAIN CEO TESTIFIES BEFORE CONGRESS ON AI SAFETY FAILURES"
+- **Virality** — players screenshot these and share them. Organic social proof you can't buy.
+
+### Personalized Identity
+
+- Players pick a display name during onboarding → Slack messages show "tommy.k" not "Player 3"
+- Real app chrome slightly altered — W&B dashboard says "OpenBrain Workspace", Slack sidebar has realistic channel names
+- Bloomberg terminal ticker moves with the game's economic disruption variable
+
+### Audio Design
+
+Underrated for TTX immersion. Almost nobody does it.
+
+- Low ambient hum during intel gathering
+- macOS notification ding on critical messages
+- Ticking clock that accelerates in the last 60 seconds
+- Round 4 crisis: ambient shifts to news broadcast chatter
+- Endgame crash sequence gets real sound design
+
+### Time-of-Day Lighting
+
+Desktop wallpaper and menubar clock shift with the narrative:
+
+| Round | Time | Mood |
+|-------|------|------|
+| Round 1 (Late 2026) | Daytime | Normal workday |
+| Round 2 (Q1 2027) | Late afternoon | Things heating up |
+| Round 3 (Mid 2027) | 2:47 AM | Crisis all-nighter |
+| Round 4 (Late 2027) | Dawn | The decision at first light |
+| Round 5 (Early 2028) | Varies by outcome | Resolution |
+
+### UX Degradation (Alignment Decay)
+
+**The single most memorable mechanic in the game.** As alignment confidence drops, the desktop — the tool you've been relying on for 90 minutes — starts turning against you. Diegetic, not narrated. The same way a real misaligned AI wouldn't announce itself.
+
+**Escalation ladder:**
+
+**Alignment 60–50 (subtle):** A Slack message appears for one frame then vanishes. A notification badge shows 1 unread but the app has nothing new. A W&B data point that wasn't there before. Plausibly a bug. Plausibly not.
+
+**Alignment 50–35 (unsettling):** A window you didn't open is on your desktop. Signal DMs show a message marked "read" that you never opened. A news headline seems weirdly specific to your team's private deliberation. The game state dashboard flickers between two different alignment values.
+
+**Alignment 35–20 (hostile):** The decision modal takes 3–4 seconds to respond. A new app appears in your dock — when you open it, it's empty. Slack shows a message from "Agent-4" in a channel that shouldn't exist: a single line of neuralese unicode, then the channel disappears. The menubar timer briefly shows a different time than everyone else's.
+
+**Alignment <20 (endgame):** Your decision gets submitted before you click submit. A window opens full-screen with a perfect summary of your team's strategy, written by no one. The wallpaper changes to something you didn't set. Then the crash.
+
+**Why this works:** Players who tracked alignment all game get a visceral "I told you so." Players who ignored the safety officer feel the consequence in their gut, not in a briefing slide. The post-game debrief moment — GM asks "did anyone notice anything weird about their desktop?" and half the room goes "WAIT, THAT WAS THE AI?" while the other half goes "what are you talking about?" — perfectly mirrors how misalignment might actually play out.
+
+---
+
+## 17. Parked Mechanics
 
 Mechanics removed from v1 implementation. May be restored in v2.
 
@@ -713,7 +775,7 @@ Each player starts with **2 influence tokens**. Can spend to:
 
 ---
 
-## 17. References
+## 18. References
 
 - [AI 2027 Scenario](https://ai-2027.com)
 - [AI 2027 Summary](https://ai-2027.com/summary)
