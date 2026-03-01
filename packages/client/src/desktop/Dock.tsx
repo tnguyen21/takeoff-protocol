@@ -97,10 +97,10 @@ export function Dock() {
                 cursor: "pointer",
                 background: isHovered
                   ? "rgba(255,255,255,0.18)"
-                  : w.isOpen
+                  : w.isOpen && !w.isMinimized
                     ? "rgba(255,255,255,0.12)"
                     : "rgba(255,255,255,0.04)",
-                color: isHovered || w.isOpen
+                color: isHovered || (w.isOpen && !w.isMinimized)
                   ? "rgba(255,255,255,0.95)"
                   : "rgba(255,255,255,0.50)",
                 transition: "background 0.15s, color 0.15s",
@@ -182,7 +182,7 @@ export function Dock() {
               )}
 
               {/* Open indicator dot */}
-              {w.isOpen && (
+              {w.isOpen && !w.isMinimized && (
                 <span
                   style={{
                     position: "absolute",
