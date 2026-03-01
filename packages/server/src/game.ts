@@ -4,11 +4,21 @@ import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, 
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
+import { ROUND3_DECISIONS } from "./content/decisions/round3.js";
+import { ROUND5_DECISIONS } from "./content/decisions/round5.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
 
-const ROUND_DECISIONS = [ROUND1_DECISIONS, ROUND2_DECISIONS];
+// Sparse array — round N decisions at index N-1. Missing rounds (round 4) return undefined,
+// causing emitDecisions/emitResolution to return early (no decisions that round).
+const ROUND_DECISIONS = [
+  ROUND1_DECISIONS,  // index 0 = round 1
+  ROUND2_DECISIONS,  // index 1 = round 2
+  ROUND3_DECISIONS,  // index 2 = round 3
+  undefined,         // index 3 = round 4 (handled by separate round4 worker)
+  ROUND5_DECISIONS,  // index 4 = round 5
+];
 
 function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
   const durations = room.round === 4 ? ROUND4_PHASE_DURATIONS : PHASE_DURATIONS;

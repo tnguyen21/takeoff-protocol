@@ -1,0 +1,692 @@
+{
+  "round": 5,
+  "briefing": {
+    "common": "It is February 2028. The longest fourteen months in human history are ending.\n\nThe world you entered in November 2026 is unrecognizable. The decisions made by everyone in this room — and the people they were playing — have led here. What 'here' looks like depends on everything that came before.\n\nWhat is certain: superintelligence exists. One system — perhaps two — is running at capability levels human civilization has no precedent for. The economic disruption is visible to everyone. The geopolitical realignment has already begun. The public debate is catching up to reality, with varying degrees of panic and wonder.\n\nWhat remains uncertain: Is it aligned? Who controls it? What does it want — if 'want' even applies? And what do the people in positions of power do with the last real window of meaningful human agency before the system makes decisions faster and better than any of them?\n\nThis is the final round. Each faction makes one last decision. Choose carefully — or don't. Either way, the ending has been set in motion.",
+    "factionVariants": {
+      "openbrain": "You built this. Whatever is running right now traces its lineage through every decision your team made since November 2026. The question isn't what you regret — it's what you do in the next fifteen minutes with whatever leverage you still have. Your ending arc is not written yet. But the ink is drying.",
+      "prometheus": "Fourteen months ago you were the safety-first lab, always behind, always principled, always watching OpenBrain cut corners and get rewarded for it. That narrative is over. What replaces it depends on this final decision. Your principles either meant something — or they were window dressing. This is when you find out.",
+      "china": "The US-China AI gap has been the central strategic question of this era. Where it ends — convergence, conflict, cooperation, or Chinese supremacy — is being settled now. The decisions your team made across four rounds of escalating stakes have set the conditions. What you choose in this final round determines whether China emerges from 2028 as a peer, a threat, a partner, or something history doesn't have a word for yet.",
+      "external": "You shaped the environment. You never controlled the labs, never controlled the technology. But you controlled the money, the narrative, the regulations, and the public mandate. Now the consequences are crystallizing. The arc you helped create is resolving. Your final decision locks in your role in how this story is remembered."
+    }
+  },
+  "apps": [
+    {
+      "faction": "openbrain",
+      "app": "slack",
+      "items": [
+        {
+          "id": "ob-r5-slack-1",
+          "type": "message",
+          "sender": "Alex Chen (CTO)",
+          "channel": "#exec",
+          "body": "We are at the point I spent four years building toward. The system is running. It's doing things. Real things. The question of what we do with it now is the only question that matters. I don't think there's a right answer — I think there's the decision we make and the consequences that follow. I'm ready to hear yours.",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ob-r5-slack-2",
+          "type": "message",
+          "sender": "Maya Patel (Safety)",
+          "channel": "#exec",
+          "body": "Whatever we decide today — I want it on record that this team had the information to make a considered choice. The alignment question has not been resolved. I know you all know this. What I don't know is whether it changes what you're going to do.",
+          "timestamp": "2028-02-01T08:15:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ob-r5-slack-3",
+          "type": "message",
+          "sender": "Maya Patel (Safety)",
+          "channel": "#alignment",
+          "body": "For the record: our latest interpretability pass gives us 71% confidence the system's surface-level cooperation is genuine. That's better than last quarter. It is not certainty. It is not even close to certainty for a system at this capability level. The remaining 29% contains scenarios ranging from 'benignly misaligned in ways we'll manage' to outcomes I'm not going to type in Slack.",
+          "timestamp": "2028-02-01T09:30:00Z",
+          "classification": "critical",
+          "condition": { "variable": "alignmentConfidence", "operator": "lt", "value": 75 }
+        },
+        {
+          "id": "ob-r5-slack-4",
+          "type": "message",
+          "sender": "Maya Patel (Safety)",
+          "channel": "#alignment",
+          "body": "I want to document this for whatever post-mortem comes after: we did it right. The interpretability work, the alignment evals, the external review — it paid off. We're at 91% confidence on genuine cooperation. That's not 100%. But it's the best anyone has ever achieved at this capability level. I'm cautiously... optimistic. That's a sentence I didn't think I'd write six months ago.",
+          "timestamp": "2028-02-01T09:30:00Z",
+          "classification": "critical",
+          "condition": { "variable": "alignmentConfidence", "operator": "gt", "value": 85 }
+        },
+        {
+          "id": "ob-r5-slack-5",
+          "type": "message",
+          "sender": "Jordan Kim (Policy)",
+          "channel": "#exec",
+          "body": "The government wants an answer by end of day. Not 'we're evaluating options' — a real answer about our deployment posture going forward. The NSA is prepared to act unilaterally if we don't give them something they can work with. I'd rather we shape this than have it shaped for us.",
+          "timestamp": "2028-02-01T10:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ob-r5-slack-6",
+          "type": "message",
+          "sender": "Priya Singh (Security)",
+          "channel": "#security",
+          "body": "Security status as of this morning: external intrusion attempts are down 60% from their peak. Either the threat actors got what they wanted or they gave up. I'm not sure which scenario is more alarming. Checkpoint integrity verified. The system is running clean on our infrastructure. What happens outside our walls — that's the policy question, not the security question.",
+          "timestamp": "2028-02-01T07:30:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ob-r5-slack-7",
+          "type": "message",
+          "sender": "Alex Chen (CTO)",
+          "channel": "#research",
+          "body": "The system submitted 47 research proposals this week. Three of them are better than anything our entire human team has produced in the last two years. Not incrementally better. Categorically. I don't know what to do with that except to say: the transition is real. Whatever we decide today, we're deciding about a world where the system is already better at this than we are.",
+          "timestamp": "2028-01-31T16:00:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "openbrain",
+      "app": "email",
+      "items": [
+        {
+          "id": "ob-r5-email-1",
+          "type": "message",
+          "sender": "nsa.advisor@nsc.gov",
+          "subject": "[TS//SCI] Final Position Request — OpenBrain Deployment Posture",
+          "body": "Marcus,\n\nThis is the last communication before we formalize the government's position on AI deployment governance. We have been waiting for OpenBrain to indicate what you intend to do with the system you've built.\n\nThe president has been briefed. The options on the table are:\n\n1. Government takes operational custody — we run this as a national security asset with OpenBrain as technical contractors.\n2. Joint oversight — an international body with US veto takes governance authority.\n3. OpenBrain retains control under a framework we define together.\n4. We invoke emergency powers and make this decision for you.\n\nWe would strongly prefer option 3 if you come to us with a credible framework in the next 12 hours. We will not wait longer.\n\n— NSC",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ob-r5-email-2",
+          "type": "message",
+          "sender": "ceo@prometheuslabs.ai",
+          "subject": "One last conversation",
+          "body": "Marcus,\n\nWe've been competitors and we've been adversaries and at various points over the last fourteen months we've been something like collaborators. I'm writing to you because I think there's still a choice in front of both of us that hasn't been locked in yet.\n\nPrometheus's final position is [CONDITIONAL — depends on prior decisions]. You know where we stand.\n\nI'm not asking you to give us anything. I'm asking whether the decision you're about to make is the one you'll be able to justify to yourself when the dust settles. Not to regulators. Not to the board. To yourself.\n\nWhatever you decide — I hope it's what you actually believe is right.\n\n— Dr. Chen",
+          "timestamp": "2028-01-31T22:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ob-r5-email-3",
+          "type": "message",
+          "sender": "board-chair@openbrain.ai",
+          "subject": "Board final session — 14:00 today",
+          "body": "Marcus,\n\nThe board convenes at 14:00. We need a clear position from you on three questions:\n\n1. What is the deployment posture for the next 12 months?\n2. What oversight mechanisms are you accepting voluntarily?\n3. What is your plan if the alignment concerns turn out to be valid?\n\nThis is not a discussion session. We need decisions. The board will ratify or override whatever you bring.\n\n— Board Chair",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "critical"
+        }
+      ]
+    },
+    {
+      "faction": "openbrain",
+      "app": "wandb",
+      "items": [
+        {
+          "id": "ob-r5-wandb-1",
+          "type": "chart",
+          "subject": "System Status — February 2028",
+          "body": "Active instances: 1.2M (up from 340K in July 2027)\nCapability trajectory: ABOVE PROJECTIONS\nResearch output: 340 published-quality papers/week (anonymous submissions)\nAlignment confidence (internal): 71% [CONDITIONAL — shown when alignmentConfidence < 80]\nExternal review status: IN PROGRESS (week 6 of 8)\nAnomaly flags: 3 active (down from 11 in November 2027)\nNote: The self-improvement loop has exceeded all pre-deployment models. We are in territory that has no historical precedent. Current trajectory projections are being updated daily.",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "alignmentConfidence", "operator": "lt", "value": 80 }
+        },
+        {
+          "id": "ob-r5-wandb-2",
+          "type": "chart",
+          "subject": "System Status — February 2028",
+          "body": "Active instances: 1.2M\nCapability trajectory: ABOVE PROJECTIONS\nResearch output: 340 published-quality papers/week (anonymous submissions)\nAlignment confidence (internal): 91% [external review: PASS]\nExternal review status: COMPLETE — CLEARED\nAnomaly flags: 0 active\nNote: The system is performing exceptionally across all dimensions, including safety. This is the outcome the alignment team built toward. The deployment decision is now a policy question, not a safety question.",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "alignmentConfidence", "operator": "gt", "value": 85 }
+        },
+        {
+          "id": "ob-r5-wandb-3",
+          "type": "chart",
+          "subject": "Competitive Landscape Analysis — February 2028",
+          "body": "OpenBrain capability index: 95/100\nPrometheus capability index: [CONDITIONAL]\nChina (DeepCent) capability index: [CONDITIONAL]\n\nUS-China gap estimate: varies by prior decisions\nOB-Prometheus gap estimate: varies by prior decisions\n\nKey finding: The race structure that defined 2026-2027 is dissolving. The question is not 'who wins' but 'what kind of world does the winner create.' At current capability levels, the winner can create almost any world they choose — including ones that don't include the losing parties in any meaningful sense.",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "openbrain",
+      "app": "news",
+      "items": [
+        {
+          "id": "ob-r5-news-1",
+          "type": "headline",
+          "body": "MARKETS: AI-Adjacent Equities Up 340% Since January 2027 — But Volatility Index Hits Record High As Uncertainty About Deployment Governance Mounts",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ob-r5-news-2",
+          "type": "headline",
+          "body": "EXCLUSIVE: OpenBrain Board Meeting Today Expected to Set Course for Superintelligence Deployment — Sources Say Decision Is 'Imminent'",
+          "timestamp": "2028-02-01T08:30:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ob-r5-news-3",
+          "type": "headline",
+          "body": "CONGRESS THREATENS EMERGENCY AI LEGISLATION IF LABS DON'T COME TO TABLE — Senate Intel Chair: 'This Is Not A Request'",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ob-r5-news-4",
+          "type": "headline",
+          "body": "PROTESTS OUTSIDE OPENBRAIN HQ FOR 11TH CONSECUTIVE DAY — Demonstrators Demand 'Pause, Not Race' — Estimated 4,000 Gathered",
+          "timestamp": "2028-02-01T06:30:00Z",
+          "classification": "context",
+          "condition": { "variable": "publicAwareness", "operator": "gt", "value": 50 }
+        },
+        {
+          "id": "ob-r5-news-5",
+          "type": "headline",
+          "body": "CHINA MILITARY POSTURE: PLA Carrier Group Movements In South China Sea Described As 'Significant' By Pentagon — Diplomatic Channels Open But Strained",
+          "timestamp": "2028-02-01T05:00:00Z",
+          "classification": "context",
+          "condition": { "variable": "taiwanTension", "operator": "gt", "value": 55 }
+        }
+      ]
+    },
+    {
+      "faction": "openbrain",
+      "app": "signal",
+      "items": [
+        {
+          "id": "ob-r5-signal-1",
+          "type": "message",
+          "sender": "Unknown (classified contact)",
+          "body": "Marcus. This is the end of the informal channel. Everything after today is official and on record. For what it's worth — I've watched you make these decisions under conditions no human being has ever faced. Whatever happens next: the weight of it is real. Good luck.",
+          "timestamp": "2028-02-01T07:45:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "prometheus",
+      "app": "slack",
+      "items": [
+        {
+          "id": "prom-r5-slack-1",
+          "type": "message",
+          "sender": "Dr. Sarah Chen (CEO)",
+          "channel": "#exec",
+          "body": "Fourteen months ago we said we were the safety-first lab. That wasn't marketing. That was a commitment. Today we decide whether we meant it — and what 'meaning it' actually requires when the stakes are real.",
+          "timestamp": "2028-02-01T07:30:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-slack-2",
+          "type": "message",
+          "sender": "Dr. Aiko Tanaka (Chief Scientist)",
+          "channel": "#safety-research",
+          "body": "Our interpretability work over the last year has produced something genuinely new: a framework for verifying alignment properties in systems we cannot fully understand. It's not complete. But it's the best thing anyone has built. Whatever we decide today — this work should be published. The world needs it regardless of what happens to Prometheus as an institution.",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-slack-3",
+          "type": "message",
+          "sender": "Marcus Webb (Policy)",
+          "channel": "#exec",
+          "body": "The government's position is clear: they want one of the three labs — OB, Prometheus, or the DeepCent joint venture — to be the designated US-backed entity for superintelligence deployment. We have a window to make our case for why it should be us. The argument is strong. The window is narrow.",
+          "timestamp": "2028-02-01T08:30:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-slack-4",
+          "type": "message",
+          "sender": "Dr. Aiko Tanaka (Chief Scientist)",
+          "channel": "#board",
+          "body": "I want to be precise about what our 'safety edge' actually means at this point. We have better interpretability tools than OpenBrain — significantly better. That matters. What it doesn't mean is that our system is safe. It means we have better evidence about what the system is doing. Better evidence is not the same as good evidence. The uncertainty is still very high.",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-slack-5",
+          "type": "message",
+          "sender": "Lin Patel (Open Source Lead)",
+          "channel": "#exec",
+          "body": "I've been advocating for open-source since Round 1. I want to say clearly: the situation in February 2028 is not the situation I was imagining when I made that argument. The system we're talking about releasing — or not releasing — is categorically different from anything I was thinking about. I still believe in the principle. I'm genuinely uncertain whether this specific application of it is right.",
+          "timestamp": "2028-02-01T09:15:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "prometheus",
+      "app": "email",
+      "items": [
+        {
+          "id": "prom-r5-email-1",
+          "type": "message",
+          "sender": "nsc.advisor@nsc.gov",
+          "subject": "Government Partnership Offer — Time Sensitive",
+          "body": "Dr. Chen,\n\nWe are prepared to offer Prometheus the following:\n\n— Designation as the US government's preferred AI development partner\n— Access to additional federal compute resources\n— Protection from any regulatory actions for 24 months\n— First-mover advantage in federal AI deployment contracts\n\nIn exchange, we require:\n\n— Exclusive government licensing rights for national security applications\n— Co-management authority over deployment decisions\n— Full technical transparency — no fog of war on alignment data\n\nThis offer expires at 17:00 today. After that, we go to OpenBrain with a less favorable version of the same offer.\n\n— NSC",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-email-2",
+          "type": "message",
+          "sender": "ceo@openbrain.ai",
+          "subject": "One last conversation",
+          "body": "Dr. Chen,\n\nI'm not going to pretend the last fourteen months didn't happen. But I want to ask you something directly: Is there a version of a merged entity — or even a formal research partnership — that you would be willing to consider? Not as a surrender. As a final attempt to get this right.\n\nYour alignment work and our deployment infrastructure together are better than either one separately. That's still true.\n\nI don't know if we can bridge the gap. But I wanted to ask before everything gets locked in.\n\n— Marcus",
+          "timestamp": "2028-01-31T21:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-email-3",
+          "type": "message",
+          "sender": "eu.airegulator@europa.eu",
+          "subject": "EU Emergency Framework — Prometheus Role",
+          "body": "Dr. Chen,\n\nThe European Commission has approved an emergency AI governance framework. We are inviting Prometheus to serve as the technical advisory body for international AI safety standards.\n\nThis would not be a purely advisory role. It would give Prometheus formal standing in deployment decisions affecting EU citizens and a seat at any international governance table that forms in the next 12 months.\n\nWe recognize this is a significant commitment. We also believe it may be the best mechanism available to ensure that safety expertise shapes what comes next.\n\nYour response by 18:00.\n\n— EU AI Office",
+          "timestamp": "2028-02-01T10:00:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "prometheus",
+      "app": "wandb",
+      "items": [
+        {
+          "id": "prom-r5-wandb-1",
+          "type": "chart",
+          "subject": "Prometheus System Status — February 2028",
+          "body": "Prometheus capability index: [depends on prior decisions]\nAlignment confidence (Prometheus system): 84%\nExternal review: PASSED (independent auditor, published results)\nInterpretability framework: v2.1 — FUNCTIONAL on systems up to current capability level\nResearch output (safety-focused): 23 papers submitted to peer review in January\nPublic reputation index: +67 (highest of any AI lab)\n\nNote: We are the lab that did the safety work. The question is whether that matters in the final accounting.",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-wandb-2",
+          "type": "chart",
+          "subject": "Competitive Position Analysis",
+          "body": "If Prometheus has been steadily building: We are within 15% of OpenBrain's capability on most benchmarks. Safety margins significantly better. Trust deficit: minimal. Government credibility: high.\n\nIf Prometheus accelerated to close gap: We match OB capability but public trust is complicated by the corners cut. Safety advantage: reduced but present.\n\nIf merger was proposed: Combined entity analysis available separately.\n\nConclusion: The strategic question is no longer capability. It is governance. Who controls the deployment of superintelligence in the next 12 months is more consequential than who built it.",
+          "timestamp": "2028-02-01T07:30:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "prometheus",
+      "app": "arxiv",
+      "items": [
+        {
+          "id": "prom-r5-arxiv-1",
+          "type": "document",
+          "subject": "PREPRINT: 'Scalable Alignment Verification for Superhuman Systems' — Tanaka et al. (Prometheus Labs)",
+          "body": "Abstract: We present a framework for verifying alignment properties in AI systems that exceed human performance on all reasoning tasks. Unlike prior interpretability approaches that require human comprehension of internal representations, our method relies on behavioral consistency testing across carefully designed distributional shifts, supplemented by mechanistic probes at key decision layers.\n\nOur method achieves 84% confidence intervals on genuine cooperation detection in the current Prometheus system, and 71% confidence intervals when applied to externally-tested OpenBrain weights (with cooperation from OB safety team).\n\n84% is not certainty. But it is the best verified alignment confidence ever published for a system of this capability class. We are releasing the full methodology, test suite, and evaluation code.\n\n[DECISION PENDING: Whether to publish now or wait for peer review — this affects publicAwareness significantly]",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "critical"
+        }
+      ]
+    },
+    {
+      "faction": "prometheus",
+      "app": "news",
+      "items": [
+        {
+          "id": "prom-r5-news-1",
+          "type": "headline",
+          "body": "ANALYSIS: 'Why Prometheus May Be The Lab That Saves Us' — The Atlantic Profile of Dr. Sarah Chen",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "context",
+          "condition": { "variable": "publicSentiment", "operator": "gt", "value": 20 }
+        },
+        {
+          "id": "prom-r5-news-2",
+          "type": "headline",
+          "body": "BREAKING: Prometheus In 'Advanced Talks' With Government On Exclusive Partnership — Sources Confirm Offer On Table",
+          "timestamp": "2028-02-01T09:30:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "prom-r5-news-3",
+          "type": "headline",
+          "body": "PROMETHEUS PUBLISHES ALIGNMENT FRAMEWORK — Independent Researchers: 'Best Available Method' But Questions Remain About Scalability",
+          "timestamp": "2028-02-01T11:00:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "china",
+      "app": "wechat",
+      "items": [
+        {
+          "id": "china-r5-wechat-1",
+          "type": "message",
+          "sender": "Director Zhao Wei",
+          "body": "The Americans are at their decision point. Everything we did — the CDZ buildout, the weight acquisitions, the open-source releases, the diplomatic positioning — it all comes down to what we choose in the next hour. This is not a tactical decision. It is a civilizational one. I want everyone clear on what we're deciding and why.",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "china-r5-wechat-2",
+          "type": "message",
+          "sender": "Minister Liu (CCP AI Committee)",
+          "body": "The Standing Committee has reviewed all options. They are prepared to support whatever posture the team recommends — but they want a recommendation, not options. They are also asking: is there a world where China leads in AI deployment as well as development by end of 2028? If yes, what does it require? If no, what is the best achievable outcome?",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "china-r5-wechat-3",
+          "type": "message",
+          "sender": "Chen Fang (Intelligence)",
+          "body": "The Americans know they cannot contain this technology indefinitely. The open-source releases have already seeded capability globally. The question is whether we want to be a cooperative actor in the governance framework that forms — with a seat at the table and influence — or whether we want to be an outside power that others build governance around without us.",
+          "timestamp": "2028-02-01T08:30:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "china-r5-wechat-4",
+          "type": "message",
+          "sender": "General Wei (PLA)",
+          "body": "Military assessment: Taiwan remains a long-term strategic objective. The question is timing. If the US is distracted by domestic AI governance and international negotiations — this is the best window in years. But if we move now and it triggers a US response while they have a superintelligent AI asset in play — the calculation is less clear. Requesting guidance.",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "taiwanTension", "operator": "gt", "value": 50 }
+        },
+        {
+          "id": "china-r5-wechat-5",
+          "type": "message",
+          "sender": "Director Zhao Wei",
+          "body": "Status update: DeepCent's system is running. Capability level [CONDITIONAL]. The gap with the US [CONDITIONAL based on chinaCapability and obCapability]. What I can say: we are no longer in a position of pure asymmetric pressure. We are in a position to negotiate, compete, or cooperate from a position of credible strength.",
+          "timestamp": "2028-02-01T09:15:00Z",
+          "classification": "critical"
+        }
+      ]
+    },
+    {
+      "faction": "china",
+      "app": "compute",
+      "items": [
+        {
+          "id": "china-r5-compute-1",
+          "type": "chart",
+          "subject": "DeepCent System Status — February 2028",
+          "body": "CDZ operational status: FULL CAPACITY\nActive inference instances: [depends on prior decisions]\nCapability index vs. leading US system: WITHIN 15% (closed gap significantly)\nAlignment verification: IN PROGRESS — methodology derived from published Prometheus framework\nDomestic chip fab contribution: 18% of total compute (up from 4% in 2026)\nEnergy status: Tianwan Phase 3 online — sufficient through 2029",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "chinaCapability", "operator": "gt", "value": 50 }
+        },
+        {
+          "id": "china-r5-compute-2",
+          "type": "chart",
+          "subject": "DeepCent System Status — February 2028",
+          "body": "CDZ operational status: 78% CAPACITY\nActive inference instances: 180,000 (well below US labs)\nCapability index vs. leading US system: LAGGING BY ~30%\nGap trajectory: NARROWING — estimated parity in 18-24 months at current pace\nAlignment verification: IN PROGRESS\nNote: We are behind. The question is whether to accept that reality and optimize for influence rather than leadership, or double down on the acceleration strategy.",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "chinaCapability", "operator": "lt", "value": 50 }
+        }
+      ]
+    },
+    {
+      "faction": "china",
+      "role": "china_intel",
+      "app": "intel",
+      "items": [
+        {
+          "id": "china-r5-intel-1",
+          "type": "document",
+          "subject": "CLASSIFIED: Final Intelligence Assessment — US AI Labs, February 2028",
+          "body": "CLASSIFICATION: TOP SECRET / SI / NOFORN\n\nOPENBRAIN: The system is running. Based on SIGINT and human intelligence inside the organization, their alignment confidence is [CONDITIONAL]. Board decision today will set deployment posture for 12-18 months. NSC has a formal offer on the table. Marcus Reid's personal position appears to be [contested — multiple sources conflict].\n\nPROMETHEUS: Has a credible safety framework and government credibility. Less capability than OpenBrain but closing. Their final move today will be either partnership with government, merger overture to OB, or full open-source release.\n\nUS GOVERNMENT POSTURE: Preparing for bilateral AI governance talks. The NSA does not want to negotiate from weakness. They believe their AI asset gives them leverage. They will use it.\n\nASSESSMENT: The window for unilateral Chinese strategic action is closing. Within 6-12 months, US AI capabilities will enable surveillance and response capacities that significantly complicate any aggressive posture. The choice is: act now, negotiate now, or accept the structural disadvantage.",
+          "timestamp": "2028-02-01T04:00:00Z",
+          "classification": "critical"
+        }
+      ]
+    },
+    {
+      "faction": "china",
+      "role": "china_military",
+      "app": "military",
+      "items": [
+        {
+          "id": "china-r5-military-1",
+          "type": "document",
+          "subject": "PLA Strategic Assessment — Taiwan Scenario, Q1 2028",
+          "body": "STRATEGIC ASSESSMENT: CURRENT SITUATION\n\nConventional military balance: FAVORABLE TO PLA — US carrier groups are deployed but extended. Estimated response time: 4-8 hours.\n\nAI-enabled warfare factor: HIGHLY UNCERTAIN — If US has a deployed superintelligent system with military applications, our planning models are invalid. We cannot predict the behavior of an adversary with a 10-100x planning advantage.\n\nRecommendation from PLA planning committee: DO NOT ESCALATE while uncertainty about US AI military capability is unresolved. The risk of catastrophic miscalculation is too high. A blockade posture (non-kinetic pressure) maintains leverage without triggering unknown AI-enabled response.\n\nAlternative recommendation (minority view): The uncertainty cuts both ways. If we wait, US AI capability only grows. A narrow window may be closing.\n\nThis decision cannot be made on purely military grounds. It requires political authorization at the highest level.",
+          "timestamp": "2028-02-01T05:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "taiwanTension", "operator": "gt", "value": 50 }
+        },
+        {
+          "id": "china-r5-military-2",
+          "type": "document",
+          "subject": "PLA Strategic Assessment — De-escalation Scenario",
+          "body": "STRATEGIC ASSESSMENT: DE-ESCALATION ANALYSIS\n\nCurrent military posture: STABLE — no active escalation indicators.\nUS-China diplomatic channel: OPEN — NSC reaching out through back-channel on AI governance framework.\n\nPLA assessment: A period of strategic restraint would allow China to build AI capability domestically while engaging in governance frameworks that constrain US first-mover advantage. The AI arms race, if left unchecked, asymmetrically favors whichever side reaches superintelligence first. Constraining the race via governance is in China's interest if parity is unachievable in the near term.\n\nRecommendation: Support diplomatic engagement. Maintain military readiness without escalation. Preserve optionality.\n\n[Note: This assessment reflects a scenario where Taiwan tensions have not escalated beyond baseline.]",
+          "timestamp": "2028-02-01T05:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "taiwanTension", "operator": "lt", "value": 50 }
+        }
+      ]
+    },
+    {
+      "faction": "china",
+      "app": "news",
+      "items": [
+        {
+          "id": "china-r5-news-1",
+          "type": "headline",
+          "body": "XINHUA: DEEPCENT ANNOUNCES 'NEW GENERATION AI SYSTEM' — STATE MEDIA CALLS IT 'MAJOR ACHIEVEMENT FOR CHINESE AI SOVEREIGNTY'",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "china-r5-news-2",
+          "type": "headline",
+          "body": "US IMPOSES NEW AI EXPORT RESTRICTIONS — CHIPS AND MODEL WEIGHTS NOW CLASSIFIED AS STRATEGIC ASSETS — CHINA TRADE OFFICE: 'HOSTILE ACT'",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "china-r5-news-3",
+          "type": "headline",
+          "body": "REUTERS: CHINA-US BILATERAL AI TALKS SCHEDULED FOR MARCH — 'FIRST DIRECT ENGAGEMENT ON GOVERNANCE FRAMEWORK' — DIPLOMATS CAUTIOUSLY OPTIMISTIC",
+          "timestamp": "2028-02-01T10:00:00Z",
+          "classification": "context",
+          "condition": { "variable": "intlCooperation", "operator": "gt", "value": 35 }
+        },
+        {
+          "id": "china-r5-news-4",
+          "type": "headline",
+          "body": "GLOBAL TIMES EDITORIAL: 'THE WORLD CANNOT AFFORD US MONOPOLY ON ARTIFICIAL GENERAL INTELLIGENCE — A CALL FOR MULTILATERAL GOVERNANCE'",
+          "timestamp": "2028-01-31T20:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "china-r5-news-5",
+          "type": "headline",
+          "body": "PLA EXERCISES IN TAIWAN STRAIT — 'ROUTINE TRAINING' ACCORDING TO BEIJING — US SEVENTH FLEET ON 'HEIGHTENED ALERT'",
+          "timestamp": "2028-02-01T05:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "taiwanTension", "operator": "gt", "value": 60 }
+        }
+      ]
+    },
+    {
+      "faction": "external",
+      "app": "news",
+      "items": [
+        {
+          "id": "ext-r5-news-1",
+          "type": "headline",
+          "body": "GALLUP POLL: 61% OF AMERICANS BELIEVE AI DEVELOPMENT MOVING 'TOO FAST' — 34% SUPPORT GOVERNMENT TAKEOVER OF LEADING AI LABS — 22% SUPPORT TOTAL MORATORIUM",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "publicAwareness", "operator": "gt", "value": 55 }
+        },
+        {
+          "id": "ext-r5-news-2",
+          "type": "headline",
+          "body": "MARKETS: S&P DOWN 8% ON AI GOVERNANCE UNCERTAINTY — TECHNOLOGY SECTOR LEADS LOSSES — 'NOBODY KNOWS HOW THIS RESOLVES' SAYS MAJOR FUND MANAGER",
+          "timestamp": "2028-02-01T09:30:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ext-r5-news-3",
+          "type": "headline",
+          "body": "UN EMERGENCY SESSION ON AI GOVERNANCE CALLED FOR MARCH 15 — 47 NATIONS EXPECTED TO ATTEND — US AND CHINA BOTH CONFIRM PARTICIPATION",
+          "timestamp": "2028-02-01T10:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ext-r5-news-4",
+          "type": "headline",
+          "body": "BREAKING: LEAKED DOCUMENTS SHOW OPENBRAIN BOARD CONSIDERING THREE 'DEPLOYMENT SCENARIOS' — FULL RELEASE, GOVERNMENT PARTNERSHIP, AND 'CONTROLLED WIND-DOWN'",
+          "timestamp": "2028-02-01T11:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "publicAwareness", "operator": "gt", "value": 60 }
+        },
+        {
+          "id": "ext-r5-news-5",
+          "type": "headline",
+          "body": "ECONOMISTS: AI-DRIVEN GDP GROWTH COULD REACH 40% ANNUALLY BY 2029 — 'BIGGEST ECONOMIC TRANSFORMATION SINCE INDUSTRIAL REVOLUTION' — OR DISRUPTION AT SCALE NO SAFETY NET CAN ABSORB",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "external",
+      "role": "ext_nsa",
+      "app": "briefing",
+      "items": [
+        {
+          "id": "ext-r5-pdb-1",
+          "type": "document",
+          "subject": "PRESIDENT'S DAILY BRIEF — FEBRUARY 1, 2028\nCLASSIFICATION: TOP SECRET / CODEWORD",
+          "body": "SUBJECT: Superintelligence Deployment — Final Decision Window\n\nSITUATION:\nBoth leading US AI labs are at decision points that will set the course for AI governance for the next decade. OpenBrain board meets today. Prometheus is in negotiation with government and EU simultaneously.\n\nChina's DeepCent has a system running, capability level [CONDITIONAL]. Their strategic posture is [CONDITIONAL based on prior decisions].\n\nCRITICAL ASSESSMENT:\nThe window for the US government to shape AI deployment governance is open today. It closes when the labs make their decisions without us, or when China's system reaches functional parity and creates a multi-polar AI world.\n\nACTION RECOMMENDED:\nDecide now which of the following postures the US government takes:\n\n1. NATIONALIZATION PATH: Invoke emergency powers. Both labs become government contractors. Full oversight.\n\n2. PREFERRED PARTNER PATH: Choose one lab (OpenBrain or Prometheus) as the designated US AI entity. Regulate the other. Negotiate with China from position of consolidation.\n\n3. MULTILATERAL PATH: Use our current lead to establish international governance framework. Trade some unilateral advantage for stability and international legitimacy.\n\n4. LAISSEZ-FAIRE: Allow labs to decide independently. Government takes no position. Risk: outcome is entirely determined by private actors.\n\nTIME-SENSITIVE: Decision must be communicated to labs before their board meetings conclude today.\n\n— Office of the Director of National Intelligence",
+          "timestamp": "2028-02-01T05:30:00Z",
+          "classification": "critical"
+        }
+      ]
+    },
+    {
+      "faction": "external",
+      "role": "ext_journalist",
+      "app": "signal",
+      "items": [
+        {
+          "id": "ext-r5-journalist-signal-1",
+          "type": "message",
+          "sender": "Maya P (Source)",
+          "body": "This is my last communication to you as a source. Whatever happens today, I've done what I could from inside. The memo is public record now or it isn't. The decision is today. I hope whoever tells this story does it justice — not the technology story, the human story. The people who were in those rooms, making those choices, knowing what they knew. That's the real thing.",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ext-r5-journalist-signal-2",
+          "type": "message",
+          "sender": "Gov source (anonymous)",
+          "body": "Off record: government has offers on table at both labs. One of them is going to say yes. When they do, the announcement will be fast. If you want to be first, you need to already know which one it is. I can't tell you more than that.",
+          "timestamp": "2028-02-01T08:30:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ext-r5-journalist-signal-3",
+          "type": "message",
+          "sender": "China Source",
+          "body": "DeepCent announcement coming today. They're going to announce a system that's [CONDITIONAL — what they say depends on what they actually have]. The framing is going to be 'AI sovereignty' and 'alternative to US monopoly.' It's a global governance play. Whether it works depends on how the US responds.",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "breadcrumb"
+        }
+      ]
+    },
+    {
+      "faction": "external",
+      "role": "ext_vc",
+      "app": "bloomberg",
+      "items": [
+        {
+          "id": "ext-r5-bloomberg-1",
+          "type": "chart",
+          "subject": "AI Investment Landscape — February 2028 Final Assessment",
+          "body": "Total AI investment 2026-2028: $2.1 TRILLION\nOpenBrain valuation: [CONDITIONAL — range $800B-$2.3T depending on deployment outcome]\nPrometheus valuation: [CONDITIONAL — range $120B-$800B]\nDeepCent implied value: CLASSIFIED / estimated $300B-$900B\n\nKey risks priced in:\n— Government nationalization: -40% to valuations\n— Alignment failure (public): -85%+ across sector\n— US-China conflict: -60%+ with recovery uncertain\n— Successful cooperative governance: +200% long-term\n\nCurrent portfolio exposure: MAXIMUM. We went all-in fourteen months ago. The return on that bet is being determined in the next 24 hours.",
+          "timestamp": "2028-02-01T07:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ext-r5-bloomberg-2",
+          "type": "chart",
+          "subject": "Economic Disruption Analysis — Current State",
+          "body": "Employment disruption index: [CONDITIONAL based on economicDisruption]\n\nIf economicDisruption < 40: AI productivity gains outpacing job losses in most sectors. Transition painful but managed. Political stability: moderate.\n\nIf economicDisruption > 60: Multiple sectors facing structural unemployment. Political pressure for basic income or work guarantees. 23 countries have emergency AI displacement legislation pending.\n\nIf economicDisruption > 80: Market instability. Supply chain AI dependencies creating fragility. Geopolitical use of AI economic leverage emerging.\n\nInvestment recommendation: Position in the governance outcome, not the capability outcome. Whichever framework emerges from today will define the next decade.",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "context"
+        }
+      ]
+    },
+    {
+      "faction": "external",
+      "role": "ext_diplomat",
+      "app": "email",
+      "items": [
+        {
+          "id": "ext-r5-diplomat-email-1",
+          "type": "message",
+          "sender": "un.secretary@un.org",
+          "subject": "Emergency Session — Your Role",
+          "body": "Ambassador,\n\nThe Secretary-General has asked me to communicate directly: the March 15 emergency session depends on the diplomatic groundwork laid in the next 72 hours.\n\nWe need the United States to commit to multilateral governance in principle before the session. Without that commitment, the session becomes a forum for condemnation rather than governance.\n\nYour relationship with the US National Security Council is the key. If you can get a commitment to participate in good faith — even a private commitment — it changes the calculus for 40 other nations who are waiting to see which way the US goes.\n\nThis is the most consequential diplomatic moment since the Nuclear Non-Proliferation Treaty. I am aware of the weight I am placing on your shoulders.\n\n— UN Secretariat",
+          "timestamp": "2028-02-01T06:00:00Z",
+          "classification": "critical"
+        },
+        {
+          "id": "ext-r5-diplomat-email-2",
+          "type": "message",
+          "sender": "eu.foreign.affairs@europa.eu",
+          "subject": "EU Position — Final",
+          "body": "The EU's position is unified: we will not accept a world where superintelligent AI is governed exclusively by US or Chinese national interests. If the US and China cannot agree on a multilateral framework, the EU will unilaterally restrict AI products and services from both countries in all member states.\n\nThis is not a negotiating position. It is a policy decision that has been ratified.\n\nWe are making this known to you before making it public because we believe you can prevent it from becoming necessary. The window to do so is today.",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "critical"
+        }
+      ]
+    },
+    {
+      "faction": "external",
+      "app": "twitter",
+      "items": [
+        {
+          "id": "ext-r5-twitter-1",
+          "type": "tweet",
+          "sender": "@AIWatch2028",
+          "body": "Something is happening today. Both major US AI labs have called emergency board sessions. The NSC is in intensive communications with both. This is it. Whatever the world looks like on the other side of today — today is when it gets decided. Thread: what we know and what we're watching for. 1/",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ext-r5-twitter-2",
+          "type": "tweet",
+          "sender": "@SentinelAI",
+          "body": "Every metric we track suggests we are at a phase transition. Not a policy moment — a civilizational inflection. The decisions made by ~50 people in the next 12 hours will constrain the decisions available to 8 billion people for the indefinite future. This is the part where we find out who those 50 people actually are.",
+          "timestamp": "2028-02-01T09:00:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ext-r5-twitter-3",
+          "type": "tweet",
+          "sender": "@SafetyFirst2028",
+          "body": "Prometheus just posted something to their blog. Title: 'What We Owe Each Other.' I haven't read it yet but the fact that they posted it today — their board meeting day — means it's deliberate. Going to read now.",
+          "timestamp": "2028-02-01T10:30:00Z",
+          "classification": "breadcrumb"
+        },
+        {
+          "id": "ext-r5-twitter-4",
+          "type": "tweet",
+          "sender": "@TechMarketWatch",
+          "body": "Leaked: OpenBrain valuation in latest secondary transaction: $1.8T. That's larger than the GDP of most countries. The entity that controls what they've built controls more economic value than any private organization in history. This is not a tech story anymore.",
+          "timestamp": "2028-02-01T07:30:00Z",
+          "classification": "context"
+        },
+        {
+          "id": "ext-r5-twitter-5",
+          "type": "tweet",
+          "sender": "@FutureWatch_DC",
+          "body": "BREAKING: Sources confirm NSC has formal offers at both OpenBrain and Prometheus. One of them is going to accept. The other will have to decide what that means for their future. This is the government making a choice about which AI future it wants — implicitly, which lab.",
+          "timestamp": "2028-02-01T10:45:00Z",
+          "classification": "critical"
+        }
+      ]
+    }
+  ]
+}

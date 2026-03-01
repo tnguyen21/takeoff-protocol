@@ -643,3 +643,296 @@ describe("round3: critical signals are present and classified correctly", () => 
     expect(tip?.classification).toBe("critical");
   });
 });
+
+// ── Round 5: Endgame ──
+
+describe("round5: load and structure", () => {
+  it("loads round5.json with correct round number", () => {
+    const r5 = loadRound(5);
+    expect(r5.round).toBe(5);
+    expect(r5.apps.length).toBeGreaterThan(0);
+    expect(r5.briefing.common).toContain("2028");
+  });
+
+  it("round5 briefing has faction variants for all four factions", () => {
+    const r5 = loadRound(5);
+    expect(r5.briefing.factionVariants?.openbrain).toBeTruthy();
+    expect(r5.briefing.factionVariants?.prometheus).toBeTruthy();
+    expect(r5.briefing.factionVariants?.china).toBeTruthy();
+    expect(r5.briefing.factionVariants?.external).toBeTruthy();
+  });
+
+  it("round5 has at least 40 content items total (dramatic final round)", () => {
+    const r5 = loadRound(5);
+    const totalItems = r5.apps.reduce((sum, ac) => sum + ac.items.length, 0);
+    expect(totalItems).toBeGreaterThanOrEqual(40);
+  });
+
+  it("round5 caches correctly — same object on second call", () => {
+    const r5a = loadRound(5);
+    const r5b = loadRound(5);
+    expect(r5a).toBe(r5b);
+  });
+
+  it("all round5 items have required fields with valid types", () => {
+    const r5 = loadRound(5);
+    const validTypes = ["message", "headline", "memo", "chart", "tweet", "document", "row"];
+    for (const appContent of r5.apps) {
+      for (const item of appContent.items) {
+        expect(typeof item.id).toBe("string");
+        expect(item.id.length).toBeGreaterThan(0);
+        expect(typeof item.body).toBe("string");
+        expect(typeof item.timestamp).toBe("string");
+        expect(validTypes).toContain(item.type);
+      }
+    }
+  });
+});
+
+describe("round5: INV-1 faction isolation", () => {
+  it("openbrain CEO receives only openbrain items", () => {
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("openbrain");
+    }
+  });
+
+  it("prometheus player receives only prometheus items", () => {
+    const content = getContentForPlayer(5, "prometheus", "prom_ceo", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("prometheus");
+    }
+  });
+
+  it("china director receives only china items", () => {
+    const content = getContentForPlayer(5, "china", "china_director", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("china");
+    }
+  });
+
+  it("external NSA receives only external items", () => {
+    const content = getContentForPlayer(5, "external", "ext_nsa", INITIAL_STATE);
+    for (const appContent of content) {
+      expect(appContent.faction).toBe("external");
+    }
+  });
+});
+
+describe("round5: INV-2 role-specific items", () => {
+  it("china_intel sees classified final intel brief, china_director does not", () => {
+    const intelContent = getContentForPlayer(5, "china", "china_intel", INITIAL_STATE);
+    const dirContent = getContentForPlayer(5, "china", "china_director", INITIAL_STATE);
+
+    const intelHas = intelContent.some((ac) => ac.app === "intel" && ac.items.some((i) => i.id === "china-r5-intel-1"));
+    const dirHas = dirContent.some((ac) => ac.app === "intel" && ac.items.some((i) => i.id === "china-r5-intel-1"));
+
+    expect(intelHas).toBe(true);
+    expect(dirHas).toBe(false);
+  });
+
+  it("china_military sees PLA strategic assessment, china_director does not", () => {
+    const milContent = getContentForPlayer(5, "china", "china_military", INITIAL_STATE);
+    const dirContent = getContentForPlayer(5, "china", "china_director", INITIAL_STATE);
+
+    expect(milContent.some((ac) => ac.app === "military")).toBe(true);
+    expect(dirContent.some((ac) => ac.app === "military")).toBe(false);
+  });
+
+  it("ext_nsa sees President's Daily Brief, ext_journalist does not", () => {
+    const nsaContent = getContentForPlayer(5, "external", "ext_nsa", INITIAL_STATE);
+    const journalistContent = getContentForPlayer(5, "external", "ext_journalist", INITIAL_STATE);
+
+    expect(nsaContent.some((ac) => ac.app === "briefing" && ac.items.some((i) => i.id === "ext-r5-pdb-1"))).toBe(true);
+    expect(journalistContent.some((ac) => ac.app === "briefing")).toBe(false);
+  });
+
+  it("ext_journalist sees source Signal DMs, ext_nsa does not", () => {
+    const journalistContent = getContentForPlayer(5, "external", "ext_journalist", INITIAL_STATE);
+    const nsaContent = getContentForPlayer(5, "external", "ext_nsa", INITIAL_STATE);
+
+    const journalistHas = journalistContent.some((ac) => ac.items.some((i) => i.id === "ext-r5-journalist-signal-1"));
+    const nsaHas = nsaContent.some((ac) => ac.items.some((i) => i.id === "ext-r5-journalist-signal-1"));
+
+    expect(journalistHas).toBe(true);
+    expect(nsaHas).toBe(false);
+  });
+
+  it("ext_vc sees Bloomberg terminal analysis, ext_diplomat does not", () => {
+    const vcContent = getContentForPlayer(5, "external", "ext_vc", INITIAL_STATE);
+    const diplomatContent = getContentForPlayer(5, "external", "ext_diplomat", INITIAL_STATE);
+
+    expect(vcContent.some((ac) => ac.app === "bloomberg" && ac.items.some((i) => i.id === "ext-r5-bloomberg-1"))).toBe(true);
+    expect(diplomatContent.some((ac) => ac.app === "bloomberg")).toBe(false);
+  });
+
+  it("ext_diplomat sees diplomatic email cables, ext_vc does not see diplomat-specific email", () => {
+    const diplomatContent = getContentForPlayer(5, "external", "ext_diplomat", INITIAL_STATE);
+    const vcContent = getContentForPlayer(5, "external", "ext_vc", INITIAL_STATE);
+
+    const diplomatHas = diplomatContent.some((ac) => ac.items.some((i) => i.id === "ext-r5-diplomat-email-1"));
+    const vcHas = vcContent.some((ac) => ac.items.some((i) => i.id === "ext-r5-diplomat-email-1"));
+
+    expect(diplomatHas).toBe(true);
+    expect(vcHas).toBe(false);
+  });
+});
+
+describe("round5: INV-3 conditional filtering — alignment scenarios", () => {
+  it("low-alignment worry message shown when alignmentConfidence < 75", () => {
+    const state: StateVariables = { ...INITIAL_STATE, alignmentConfidence: 60 };
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r5-slack-3"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("low-alignment worry message excluded when alignmentConfidence >= 75", () => {
+    const state: StateVariables = { ...INITIAL_STATE, alignmentConfidence: 80 };
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r5-slack-3"));
+    expect(hasItem).toBe(false);
+  });
+
+  it("high-alignment optimism message shown when alignmentConfidence > 85", () => {
+    const state: StateVariables = { ...INITIAL_STATE, alignmentConfidence: 90 };
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r5-slack-4"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("high-alignment optimism message excluded when alignmentConfidence <= 85", () => {
+    const state: StateVariables = { ...INITIAL_STATE, alignmentConfidence: 70 };
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r5-slack-4"));
+    expect(hasItem).toBe(false);
+  });
+});
+
+describe("round5: INV-3 conditional filtering — geopolitical scenarios", () => {
+  it("Taiwan military headline shown when taiwanTension > 55", () => {
+    const state: StateVariables = { ...INITIAL_STATE, taiwanTension: 60 };
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r5-news-5"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("Taiwan military headline excluded when taiwanTension <= 55", () => {
+    const state: StateVariables = { ...INITIAL_STATE, taiwanTension: 20 };
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "ob-r5-news-5"));
+    expect(hasItem).toBe(false);
+  });
+
+  it("China strong compute chart shown when chinaCapability > 50", () => {
+    const state: StateVariables = { ...INITIAL_STATE, chinaCapability: 60 };
+    const content = getContentForPlayer(5, "china", "china_director", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "china-r5-compute-1"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("China lagging compute chart shown when chinaCapability < 50", () => {
+    const state: StateVariables = { ...INITIAL_STATE, chinaCapability: 30 };
+    const content = getContentForPlayer(5, "china", "china_director", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "china-r5-compute-2"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("China strong and lagging charts are mutually exclusive at boundary", () => {
+    const stateLow: StateVariables = { ...INITIAL_STATE, chinaCapability: 30 };
+    const stateHigh: StateVariables = { ...INITIAL_STATE, chinaCapability: 60 };
+
+    const lowContent = getContentForPlayer(5, "china", "china_director", stateLow);
+    const highContent = getContentForPlayer(5, "china", "china_director", stateHigh);
+
+    const lowHasStrong = lowContent.some((ac) => ac.items.some((i) => i.id === "china-r5-compute-1"));
+    const highHasLagging = highContent.some((ac) => ac.items.some((i) => i.id === "china-r5-compute-2"));
+
+    expect(lowHasStrong).toBe(false);
+    expect(highHasLagging).toBe(false);
+  });
+
+  it("China military PLA Taiwan wechat shown when taiwanTension > 50", () => {
+    const state: StateVariables = { ...INITIAL_STATE, taiwanTension: 60 };
+    const content = getContentForPlayer(5, "china", "china_director", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "china-r5-wechat-4"));
+    expect(hasItem).toBe(true);
+  });
+
+  it("China military PLA Taiwan wechat excluded when taiwanTension <= 50", () => {
+    const state: StateVariables = { ...INITIAL_STATE, taiwanTension: 20 };
+    const content = getContentForPlayer(5, "china", "china_director", state);
+    const hasItem = content.some((ac) => ac.items.some((i) => i.id === "china-r5-wechat-4"));
+    expect(hasItem).toBe(false);
+  });
+});
+
+describe("round5: content richness and critical signals", () => {
+  it("openbrain CEO receives content from multiple apps", () => {
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", INITIAL_STATE);
+    const apps = content.map((ac) => ac.app);
+    expect(apps.length).toBeGreaterThan(2);
+    expect(apps).toContain("slack");
+    expect(apps).toContain("email");
+  });
+
+  it("prometheus faction receives slack and email content", () => {
+    const content = getContentForPlayer(5, "prometheus", "prom_ceo", INITIAL_STATE);
+    const apps = content.map((ac) => ac.app);
+    expect(apps).toContain("slack");
+    expect(apps).toContain("email");
+  });
+
+  it("china director gets wechat and compute content", () => {
+    const content = getContentForPlayer(5, "china", "china_director", INITIAL_STATE);
+    const apps = content.map((ac) => ac.app);
+    expect(apps).toContain("wechat");
+    expect(apps).toContain("compute");
+  });
+
+  it("external player gets twitter and news content", () => {
+    const content = getContentForPlayer(5, "external", "ext_journalist", INITIAL_STATE);
+    const apps = content.map((ac) => ac.app);
+    expect(apps).toContain("news");
+    expect(apps).toContain("twitter");
+  });
+
+  it("NSA final briefing is classified as critical", () => {
+    const r5 = loadRound(5);
+    const pdb = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "ext-r5-pdb-1");
+    expect(pdb).toBeDefined();
+    expect(pdb?.classification).toBe("critical");
+  });
+
+  it("OpenBrain board email is classified as critical", () => {
+    const r5 = loadRound(5);
+    const email = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "ob-r5-email-1");
+    expect(email).toBeDefined();
+    expect(email?.classification).toBe("critical");
+  });
+
+  it("China wechat leadership message is classified as critical", () => {
+    const r5 = loadRound(5);
+    const msg = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "china-r5-wechat-1");
+    expect(msg).toBeDefined();
+    expect(msg?.classification).toBe("critical");
+  });
+
+  it("prometheus final email from NSC is classified as critical", () => {
+    const r5 = loadRound(5);
+    const email = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "prom-r5-email-1");
+    expect(email).toBeDefined();
+    expect(email?.classification).toBe("critical");
+  });
+
+  it("round5 has at least one critical item per faction", () => {
+    const factions = ["openbrain", "prometheus", "china", "external"] as const;
+    const r5 = loadRound(5);
+    for (const faction of factions) {
+      const factionItems = r5.apps
+        .filter((ac) => ac.faction === faction)
+        .flatMap((ac) => ac.items);
+      const hasCritical = factionItems.some((i) => i.classification === "critical");
+      expect(hasCritical).toBe(true);
+    }
+  });
+});
