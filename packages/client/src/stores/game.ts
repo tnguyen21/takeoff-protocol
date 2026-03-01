@@ -17,7 +17,7 @@ interface StoredSession {
 
 function loadSession(): StoredSession | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as StoredSession) : null;
   } catch {
     return null;
@@ -26,15 +26,15 @@ function loadSession(): StoredSession | null {
 
 function saveSession(data: StoredSession): void {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
   } catch {
-    // localStorage unavailable (e.g. private browsing with storage blocked)
+    // sessionStorage unavailable (e.g. private browsing with storage blocked)
   }
 }
 
 function clearSession(): void {
   try {
-    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
   } catch {
     // ignore
   }
