@@ -2,7 +2,7 @@
 
 - **Trials:** 20,000
 - **Heuristic:** dove
-- **Generated:** 2026-03-01 08:38
+- **Generated:** 2026-03-01 11:23
 
 ## Ending Arc Distributions
 
@@ -24,23 +24,23 @@
 | Outcome | Count | % |
 |---------|------:|--:|
 | Misaligned and scheming — the AI systems are actively working against human interests | 0 | 0.0%  |
-| Superficially aligned — a ticking time bomb of false compliance | 27 | 0.1%  |
-| Aligned to oversight — safe under human supervision, for now | 134 | 0.7%  |
-| Genuinely aligned — the AI systems demonstrably share human values | 19,839 | 99.2% ████████████████████ |
+| Superficially aligned — a ticking time bomb of false compliance | 24 | 0.1%  |
+| Aligned to oversight — safe under human supervision, for now | 156 | 0.8%  |
+| Genuinely aligned — the AI systems demonstrably share human values | 19,820 | 99.1% ████████████████████ |
 
 > **Warning:** 1 outcome(s) never occurred in 20,000 trials.
 
-> **Warning:** One outcome dominates at 99.2% — may indicate a balance issue.
+> **Warning:** One outcome dominates at 99.1% — may indicate a balance issue.
 
 ### Control
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| No one controls it — governance has collapsed, the race continues unchecked | 7 | 0.0%  |
+| No one controls it — governance has collapsed, the race continues unchecked | 4 | 0.0%  |
 | AI autonomous — the systems have outpaced human oversight capacity | 0 | 0.0%  |
 | Single company — one lab controls the future of humanity | 0 | 0.0%  |
 | Government controlled — states assert sovereignty over AI development | 18,309 | 91.5% ████████████████████ |
-| Distributed/democratic — shared governance and open standards prevail | 1,684 | 8.4% ██ |
+| Distributed/democratic — shared governance and open standards prevail | 1,687 | 8.4% ██ |
 
 > **Warning:** 2 outcome(s) never occurred in 20,000 trials.
 
@@ -50,15 +50,15 @@
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Active conflict — diplomatic relations have collapsed; military action is underway | 2 | 0.0%  |
-| Cold war — open hostility stops short of direct conflict | 2 | 0.0%  |
-| Tense but stable — managed competition with guardrails, barely holding | 17 | 0.1%  |
-| Arms control — binding agreements limit the most dangerous capabilities | 113 | 0.6%  |
-| Joint cooperation — the US and China collaborate on AI safety | 19,866 | 99.3% ████████████████████ |
+| Active conflict — diplomatic relations have collapsed; military action is underway | 0 | 0.0%  |
+| Cold war — open hostility stops short of direct conflict | 3 | 0.0%  |
+| Tense but stable — managed competition with guardrails, barely holding | 19 | 0.1%  |
+| Arms control — binding agreements limit the most dangerous capabilities | 126 | 0.6%  |
+| Joint cooperation — the US and China collaborate on AI safety | 19,852 | 99.3% ████████████████████ |
+
+> **Warning:** 1 outcome(s) never occurred in 20,000 trials.
 
 > **Warning:** One outcome dominates at 99.3% — may indicate a balance issue.
-
-> **Note:** Large spread (0.0% – 99.3%). Some outcomes are much rarer than others.
 
 ### Public Reaction
 
@@ -78,10 +78,10 @@
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Collapse — economic systems have broken down under AI-driven disruption | 1,595 | 8.0% ███ |
-| Painful transition — mass unemployment and cascading supply chain failures | 4,206 | 21.0% █████████ |
-| Disruption with adaptation — difficult, but society is adjusting | 9,518 | 47.6% ████████████████████ |
-| AI-driven boom — productivity gains lift all boats | 4,681 | 23.4% ██████████ |
+| Collapse — economic systems have broken down under AI-driven disruption | 1,568 | 7.8% ███ |
+| Painful transition — mass unemployment and cascading supply chain failures | 4,191 | 21.0% █████████ |
+| Disruption with adaptation — difficult, but society is adjusting | 9,555 | 47.8% ████████████████████ |
+| AI-driven boom — productivity gains lift all boats | 4,686 | 23.4% ██████████ |
 
 ### Prometheus's Fate
 
@@ -90,56 +90,56 @@
 | Marginalized — Prometheus's safety work went unheeded | 0 | 0.0%  |
 | Went open-source — Prometheus published its research to democratize AI safety | 0 | 0.0%  |
 | Merged with OpenBrain — the two US labs united under pressure | 0 | 0.0%  |
-| Safety work saved everyone — Prometheus's methods became the industry standard | 120 | 0.6%  |
-| Became the trusted lab — Prometheus replaced OpenBrain as the dominant force | 19,880 | 99.4% ████████████████████ |
+| Safety work saved everyone — Prometheus's methods became the industry standard | 140 | 0.7%  |
+| Became the trusted lab — Prometheus replaced OpenBrain as the dominant force | 19,860 | 99.3% ████████████████████ |
 
 > **Warning:** 3 outcome(s) never occurred in 20,000 trials.
 
-> **Warning:** One outcome dominates at 99.4% — may indicate a balance issue.
+> **Warning:** One outcome dominates at 99.3% — may indicate a balance issue.
 
 ### Taiwan
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Full invasion — military conflict over Taiwan has begun | 1 | 0.0%  |
+| Full invasion — military conflict over Taiwan has begun | 0 | 0.0%  |
 | Blockade — China has imposed naval restrictions around Taiwan | 3 | 0.0%  |
-| Standoff — forces massed, neither side willing to blink | 17 | 0.1%  |
-| De-escalation — diplomatic channels have reduced tensions | 113 | 0.6%  |
-| Non-issue — Taiwan tensions did not materialize as a defining factor | 19,866 | 99.3% ████████████████████ |
+| Standoff — forces massed, neither side willing to blink | 19 | 0.1%  |
+| De-escalation — diplomatic channels have reduced tensions | 126 | 0.6%  |
+| Non-issue — Taiwan tensions did not materialize as a defining factor | 19,852 | 99.3% ████████████████████ |
+
+> **Warning:** 1 outcome(s) never occurred in 20,000 trials.
 
 > **Warning:** One outcome dominates at 99.3% — may indicate a balance issue.
-
-> **Note:** Large spread (0.0% – 99.3%). Some outcomes are much rarer than others.
 
 ### Open Source
 
 | Outcome | Count | % |
 |---------|------:|--:|
 | Everything leaked — critical weights and alignment research are now public | 0 | 0.0%  |
-| Strategic open-sourcing — controlled release shaped the competitive landscape | 4,812 | 24.1% ██████ |
-| Closed won — proprietary models dominate; open models fall far behind | 15,188 | 75.9% ████████████████████ |
+| Strategic open-sourcing — controlled release shaped the competitive landscape | 4,852 | 24.3% ██████ |
+| Closed won — proprietary models dominate; open models fall far behind | 15,148 | 75.7% ████████████████████ |
 | Irrelevant — open vs. closed became a non-factor in the final outcome | 0 | 0.0%  |
 
 > **Warning:** 2 outcome(s) never occurred in 20,000 trials.
 
-> **Warning:** One outcome dominates at 75.9% — may indicate a balance issue.
+> **Warning:** One outcome dominates at 75.7% — may indicate a balance issue.
 
 ## Final State Variable Distributions
 
 | Variable | Initial | Mean | Std | Min | P25 | Median | P75 | Max |
 |----------|--------:|-----:|----:|----:|----:|-------:|----:|----:|
 | obCapability | 30 | 0.4 | 2.7 | 0 | 0 | 0 | 0 | 51 |
-| promCapability | 28 | 23.7 | 17.1 | 0 | 10 | 22 | 35 | 95 |
-| chinaCapability | 18 | 70.4 | 15.3 | 23 | 59 | 70 | 82 | 100 |
-| usChinaGap | 7 | -6 | 0.2 | -6 | -6 | -6 | -6 | 1 |
+| promCapability | 28 | 23.5 | 17.4 | 0 | 9 | 22 | 35 | 100 |
+| chinaCapability | 18 | 70.4 | 15.4 | 16 | 59 | 70 | 82 | 100 |
+| usChinaGap | 7 | -6 | 0.1 | -6 | -6 | -6 | -6 | 0 |
 | obPromGap | 1 | -2.8 | 3.4 | -6 | -6 | -4 | 1 | 8 |
 | alignmentConfidence | 55 | 100 | 0 | 100 | 100 | 100 | 100 | 100 |
-| misalignmentSeverity | 0 | 0.4 | 2.9 | 0 | 0 | 0 | 0 | 68 |
+| misalignmentSeverity | 0 | 0.4 | 2.9 | 0 | 0 | 0 | 0 | 67 |
 | publicAwareness | 10 | 100 | 0.3 | 95 | 100 | 100 | 100 | 100 |
 | publicSentiment | 30 | 100 | 0 | 100 | 100 | 100 | 100 | 100 |
-| economicDisruption | 20 | 58.8 | 18.6 | 17 | 45 | 57 | 71 | 100 |
-| taiwanTension | 20 | 0.5 | 3.4 | 0 | 0 | 0 | 0 | 89 |
-| obInternalTrust | 65 | 20.2 | 23.7 | 0 | 0 | 12 | 34 | 100 |
+| economicDisruption | 20 | 58.7 | 18.6 | 15 | 45 | 56 | 71 | 100 |
+| taiwanTension | 20 | 0.6 | 3.4 | 0 | 0 | 0 | 0 | 75 |
+| obInternalTrust | 65 | 20 | 23.6 | 0 | 0 | 11 | 33 | 100 |
 | securityLevelOB | 2 | 5 | 0.1 | 3 | 5 | 5 | 5 | 5 |
 | securityLevelProm | 3 | 4.1 | 0.8 | 1 | 4 | 4 | 5 | 5 |
 | intlCooperation | 5 | 100 | 0 | 100 | 100 | 100 | 100 | 100 |
@@ -216,10 +216,10 @@ Values > 1.0 = positively correlated, < 1.0 = anti-correlated.
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | The AI Rac | - | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
 | Alignment | n/a | - | 1.01 | 1.00 | n/a | 1.00 | 1.00 | 1.00 | n/a |
-| Control | n/a | 1.01 | - | 1.00 | n/a | 1.23 | 1.01 | 1.00 | n/a |
+| Control | n/a | 1.01 | - | 1.00 | n/a | 1.22 | 1.01 | 1.00 | n/a |
 | US-China R | n/a | 1.00 | 1.00 | - | n/a | 1.01 | 1.00 | 1.01 | n/a |
 | Public Rea | n/a | n/a | n/a | n/a | - | n/a | n/a | n/a | n/a |
-| Economy | n/a | 1.00 | 1.23 | 1.01 | n/a | - | 1.00 | 1.01 | n/a |
+| Economy | n/a | 1.00 | 1.22 | 1.01 | n/a | - | 1.00 | 1.01 | n/a |
 | Prometheus | n/a | 1.00 | 1.01 | 1.00 | n/a | 1.00 | - | 1.00 | n/a |
 | Taiwan | n/a | 1.00 | 1.00 | 1.01 | n/a | 1.01 | 1.00 | - | n/a |
 | Open Sourc | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | - |
@@ -227,7 +227,7 @@ Values > 1.0 = positively correlated, < 1.0 = anti-correlated.
 ## Summary
 
 - **9 ending arcs** analyzed
-- **15 unreachable outcomes** across all arcs
+- **17 unreachable outcomes** across all arcs
 - **8 dominant outcomes** (>70% frequency)
 - **1 stale variables** that barely move
 - **9 variables** frequently hitting bounds

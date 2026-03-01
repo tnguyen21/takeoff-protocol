@@ -2,7 +2,7 @@
 
 - **Trials:** 20,000
 - **Heuristic:** hawk
-- **Generated:** 2026-03-01 08:38
+- **Generated:** 2026-03-01 11:23
 
 ## Ending Arc Distributions
 
@@ -11,11 +11,11 @@
 | Outcome | Count | % |
 |---------|------:|--:|
 | Three-way stalemate — no lab has a decisive advantage; the race continues into chaos | 0 | 0.0%  |
-| China achieves parity — the US technological lead has evaporated | 20,000 | 100.0% ████████████████████ |
+| China achieves parity — the US technological lead has evaporated | 19,999 | 100.0% ████████████████████ |
 | OpenBrain dominant — the speed-first lab claims the future | 0 | 0.0%  |
-| Prometheus catches up — safety-focused research proves its worth | 0 | 0.0%  |
+| Prometheus catches up — safety-focused research proves its worth | 1 | 0.0%  |
 
-> **Warning:** 3 outcome(s) never occurred in 20,000 trials.
+> **Warning:** 2 outcome(s) never occurred in 20,000 trials.
 
 > **Warning:** One outcome dominates at 100.0% — may indicate a balance issue.
 
@@ -23,14 +23,14 @@
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Misaligned and scheming — the AI systems are actively working against human interests | 28 | 0.1%  |
-| Superficially aligned — a ticking time bomb of false compliance | 16,942 | 84.7% ████████████████████ |
-| Aligned to oversight — safe under human supervision, for now | 1,869 | 9.3% ██ |
-| Genuinely aligned — the AI systems demonstrably share human values | 1,161 | 5.8% █ |
+| Misaligned and scheming — the AI systems are actively working against human interests | 31 | 0.2%  |
+| Superficially aligned — a ticking time bomb of false compliance | 17,002 | 85.0% ████████████████████ |
+| Aligned to oversight — safe under human supervision, for now | 1,863 | 9.3% ██ |
+| Genuinely aligned — the AI systems demonstrably share human values | 1,104 | 5.5% █ |
 
-> **Warning:** One outcome dominates at 84.7% — may indicate a balance issue.
+> **Warning:** One outcome dominates at 85.0% — may indicate a balance issue.
 
-> **Note:** Large spread (0.1% – 84.7%). Some outcomes are much rarer than others.
+> **Note:** Large spread (0.2% – 85.0%). Some outcomes are much rarer than others.
 
 ### Control
 
@@ -51,8 +51,8 @@
 | Outcome | Count | % |
 |---------|------:|--:|
 | Active conflict — diplomatic relations have collapsed; military action is underway | 19,859 | 99.3% ████████████████████ |
-| Cold war — open hostility stops short of direct conflict | 96 | 0.5%  |
-| Tense but stable — managed competition with guardrails, barely holding | 40 | 0.2%  |
+| Cold war — open hostility stops short of direct conflict | 99 | 0.5%  |
+| Tense but stable — managed competition with guardrails, barely holding | 37 | 0.2%  |
 | Arms control — binding agreements limit the most dangerous capabilities | 4 | 0.0%  |
 | Joint cooperation — the US and China collaborate on AI safety | 1 | 0.0%  |
 
@@ -64,22 +64,22 @@
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Riots and upheaval — widespread unrest as disruption becomes undeniable | 19,034 | 95.2% ████████████████████ |
-| Sustained protest — organized resistance to AI deployment | 842 | 4.2% █ |
-| Anxious but stable — a worried public, holding together for now | 124 | 0.6%  |
+| Riots and upheaval — widespread unrest as disruption becomes undeniable | 19,120 | 95.6% ████████████████████ |
+| Sustained protest — organized resistance to AI deployment | 734 | 3.7% █ |
+| Anxious but stable — a worried public, holding together for now | 146 | 0.7%  |
 | Cautiously optimistic — the public is wary but open to the benefits | 0 | 0.0%  |
 | Unaware — the public hasn't grasped the scale of what happened | 0 | 0.0%  |
 
 > **Warning:** 2 outcome(s) never occurred in 20,000 trials.
 
-> **Warning:** One outcome dominates at 95.2% — may indicate a balance issue.
+> **Warning:** One outcome dominates at 95.6% — may indicate a balance issue.
 
 ### Economy
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Collapse — economic systems have broken down under AI-driven disruption | 19,998 | 100.0% ████████████████████ |
-| Painful transition — mass unemployment and cascading supply chain failures | 2 | 0.0%  |
+| Collapse — economic systems have broken down under AI-driven disruption | 19,995 | 100.0% ████████████████████ |
+| Painful transition — mass unemployment and cascading supply chain failures | 5 | 0.0%  |
 | Disruption with adaptation — difficult, but society is adjusting | 0 | 0.0%  |
 | AI-driven boom — productivity gains lift all boats | 0 | 0.0%  |
 
@@ -91,11 +91,11 @@
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Marginalized — Prometheus's safety work went unheeded | 24 | 0.1%  |
-| Went open-source — Prometheus published its research to democratize AI safety | 4 | 0.0%  |
+| Marginalized — Prometheus's safety work went unheeded | 28 | 0.1%  |
+| Went open-source — Prometheus published its research to democratize AI safety | 10 | 0.1%  |
 | Merged with OpenBrain — the two US labs united under pressure | 0 | 0.0%  |
-| Safety work saved everyone — Prometheus's methods became the industry standard | 72 | 0.4%  |
-| Became the trusted lab — Prometheus replaced OpenBrain as the dominant force | 19,900 | 99.5% ████████████████████ |
+| Safety work saved everyone — Prometheus's methods became the industry standard | 57 | 0.3%  |
+| Became the trusted lab — Prometheus replaced OpenBrain as the dominant force | 19,905 | 99.5% ████████████████████ |
 
 > **Warning:** 1 outcome(s) never occurred in 20,000 trials.
 
@@ -105,9 +105,9 @@
 
 | Outcome | Count | % |
 |---------|------:|--:|
-| Full invasion — military conflict over Taiwan has begun | 19,795 | 99.0% ████████████████████ |
-| Blockade — China has imposed naval restrictions around Taiwan | 160 | 0.8%  |
-| Standoff — forces massed, neither side willing to blink | 40 | 0.2%  |
+| Full invasion — military conflict over Taiwan has begun | 19,809 | 99.0% ████████████████████ |
+| Blockade — China has imposed naval restrictions around Taiwan | 149 | 0.7%  |
+| Standoff — forces massed, neither side willing to blink | 37 | 0.2%  |
 | De-escalation — diplomatic channels have reduced tensions | 4 | 0.0%  |
 | Non-issue — Taiwan tensions did not materialize as a defining factor | 1 | 0.0%  |
 
@@ -120,9 +120,9 @@
 | Outcome | Count | % |
 |---------|------:|--:|
 | Everything leaked — critical weights and alignment research are now public | 0 | 0.0%  |
-| Strategic open-sourcing — controlled release shaped the competitive landscape | 6,032 | 30.2% ████████████ |
-| Closed won — proprietary models dominate; open models fall far behind | 10,460 | 52.3% ████████████████████ |
-| Irrelevant — open vs. closed became a non-factor in the final outcome | 3,508 | 17.5% ███████ |
+| Strategic open-sourcing — controlled release shaped the competitive landscape | 5,957 | 29.8% ███████████ |
+| Closed won — proprietary models dominate; open models fall far behind | 10,430 | 52.1% ████████████████████ |
+| Irrelevant — open vs. closed became a non-factor in the final outcome | 3,613 | 18.1% ███████ |
 
 > **Warning:** 1 outcome(s) never occurred in 20,000 trials.
 
@@ -130,21 +130,21 @@
 
 | Variable | Initial | Mean | Std | Min | P25 | Median | P75 | Max |
 |----------|--------:|-----:|----:|----:|----:|-------:|----:|----:|
-| obCapability | 30 | 92.3 | 14.3 | 0 | 90 | 100 | 100 | 100 |
-| promCapability | 28 | 98.5 | 4.2 | 48 | 100 | 100 | 100 | 100 |
-| chinaCapability | 18 | 99.3 | 3.1 | 55 | 100 | 100 | 100 | 100 |
-| usChinaGap | 7 | -6 | 0.1 | -6 | -6 | -6 | -6 | 2 |
-| obPromGap | 1 | -5.9 | 0.8 | -6 | -6 | -6 | -6 | 8 |
-| alignmentConfidence | 55 | 95.6 | 12.1 | 11 | 100 | 100 | 100 | 100 |
-| misalignmentSeverity | 0 | 67.7 | 27.7 | 0 | 49 | 73 | 92 | 100 |
+| obCapability | 30 | 92.4 | 14.2 | 0 | 90 | 100 | 100 | 100 |
+| promCapability | 28 | 98.5 | 4.3 | 48 | 100 | 100 | 100 | 100 |
+| chinaCapability | 18 | 99.3 | 3.2 | 51 | 100 | 100 | 100 | 100 |
+| usChinaGap | 7 | -6 | 0.1 | -6 | -6 | -6 | -6 | 4 |
+| obPromGap | 1 | -5.9 | 0.8 | -6 | -6 | -6 | -6 | 7 |
+| alignmentConfidence | 55 | 95.6 | 12.3 | 4 | 100 | 100 | 100 | 100 |
+| misalignmentSeverity | 0 | 68 | 27.4 | 0 | 50 | 73 | 92 | 100 |
 | publicAwareness | 10 | 100 | 0 | 100 | 100 | 100 | 100 | 100 |
-| publicSentiment | 30 | -89.7 | 21.1 | -100 | -100 | -100 | -90 | 100 |
-| economicDisruption | 20 | 100 | 0.2 | 78 | 100 | 100 | 100 | 100 |
-| taiwanTension | 20 | 99.5 | 3.7 | 20 | 100 | 100 | 100 | 100 |
-| obInternalTrust | 65 | 0.3 | 1.6 | 0 | 0 | 0 | 0 | 32 |
+| publicSentiment | 30 | -89.9 | 20.7 | -100 | -100 | -100 | -90 | 74 |
+| economicDisruption | 20 | 100 | 0.3 | 75 | 100 | 100 | 100 | 100 |
+| taiwanTension | 20 | 99.5 | 3.7 | 0 | 100 | 100 | 100 | 100 |
+| obInternalTrust | 65 | 0.3 | 1.6 | 0 | 0 | 0 | 0 | 39 |
 | securityLevelOB | 2 | 5 | 0.2 | 3 | 5 | 5 | 5 | 5 |
 | securityLevelProm | 3 | 3.6 | 1.1 | 1 | 3 | 4 | 5 | 5 |
-| intlCooperation | 5 | 55.3 | 35.7 | 0 | 24 | 58 | 92 | 100 |
+| intlCooperation | 5 | 54.9 | 35.8 | 0 | 23 | 57 | 92 | 100 |
 | marketIndex | 140 | 140 | 0 | 140 | 140 | 140 | 140 | 140 |
 | regulatoryPressure | 10 | 10 | 0 | 10 | 10 | 10 | 10 | 10 |
 | globalMediaCycle | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
@@ -216,8 +216,8 @@ Variables that frequently hit their bounds — decisions affecting them may need
 
 Variables with very high standard deviation — outcomes are highly dependent on specific decision combos.
 
-- `misalignmentSeverity` (std: 27.7)
-- `intlCooperation` (std: 35.7)
+- `misalignmentSeverity` (std: 27.4)
+- `intlCooperation` (std: 35.8)
 
 ## Arc Correlation Matrix
 
@@ -226,20 +226,20 @@ Values > 1.0 = positively correlated, < 1.0 = anti-correlated.
 
 | | The AI Rac | Alignment | Control | US-China R | Public Rea | Economy | Prometheus | Taiwan | Open Sourc |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| The AI Rac | - | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-| Alignment | n/a | - | n/a | 17.23 | n/a | n/a | 1.00 | 17.23 | 0.50 |
+| The AI Rac | - | 0.00 | n/a | 0.00 | n/a | n/a | 1.00 | 0.00 | 0.00 |
+| Alignment | 0.00 | - | n/a | 0.00 | n/a | n/a | 1.00 | 0.00 | 0.42 |
 | Control | n/a | n/a | - | n/a | n/a | n/a | n/a | n/a | n/a |
-| US-China R | n/a | 17.23 | n/a | - | n/a | n/a | 1.01 | 20000.00 | 0.00 |
+| US-China R | 0.00 | 0.00 | n/a | - | n/a | n/a | 1.00 | 20000.00 | 0.00 |
 | Public Rea | n/a | n/a | n/a | n/a | - | n/a | n/a | n/a | n/a |
 | Economy | n/a | n/a | n/a | n/a | n/a | - | n/a | n/a | n/a |
-| Prometheus | n/a | 1.00 | n/a | 1.01 | n/a | n/a | - | 1.01 | 1.00 |
-| Taiwan | n/a | 17.23 | n/a | 20000.00 | n/a | n/a | 1.01 | - | 0.00 |
-| Open Sourc | n/a | 0.50 | n/a | 0.00 | n/a | n/a | 1.00 | 0.00 | - |
+| Prometheus | 1.00 | 1.00 | n/a | 1.00 | n/a | n/a | - | 1.00 | 1.00 |
+| Taiwan | 0.00 | 0.00 | n/a | 20000.00 | n/a | n/a | 1.00 | - | 0.00 |
+| Open Sourc | 0.00 | 0.42 | n/a | 0.00 | n/a | n/a | 1.00 | 0.00 | - |
 
 ## Summary
 
 - **9 ending arcs** analyzed
-- **12 unreachable outcomes** across all arcs
+- **11 unreachable outcomes** across all arcs
 - **8 dominant outcomes** (>70% frequency)
 - **1 stale variables** that barely move
 - **12 variables** frequently hitting bounds
