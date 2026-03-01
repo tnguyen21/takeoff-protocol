@@ -21,28 +21,28 @@ const BASE_STATE: StateVariables = {
   securityLevelProm: 3,
   intlCooperation: 40,
   // Tier 1
-  marketIndex: 140,
-  regulatoryPressure: 10,
+  marketIndex: 50,            // neutral — no market bonus/penalty in tests
+  regulatoryPressure: 30,
   globalMediaCycle: 0,
   // Tier 2
-  chinaWeightTheftProgress: 0,
-  aiAutonomyLevel: 10,
+  chinaWeightTheftProgress: 20,
+  aiAutonomyLevel: 25,
   whistleblowerPressure: 5,
-  openSourceMomentum: 15,
+  openSourceMomentum: 30,
   doomClockDistance: 5,
   // Tier 3 — OpenBrain
   obMorale: 75,
-  obBurnRate: 50,
-  obBoardConfidence: 70,
+  obBurnRate: 20,
+  obBoardConfidence: 60,
   // Tier 3 — Prometheus
-  promMorale: 80,
-  promBurnRate: 40,
-  promBoardConfidence: 65,
+  promMorale: 60,
+  promBurnRate: 20,
+  promBoardConfidence: 55,
   promSafetyBreakthroughProgress: 20,
   // Tier 3 — China
-  cdzComputeUtilization: 40,
-  ccpPatience: 60,
-  domesticChipProgress: 15,
+  cdzComputeUtilization: 30,
+  ccpPatience: 50,
+  domesticChipProgress: 20,
 };
 
 // ── resolveDecisions ──────────────────────────────────────────────────────────
@@ -281,5 +281,88 @@ describe("computeEndingArcs", () => {
 
     expect(low.result).toBe(3); // AI-driven boom
     expect(high.result).toBe(0); // Collapse
+  });
+
+  it("doom clock < 2 forces misaligned outcome regardless of alignmentConfidence", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      alignmentConfidence: 90,
+      misalignmentSeverity: 5,
+      doomClockDistance: 1,
+    };
+    const arcs = computeEndingArcs(state);
+    const alignmentArc = arcs.find((a) => a.id === "alignment")!;
+    expect(alignmentArc.result).toBe(0); // Misaligned and scheming
+  });
+
+  it("promSafetyBreakthroughProgress >= 80 enables genuinely aligned outcome", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      promSafetyBreakthroughProgress: 85,
+      alignmentConfidence: 65,
+      aiAutonomyLevel: 30,
+      doomClockDistance: 5,
+    };
+    const arcs = computeEndingArcs(state);
+    const alignmentArc = arcs.find((a) => a.id === "alignment")!;
+    expect(alignmentArc.result).toBe(3); // Genuinely aligned
+  });
+
+  it("ccpPatience < 20 forces conflict in taiwan arc", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      ccpPatience: 15,
+      taiwanTension: 40, // tension not extreme — ccp patience drives it
+    };
+    const arcs = computeEndingArcs(state);
+    const taiwanArc = arcs.find((a) => a.id === "taiwan")!;
+    expect(taiwanArc.result).toBe(0); // Full invasion
+  });
+
+  it("ccpPatience < 20 forces conflict in usChinaRelations arc", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      ccpPatience: 10,
+      intlCooperation: 60,
+      taiwanTension: 20,
+    };
+    const arcs = computeEndingArcs(state);
+    const usChinaArc = arcs.find((a) => a.id === "usChinaRelations")!;
+    expect(usChinaArc.result).toBe(0); // Active conflict
+  });
+
+  it("chinaWeightTheftProgress = 100 enables everything leaked in openSource arc", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      chinaWeightTheftProgress: 100,
+    };
+    const arcs = computeEndingArcs(state);
+    const openSourceArc = arcs.find((a) => a.id === "openSource")!;
+    expect(openSourceArc.result).toBe(0); // Everything leaked
+  });
+
+  it("promSafetyBreakthroughProgress >= 80 enables safety work saved everyone in prometheusFate", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      promSafetyBreakthroughProgress: 85,
+      alignmentConfidence: 70,
+      promBoardConfidence: 55,
+      promMorale: 70,
+    };
+    const arcs = computeEndingArcs(state);
+    const promArc = arcs.find((a) => a.id === "prometheusFate")!;
+    expect(promArc.result).toBe(3); // Safety work saved everyone
+  });
+
+  it("high regulatoryPressure with negative sentiment drives riots in publicReaction", () => {
+    const state: StateVariables = {
+      ...BASE_STATE,
+      regulatoryPressure: 80,
+      publicSentiment: -50,
+      publicAwareness: 70,
+    };
+    const arcs = computeEndingArcs(state);
+    const publicArc = arcs.find((a) => a.id === "publicReaction")!;
+    expect(publicArc.result).toBe(0); // Riots and upheaval
   });
 });
