@@ -1,10 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
-import { createRoom, getRoom, joinRoom, selectRole, getLobbyState, spendToken, awardToken } from "./rooms.js";
-import { advancePhase, startGame } from "./game.js";
-
-// In-memory message store: roomCode → messageId → message (for reveal_dm)
-const roomMessages = new Map<string, Map<string, GameMessage>>();
+import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, spendToken, awardToken } from "./rooms.js";
+import { advancePhase, startGame, replayPlayerState } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -32,6 +29,57 @@ export function registerGameEvents(io: Server, socket: Socket) {
     io.to(result.room.code).emit("room:state", getLobbyState(result.room));
     console.log(`[room] ${name} joined ${result.room.code}`);
     callback({ ok: true, player: result.player });
+  });
+
+  socket.on("room:rejoin", ({ code, playerId: oldSocketId }: { code: string; playerId: string }, callback?: (res: { ok: boolean; error?: string; player?: { faction: Faction; role: Role; isLeader: boolean; influenceTokens: number } }) => void) => {
+    const room = getRoom(code);
+    if (!room) {
+      callback?.({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    // Capture messages and player info BEFORE reassignment
+    const oldPlayer = room.players[oldSocketId];
+    const isGMRejoin = room.gmId === oldSocketId;
+
+    if (!oldPlayer && !isGMRejoin) {
+      callback?.({ ok: false, error: "Player not found in room" });
+      return;
+    }
+
+    // Get messages for this player (team chats + DMs) before reassigning socket ID
+    const messages = oldPlayer ? getPlayerMessages(room, oldPlayer.faction, oldSocketId) : [];
+
+    // Reassign socket ID
+    const result = rejoinRoom(code, socket.id, oldSocketId);
+    if (!result) {
+      callback?.({ ok: false, error: "Rejoin failed" });
+      return;
+    }
+
+    socket.join(room.code);
+    socket.data.roomCode = room.code;
+
+    const { player } = result;
+
+    // Broadcast updated room state (marks player as connected again)
+    io.to(room.code).emit("room:state", getLobbyState(room));
+
+    // Replay full game state to the reconnected socket
+    socket.emit("game:phase", { phase: room.phase, round: room.round, timer: room.timer });
+
+    // Replay per-player game state (fog view, content, decisions, briefing)
+    replayPlayerState(socket, room, isGMRejoin ? null : player);
+
+    // Replay message history
+    socket.emit("message:history", { messages });
+
+    console.log(`[room] ${isGMRejoin ? "GM" : player!.name} rejoined ${room.code} (${oldSocketId} → ${socket.id})`);
+
+    callback?.({
+      ok: true,
+      player: player ? { faction: player.faction, role: player.role, isLeader: player.isLeader, influenceTokens: player.influenceTokens } : undefined,
+    });
   });
 
   socket.on("room:select-role", ({ faction, role }: { faction: Faction; role: Role }, callback) => {
@@ -199,9 +247,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
       isTeamChat: to === null,
     };
 
-    // Store message for potential reveal_dm use
-    if (!roomMessages.has(code)) roomMessages.set(code, new Map());
-    roomMessages.get(code)!.set(message.id, message);
+    // Store message in room for reconnect replay and reveal_dm
+    room.messages.push(message);
 
     if (to === null) {
       // Team chat: send to all players in same faction
@@ -377,8 +424,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
         tokensRemaining: player.influenceTokens,
       });
     } else if (payload.action === "reveal_dm") {
-      const msgs = roomMessages.get(code);
-      const msg = payload.messageId ? msgs?.get(payload.messageId) : undefined;
+      const msg = payload.messageId ? room.messages.find((m) => m.id === payload.messageId) : undefined;
       if (msg) {
         // Broadcast the DM to all players in the spender's faction
         for (const [pid, p] of Object.entries(room.players)) {

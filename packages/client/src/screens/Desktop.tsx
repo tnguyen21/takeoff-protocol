@@ -35,7 +35,7 @@ const APP_LABELS: Record<string, string> = {
 };
 
 export function Desktop() {
-  const { selectedFaction, isGM, phase, content } = useGameStore();
+  const { selectedFaction, isGM, phase, content, reconnecting } = useGameStore();
   const { windows, initWindows } = useUIStore();
 
   useEffect(() => {
@@ -106,6 +106,25 @@ export function Desktop() {
 
       {/* Publish notification banners */}
       <PublishNotificationBanner />
+
+      {/* Reconnection overlay */}
+      {reconnecting && (
+        <div
+          className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-yellow-200"
+          style={{
+            background: "linear-gradient(90deg, rgba(120,80,0,0.85) 0%, rgba(80,50,0,0.85) 100%)",
+            backdropFilter: "blur(6px)",
+            zIndex: 9999,
+            bottom: "var(--dock-height)",
+          }}
+        >
+          <span
+            className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse"
+            style={{ boxShadow: "0 0 6px rgba(250,200,0,0.8)" }}
+          />
+          Connection lost — reconnecting…
+        </div>
+      )}
 
       {/* Toast notifications — top-right corner */}
       <Notifications />

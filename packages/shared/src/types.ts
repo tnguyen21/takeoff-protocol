@@ -225,6 +225,7 @@ export interface GameRoom {
   teamVotes: Record<string, Record<string, string>>; // faction → { playerId → optionId }
   history: RoundHistory[];
   publications: Publication[];
+  messages: GameMessage[]; // all messages for replay on reconnect
 }
 
 export interface RoundHistory {

@@ -3,6 +3,42 @@ import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameMessage, G
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 
+// ── Session persistence (survives page refresh) ──
+
+const SESSION_KEY = "takeoff:session";
+
+interface StoredSession {
+  roomCode: string;
+  playerName: string;
+  playerId: string; // original socket ID (used as identifier for rejoin)
+  isGM: boolean;
+}
+
+function loadSession(): StoredSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as StoredSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(data: StoredSession): void {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage unavailable (e.g. private browsing with storage blocked)
+  }
+}
+
+function clearSession(): void {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 interface LobbyPlayer {
   id: string;
   name: string;
@@ -14,6 +50,7 @@ interface LobbyPlayer {
 interface GameStore {
   // Connection
   connected: boolean;
+  reconnecting: boolean; // true while attempting to rejoin after disconnect
   roomCode: string | null;
   isGM: boolean;
   playerId: string | null;
@@ -66,6 +103,7 @@ interface GameStore {
   dismissNotification: (id: string) => void;
   createRoom: () => Promise<string | null>;
   joinRoom: (code: string) => Promise<boolean>;
+  rejoinRoom: (code: string, oldPlayerId: string) => void;
   selectRole: (faction: Faction, role: Role) => Promise<boolean>;
   startGame: () => void;
   submitDecision: (individual: string, teamVote?: string) => void;
@@ -79,6 +117,7 @@ interface GameStore {
 
 export const useGameStore = create<GameStore>((set, get) => ({
   connected: false,
+  reconnecting: false,
   roomCode: null,
   isGM: false,
   playerId: null,
@@ -122,9 +161,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   createRoom: () =>
     new Promise((resolve) => {
       const doCreate = () => {
-        socket.emit("room:create", { gmName: get().playerName ?? "GM" }, (res: { ok: boolean; code?: string }) => {
+        const gmName = get().playerName ?? "GM";
+        socket.emit("room:create", { gmName }, (res: { ok: boolean; code?: string }) => {
           if (res.ok && res.code) {
             set({ roomCode: res.code, isGM: true, playerId: socket.id });
+            saveSession({ roomCode: res.code, playerName: gmName, playerId: socket.id!, isGM: true });
             resolve(res.code);
           } else {
             resolve(null);
@@ -142,12 +183,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   joinRoom: (code) =>
     new Promise((resolve) => {
       const doJoin = () => {
+        const name = get().playerName ?? "Player";
         socket.emit(
           "room:join",
-          { code, name: get().playerName ?? "Player" },
+          { code, name },
           (res: { ok: boolean; player?: Player }) => {
             if (res.ok) {
               set({ roomCode: code.toUpperCase(), playerId: socket.id });
+              saveSession({ roomCode: code.toUpperCase(), playerName: name, playerId: socket.id!, isGM: false });
               resolve(true);
             } else {
               resolve(false);
@@ -162,6 +205,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
         socket.once("connect", doJoin);
       }
     }),
+
+  rejoinRoom: (code, oldPlayerId) => {
+    socket.emit(
+      "room:rejoin",
+      { code, playerId: oldPlayerId },
+      (res: { ok: boolean; player?: { faction: Faction; role: Role; isLeader: boolean; influenceTokens: number } }) => {
+        if (res.ok) {
+          const updates: Partial<GameStore> = {
+            reconnecting: false,
+            playerId: socket.id,
+          };
+          if (res.player) {
+            updates.selectedFaction = res.player.faction;
+            updates.selectedRole = res.player.role;
+            updates.influenceTokens = res.player.influenceTokens;
+          }
+          set(updates);
+          // Update persisted session with new socket ID
+          const state = get();
+          if (state.roomCode && state.playerName) {
+            saveSession({ roomCode: state.roomCode, playerName: state.playerName, playerId: socket.id!, isGM: state.isGM });
+          }
+        } else {
+          // Rejoin failed — clear session so we don't loop
+          set({ reconnecting: false });
+          clearSession();
+        }
+      },
+    );
+  },
 
   selectRole: (faction, role) =>
     new Promise((resolve) => {
@@ -214,10 +287,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
 socket.on("connect", () => {
   useGameStore.setState({ connected: true, playerId: socket.id });
+
+  // Auto-rejoin if we have a stored session (handles page refresh mid-game)
+  const state = useGameStore.getState();
+  const session = loadSession();
+
+  const shouldRejoin =
+    session &&
+    // Either we were already reconnecting (network hiccup) or we just loaded with a session (page refresh)
+    (state.reconnecting || (session.roomCode && !state.phase));
+
+  if (shouldRejoin && session) {
+    // Restore player name from session so Desktop can render correctly
+    useGameStore.setState({
+      reconnecting: true,
+      playerName: session.playerName,
+      roomCode: session.roomCode,
+      isGM: session.isGM,
+    });
+    socket.connect(); // ensure connected (may already be)
+    useGameStore.getState().rejoinRoom(session.roomCode, session.playerId);
+  }
 });
 
 socket.on("disconnect", () => {
-  useGameStore.setState({ connected: false });
+  const state = useGameStore.getState();
+  // Only show reconnecting if we were actively in a game session
+  const inGame = state.roomCode !== null && state.phase !== null && state.phase !== "lobby";
+  useGameStore.setState({ connected: false, reconnecting: inGame });
 });
 
 socket.on("room:state", (data: { players: LobbyPlayer[] }) => {

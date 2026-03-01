@@ -21,6 +21,11 @@ export const useMessagesStore = create<MessagesStore>((set) => ({
     })),
 }));
 
+// Replay all messages on reconnect — replace the whole list (no duplicates)
+socket.on("message:history", ({ messages }: { messages: GameMessage[] }) => {
+  useMessagesStore.setState({ messages, unreadCounts: {} });
+});
+
 socket.on("message:receive", (message: GameMessage) => {
   const appId = message.isTeamChat ? "slack" : "signal";
   useMessagesStore.setState((s) => ({

@@ -1,5 +1,5 @@
 import { INITIAL_STATE } from "@takeoff/shared";
-import type { Faction, GamePhase, GameRoom, Player, Role, StateVariables } from "@takeoff/shared";
+import type { Faction, GameMessage, GamePhase, GameRoom, Player, Role, StateVariables } from "@takeoff/shared";
 
 export const rooms = new Map<string, GameRoom>();
 
@@ -31,6 +31,7 @@ export function createRoom(gmSocketId: string): GameRoom {
     teamVotes: {},
     history: [],
     publications: [],
+    messages: [],
   };
 
   rooms.set(code, room);
@@ -119,4 +120,46 @@ export function getLobbyState(room: GameRoom) {
     })),
     gmId: room.gmId,
   };
+}
+
+/**
+ * Reassign a player (or GM) from their old socket ID to a new one on reconnect.
+ * Returns the updated room and player, plus the old socket ID that was replaced.
+ */
+export function rejoinRoom(
+  code: string,
+  newSocketId: string,
+  oldSocketId: string,
+): { room: GameRoom; player: Player | null; isGM: boolean } | null {
+  const room = rooms.get(code.toUpperCase());
+  if (!room) return null;
+
+  // GM rejoin
+  if (room.gmId === oldSocketId) {
+    room.gmId = newSocketId;
+    return { room, player: null, isGM: true };
+  }
+
+  // Player rejoin
+  const player = room.players[oldSocketId];
+  if (!player) return null;
+
+  delete room.players[oldSocketId];
+  player.id = newSocketId;
+  player.connected = true;
+  room.players[newSocketId] = player;
+
+  return { room, player, isGM: false };
+}
+
+/**
+ * Return all messages a player should see: their faction's team chats + their DMs.
+ * Pass the player's faction and their OLD socket ID (messages are stored by socket ID at send time).
+ */
+export function getPlayerMessages(room: GameRoom, faction: Faction, playerId: string): GameMessage[] {
+  return room.messages.filter(
+    (msg) =>
+      (msg.isTeamChat && msg.faction === faction) ||
+      (!msg.isTeamChat && (msg.to === playerId || msg.from === playerId)),
+  );
 }

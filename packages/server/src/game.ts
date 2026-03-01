@@ -1,5 +1,5 @@
-import type { Server } from "socket.io";
-import type { DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, ResolutionData, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
+import type { Server, Socket } from "socket.io";
+import type { DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, Player, ResolutionData, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
@@ -318,5 +318,51 @@ function emitResolution(io: Server, room: GameRoom) {
       teamDecisions: teamDecisionSummary,
     };
     io.to(room.gmId).emit("game:resolution", gmResolution);
+  }
+}
+
+/**
+ * Replay all in-game state to a single reconnected socket.
+ * Pass null for player when replaying for the GM.
+ */
+export function replayPlayerState(socket: Socket, room: GameRoom, player: Player | null): void {
+  if (room.phase === "lobby") return;
+
+  if (player) {
+    // Fog-of-war state view
+    const view = computeFogView(room.state, player.faction, player.role, room.round);
+    socket.emit("game:state", { view });
+
+    // Current round content (intel phase onwards — content persists)
+    try {
+      const content = getContentForPlayer(room.round, player.faction, player.role, room.state);
+      socket.emit("game:content", { content });
+    } catch {
+      // No content for this round yet
+    }
+
+    // Briefing text (relevant in briefing phase but also good to replay for context)
+    try {
+      const roundContent = loadRound(room.round);
+      const { common, factionVariants } = roundContent.briefing;
+      const variant = factionVariants?.[player.faction];
+      const text = variant ? `${common}\n\n${variant}` : common;
+      socket.emit("game:briefing", { text });
+    } catch {
+      // No briefing content for this round
+    }
+
+    // Decision options (if in decision phase)
+    if (room.phase === "decision") {
+      const roundDecisions = ROUND_DECISIONS[room.round - 1];
+      if (roundDecisions) {
+        const individual = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role) ?? null;
+        const team = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction) ?? null;
+        socket.emit("game:decisions", { individual, team });
+      }
+    }
+  } else {
+    // GM gets full unfogged state
+    socket.emit("game:state", { view: room.state, isFull: true });
   }
 }
