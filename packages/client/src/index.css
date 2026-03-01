@@ -18,3 +18,17 @@ button:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
 }
+
+/* Round 4 negotiation phase — Signal dock icon pulse */
+@keyframes negotiation-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2);
+  }
+}
+
+.negotiation-pulse {
+  animation: negotiation-pulse 1.8s ease-in-out infinite;
+}

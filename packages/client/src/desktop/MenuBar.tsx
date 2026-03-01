@@ -83,9 +83,15 @@ export function MenuBar() {
         {phase && phase !== "lobby" && (
           <>
             <span style={{ color: "rgba(255,255,255,0.25)" }}>|</span>
-            <span style={{ color: "rgba(255,255,255,0.45)", fontWeight: 400 }}>
-              {phase.charAt(0).toUpperCase() + phase.slice(1)}
-            </span>
+            {round === 4 && phase === "deliberation" ? (
+              <span style={{ color: "#fbbf24", fontWeight: 600, letterSpacing: "0.04em", fontSize: "11px" }}>
+                NEGOTIATION PHASE
+              </span>
+            ) : (
+              <span style={{ color: "rgba(255,255,255,0.45)", fontWeight: 400 }}>
+                {phase.charAt(0).toUpperCase() + phase.slice(1)}
+              </span>
+            )}
           </>
         )}
       </div>
