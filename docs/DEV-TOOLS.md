@@ -2,6 +2,8 @@
 
 The game has 5 rounds × 5 phases = 25 phase transitions minimum. Playing through all of them to test a UI tweak or check balance on round 4 decisions is untenable. This doc outlines the tools we need to iterate fast.
 
+Related: `docs/CONTENT-REVIEW.md` (how we review/QA round JSON content at scale).
+
 ## Problem Statement
 
 1. **No way to jump to a specific round/phase** — have to play through sequentially
