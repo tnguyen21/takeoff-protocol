@@ -25,8 +25,17 @@ export function MenuBar() {
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    if (!timer.endsAt || timer.pausedAt) {
-      if (timer.pausedAt) setTimeLeft("PAUSED");
+    if (!timer.endsAt) {
+      setTimeLeft("");
+      return;
+    }
+
+    if (timer.pausedAt) {
+      // Show frozen time at moment of pause
+      const remaining = Math.max(0, timer.endsAt - timer.pausedAt);
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
       return;
     }
 
@@ -147,6 +156,9 @@ export function MenuBar() {
               border: "1px solid rgba(255,255,255,0.10)",
               letterSpacing: "0.02em",
               fontVariantNumeric: "tabular-nums",
+              minWidth: "3.5ch",
+              display: "inline-block",
+              textAlign: "center",
             }}
           >
             {timeLeft}

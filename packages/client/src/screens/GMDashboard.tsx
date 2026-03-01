@@ -110,13 +110,15 @@ function TimerDisplay({
   const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
+    if (isPaused && pausedAt) {
+      // Freeze at remaining time when paused: endsAt - pausedAt
+      setRemaining(Math.max(0, endsAt - pausedAt));
+      return;
+    }
     const tick = () => {
-      const now = Date.now();
-      const effectiveEnd = pausedAt ? endsAt - (now - pausedAt) : endsAt;
-      setRemaining(Math.max(0, effectiveEnd - now));
+      setRemaining(Math.max(0, endsAt - Date.now()));
     };
     tick();
-    if (isPaused) return; // don't need interval when paused
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
   }, [endsAt, pausedAt, isPaused]);
@@ -124,8 +126,8 @@ function TimerDisplay({
   const color = remaining <= 30_000 ? "#ef4444" : remaining <= 60_000 ? "#f59e0b" : "#34d399";
 
   return (
-    <div style={{ fontFamily: "monospace", fontSize: "56px", fontWeight: 700, color, lineHeight: 1, letterSpacing: "-2px" }}>
-      {formatTime(isPaused && pausedAt ? Math.max(0, endsAt - (Date.now() - pausedAt)) : remaining)}
+    <div style={{ fontFamily: "monospace", fontSize: "56px", fontWeight: 700, color, lineHeight: 1, letterSpacing: "-2px", minWidth: "3ch", fontVariantNumeric: "tabular-nums" }}>
+      {formatTime(remaining)}
     </div>
   );
 }
