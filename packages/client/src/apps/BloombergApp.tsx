@@ -124,7 +124,7 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
               <YAxis domain={[0, 100]} hide />
               <Tooltip
                 contentStyle={{ background: "#0a0a0a", border: "1px solid #1a4a1a", borderRadius: 2, fontSize: 10 }}
-                labelFormatter={(v) => `Round ${v}`}
+                labelFormatter={(v: unknown) => `Round ${v}`}
                 formatter={(val: number | undefined) => [val != null ? val.toFixed(0) : "", "Disruption"]}
               />
               <Area

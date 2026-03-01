@@ -134,7 +134,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
                   />
                   <Tooltip
                     contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 11 }}
-                    labelFormatter={(v) => `Round ${v}`}
+                    labelFormatter={(v: unknown) => `Round ${v}`}
                     formatter={(val: number | undefined, name: string | undefined) => [val != null ? val.toFixed(0) : "", name ?? ""]}
                   />
 

@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
-import type { DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, Player, ResolutionData, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
-import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
+import type { AppId, DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, Player, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
+import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
@@ -239,6 +239,39 @@ const STATE_LABELS: Record<keyof StateVariables, string> = {
   intlCooperation: "International Cooperation",
 };
 
+// ── Activity Penalties ──
+
+interface ActivityPenalty {
+  app: AppId;
+  variable: keyof StateVariables;
+  delta: number;
+}
+
+const PRIMARY_APP_PENALTIES: Partial<Record<Role, ActivityPenalty>> = {
+  ob_cto:        { app: "wandb",    variable: "obCapability",        delta: -3 },
+  ob_safety:     { app: "slack",    variable: "alignmentConfidence",  delta: -3 },
+  ob_ceo:        { app: "email",    variable: "obInternalTrust",      delta: -3 },
+  prom_scientist:{ app: "wandb",    variable: "promCapability",       delta: -3 },
+  china_director:{ app: "compute",  variable: "chinaCapability",      delta: -3 },
+  ext_journalist:{ app: "signal",   variable: "publicAwareness",      delta: -3 },
+  ext_nsa:       { app: "briefing", variable: "intlCooperation",      delta: -3 },
+  ext_vc:        { app: "bloomberg",variable: "economicDisruption",   delta: 2  },
+};
+
+function applyActivityPenalties(room: GameRoom): void {
+  if (!room.playerActivity) return;
+  for (const [playerId, player] of Object.entries(room.players)) {
+    if (!player.role) continue;
+    const penalty = PRIMARY_APP_PENALTIES[player.role];
+    if (!penalty) continue;
+    const opened = room.playerActivity[playerId] ?? [];
+    if (!opened.includes(penalty.app)) {
+      const current = room.state[penalty.variable];
+      (room.state[penalty.variable] as number) = current + penalty.delta;
+    }
+  }
+}
+
 export function buildNarrative(
   teamDecisions: Record<string, { optionId: string; label: string }>,
   round: number,
@@ -308,6 +341,11 @@ function emitResolution(io: Server, room: GameRoom) {
   // Apply decisions to state
   const stateAfter = resolveDecisions(stateBefore, chosenOptions);
   room.state = stateAfter;
+
+  // Apply activity penalties (players who skipped their primary app)
+  applyActivityPenalties(room);
+  // Reset activity tracking for next round
+  room.playerActivity = {};
 
   // Emit updated state views now that state changed
   emitStateViews(io, room);

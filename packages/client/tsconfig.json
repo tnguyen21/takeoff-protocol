@@ -4,7 +4,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "jsx": "react-jsx",
-    "types": ["vite/client"]
+    "types": ["vite/client", "@types/bun"]
   },
   "include": ["src"]
 }

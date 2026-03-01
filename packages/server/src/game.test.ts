@@ -6,7 +6,7 @@ import type { GameRoom, Player, StateVariables } from "@takeoff/shared";
 // ── Helpers ──
 
 function makePlayer(id: string, faction: Player["faction"], role: Player["role"]): Player {
-  return { id, name: `Player ${id}`, faction, role, isLeader: false, influenceTokens: 3, connected: true };
+  return { id, name: `Player ${id}`, faction, role, isLeader: false, connected: true };
 }
 
 function makeRoom(overrides: Partial<GameRoom> = {}): GameRoom {

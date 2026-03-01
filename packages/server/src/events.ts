@@ -400,6 +400,25 @@ export function registerGameEvents(io: Server, socket: Socket) {
     },
   );
 
+  // ── Activity Tracking ──
+
+  socket.on("activity:report", ({ opened }: { opened: string[] }) => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room) return;
+    const player = room.players[socket.id];
+    if (!player) return;
+
+    if (!room.playerActivity) room.playerActivity = {};
+    room.playerActivity[socket.id] = opened;
+
+    // Forward to GM for real-time visibility
+    if (room.gmId) {
+      io.to(room.gmId).emit("gm:activity", { playerId: socket.id, opened });
+    }
+  });
+
   // ── Disconnect ──
 
   socket.on("disconnect", () => {

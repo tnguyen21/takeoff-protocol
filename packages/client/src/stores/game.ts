@@ -3,6 +3,7 @@ import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotificati
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { soundManager } from "../sounds/index.js";
+import { useUIStore } from "./ui.js";
 
 // ── Session persistence (survives page refresh) ──
 
@@ -86,6 +87,7 @@ interface GameStore {
   gmRawState: StateVariables | null; // true unfogged state (GM only)
   gmDecisionStatus: string[]; // player IDs that have submitted (GM only)
   gmExtendUsesRemaining: number; // 2 initially, decrements on extend (GM only)
+  gmPlayerActivity: Record<string, string[]>; // playerId → opened app IDs (GM only)
 
   // Ending
   endingArcs: EndingArc[];
@@ -138,6 +140,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gmRawState: null,
   gmDecisionStatus: [],
   gmExtendUsesRemaining: 2,
+  gmPlayerActivity: {},
   endingArcs: [],
   endingHistory: [],
   endingFinalState: null,
@@ -328,6 +331,15 @@ let _warnedAt60 = false;
 let _warnedAt30 = false;
 
 socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsAt: number; pausedAt?: number } }) => {
+  // Report current round activity to server before any reset
+  const uiState = useUIStore.getState();
+  socket.emit("activity:report", { opened: Array.from(uiState.openedThisRound) });
+
+  // Reset activity tracking at the start of a new round (briefing phase)
+  if (data.phase === "briefing") {
+    uiState.resetRoundActivity();
+  }
+
   useGameStore.setState({
     phase: data.phase,
     round: data.round,
@@ -474,6 +486,12 @@ socket.on("game:notification", (data: GameNotification) => {
 if (loadSession()) {
   socket.connect();
 }
+
+socket.on("gm:activity", (data: { playerId: string; opened: string[] }) => {
+  useGameStore.setState((s) => ({
+    gmPlayerActivity: { ...s.gmPlayerActivity, [data.playerId]: data.opened },
+  }));
+});
 
 // ── Selectors ──
 
