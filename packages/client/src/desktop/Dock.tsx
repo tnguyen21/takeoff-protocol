@@ -28,6 +28,8 @@ export function Dock() {
   const selectedRole = useGameStore((s) => s.selectedRole);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
+  if (phase === "briefing") return null;
+
   const isNegotiationPhase = round === 4 && phase === "deliberation";
 
   // Resolve primary apps for the current player's role

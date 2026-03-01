@@ -79,7 +79,7 @@ export function Briefing() {
     >
       <div
         className="flex flex-col gap-6 px-8 py-10"
-        style={{ maxWidth: "700px", width: "100%" }}
+        style={{ maxWidth: "700px", width: "100%", boxSizing: "border-box", overflowX: "hidden" }}
       >
         {/* Round header */}
         <div className="flex flex-col gap-1">
