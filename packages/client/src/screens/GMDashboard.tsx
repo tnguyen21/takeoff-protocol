@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
-import { FACTIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
-import type { Faction, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
+import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
+import type { Faction, GamePhase, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -567,6 +567,217 @@ function DevJumpPanel({ currentRound, currentPhase }: { currentRound: number; cu
   );
 }
 
+// ── Timer Settings Panel ──────────────────────────────────────────────────────
+
+const TIMER_PHASES: { phase: GamePhase; label: string }[] = [
+  { phase: "briefing", label: "Briefing" },
+  { phase: "intel", label: "Intel Gathering" },
+  { phase: "deliberation", label: "Deliberation" },
+  { phase: "decision", label: "Decision" },
+  { phase: "resolution", label: "Resolution" },
+];
+
+function formatSeconds(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+function TimerSettingsPanel({
+  gmTimerOverrides,
+  gmSetTimers,
+}: {
+  gmTimerOverrides: Partial<Record<GamePhase, number>>;
+  gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
+}) {
+  // Local draft state — only sent to server on Save
+  const [draft, setDraft] = useState<Partial<Record<GamePhase, number>>>({});
+
+  const getEffective = (phase: GamePhase): number =>
+    draft[phase] ?? gmTimerOverrides[phase] ?? PHASE_DURATIONS[phase] ?? 180;
+
+  const step = (phase: GamePhase, delta: number) => {
+    const current = getEffective(phase);
+    const next = Math.max(30, current + delta);
+    setDraft((prev) => ({ ...prev, [phase]: next }));
+  };
+
+  const save = () => {
+    const merged = { ...gmTimerOverrides, ...draft };
+    gmSetTimers(merged);
+    setDraft({});
+  };
+
+  const hasDraft = Object.keys(draft).length > 0;
+
+  return (
+    <div
+      style={{
+        padding: "12px",
+        borderRadius: "8px",
+        background: "rgba(6,182,212,0.05)",
+        border: "1px solid rgba(6,182,212,0.2)",
+      }}
+    >
+      <div
+        style={{
+          color: "#06b6d4",
+          fontSize: "9px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: "10px",
+        }}
+      >
+        Timer Settings
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "10px" }}>
+        {TIMER_PHASES.map(({ phase, label }) => {
+          const value = getEffective(phase);
+          const r4Value = ROUND4_PHASE_DURATIONS[phase];
+          const isOverridden = draft[phase] !== undefined || gmTimerOverrides[phase] !== undefined;
+          const defaultVal = PHASE_DURATIONS[phase] ?? 180;
+
+          return (
+            <div key={phase}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                <span style={{ color: "#9ca3af", fontSize: "11px" }}>{label}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  {r4Value && r4Value !== defaultVal && (
+                    <span style={{ color: "#6b7280", fontSize: "9px", fontStyle: "italic" }}>
+                      R4:{formatSeconds(r4Value)}
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: isOverridden ? "#22d3ee" : "#6b7280",
+                    }}
+                  >
+                    {formatSeconds(value)}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                <button
+                  onClick={() => step(phase, -30)}
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "#9ca3af",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={30}
+                  max={3600}
+                  step={30}
+                  value={value}
+                  onChange={(e) => {
+                    const v = Math.max(30, Math.min(3600, Number(e.target.value)));
+                    setDraft((prev) => ({ ...prev, [phase]: v }));
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "3px 6px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "#e5e7eb",
+                    fontSize: "12px",
+                    fontFamily: "monospace",
+                    textAlign: "center",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  onClick={() => step(phase, 30)}
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "#9ca3af",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  +
+                </button>
+                {(draft[phase] !== undefined || gmTimerOverrides[phase] !== undefined) && (
+                  <button
+                    onClick={() => {
+                      // Reset this phase: remove override
+                      setDraft((prev) => {
+                        const next = { ...prev };
+                        delete next[phase];
+                        return next;
+                      });
+                      const next = { ...gmTimerOverrides };
+                      delete next[phase];
+                      gmSetTimers(next);
+                    }}
+                    title="Reset to default"
+                    style={{
+                      padding: "3px 6px",
+                      borderRadius: "4px",
+                      border: "1px solid rgba(239,68,68,0.2)",
+                      background: "rgba(239,68,68,0.08)",
+                      color: "#f87171",
+                      fontSize: "10px",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                    }}
+                  >
+                    ↩
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <button
+          onClick={save}
+          disabled={!hasDraft}
+          style={{
+            flex: 1,
+            padding: "6px 10px",
+            borderRadius: "6px",
+            border: hasDraft ? "1px solid rgba(6,182,212,0.4)" : "1px solid rgba(255,255,255,0.08)",
+            background: hasDraft ? "rgba(6,182,212,0.12)" : "rgba(255,255,255,0.03)",
+            color: hasDraft ? "#22d3ee" : "#4b5563",
+            fontSize: "12px",
+            fontWeight: 600,
+            cursor: hasDraft ? "pointer" : "not-allowed",
+          }}
+        >
+          Apply Changes
+        </button>
+      </div>
+
+      <div style={{ color: "#4b5563", fontSize: "10px", marginTop: "8px", lineHeight: 1.4 }}>
+        Takes effect on next phase. Round 4 deliberation uses its own 7:00 default unless overridden.
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function GMDashboard() {
@@ -580,10 +791,12 @@ export function GMDashboard() {
     gmDecisionStatus,
     gmExtendUsesRemaining,
     gmPlayerActivity,
+    gmTimerOverrides,
     gmAdvance,
     gmPause,
     gmExtend,
     gmSetState,
+    gmSetTimers,
   } = useGameStore();
 
   const { messages } = useMessagesStore();
@@ -781,6 +994,9 @@ export function GMDashboard() {
               <EndingsPreview arcs={computeEndingArcs(gmRawState)} />
             </div>
           )}
+
+          {/* Timer Settings */}
+          <TimerSettingsPanel gmTimerOverrides={gmTimerOverrides} gmSetTimers={gmSetTimers} />
 
           {/* Dev-only jump panel */}
           {import.meta.env.DEV && (

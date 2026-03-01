@@ -88,6 +88,7 @@ interface GameStore {
   gmDecisionStatus: string[]; // player IDs that have submitted (GM only)
   gmExtendUsesRemaining: number; // 2 initially, decrements on extend (GM only)
   gmPlayerActivity: Record<string, string[]>; // playerId → opened app IDs (GM only)
+  gmTimerOverrides: Partial<Record<GamePhase, number>>; // GM-set phase durations in seconds
 
   // Ending
   endingArcs: EndingArc[];
@@ -115,6 +116,7 @@ interface GameStore {
   gmExtend: () => void;
   gmSetState: (variable: keyof StateVariables, value: number) => void;
   gmJump: (round: number, phase: string) => void;
+  gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -143,6 +145,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gmDecisionStatus: [],
   gmExtendUsesRemaining: 2,
   gmPlayerActivity: {},
+  gmTimerOverrides: {},
   endingArcs: [],
   endingHistory: [],
   endingFinalState: null,
@@ -281,6 +284,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gmJump: (round, phase) => {
     socket.emit("gm:jump", { round, phase });
+  },
+
+  gmSetTimers: (overrides) => {
+    socket.emit("gm:set-timers", overrides);
   },
 }));
 
@@ -501,6 +508,10 @@ socket.on("gm:activity", (data: { playerId: string; opened: string[] }) => {
   useGameStore.setState((s) => ({
     gmPlayerActivity: { ...s.gmPlayerActivity, [data.playerId]: data.opened },
   }));
+});
+
+socket.on("gm:timers-updated", (data: { timerOverrides: Partial<Record<GamePhase, number>> }) => {
+  useGameStore.setState({ gmTimerOverrides: data.timerOverrides });
 });
 
 // ── Selectors ──

@@ -21,6 +21,9 @@ const ROUND_DECISIONS = [
 ];
 
 function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
+  // GM overrides take precedence; fall back to round-specific or default durations
+  const override = room.timerOverrides?.[phase];
+  if (override !== undefined) return override * 1000;
   const durations = room.round === 4 ? ROUND4_PHASE_DURATIONS : PHASE_DURATIONS;
   return (durations[phase] ?? 180) * 1000;
 }

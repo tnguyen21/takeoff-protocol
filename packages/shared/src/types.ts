@@ -226,6 +226,7 @@ export interface GameRoom {
   publications: Publication[];
   messages: GameMessage[]; // all messages for replay on reconnect
   playerActivity?: Record<string, string[]>; // playerId → list of AppId strings opened this round
+  timerOverrides?: Partial<Record<GamePhase, number>>; // GM-set durations in seconds, per phase
 }
 
 export interface RoundHistory {

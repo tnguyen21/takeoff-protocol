@@ -179,6 +179,26 @@ export function registerGameEvents(io: Server, socket: Socket) {
     console.log(`[gm:set-state] ${variable} = ${room.state[key]}`);
   });
 
+  socket.on("gm:set-timers", (overrides: Partial<Record<GamePhase, number>>) => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) return;
+
+    const validPhases: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
+    if (!room.timerOverrides) room.timerOverrides = {};
+
+    for (const [phase, seconds] of Object.entries(overrides)) {
+      if (validPhases.includes(phase as GamePhase) && typeof seconds === "number" && seconds > 0 && seconds <= 3600) {
+        room.timerOverrides[phase as GamePhase] = Math.round(seconds);
+      }
+    }
+
+    // Acknowledge to GM with current overrides
+    socket.emit("gm:timers-updated", { timerOverrides: room.timerOverrides });
+    console.log(`[gm:set-timers] updated: ${JSON.stringify(room.timerOverrides)}`);
+  });
+
   socket.on("gm:extend", () => {
     const code = socket.data.roomCode;
     if (!code) return;
