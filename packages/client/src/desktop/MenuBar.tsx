@@ -2,6 +2,24 @@ import { useEffect, useState } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useSoundEffects } from "../sounds/index.js";
 import { Volume2, VolumeX } from "lucide-react";
+import { FACTIONS } from "@takeoff/shared";
+
+const FACTION_PREFIX: Record<string, string> = {
+  openbrain: "OB",
+  prometheus: "Prom",
+  china: "China",
+  external: "Ext",
+};
+
+function getRoleDisplayName(faction: string | null, role: string | null): string | null {
+  if (!faction || !role) return null;
+  const factionConfig = FACTIONS.find((f) => f.id === faction);
+  if (!factionConfig) return null;
+  const roleConfig = factionConfig.roles.find((r) => r.id === role);
+  if (!roleConfig) return null;
+  const prefix = FACTION_PREFIX[faction];
+  return prefix ? `${prefix} ${roleConfig.label}` : roleConfig.label;
+}
 
 const ROUND_NAMES: Record<number, string> = {
   1: "The Race Heats Up",
@@ -20,7 +38,7 @@ const ROUND_DATES: Record<number, string> = {
 };
 
 export function MenuBar() {
-  const { phase, round, timer, selectedFaction } = useGameStore();
+  const { phase, round, timer, selectedFaction, selectedRole, isGM } = useGameStore();
   const { muted, toggleMute } = useSoundEffects();
   const [timeLeft, setTimeLeft] = useState("");
 
@@ -163,6 +181,27 @@ export function MenuBar() {
             >
               R{round}: {ROUND_NAMES[round]}
             </span>
+            {!isGM && (() => {
+              const name = getRoleDisplayName(selectedFaction, selectedRole);
+              if (!name) return null;
+              return (
+                <span
+                  style={{
+                    padding: "0 8px",
+                    borderRadius: "4px",
+                    background: "rgba(139,92,246,0.12)",
+                    border: "1px solid rgba(139,92,246,0.28)",
+                    color: "rgba(196,181,253,0.85)",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    letterSpacing: "0.03em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {name}
+                </span>
+              );
+            })()}
           </>
         )}
         {timeLeft && (
