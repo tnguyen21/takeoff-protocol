@@ -226,6 +226,7 @@ export interface GameRoom {
   history: RoundHistory[];
   publications: Publication[];
   messages: GameMessage[]; // all messages for replay on reconnect
+  playerActivity?: Record<string, string[]>; // playerId → list of AppId strings opened this round
 }
 
 export interface RoundHistory {

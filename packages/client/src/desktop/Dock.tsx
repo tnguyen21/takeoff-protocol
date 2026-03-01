@@ -1,16 +1,37 @@
 import { useState } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { useMessagesStore } from "../stores/messages.js";
+import { useGameStore } from "../stores/game.js";
 import { getAppIcon } from "../apps/icons.js";
+import { FACTIONS } from "@takeoff/shared";
 
 const ICON_SIZE = 44;
 const ICON_GAP = 4;
 const LUCIDE_SIZE = 24;
 
+const PULSE_STYLE = `
+@keyframes dock-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.dock-primary-dot {
+  animation: dock-pulse 1.8s ease-in-out infinite;
+}
+`;
+
 export function Dock() {
-  const { windows, openWindow, focusWindow, minimizeWindow } = useUIStore();
+  const { windows, openWindow, focusWindow, minimizeWindow, openedThisRound } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
+  const { selectedFaction, selectedRole } = useGameStore();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  // Resolve primary apps for the current player's role
+  const primaryApps = (() => {
+    if (!selectedFaction || !selectedRole) return new Set<string>();
+    const factionConfig = FACTIONS.find((f) => f.id === selectedFaction);
+    const roleConfig = factionConfig?.roles.find((r) => r.id === selectedRole);
+    return new Set(roleConfig?.primaryApps ?? []);
+  })();
 
   const handleClick = (w: WindowState) => {
     if (w.isOpen && !w.isMinimized) {
@@ -21,6 +42,8 @@ export function Dock() {
   };
 
   return (
+    <>
+    <style>{PULSE_STYLE}</style>
     <div
       className="absolute left-0 right-0 flex justify-center"
       style={{ bottom: "8px", pointerEvents: "none" }}
@@ -44,6 +67,8 @@ export function Dock() {
           const unread = unreadCounts[w.appId] ?? 0;
           const IconComponent = getAppIcon(w.appId);
           const isHovered = hoveredId === w.id;
+          const isPrimary = primaryApps.has(w.appId);
+          const needsAttention = isPrimary && !openedThisRound.has(w.appId);
 
           return (
             <button
@@ -130,6 +155,24 @@ export function Dock() {
                 </span>
               )}
 
+              {/* Primary app nudge dot */}
+              {needsAttention && (
+                <span
+                  className="dock-primary-dot"
+                  style={{
+                    position: "absolute",
+                    top: "-4px",
+                    left: "-4px",
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: "#f59e0b",
+                    border: "1.5px solid rgba(0,0,0,0.5)",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+
               {/* Open indicator dot */}
               {w.isOpen && (
                 <span
@@ -150,5 +193,6 @@ export function Dock() {
         })}
       </div>
     </div>
+    </>
   );
 }

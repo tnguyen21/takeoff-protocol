@@ -142,6 +142,7 @@ export function GMDashboard() {
     gmRawState,
     gmDecisionStatus,
     gmExtendUsesRemaining,
+    gmPlayerActivity,
     gmAdvance,
     gmPause,
     gmExtend,
@@ -351,6 +352,9 @@ export function GMDashboard() {
                     {factionPlayers.map((p) => {
                       const roleConfig = faction.roles.find((r) => r.id === p.role);
                       const hasSubmitted = gmDecisionStatus.includes(p.id);
+                      const playerOpened = gmPlayerActivity[p.id] ?? [];
+                      const primaryApps = roleConfig?.primaryApps ?? [];
+                      const missedPrimary = primaryApps.length > 0 && !primaryApps.some((app) => playerOpened.includes(app));
 
                       return (
                         <div
@@ -379,6 +383,15 @@ export function GMDashboard() {
                             <div style={{ fontSize: "12px", fontWeight: 600, color: "#e5e7eb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                             <div style={{ fontSize: "10px", color: "#6b7280" }}>{roleConfig?.label ?? p.role}</div>
                           </div>
+                          {/* Primary app missed indicator */}
+                          {phase !== "lobby" && phase !== "briefing" && missedPrimary && (
+                            <span
+                              title={`Hasn't checked: ${primaryApps.filter((a) => !playerOpened.includes(a)).join(", ")}`}
+                              style={{ fontSize: "11px", flexShrink: 0, color: "#f59e0b" }}
+                            >
+                              ⚠
+                            </span>
+                          )}
                           {/* Decision submitted indicator */}
                           {phase === "decision" && (
                             <div

@@ -18,6 +18,7 @@ interface UIStore {
   windows: WindowState[];
   topZ: number;
   notifications: Notification[];
+  openedThisRound: Set<string>; // appIds opened during the current round
 
   // Window actions
   openWindow: (appId: string, title: string) => void;
@@ -30,6 +31,7 @@ interface UIStore {
   maximizeWindow: (id: string) => void;
   restoreWindow: (id: string) => void;
   initWindows: (apps: { appId: string; title: string }[]) => void;
+  resetRoundActivity: () => void;
 }
 
 interface Notification {
@@ -50,6 +52,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   windows: [],
   topZ: 0,
   notifications: [],
+  openedThisRound: new Set<string>(),
 
   initWindows: (apps) => {
     const windows: WindowState[] = apps.map((app, i) => ({
@@ -108,7 +111,10 @@ export const useUIStore = create<UIStore>((set, get) => ({
       ];
     }
 
-    set({ topZ: newTopZ, windows: updatedWindows });
+    const prev = get().openedThisRound;
+    const updatedOpened = new Set(prev);
+    updatedOpened.add(appId);
+    set({ topZ: newTopZ, windows: updatedWindows, openedThisRound: updatedOpened });
     if (isNewlyVisible) soundManager.play("pop");
   },
 
@@ -118,10 +124,13 @@ export const useUIStore = create<UIStore>((set, get) => ({
     })),
 
   focusWindow: (id) => {
-    const { topZ } = get();
+    const { topZ, openedThisRound } = get();
+    const updatedOpened = new Set(openedThisRound);
+    updatedOpened.add(id); // id === appId in this codebase
     set({
       topZ: topZ + 1,
       windows: get().windows.map((w) => (w.id === id ? { ...w, zIndex: topZ + 1 } : w)),
+      openedThisRound: updatedOpened,
     });
   },
 
@@ -174,4 +183,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
           : w,
       ),
     })),
+
+  resetRoundActivity: () => set({ openedThisRound: new Set<string>() }),
 }));
