@@ -28,9 +28,11 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "obCapability", delta: 2 },
             { variable: "globalMediaCycle", delta: 6 },
             { variable: "marketIndex", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "obBoardConfidence", delta: 3 },
             { variable: "whistleblowerPressure", delta: -3 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -79,6 +81,10 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "obMorale", delta: -4 },
             { variable: "obBoardConfidence", delta: 5 },
             { variable: "whistleblowerPressure", delta: 5 },
+          
+            { variable: "usChinaGap", delta: 2 },
+          
+            { variable: "obPromGap", delta: 2 },
           ],
         },
         {
@@ -132,7 +138,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           label: "Document thoroughly and await the board decision",
           description: "You've done the work. You've written the memo. Let the process play out. You're not responsible for the decision.",
           effects: [
-            { variable: "alignmentConfidence", delta: 1 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "misalignmentSeverity", delta: 3 },
             { variable: "obMorale", delta: -3 },
             { variable: "whistleblowerPressure", delta: 5 },
@@ -169,6 +175,8 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "obMorale", delta: 3 },
             { variable: "obBoardConfidence", delta: -3 },
             { variable: "chinaWeightTheftProgress", delta: -5 },
+          
+            { variable: "obPromGap", delta: 1 },
           ],
         },
         {
@@ -209,10 +217,10 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "promCapability", delta: 4 },
             { variable: "intlCooperation", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "promBurnRate", delta: -4 },
             { variable: "promBoardConfidence", delta: 4 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
         {
@@ -267,7 +275,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           description: "Document the fact that existing alignment evaluations don't work at this capability level. Force the field to confront it.",
           effects: [
             { variable: "publicAwareness", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "obInternalTrust", delta: -1 },
             { variable: "promMorale", delta: 3 },
             { variable: "promBurnRate", delta: 3 },
@@ -303,7 +311,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicAwareness", delta: 2 },
             { variable: "publicSentiment", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -2 },
             { variable: "promBoardConfidence", delta: -3 },
           ],
@@ -328,7 +336,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "promCapability", delta: 4 },
             { variable: "intlCooperation", delta: 2 },
-            { variable: "alignmentConfidence", delta: 1 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "promBurnRate", delta: -5 },
             { variable: "promBoardConfidence", delta: 4 },
           ],
@@ -344,7 +352,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           label: "Release safety evaluation tools publicly",
           description: "Share the interpretability and eval framework. Everyone benefits from better safety tooling — including the world.",
           effects: [
-            { variable: "alignmentConfidence", delta: 3 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: 4 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "promSafetyBreakthroughProgress", delta: 3 },
@@ -520,9 +528,11 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicAwareness", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "regulatoryPressure", delta: 4 },
             { variable: "marketIndex", delta: -3 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -547,7 +557,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "taiwanTension", delta: -5 },
             { variable: "chinaCapability", delta: 3 },
             { variable: "ccpPatience", delta: 2 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
       ],
@@ -567,7 +577,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "publicSentiment", delta: -3 },
             { variable: "globalMediaCycle", delta: 7 },
             { variable: "marketIndex", delta: -4 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "whistleblowerPressure", delta: -7 },
           ],
         },
@@ -579,7 +589,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "publicAwareness", delta: 0 },
             { variable: "misalignmentSeverity", delta: 2 },
             { variable: "whistleblowerPressure", delta: 4 },
-            { variable: "alignmentConfidence", delta: 1 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "marketIndex", delta: 3 },
           ],
         },
@@ -663,7 +673,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
             { variable: "taiwanTension", delta: -4 },
             { variable: "chinaCapability", delta: 2 },
             { variable: "ccpPatience", delta: 2 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
       ],

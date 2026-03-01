@@ -24,6 +24,8 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "obBurnRate", delta: 4 },
             { variable: "obBoardConfidence", delta: 4 },
             { variable: "whistleblowerPressure", delta: 3 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -69,6 +71,10 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "obMorale", delta: -3 },
             { variable: "obBoardConfidence", delta: 4 },
             { variable: "whistleblowerPressure", delta: 4 },
+          
+            { variable: "usChinaGap", delta: 2 },
+          
+            { variable: "obPromGap", delta: 2 },
           ],
         },
         {
@@ -121,7 +127,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           label: "Document and wait for more data",
           description: "Keep detailed records. Don't cry wolf — the anomalies might be noise.",
           effects: [
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "misalignmentSeverity", delta: 2 },
             { variable: "obMorale", delta: -3 },
             { variable: "whistleblowerPressure", delta: 5 },
@@ -156,6 +162,8 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "obBurnRate", delta: 5 },
             { variable: "obMorale", delta: 3 },
             { variable: "obBoardConfidence", delta: -3 },
+          
+            { variable: "obPromGap", delta: 1 },
           ],
         },
         {
@@ -199,7 +207,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "publicAwareness", delta: 2 },
             { variable: "promCapability", delta: -1 },
             { variable: "promBurnRate", delta: 4 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "promBoardConfidence", delta: 3 },
           ],
         },
@@ -222,7 +230,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           description: "Reach out to OB's CEO. Test whether coordination is possible before things escalate.",
           effects: [
             { variable: "intlCooperation", delta: 2 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "promBurnRate", delta: 3 },
             { variable: "promBoardConfidence", delta: -3 },
           ],
@@ -302,7 +310,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "promCapability", delta: 3 },
             { variable: "promBurnRate", delta: -3 },
             { variable: "promBoardConfidence", delta: 4 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
         {
@@ -343,7 +351,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           label: "Publish safety tools only",
           description: "Share interpretability and eval tools. Get credit without giving away capabilities.",
           effects: [
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: 3 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "promSafetyBreakthroughProgress", delta: 2 },
@@ -506,8 +514,10 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "obCapability", delta: 2 },
             { variable: "intlCooperation", delta: -3 },
             { variable: "marketIndex", delta: 6 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "obBurnRate", delta: -3 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -516,7 +526,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           description: "Capability without safety is a national security risk. Back the lab with the safety culture.",
           effects: [
             { variable: "promCapability", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "regulatoryPressure", delta: 2 },
             { variable: "promSafetyBreakthroughProgress", delta: 2 },
             { variable: "marketIndex", delta: -1 },
@@ -560,7 +570,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "publicAwareness", delta: 3 },
             { variable: "obInternalTrust", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "globalMediaCycle", delta: 5 },
             { variable: "marketIndex", delta: -3 },
             { variable: "regulatoryPressure", delta: 3 },
@@ -577,7 +587,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
             { variable: "intlCooperation", delta: -3 },
             { variable: "globalMediaCycle", delta: 5 },
             { variable: "marketIndex", delta: -2 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
       ],
@@ -645,7 +655,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "taiwanTension", delta: -3 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "ccpPatience", delta: 2 },
             { variable: "marketIndex", delta: -1 },
           ],

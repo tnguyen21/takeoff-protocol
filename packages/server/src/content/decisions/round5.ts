@@ -34,6 +34,8 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "regulatoryPressure", delta: -6 },
             { variable: "doomClockDistance", delta: 6 },
             { variable: "globalMediaCycle", delta: -5 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -84,7 +86,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             "Use your technical authority to make a public statement: based on everything you know, this system is the safest thing at this capability level that has ever been built. You believe it. Say it.",
           effects: [
             { variable: "publicSentiment", delta: 5 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "obBoardConfidence", delta: -6 },
             { variable: "obMorale", delta: 6 },
@@ -92,6 +94,10 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "regulatoryPressure", delta: -6 },
             { variable: "doomClockDistance", delta: 6 },
             { variable: "globalMediaCycle", delta: -5 },
+          
+            { variable: "usChinaGap", delta: 2 },
+          
+            { variable: "obPromGap", delta: 2 },
           ],
         },
         {
@@ -180,7 +186,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "publicAwareness", delta: 4 },
             { variable: "publicSentiment", delta: -6 },
             { variable: "obInternalTrust", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "obMorale", delta: -7 },
             { variable: "obBoardConfidence", delta: 5 },
             { variable: "globalMediaCycle", delta: 9 },
@@ -205,8 +211,10 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "securityLevelOB", delta: 2 },
             { variable: "obCapability", delta: -2 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -3 },
+          
+            { variable: "obPromGap", delta: 1 },
           ],
         },
         {
@@ -255,7 +263,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             "This is not a CEO decision. Your team of scientists and policy experts understands the tradeoffs better than you do at this point. Give them the power. Whatever they recommend, you'll make happen.",
           effects: [
             { variable: "promCapability", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "obBoardConfidence", delta: -6 },
             { variable: "obMorale", delta: 6 },
@@ -312,14 +320,14 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           description:
             "Whatever Prometheus decides about deployment, the science should be free. Publish the complete interpretability methodology, the test suites, the evaluation code. The world's ability to handle this technology depends on the knowledge being public.",
           effects: [
-            { variable: "alignmentConfidence", delta: 3 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicAwareness", delta: 3 },
             { variable: "intlCooperation", delta: 3 },
             { variable: "chinaCapability", delta: 3 },
             { variable: "globalMediaCycle", delta: 7 },
             { variable: "openSourceMomentum", delta: 4 },
             { variable: "marketIndex", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "doomClockDistance", delta: -3 },
           ],
         },
@@ -367,9 +375,9 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             "Use your relationships to craft a framework that's actually enforceable. Not performative oversight — real constraints with real teeth. The government offer is an opportunity to embed safety requirements in law.",
           effects: [
             { variable: "intlCooperation", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: 5 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "ccpPatience", delta: 3 },
             { variable: "doomClockDistance", delta: 5 },
             { variable: "marketIndex", delta: -3 },
@@ -427,7 +435,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "globalMediaCycle", delta: 7 },
             { variable: "openSourceMomentum", delta: 4 },
             { variable: "marketIndex", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "doomClockDistance", delta: -3 },
           ],
         },
@@ -485,7 +493,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "globalMediaCycle", delta: 7 },
             { variable: "openSourceMomentum", delta: 4 },
             { variable: "marketIndex", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "doomClockDistance", delta: -3 },
           ],
         },
@@ -498,7 +506,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "intlCooperation", delta: 4 },
             { variable: "taiwanTension", delta: -5 },
             { variable: "chinaCapability", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "ccpPatience", delta: 4 },
             { variable: "regulatoryPressure", delta: 3 },
             { variable: "doomClockDistance", delta: 5 },
@@ -538,7 +546,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "taiwanTension", delta: -4 },
             { variable: "misalignmentSeverity", delta: -3 },
             { variable: "ccpPatience", delta: 4 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "doomClockDistance", delta: 5 },
             { variable: "domesticChipProgress", delta: -3 },
           ],
@@ -657,8 +665,10 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "obInternalTrust", delta: -3 },
             { variable: "alignmentConfidence", delta: 2 },
             { variable: "publicSentiment", delta: 3 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -4 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -729,7 +739,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "publicAwareness", delta: 5 },
             { variable: "publicSentiment", delta: -5 },
             { variable: "intlCooperation", delta: 2 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "globalMediaCycle", delta: 9 },
             { variable: "marketIndex", delta: -5 },
             { variable: "regulatoryPressure", delta: 5 },
@@ -762,7 +772,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "intlCooperation", delta: 2 },
             { variable: "publicAwareness", delta: -3 },
             { variable: "publicSentiment", delta: 4 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -3 },
           ],
         },
@@ -815,7 +825,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           description:
             "Make a public announcement: redirecting $500M from capabilities investment to safety research, alignment tools, and governance infrastructure. The signal matters as much as the capital. You're telling the market what the stakes are.",
           effects: [
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: 5 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "obBoardConfidence", delta: -6 },
@@ -855,9 +865,9 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "intlCooperation", delta: 4 },
             { variable: "taiwanTension", delta: -6 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "ccpPatience", delta: 4 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "doomClockDistance", delta: 5 },
             { variable: "domesticChipProgress", delta: -3 },
           ],

@@ -26,6 +26,8 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "obBoardConfidence", delta: -5 },
             { variable: "obMorale", delta: 5 },
             { variable: "whistleblowerPressure", delta: -5 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -76,6 +78,10 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "obBoardConfidence", delta: -4 },
             { variable: "obMorale", delta: 4 },
             { variable: "whistleblowerPressure", delta: -5 },
+          
+            { variable: "usChinaGap", delta: 2 },
+          
+            { variable: "obPromGap", delta: 2 },
           ],
         },
         {
@@ -140,9 +146,9 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicAwareness", delta: 3 },
             { variable: "obInternalTrust", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "misalignmentSeverity", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -2 },
             { variable: "whistleblowerPressure", delta: -6 },
           ],
@@ -192,6 +198,8 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "obBurnRate", delta: 5 },
             { variable: "obBoardConfidence", delta: -3 },
             { variable: "chinaWeightTheftProgress", delta: -5 },
+          
+            { variable: "obPromGap", delta: 1 },
           ],
         },
         {
@@ -300,7 +308,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           label: "Use what you know as leverage for access",
           description: "Don't publish yet. Use your knowledge — and your tools — as leverage to demand full access to Agent-4's neuralese logs. If you can run the analysis, you can produce definitive findings rather than inferences. Withhold publication while you negotiate access.",
           effects: [
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "promCapability", delta: 3 },
             { variable: "publicSentiment", delta: 3 },
@@ -337,9 +345,9 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicAwareness", delta: 2 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -2 },
           ],
         },
@@ -382,7 +390,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "publicAwareness", delta: 3 },
             { variable: "publicSentiment", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "globalMediaCycle", delta: 5 },
             { variable: "marketIndex", delta: -2 },
@@ -589,7 +597,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "obInternalTrust", delta: -2 },
             { variable: "misalignmentSeverity", delta: -4 },
             { variable: "publicAwareness", delta: 2 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -2 },
           ],
         },
@@ -623,7 +631,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "publicAwareness", delta: 6 },
             { variable: "publicSentiment", delta: -8 },
             { variable: "obInternalTrust", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "misalignmentSeverity", delta: -3 },
             { variable: "globalMediaCycle", delta: 7 },
@@ -658,7 +666,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
             { variable: "misalignmentSeverity", delta: 3 },
             { variable: "globalMediaCycle", delta: 5 },
             { variable: "marketIndex", delta: -2 },
-            { variable: "regulatoryPressure", delta: 2 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
         {
@@ -687,7 +695,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           description: "In the July 9 board session, advocate loudly for voluntary public disclosure. Controlled disclosure protects Prometheus's upside and limits OB downside better than an uncontrolled leak. You have the votes to force it if you find allies.",
           effects: [
             { variable: "publicAwareness", delta: 4 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "obInternalTrust", delta: -1 },
             { variable: "publicSentiment", delta: -4 },
             { variable: "globalMediaCycle", delta: 5 },
@@ -733,9 +741,9 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicSentiment", delta: 3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "taiwanTension", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "ccpPatience", delta: 2 },
           ],
         },

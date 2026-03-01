@@ -34,6 +34,8 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "regulatoryPressure", delta: -6 },
             { variable: "globalMediaCycle", delta: -6 },
             { variable: "doomClockDistance", delta: 5 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -87,6 +89,10 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "obBoardConfidence", delta: -5 },
             { variable: "obMorale", delta: 5 },
             { variable: "whistleblowerPressure", delta: -6 },
+          
+            { variable: "usChinaGap", delta: 2 },
+          
+            { variable: "obPromGap", delta: 2 },
           ],
         },
         {
@@ -140,7 +146,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "intlCooperation", delta: 3 },
             { variable: "globalMediaCycle", delta: 8 },
             { variable: "marketIndex", delta: -4 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "whistleblowerPressure", delta: -7 },
           ],
         },
@@ -149,7 +155,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
           label: "Wait for the board decision",
           description: "You've done everything correctly. Let the process work. The CEO has your memo. The board has your recommendation. Give them until the morning board call before you take any further action.",
           effects: [
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "obInternalTrust", delta: 3 },
             { variable: "misalignmentSeverity", delta: 3 },
             { variable: "obBoardConfidence", delta: 4 },
@@ -188,6 +194,8 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "promBurnRate", delta: -4 },
             { variable: "promBoardConfidence", delta: 4 },
             { variable: "obBurnRate", delta: -4 },
+          
+            { variable: "obPromGap", delta: 1 },
           ],
         },
         {
@@ -211,7 +219,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "securityLevelOB", delta: 2 },
             { variable: "intlCooperation", delta: 3 },
             { variable: "obInternalTrust", delta: -1 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -3 },
           ],
         },
@@ -281,14 +289,14 @@ export const ROUND4_DECISIONS: RoundDecisions = {
           description: "Release the preprint now. No negotiating, no exclusives. Science should be public when the stakes are civilizational. Let the world see the evidence and decide. Accept that this ends any chance of a merger on our terms.",
           effects: [
             { variable: "publicAwareness", delta: 4 },
-            { variable: "alignmentConfidence", delta: 3 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: -5 },
             { variable: "misalignmentSeverity", delta: -5 },
             { variable: "intlCooperation", delta: 2 },
             { variable: "globalMediaCycle", delta: 7 },
             { variable: "openSourceMomentum", delta: 4 },
             { variable: "marketIndex", delta: -2 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
         {
@@ -344,9 +352,9 @@ export const ROUND4_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicSentiment", delta: 6 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicAwareness", delta: 2 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "marketIndex", delta: -3 },
           ],
         },
@@ -388,7 +396,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "globalMediaCycle", delta: 6 },
             { variable: "openSourceMomentum", delta: 4 },
             { variable: "marketIndex", delta: -2 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
           ],
         },
         {
@@ -396,7 +404,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
           label: "Publish safety tools only — keep frontier weights closed",
           description: "Release the interpretability and evaluation tools as open standards. Keep frontier model weights proprietary. Safety tools become a global commons without giving up competitive position on capabilities.",
           effects: [
-            { variable: "alignmentConfidence", delta: 3 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicSentiment", delta: 5 },
             { variable: "promCapability", delta: -2 },
@@ -436,7 +444,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "taiwanTension", delta: -6 },
             { variable: "chinaCapability", delta: 3 },
             { variable: "usChinaGap", delta: -3 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "ccpPatience", delta: 3 },
             { variable: "doomClockDistance", delta: 3 },
           ],
@@ -464,7 +472,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "obCapability", delta: -5 },
             { variable: "promCapability", delta: -3 },
             { variable: "publicAwareness", delta: 4 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "intlCooperation", delta: -4 },
             { variable: "taiwanTension", delta: 3 },
             { variable: "globalMediaCycle", delta: 6 },
@@ -577,6 +585,8 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "misalignmentSeverity", delta: -5 },
             { variable: "regulatoryPressure", delta: 4 },
             { variable: "marketIndex", delta: -3 },
+          
+            { variable: "usChinaGap", delta: 2 },
           ],
         },
         {
@@ -617,8 +627,8 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "taiwanTension", delta: -6 },
             { variable: "chinaCapability", delta: -3 },
             { variable: "obCapability", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
-            { variable: "regulatoryPressure", delta: 3 },
+            { variable: "alignmentConfidence", delta: 0 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "ccpPatience", delta: 3 },
             { variable: "doomClockDistance", delta: 3 },
           ],
@@ -642,7 +652,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "misalignmentSeverity", delta: -4 },
             { variable: "globalMediaCycle", delta: 8 },
             { variable: "marketIndex", delta: -5 },
-            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "regulatoryPressure", delta: 0 },
             { variable: "whistleblowerPressure", delta: -7 },
           ],
         },
@@ -688,7 +698,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
           description: "Issue a public statement backing Prometheus as the responsible path forward and calling on OpenBrain to accept oversight. You're the largest institutional investor in OB — this moves markets and the board simultaneously.",
           effects: [
             { variable: "promCapability", delta: 4 },
-            { variable: "alignmentConfidence", delta: 3 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "publicSentiment", delta: 5 },
             { variable: "obInternalTrust", delta: -3 },
             { variable: "economicDisruption", delta: 2 },
@@ -741,7 +751,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
             { variable: "taiwanTension", delta: -7 },
             { variable: "chinaCapability", delta: -3 },
             { variable: "obCapability", delta: -3 },
-            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "alignmentConfidence", delta: 0 },
             { variable: "regulatoryPressure", delta: 3 },
             { variable: "ccpPatience", delta: 3 },
             { variable: "doomClockDistance", delta: 3 },
