@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
-import { FACTIONS, computeEndingArcs } from "@takeoff/shared";
-import type { StateVariables, EndingArc } from "@takeoff/shared";
+import { FACTIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
+import type { Faction, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -231,6 +231,163 @@ function DevStatePanel({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ── Fog Inspector (DEV only) ──────────────────────────────────────────────────
+
+function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round: number }) {
+  const [selectedFaction, setSelectedFaction] = useState<Faction>(FACTIONS[0].id);
+  const factionConfig = FACTIONS.find((f) => f.id === selectedFaction)!;
+  const [selectedRole, setSelectedRole] = useState<Role>(factionConfig.roles[0].id);
+
+  // When faction changes, reset role to first available
+  const handleFactionChange = (f: Faction) => {
+    setSelectedFaction(f);
+    const cfg = FACTIONS.find((fc) => fc.id === f)!;
+    setSelectedRole(cfg.roles[0].id);
+  };
+
+  const fogView: StateView = computeFogView(gmRawState, selectedFaction, selectedRole, round);
+
+  const dropdownStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "6px",
+    color: "#e5e7eb",
+    fontSize: "12px",
+    padding: "5px 8px",
+    cursor: "pointer",
+    outline: "none",
+  };
+
+  return (
+    <div style={{ marginTop: "24px" }}>
+      <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+        Fog Inspector
+      </div>
+
+      {/* Selectors */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <label style={{ color: "#6b7280", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Faction</label>
+          <select value={selectedFaction} onChange={(e) => handleFactionChange(e.target.value as Faction)} style={dropdownStyle}>
+            {FACTIONS.map((f) => (
+              <option key={f.id} value={f.id} style={{ background: "#0a0a14" }}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <label style={{ color: "#6b7280", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Role</label>
+          <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value as Role)} style={dropdownStyle}>
+            {factionConfig.roles.map((r) => (
+              <option key={r.id} value={r.id} style={{ background: "#0a0a14" }}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Side-by-side comparison */}
+      <div style={{ overflowX: "auto" }}>
+        {/* Header */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 90px 130px",
+            gap: "4px",
+            padding: "4px 8px",
+            borderRadius: "4px 4px 0 0",
+            background: "rgba(255,255,255,0.04)",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            marginBottom: "2px",
+          }}
+        >
+          <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Variable</span>
+          <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "right" }}>True</span>
+          <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "right" }}>
+            {FACTIONS.find((f) => f.id === selectedFaction)?.name ?? selectedFaction} sees
+          </span>
+        </div>
+
+        {/* Rows */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+          {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
+            const trueVal = gmRawState[key];
+            const fogVar = fogView[key];
+            const accuracy = fogVar.accuracy;
+
+            let fogDisplay: string;
+            let fogColor: string;
+            if (accuracy === "exact") {
+              fogDisplay = String(fogVar.value);
+              fogColor = "#34d399"; // green
+            } else if (accuracy === "estimate") {
+              fogDisplay = `~${fogVar.value} ±${fogVar.confidence ?? "?"}`;
+              fogColor = "#f59e0b"; // yellow
+            } else {
+              fogDisplay = "HIDDEN";
+              fogColor = "#4b5563"; // gray
+            }
+
+            return (
+              <div
+                key={key}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 90px 130px",
+                  gap: "4px",
+                  padding: "5px 8px",
+                  borderRadius: "4px",
+                  background: "rgba(255,255,255,0.02)",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ color: "#9ca3af", fontSize: "11px" }}>{STATE_LABELS[key]}</span>
+                <span style={{ fontFamily: "monospace", fontSize: "12px", fontWeight: 700, color: "#e5e7eb", textAlign: "right" }}>{trueVal}</span>
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    color: fogColor,
+                    textAlign: "right",
+                    padding: "1px 6px",
+                    borderRadius: "4px",
+                    background:
+                      accuracy === "exact"
+                        ? "rgba(52,211,153,0.08)"
+                        : accuracy === "estimate"
+                          ? "rgba(245,158,11,0.08)"
+                          : "rgba(75,85,99,0.12)",
+                    fontStyle: accuracy === "hidden" ? "italic" : "normal",
+                  }}
+                >
+                  {fogDisplay}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
+          {[
+            { color: "#34d399", bg: "rgba(52,211,153,0.08)", label: "Exact" },
+            { color: "#f59e0b", bg: "rgba(245,158,11,0.08)", label: "Estimate ±N" },
+            { color: "#4b5563", bg: "rgba(75,85,99,0.12)", label: "Hidden" },
+          ].map(({ color, bg, label }) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ width: "28px", height: "14px", borderRadius: "3px", background: bg, border: `1px solid ${color}44` }} />
+              <span style={{ color: "#6b7280", fontSize: "10px" }}>{label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -657,35 +814,44 @@ export function GMDashboard() {
           </div>
 
           {gmRawState ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
-                const value = gmRawState[key];
-                const pct = barPct(key, value);
-                const color = barColor(key, value);
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
+                  const value = gmRawState[key];
+                  const pct = barPct(key, value);
+                  const color = barColor(key, value);
 
-                return (
-                  <div key={key}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
-                      <span style={{ color: "#9ca3af", fontSize: "12px" }}>{STATE_LABELS[key]}</span>
-                      <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color }}>
-                        {value}
-                      </span>
+                  return (
+                    <div key={key}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                        <span style={{ color: "#9ca3af", fontSize: "12px" }}>{STATE_LABELS[key]}</span>
+                        <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color }}>
+                          {value}
+                        </span>
+                      </div>
+                      <div style={{ height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.07)" }}>
+                        <div
+                          style={{
+                            height: "100%",
+                            borderRadius: "2px",
+                            background: color,
+                            width: `${pct}%`,
+                            transition: "width 0.4s ease, background 0.4s ease",
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div style={{ height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.07)" }}>
-                      <div
-                        style={{
-                          height: "100%",
-                          borderRadius: "2px",
-                          background: color,
-                          width: `${pct}%`,
-                          transition: "width 0.4s ease, background 0.4s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {import.meta.env.DEV && (
+                <>
+                  <div style={{ height: "1px", background: "rgba(255,255,255,0.06)", margin: "8px 0" }} />
+                  <FogInspector gmRawState={gmRawState} round={round ?? 1} />
+                </>
+              )}
+            </>
           ) : (
             <div style={{ color: "#4b5563", fontSize: "13px", fontStyle: "italic" }}>
               Waiting for game state…
