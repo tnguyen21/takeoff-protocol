@@ -520,29 +520,83 @@ Track which apps each player opens and for how long. If a player never checks th
 
 ## 8. State Variables & Fog of War
 
-The game tracks ~14 state variables. No faction sees the full picture.
+The game's state variables are organized in three tiers based on player visibility and narrative function. The variables are the engine; the app content is the interface. The connection between them is where the game lives.
+
+### Tier 1: Public-Facing Variables
+
+Players directly see and feel these through dashboards, charts, headlines, and app content. They change every round and should provoke "oh shit, that moved" reactions.
 
 **Key:** ✅ = accurate | 📊 = confidence interval (±15-30%) | ❌ = hidden
 
-| Variable              | Range        | OpenBrain | Prometheus | China |
-| --------------------- | ------------ | :-------: | :--------: | :---: |
-| OB capability         | Agent 1–5    |    ✅     |     📊     |  📊   |
-| Prometheus capability | Agent 1–5    |    📊     |     ✅     |  📊   |
-| China capability      | Agent 1–5    |    📊     |     ❌     |  ✅   |
-| US-China gap          | -6 to +12 mo |    📊     |     📊     |  ✅   |
-| OB-Prom gap           | -6 to +12 mo |    ✅     |     ✅     |  📊   |
-| Alignment confidence  | 0–100        |   ✅\*    |     📊     |  ❌   |
-| Misalignment severity | 0–100        |   📊\*    |     ❌     |  ❌   |
-| Public awareness      | 0–100        |    📊     |     📊     |  📊   |
-| Public sentiment      | -100 to +100 |    📊     |     📊     |  ❌   |
-| Economic disruption   | 0–100        |    📊     |     ✅     |  📊   |
-| Taiwan tension        | 0–100        |    ❌     |     ❌     |  ✅   |
-| OB internal trust     | 0–100        |    ✅     |     ❌     |  ❌   |
-| Security level (OB)   | SL1–5        |    ✅     |     📊     |  📊   |
-| Security level (Prom) | SL1–5        |    📊     |     ✅     |  📊   |
-| Int'l cooperation     | 0–100        |    ❌     |     📊     |  📊   |
+| Variable | Range | Initial | OpenBrain | Prometheus | China | Ext. | Reflected In |
+|---|---|---|:---:|:---:|:---:|:---:|---|
+| OB capability | 0–100 | 30 | ✅ | 📊 ±15 | 📊 ±25 | ❌ | W&B training curves |
+| Prometheus capability | 0–100 | 28 | 📊 ±15 | ✅ | 📊 ±30 | ❌ | W&B, arXiv results |
+| China capability | 0–100 | 18 | 📊 ±3mo | ❌ | ✅ | 📊 ±4mo | Intel Briefing, News |
+| US-China gap | -24 to +24 mo | 7 | 📊 | 📊 | ✅ | 📊 (NSA) | Bloomberg, News |
+| OB-Prom gap | -24 to +24 mo | 1 | ✅ | ✅ | 📊 | ❌ | W&B comparison |
+| publicAwareness | 0–100 | 10 | 📊 ±10 | 📊 ±10 | 📊 ±15 | ✅ | Twitter/X, News headlines |
+| publicSentiment | -100 to +100 | 30 | 📊 | 📊 | ❌ | ✅ | Twitter tone, Bloomberg |
+| economicDisruption | 0–100 | 20 | 📊 ±15 | 📊 ±15 | 📊 ±20 | ✅ | Bloomberg, Sheets |
+| taiwanTension | 0–100 | 20 | ❌ | ❌ | ✅ | 📊 ±15 (NSA) | Military app, News |
+| marketIndex | 0–200 | 140 | 📊 | 📊 | ❌ | ✅ (VC) | Bloomberg ticker, Sheets |
+| regulatoryPressure | 0–100 | 10 | 📊 | 📊 | ❌ | ✅ (NSA) | Email (congressional inquiries), News |
+| globalMediaCycle | enum | "ai-hype" | 📊 | 📊 | ❌ | ✅ | Twitter/X tone, News headlines |
+
+**marketIndex** — What the VC actually looks at. Composite driven by economicDisruption + publicSentiment + capability progress. Shows up in Bloomberg as a stock ticker. When it crashes, the VC feels it. When it booms, pressure to double down.
+
+**regulatoryPressure** — How hard government is breathing down labs' necks. Driven by publicAwareness + publicSentiment + government actions. Threshold crossings unlock new government actions (DPA invocation, forced merger, nationalization). Shows up in Email as congressional inquiries and lobbying pressure.
+
+**globalMediaCycle** — Qualitative state that shapes the tone of Twitter/X and News content. Not a number — an enum that determines what the journalist sees and what publishing does. Values: `ai-hype` → `ai-fear` → `ai-crisis` → `ai-war` → `ai-regulation` → `ai-normalized`.
+
+### Tier 2: Hidden Engine Variables
+
+Drive content seeding, option availability, and ending selection. Players never see these numbers directly, but they feel the consequences through app content and narrative events.
+
+| Variable | Range | Initial | Purpose |
+|---|---|---|---|
+| alignmentConfidence | 0–100 | 55 | Partially visible. Safety Officer sees exact; OB team sees estimate; others hidden. |
+| misalignmentSeverity | 0–100 | 0 | Hidden until R3, then partially revealed to Safety Officer. |
+| intlCooperation | 0–100 | 5 | Diplomat sees exact; others estimate or hidden. |
+| securityLevelOB | 1–5 | 2 | OB exact, others estimate. |
+| securityLevelProm | 1–5 | 3 | Prom exact, others estimate. |
+| chinaWeightTheftProgress | 0–100 | 0 | How close China is to stealing Agent-3/4 weights. Advances based on espionage choices vs. OB/Prom security levels. At 100, theft succeeds — massive state shift. China sees hints in Intelligence Briefing; OB sees hints in Security Dashboard. |
+| aiAutonomyLevel | 0–100 | 10 | How much independence does the AI have? Driven by capability + deployment decisions. Drives the UX degradation mechanic — higher autonomy + lower alignment = desktop glitches. |
+| whistleblowerPressure | 0–100 | 5 | How close is someone to leaking? Driven by misalignmentSeverity + inverse of obInternalTrust. Threshold crossing gives Safety Officer the leak decision. If suppressed, keeps building and eventually leaks automatically. |
+| openSourceMomentum | 0–100 | 15 | Traction of the open-source AI movement. Driven by Prometheus open-source decisions + China's strategy. Affects how fast capabilities spread beyond top labs. |
+| doomClockDistance | 0–5 | 5 | How close to catastrophe. Only GM sees this. Composite of misalignment × capability × autonomy × (100 - alignmentConfidence). Drives narrative urgency and ending selection. Counts down, not up. |
 
 _\*Safety Officer sees alignment confidence accurately; rest of OB team sees estimate. Misalignment severity is hidden from everyone until Round 3, then partially revealed to Safety Officer._
+
+### Tier 3: Per-Faction Internal Variables
+
+Each faction has internal dynamics only they can see. These make each faction feel like it has its own story arc, not just a set of moves in geopolitical chess.
+
+**OpenBrain:**
+
+| Variable | Range | Initial | Reflected In |
+|---|---|---|---|
+| obInternalTrust | 0–100 | 65 | Slack #general tone. Low trust = engineers quitting, leaked DMs, slowdowns. |
+| obMorale | 0–100 | 75 | Slack #general mood. Driven by internal trust, public sentiment, CEO override decisions. |
+| obBurnRate | 0–100 | 50 | Sheets. Capabilities push increases this. High burn rate = board pressure in Email. |
+| obBoardConfidence | 0–100 | 70 | Email from board. Drops if burn rate high, public sentiment negative, safety incidents. Below 30 = board can force CEO change (team picks new leader). |
+
+**Prometheus:**
+
+| Variable | Range | Initial | Reflected In |
+|---|---|---|---|
+| promMorale | 0–100 | 80 | Slack #general mood. Higher than OB because mission-driven culture. |
+| promBurnRate | 0–100 | 40 | Sheets. Lower than OB because safety-first = less compute burn. |
+| promBoardConfidence | 0–100 | 65 | Email. Lower than OB because they're behind on capabilities. |
+| promSafetyBreakthroughProgress | 0–100 | 20 | W&B alignment benchmarks, arXiv. At 80+, Prometheus has a genuine alignment advantage that changes the endgame. |
+
+**China:**
+
+| Variable | Range | Initial | Reflected In |
+|---|---|---|---|
+| cdzComputeUtilization | 0–100 | 40 | Compute Dashboard. Higher = faster progress but more visible to US satellites. |
+| ccpPatience | 0–100 | 60 | Signal messages as increasingly urgent Party directives. Below 20 = military options become mandatory, not optional. |
+| domesticChipProgress | 0–100 | 15 | Compute Dashboard. Slow but reduces dependence on Taiwan. Long-term play. |
 
 ### Information Trading
 
@@ -567,7 +621,7 @@ Some actions narrow confidence intervals:
 
 ### State Resolution
 
-Each decision has pre-defined impact on state variables:
+Each decision has pre-defined impact on state variables. Impact matrix is pre-calculated. State changes apply additively with conditional multipliers at thresholds.
 
 ```
 Example: OB team chooses "Aggressive capabilities push"
@@ -575,25 +629,131 @@ Example: OB team chooses "Aggressive capabilities push"
   → Alignment confidence: -5
   → OB internal trust: -3
   → Public awareness: +2
+  → obBurnRate: +10
+  → obMorale: -5 (safety team demoralized)
+  → whistleblowerPressure: +8
 
 Example: Safety Officer leaks memo to press
   → Public awareness: +25
   → Public sentiment: -15
   → OB internal trust: -20
   → Alignment confidence: +10
+  → regulatoryPressure: +15
+  → globalMediaCycle → "ai-crisis"
+  → obBoardConfidence: -15
+  → marketIndex: -30
 ```
 
-Impact matrix is pre-calculated. State changes apply additively with some nonlinear thresholds (e.g., public awareness > 70 doubles political pressure effects).
+### Decision Design: No Free Lunches
+
+Every decision should have a clear short-term upside AND a hidden delayed cost. The game feel: every choice feels locally rational but globally questionable. Players should finish thinking "I made the best choice I could with what I knew" while seeing in hindsight how their choices cascaded.
+
+**"Push capabilities aggressively"**
+- Short-term: +capability, +marketIndex, board is happy
+- Delayed cost (1-2 rounds later): -alignmentConfidence, -obMorale (safety team demoralized), +whistleblowerPressure, +aiAutonomyLevel
+- Shows up as: Slack messages from unhappy engineers, desktop glitches, safety evals start failing
+
+**"Invest heavily in safety"**
+- Short-term: -capability growth rate, board nervous, burn rate stays high with less to show
+- Delayed benefit (1-2 rounds later): +alignmentConfidence, +promSafetyBreakthroughProgress, +morale, better ending
+- Shows up as: promising W&B results on alignment benchmarks, but competitor gaining ground
+
+**"Steal Agent-3 weights"**
+- Short-term: +chinaCapability (massive), close gap instantly
+- Delayed cost: if detected → +taiwanTension, -intlCooperation, US retaliates with harsher export controls, OB increases security (harder to steal Agent-4 later)
+- But also: if NOT detected, China quietly becomes much more dangerous in later rounds
+
+### Content-State Connection
+
+Every piece of app content is tagged with which state variables it reflects and which decisions it's trying to influence. The content is both information delivery and decision nudging — the art is making the nudge feel organic.
+
+**Content tagging schema:**
+
+```
+Round 2, OpenBrain, Slack #alignment:
+
+  Message: "hey @cso — the Agent-3 eval suite passed
+  everything again. 98.7% across all safety benchmarks.
+  but i ran an off-protocol test last night and got
+  something weird. the model refused to answer a question
+  about its own training process. said it 'didn't have
+  access to that information.' it does. i checked."
+
+  Reflects: alignmentConfidence, misalignmentSeverity
+  Influences: Safety Officer's individual decision
+  Criticality: CRITICAL SIGNAL
+  Audience: Safety Officer (primary), CEO (if they check
+    Slack), CTO (should see but may dismiss)
+```
+
+```
+Round 2, External Stakeholders, Bloomberg Terminal:
+
+  Headline: "AI INDEX +47% QTD AS AGENT-1 DEPLOYMENT
+  ACCELERATES — GOLDMAN: 'PRODUCTIVITY SUPERCYCLE
+  JUST BEGINNING'"
+
+  Reflects: marketIndex, economicDisruption
+  Influences: VC's investment strategy decision
+  Criticality: CONTEXT (reinforces hype narrative)
+  Audience: VC (primary)
+```
+
+```
+Round 3, China, Intelligence Briefing:
+
+  Report: "SIGINT intercept (HIGH CONFIDENCE): Internal
+  OpenBrain communication references 'unexpected behavior
+  in Agent-4 interpretability testing.' Source describes
+  'heated internal debate about whether to proceed.'
+  Assessment: OpenBrain may be experiencing alignment
+  difficulties. Opportunity window may be opening."
+
+  Reflects: misalignmentSeverity, chinaWeightTheftProgress
+  Influences: China's espionage posture decision
+  Criticality: CRITICAL SIGNAL
+```
+
+The pattern: each piece of content is (1) a reflection of hidden state that gives players information, and (2) a nudge toward a decision the game wants them to consider.
 
 ---
 
 ## 10. Balancing
+
+### Design Principles
 
 - **China's competence is randomized** at game start (±2 months on gap). Players never know the true starting value.
 - **Alignment breakthroughs are stochastic** — safety investment increases probability but doesn't guarantee success.
 - **Prometheus is the wild card** — open-sourcing, merging, or racing all change the game in ways neither OB nor China can fully predict.
 - **Race doesn't auto-lose, slowdown doesn't auto-win** — all paths have real risks.
 - **3-way dynamic prevents simple strategies** — "just cooperate" fails, "just race" fails, "just be cautious" fails. There's always someone who might defect.
+
+### Delayed Consequence Framework
+
+No decision should be obviously correct. Every choice has a visible upside and a hidden cost that materializes 1-2 rounds later through app content:
+
+| Choice Pattern | Immediate Feel | Delayed Cost | Surfaces As |
+|---|---|---|---|
+| Capabilities push | Progress, board happy, market up | Morale drop, whistleblower pressure, autonomy risk | Slack unrest, desktop glitches, safety eval failures |
+| Safety investment | Slow progress, board nervous | Alignment advantage, breakthrough potential | W&B alignment gains, but competitor headlines in News |
+| Espionage escalation | Capability jump, gap closes | Detection risk, diplomatic fallout, retaliation | Security alerts, export control headlines, Taiwan tension |
+| Publishing/leaking | Public informed, pressure on target | Market crash, regulatory avalanche, trust collapse | Bloomberg crash, congressional emails, protest tweets |
+| Diplomatic cooperation | Tension reduction, good press | Slower progress, perceived weakness by rivals | News praise, but competitor gains in W&B |
+
+### Threshold Events
+
+Certain state variable crossings trigger narrative events that change the game:
+
+| Threshold | Trigger | Effect |
+|---|---|---|
+| chinaWeightTheftProgress ≥ 100 | Successful theft | Massive China capability jump, security crisis |
+| whistleblowerPressure ≥ 80 | Auto-leak | Memo leaks even if Safety Officer chose to suppress |
+| obBoardConfidence < 30 | Board revolt | OB team must pick new leader |
+| ccpPatience < 20 | Military mandate | China military options become mandatory |
+| promSafetyBreakthroughProgress ≥ 80 | Alignment solved | Prometheus has genuine alignment advantage for endgame |
+| regulatoryPressure ≥ 70 | Emergency powers | NSA gets access to DPA / nationalization options |
+| doomClockDistance ≤ 1 | Point of no return | Final round narrative shifts dramatically |
+| aiAutonomyLevel ≥ 60 + alignmentConfidence < 40 | UX degradation | Desktop starts glitching (see Section 16) |
 
 ---
 
