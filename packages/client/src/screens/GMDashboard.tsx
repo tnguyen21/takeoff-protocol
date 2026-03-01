@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { FACTIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
@@ -489,6 +489,82 @@ function EndingsPreview({ arcs }: { arcs: EndingArc[] }) {
   );
 }
 
+// ── Dev Jump Panel ────────────────────────────────────────────────────────────
+
+const JUMP_PHASES = ["briefing", "intel", "deliberation", "decision", "resolution"] as const;
+
+function DevJumpPanel({ currentRound, currentPhase }: { currentRound: number; currentPhase: string | null }) {
+  const gmJump = useGameStore((s) => s.gmJump);
+  const [targetRound, setTargetRound] = useState(currentRound || 1);
+  const [targetPhase, setTargetPhase] = useState<string>(JUMP_PHASES[0]);
+
+  const handleJump = useCallback(() => {
+    gmJump(targetRound, targetPhase);
+  }, [gmJump, targetRound, targetPhase]);
+
+  const selectStyle: React.CSSProperties = {
+    background: "#111827",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "6px",
+    color: "#e5e7eb",
+    fontSize: "12px",
+    padding: "5px 8px",
+    cursor: "pointer",
+    flex: 1,
+  };
+
+  return (
+    <div
+      style={{
+        padding: "12px",
+        borderRadius: "8px",
+        background: "rgba(234,179,8,0.06)",
+        border: "1px solid rgba(234,179,8,0.25)",
+      }}
+    >
+      <div
+        style={{
+          color: "#ca8a04",
+          fontSize: "9px",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: "8px",
+        }}
+      >
+        Dev — Jump To
+      </div>
+
+      <div style={{ color: "#6b7280", fontSize: "10px", marginBottom: "8px" }}>
+        Current: Round <strong style={{ color: "#9ca3af" }}>{currentRound}</strong>{" "}
+        <strong style={{ color: "#9ca3af" }}>{currentPhase ?? "—"}</strong>
+      </div>
+
+      <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
+        <select value={targetRound} onChange={(e) => setTargetRound(Number(e.target.value))} style={selectStyle}>
+          {[1, 2, 3, 4, 5].map((r) => (
+            <option key={r} value={r}>
+              Round {r}
+            </option>
+          ))}
+        </select>
+
+        <select value={targetPhase} onChange={(e) => setTargetPhase(e.target.value)} style={selectStyle}>
+          {JUMP_PHASES.map((p) => (
+            <option key={p} value={p}>
+              {PHASE_LABELS[p] ?? p}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <button onClick={handleJump} style={btnStyle("#ca8a04")}>
+        ⚡ Jump
+      </button>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function GMDashboard() {
@@ -702,6 +778,11 @@ export function GMDashboard() {
               </div>
               <EndingsPreview arcs={computeEndingArcs(gmRawState)} />
             </div>
+          )}
+
+          {/* Dev-only jump panel */}
+          {import.meta.env.DEV && (
+            <DevJumpPanel currentRound={round} currentPhase={phase} />
           )}
 
           {/* Player Panel */}

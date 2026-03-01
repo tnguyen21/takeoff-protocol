@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, ContentItem, Faction, GameMessage, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
+import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, startGame, replayPlayerState, emitStateViews } from "./game.js";
+import { advancePhase, jumpToPhase, startGame, replayPlayerState, emitStateViews } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -201,6 +201,24 @@ export function registerGameEvents(io: Server, socket: Socket) {
     // Notify GM of remaining extend uses
     io.to(socket.id).emit("gm:extend-ack", { usesRemaining: 2 - (uses + 1) });
   });
+
+  // ── Dev Tools (non-production only) ──
+
+  if (process.env.NODE_ENV !== "production") {
+    const VALID_JUMP_PHASES: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
+
+    socket.on("gm:jump", ({ round, phase }: { round: number; phase: GamePhase }) => {
+      const code = socket.data.roomCode;
+      if (!code) return;
+      const room = getRoom(code);
+      if (!room || room.gmId !== socket.id) return;
+
+      if (!Number.isInteger(round) || round < 1 || round > 5) return;
+      if (!VALID_JUMP_PHASES.includes(phase)) return;
+
+      jumpToPhase(io, room, round, phase);
+    });
+  }
 
   // ── Decisions ──
 

@@ -114,6 +114,7 @@ interface GameStore {
   gmPause: () => void;
   gmExtend: () => void;
   gmSetState: (variable: keyof StateVariables, value: number) => void;
+  gmJump: (round: number, phase: string) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -276,6 +277,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gmSetState: (variable, value) => {
     socket.emit("gm:set-state", { variable, value });
+  },
+
+  gmJump: (round, phase) => {
+    socket.emit("gm:jump", { round, phase });
   },
 }));
 

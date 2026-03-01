@@ -407,6 +407,37 @@ function emitResolution(io: Server, room: GameRoom) {
 }
 
 /**
+ * Jump directly to any round + phase combination (dev/non-production only).
+ * Clears transient per-round state, resets the timer, and re-emits all phase
+ * content so players see content appropriate for the target round/phase.
+ */
+export function jumpToPhase(io: Server, room: GameRoom, round: number, phase: GamePhase): void {
+  room.round = round;
+  room.phase = phase;
+  room.decisions = {};
+  room.teamDecisions = {};
+  room.teamVotes = {};
+
+  // Set timer first so game:phase carries the correct endsAt
+  setPhaseTimer(io, room);
+
+  io.to(room.code).emit("game:phase", {
+    phase: room.phase,
+    round: room.round,
+    timer: room.timer,
+  });
+
+  emitStateViews(io, room);
+
+  if (phase === "briefing") emitBriefing(io, room);
+  if (phase === "intel") emitContent(io, room);
+  if (phase === "decision") emitDecisions(io, room);
+  if (phase === "resolution") emitResolution(io, room);
+
+  console.log(`[dev] GM jumped to Round ${round} ${phase}`);
+}
+
+/**
  * Replay all in-game state to a single reconnected socket.
  * Pass null for player when replaying for the GM.
  */
