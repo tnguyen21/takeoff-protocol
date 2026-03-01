@@ -58,6 +58,11 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
   const econValue = stateView ? (econAccuracy !== "hidden" ? stateView.economicDisruption.value : null) : null;
   const inTurmoil = econValue !== null && econValue > 50;
 
+  const marketIndexAccuracy = stateView?.marketIndex.accuracy ?? null;
+  const marketIndexValue = stateView ? (marketIndexAccuracy !== "hidden" ? stateView.marketIndex.value : null) : null;
+  const inMarketTurmoil = marketIndexValue !== null && marketIndexValue < 80;
+  const inBullRun = marketIndexValue !== null && marketIndexValue > 160;
+
   const sentimentAccuracy = stateView?.publicSentiment.accuracy ?? null;
   const sentimentValue = stateView ? (sentimentAccuracy !== "hidden" ? stateView.publicSentiment.value : null) : null;
 
@@ -69,15 +74,27 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
         <span className="text-black/70 text-[10px]">NY  10:42:31  2026-02-28</span>
       </div>
 
-      {/* Turmoil banner */}
+      {/* Turmoil banner — economic disruption */}
       {inTurmoil && (
         <div className="bg-red-900/80 border-y border-red-500 px-3 py-1 text-red-300 font-bold text-[11px] tracking-widest text-center shrink-0 animate-pulse">
           ⚠ MARKETS IN TURMOIL — ECONOMIC DISRUPTION INDEX: {econValue?.toFixed(0)}
         </div>
       )}
 
+      {/* AI market condition banners */}
+      {inMarketTurmoil && (
+        <div className="bg-red-950/90 border-y border-red-700 px-3 py-1 text-red-400 font-bold text-[11px] tracking-widest text-center shrink-0 animate-pulse">
+          ⚠ MARKETS IN TURMOIL — AI INDEX: {marketIndexValue?.toFixed(0)}
+        </div>
+      )}
+      {inBullRun && (
+        <div className="bg-green-950/90 border-y border-green-600 px-3 py-1 text-green-300 font-bold text-[11px] tracking-widest text-center shrink-0 animate-pulse">
+          ▲ AI BULL RUN — AI INDEX: {marketIndexValue?.toFixed(0)}
+        </div>
+      )}
+
       {/* Index bar */}
-      <div className="flex gap-6 px-3 py-1 bg-[#0a0a0a] border-b border-green-900 shrink-0">
+      <div className="flex gap-6 px-3 py-1 bg-[#0a0a0a] border-b border-green-900 shrink-0 flex-wrap">
         {INDICES.map((idx) => (
           <span key={idx.name} className="flex gap-2">
             <span className="text-[#f26522] font-bold">{idx.name}</span>
@@ -85,6 +102,17 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
             <span className={idx.chg.startsWith("+") ? "text-green-400" : "text-red-400"}>{idx.chg}</span>
           </span>
         ))}
+        {marketIndexValue !== null && (
+          <span className="flex gap-2">
+            <span className="text-cyan-400 font-bold">AI INDEX</span>
+            <span className={`font-mono ${inBullRun ? "text-green-400" : inMarketTurmoil ? "text-red-400" : "text-amber-300"}`}>
+              {marketIndexValue.toFixed(0)}
+            </span>
+            <span className={`${marketIndexValue >= 100 ? "text-green-400" : "text-red-400"}`}>
+              {marketIndexValue >= 100 ? `+${(marketIndexValue - 100).toFixed(0)}` : `${(marketIndexValue - 100).toFixed(0)}`}
+            </span>
+          </span>
+        )}
       </div>
 
       {/* Economic disruption chart + public sentiment */}

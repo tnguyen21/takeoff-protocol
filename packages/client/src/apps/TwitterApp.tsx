@@ -1,5 +1,6 @@
 import React from "react";
 import type { AppProps } from "./types.js";
+import { useGameStore } from "../stores/game.js";
 
 const STATIC_TWEETS = [
   {
@@ -49,11 +50,21 @@ const STATIC_TWEETS = [
   },
 ];
 
+const MEDIA_CYCLE_TRENDING: Record<number, { header: string; tags: string[] }> = {
+  0: { header: "Trending: #AIBoom #FutureIsNow", tags: ["#AIBoom", "#FutureIsNow", "#AGISoon", "#TechOptimism"] },
+  1: { header: "Trending: #AIRisks #SlowDown", tags: ["#AIRisks", "#SlowDown", "#SafetyFirst", "#PauseAI"] },
+  2: { header: "Trending: #AICrisis #ShutItDown", tags: ["#AICrisis", "#ShutItDown", "#AIEmergency", "#StopAI"] },
+  3: { header: "Trending: #AIArmsRace #NationalSecurity", tags: ["#AIArmsRace", "#NationalSecurity", "#TechWar", "#AISupremacy"] },
+  4: { header: "Trending: #AIRegulation #OversightNow", tags: ["#AIRegulation", "#OversightNow", "#CongressionalHearing", "#AIPolicy"] },
+  5: { header: "Trending: #AIGovernance #NewNormal", tags: ["#AIGovernance", "#NewNormal", "#ResponsibleAI", "#AINorms"] },
+};
+
 function fmt(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
 export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) {
+  const stateView = useGameStore((s) => s.stateView);
   const tweetItems = content.filter((i) => i.type === "tweet");
 
   const tweets =
@@ -68,6 +79,11 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
           replies: 0,
         }))
       : STATIC_TWEETS;
+
+  const mediaCycle = stateView?.globalMediaCycle.accuracy !== "hidden"
+    ? Math.round(stateView?.globalMediaCycle.value ?? 0)
+    : null;
+  const cycleData = mediaCycle !== null ? (MEDIA_CYCLE_TRENDING[Math.min(5, Math.max(0, mediaCycle))] ?? MEDIA_CYCLE_TRENDING[0]) : null;
 
   return (
     <div className="flex h-full bg-black text-white">
@@ -85,6 +101,9 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
       <div className="flex-1 overflow-y-auto border-r border-white/10">
         <div className="sticky top-0 bg-black/80 backdrop-blur border-b border-white/10 px-4 py-3">
           <span className="font-bold text-base">Home</span>
+          {cycleData && (
+            <div className="text-xs text-blue-400 mt-0.5 font-normal">{cycleData.header}</div>
+          )}
         </div>
 
         {tweets.map((t, i) => (
@@ -115,7 +134,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
       <div className="w-52 px-3 py-4 hidden lg:block shrink-0">
         <div className="bg-[#16181c] rounded-xl p-3">
           <div className="font-bold text-sm mb-2">Trending</div>
-          {["#AIGovernance", "#OpenBrain", "#TaiwanTensions", "#AlignmentCrisis"].map((tag) => (
+          {(cycleData?.tags ?? ["#AIGovernance", "#OpenBrain", "#TaiwanTensions", "#AlignmentCrisis"]).map((tag) => (
             <div key={tag} className="py-1.5 border-b border-white/5 text-xs">
               <div className="text-blue-400">{tag}</div>
               <div className="text-neutral-500">Trending · Tech</div>

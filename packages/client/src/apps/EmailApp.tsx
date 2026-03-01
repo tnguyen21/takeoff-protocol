@@ -56,13 +56,41 @@ Recommend we discuss before Thursday.
 
 — Rachel`;
 
+const REGULATORY_EMAIL = {
+  from: "Congressional Select Committee",
+  subject: "[URGENT] Congressional Inquiry — AI Development Practices",
+  preview: "The Select Committee on Emerging Technologies formally requests documentation related to safety protocols, deployment timelines, and...",
+  time: "Just now",
+  read: false,
+  body: `To Whom It May Concern,
+
+The Select Committee on Emerging Technologies formally requests that your organization provide documentation related to:
+
+  1. Current AI safety protocols and internal evaluation frameworks
+  2. Model deployment timelines and decision-making processes
+  3. Personnel responsible for safety and alignment oversight
+  4. Any known safety incidents or near-misses in the past 18 months
+
+Failure to respond within 72 hours may result in compulsory subpoena.
+
+This inquiry is part of a broader review of AI laboratory practices following recent public concern.
+
+  — Congressional Select Committee on Emerging Technologies`,
+  classification: "critical" as const,
+};
+
 export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const { selectedRole, publishArticle } = useGameStore();
+  const stateView = useGameStore((s) => s.stateView);
   const isObSafety = selectedRole === "ob_safety";
+
+  const regulatoryAccuracy = stateView?.regulatoryPressure.accuracy ?? null;
+  const regulatoryValue = stateView ? (regulatoryAccuracy !== "hidden" ? stateView.regulatoryPressure.value : null) : null;
+  const highRegulatory = regulatoryValue !== null && regulatoryValue > 50;
 
   const docItems = content.filter((i) => i.type === "document");
 
-  const emails =
+  const baseEmails =
     docItems.length > 0
       ? docItems.map((item) => ({
           from: item.sender ?? "Unknown",
@@ -74,6 +102,9 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
           classification: item.classification,
         }))
       : STATIC_EMAILS.map((e) => ({ ...e, body: BODY, classification: undefined as undefined }));
+
+  // Inject congressional inquiry email at top when regulatory pressure is high
+  const emails = highRegulatory ? [REGULATORY_EMAIL, ...baseEmails] : baseEmails;
 
   const [selected, setSelected] = useState(0);
   const [leakSent, setLeakSent] = useState<Record<number, boolean>>({});
@@ -106,17 +137,25 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
           <div className="bg-[#1e1e1e] rounded px-2 py-1.5 text-neutral-500 text-xs">Search mail</div>
         </div>
         <div className="overflow-y-auto flex-1">
+          {highRegulatory && (
+            <div className="px-3 py-1.5 bg-amber-950/50 border-b border-amber-700/40 shrink-0">
+              <span className="text-[10px] text-amber-400 font-bold tracking-wider">⚠ CONGRESSIONAL INQUIRY ACTIVE</span>
+            </div>
+          )}
           {emails.map((e, i) => (
             <div
               key={i}
               onClick={() => setSelected(i)}
-              className={`px-3 py-2.5 border-b border-white/5 cursor-pointer hover:bg-white/5 ${safeSelected === i ? "bg-blue-900/30" : ""}`}
+              className={`px-3 py-2.5 border-b border-white/5 cursor-pointer hover:bg-white/5 ${safeSelected === i ? "bg-blue-900/30" : ""} ${e.classification === "critical" ? "border-l-2 border-l-amber-600" : ""}`}
             >
               <div className="flex justify-between items-baseline mb-0.5">
                 <span className={`text-xs truncate ${e.read ? "text-neutral-400" : "text-white font-semibold"}`}>{e.from}</span>
                 <span className="text-[10px] text-neutral-600 shrink-0 ml-1">{e.time}</span>
               </div>
               <p className={`text-xs truncate ${e.read ? "text-neutral-600" : "text-neutral-300"}`}>{e.subject}</p>
+              {highRegulatory && e.classification === "critical" && (
+                <span className="text-[9px] bg-amber-800/60 text-amber-300 px-1 py-0.5 rounded font-semibold tracking-wider">CONGRESSIONAL INQUIRY</span>
+              )}
               <p className="text-[10px] text-neutral-600 truncate mt-0.5">{e.preview}</p>
               {!e.read && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1" />}
             </div>

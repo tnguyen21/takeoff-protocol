@@ -1,5 +1,6 @@
 import React from "react";
 import type { AppProps } from "./types.js";
+import { useGameStore } from "../stores/game.js";
 
 const HEADERS = ["Category", "Q1 Budget", "Q2 Budget", "Q1 Actual", "Q2 Actual", "Variance", "Notes"];
 
@@ -17,6 +18,9 @@ const ROWS = [
 const COL_WIDTHS = [160, 100, 100, 100, 90, 90, 180];
 
 export const SheetsApp = React.memo(function SheetsApp({ content }: AppProps) {
+  const stateView = useGameStore((s) => s.stateView);
+  const selectedFaction = useGameStore((s) => s.selectedFaction);
+
   const rowItems = content.filter((i) => i.type === "row");
 
   // Build rows from content items or use static fallback
@@ -29,8 +33,38 @@ export const SheetsApp = React.memo(function SheetsApp({ content }: AppProps) {
         })
       : ROWS;
 
+  // Determine burn rate based on faction
+  const isOpenbrain = selectedFaction === "openbrain";
+  const isPrometheus = selectedFaction === "prometheus";
+  const burnRateVar = isOpenbrain
+    ? stateView?.obBurnRate
+    : isPrometheus
+      ? stateView?.promBurnRate
+      : null;
+  const burnRateAccuracy = burnRateVar?.accuracy ?? null;
+  const burnRateValue = burnRateVar && burnRateAccuracy !== "hidden" ? burnRateVar.value : null;
+  const burnRateHigh = burnRateValue !== null && burnRateValue > 70;
+
   return (
     <div className="flex flex-col h-full bg-[#1e1e1e] text-white text-xs">
+      {/* Burn rate health banner */}
+      {burnRateValue !== null && (
+        <div className={`flex items-center gap-3 px-3 py-1.5 border-b shrink-0 ${burnRateHigh ? "bg-red-950/60 border-red-700/50" : "bg-[#161616] border-white/5"}`}>
+          <span className={`text-[10px] font-semibold tracking-wider ${burnRateHigh ? "text-red-400" : "text-neutral-500"}`}>
+            {burnRateHigh ? "⚠ " : ""}BUDGET BURN RATE
+          </span>
+          <div className="flex-1 bg-neutral-800 rounded-full h-1.5 overflow-hidden">
+            <div
+              className={`h-full rounded-full ${burnRateHigh ? "bg-red-500" : burnRateValue > 50 ? "bg-amber-500" : "bg-green-500"}`}
+              style={{ width: `${burnRateValue}%` }}
+            />
+          </div>
+          <span className={`font-mono text-[11px] font-bold w-8 text-right ${burnRateHigh ? "text-red-400" : "text-neutral-300"}`}>
+            {burnRateValue.toFixed(0)}%
+          </span>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-[#161616] shrink-0">
         <span className="text-green-400 font-bold text-sm">■</span>
@@ -73,6 +107,7 @@ export const SheetsApp = React.memo(function SheetsApp({ content }: AppProps) {
                 className={`
                   ${ri % 2 === 0 ? "bg-[#1e1e1e]" : "bg-[#212121]"}
                   ${ri === rows.length - 1 ? "font-semibold bg-[#1a2a1a] border-t border-white/20" : ""}
+                  ${burnRateHigh && ri === 0 ? "bg-red-950/40 border-l-2 border-l-red-600" : ""}
                   hover:bg-blue-900/20 cursor-pointer
                 `}
               >

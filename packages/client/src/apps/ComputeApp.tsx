@@ -29,6 +29,13 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
   const avgUtil = Math.round(CLUSTERS.reduce((a, c) => a + c.util * c.gpus, 0) / totalGPUs);
 
   const stateView = useGameStore((s) => s.stateView);
+  const selectedFaction = useGameStore((s) => s.selectedFaction);
+  const isChina = selectedFaction === "china";
+
+  const cdzUtilAccuracy = stateView?.cdzComputeUtilization.accuracy ?? null;
+  const cdzUtilValue = isChina && stateView && cdzUtilAccuracy !== "hidden"
+    ? stateView.cdzComputeUtilization.value
+    : null;
 
   // Build capability comparison bar data from fog-filtered state
   const capBarData = stateView
@@ -63,21 +70,46 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
       <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between shrink-0">
         <div>
           <div className="font-bold text-sm">Compute Dashboard</div>
-          <div className="text-neutral-500 text-xs">OpenBrain Infrastructure</div>
+          <div className="text-neutral-500 text-xs">{isChina ? "DeepCent Infrastructure" : "OpenBrain Infrastructure"}</div>
         </div>
         <div className="flex gap-6 text-xs">
-          <div className="text-center">
-            <div className="text-2xl font-bold font-mono text-blue-400">{totalGPUs}</div>
-            <div className="text-neutral-500">Total GPUs</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold font-mono text-green-400">{avgUtil}%</div>
-            <div className="text-neutral-500">Avg Util</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold font-mono text-yellow-400">{JOBS.length}</div>
-            <div className="text-neutral-500">Active Jobs</div>
-          </div>
+          {cdzUtilValue !== null ? (
+            <>
+              <div className="text-center">
+                <div className={`text-2xl font-bold font-mono ${cdzUtilValue >= 90 ? "text-orange-400" : cdzUtilValue >= 70 ? "text-yellow-400" : "text-green-400"}`}>
+                  {cdzUtilValue.toFixed(0)}%
+                </div>
+                <div className="text-neutral-500">CDZ Util</div>
+              </div>
+              <div className="flex flex-col justify-center gap-1">
+                <div className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider">CDZ COMPUTE</div>
+                <div className="w-32 bg-neutral-800 rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${cdzUtilValue >= 90 ? "bg-orange-500" : cdzUtilValue >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
+                    style={{ width: `${cdzUtilValue}%` }}
+                  />
+                </div>
+                {cdzUtilValue >= 90 && (
+                  <div className="text-[9px] text-orange-400 font-semibold">⚠ HIGH UTILIZATION</div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center">
+                <div className="text-2xl font-bold font-mono text-blue-400">{totalGPUs}</div>
+                <div className="text-neutral-500">Total GPUs</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold font-mono text-green-400">{avgUtil}%</div>
+                <div className="text-neutral-500">Avg Util</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold font-mono text-yellow-400">{JOBS.length}</div>
+                <div className="text-neutral-500">Active Jobs</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
