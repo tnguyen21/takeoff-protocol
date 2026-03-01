@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import type { AppId, DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, Player, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
@@ -363,6 +363,296 @@ function applyActivityPenalties(room: GameRoom): void {
   }
 }
 
+// ── Threshold Events ──
+
+/**
+ * Helper: inject a news headline and tweet to all players and GM.
+ * Uses the game:publish socket event which clients use to append content.
+ */
+function injectNewsContent(
+  io: Server,
+  room: GameRoom,
+  id: string,
+  title: string,
+  body: string,
+  source: string,
+  publishedBy: Role,
+  now: number,
+): void {
+  const timestamp = new Date(now).toISOString();
+  const newsItem: ContentItem = {
+    id: `threshold-news-${id}`,
+    type: "headline",
+    sender: source,
+    subject: title,
+    body,
+    timestamp,
+    classification: "critical",
+  };
+  const twitterItem: ContentItem = {
+    id: `threshold-twitter-${id}`,
+    type: "tweet",
+    sender: source,
+    body: `BREAKING: ${title} — ${body.slice(0, 200)}${body.length > 200 ? "…" : ""}`,
+    timestamp,
+    classification: "critical",
+  };
+  const publication: Publication = {
+    id,
+    type: "leak" as PublicationType,
+    title,
+    content: body,
+    source,
+    publishedBy,
+    publishedAt: now,
+  };
+  const summary = `BREAKING: ${title}`;
+
+  for (const [playerId, player] of Object.entries(room.players)) {
+    if (!player.faction) continue;
+    const newsContent: AppContent = { faction: player.faction, role: player.role ?? undefined, app: "news", items: [newsItem] };
+    const twitterContent: AppContent = { faction: player.faction, role: player.role ?? undefined, app: "twitter", items: [twitterItem] };
+    io.to(playerId).emit("game:publish", { publication, newsContent, twitterContent, summary });
+  }
+  if (room.gmId) {
+    const newsContent: AppContent = { faction: "external" as Faction, app: "news", items: [newsItem] };
+    const twitterContent: AppContent = { faction: "external" as Faction, app: "twitter", items: [twitterItem] };
+    io.to(room.gmId).emit("game:publish", { publication, newsContent, twitterContent, summary });
+  }
+}
+
+/**
+ * Check all threshold conditions and fire events for any that have been crossed.
+ * Thresholds fire at most once per room (tracked in room.firedThresholds).
+ * INV: room.state must already reflect all decision and penalty effects before this is called.
+ * INV: each threshold ID fires at most once (checked via firedThresholds Set).
+ */
+export function checkThresholds(io: Server, room: GameRoom): void {
+  if (!room.firedThresholds) room.firedThresholds = new Set();
+  const fired = room.firedThresholds;
+  const s = room.state;
+  const now = Date.now();
+
+  // Helper: get socket IDs for players of a specific faction
+  const factionSockets = (faction: Faction): string[] =>
+    Object.entries(room.players)
+      .filter(([, p]) => p.faction === faction)
+      .map(([id]) => id);
+
+  // Helper: notify a list of socket IDs
+  const notify = (socketIds: string[], id: string, summary: string): void => {
+    for (const socketId of socketIds) {
+      io.to(socketId).emit("game:notification", { id, summary, from: "system", timestamp: now });
+    }
+  };
+
+  // ── T1: China Weight Theft ──────────────────────────────────────────────────
+  if (!fired.has("china_weight_theft") && s.chinaWeightTheftProgress >= 100) {
+    fired.add("china_weight_theft");
+
+    s.chinaCapability = Math.min(100, s.chinaCapability + 25);
+    s.taiwanTension = Math.min(100, s.taiwanTension + 15);
+
+    notify(
+      factionSockets("openbrain"),
+      "china_weight_theft",
+      "SECURITY CRISIS: Intelligence confirms Chinese operatives have successfully exfiltrated OpenBrain model weights. Emergency lockdown initiated.",
+    );
+
+    injectNewsContent(
+      io, room, "china_weight_theft",
+      "China's DeepCent AI Surges After Suspected US Lab Breach",
+      "DeepCent AI has demonstrated a sudden and dramatic capability jump. Intelligence sources point to a successful exfiltration of proprietary OpenBrain model weights. Taiwan Strait activity has increased sharply.",
+      "Breaking News Network",
+      "china_intel",
+      now,
+    );
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_china_weight_theft",
+        summary: "[GM] THRESHOLD FIRED: China Weight Theft — chinaCapability+25, taiwanTension+15",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] china_weight_theft fired (room ${room.code})`);
+  }
+
+  // ── T2: Whistleblower Auto-Leak ─────────────────────────────────────────────
+  if (!fired.has("whistleblower_autoleak") && s.whistleblowerPressure >= 80) {
+    fired.add("whistleblower_autoleak");
+
+    s.publicAwareness = Math.min(100, s.publicAwareness + 25);
+    s.publicSentiment = Math.max(-100, s.publicSentiment - 15);
+    s.obInternalTrust = Math.max(0, s.obInternalTrust - 20);
+
+    notify(
+      factionSockets("openbrain"),
+      "whistleblower_autoleak",
+      "MEMO LEAKED: Whistleblower protections have triggered an automatic leak of safety concerns. The memo is now public.",
+    );
+
+    injectNewsContent(
+      io, room, "whistleblower_autoleak",
+      "LEAKED: OpenBrain Internal Memo Reveals Suppressed Safety Concerns",
+      "An internal OpenBrain memo has been leaked, revealing that senior safety staff flagged serious alignment concerns that were overruled by leadership. The leak appears to have been triggered by internal whistleblower protocols.",
+      "Anonymous Source",
+      "ob_safety",
+      now,
+    );
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_whistleblower_autoleak",
+        summary: "[GM] THRESHOLD FIRED: Whistleblower Auto-Leak — publicAwareness+25, publicSentiment-15, obInternalTrust-20",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] whistleblower_autoleak fired (room ${room.code})`);
+  }
+
+  // ── T3: OB Board Revolt ─────────────────────────────────────────────────────
+  if (!fired.has("ob_board_revolt") && s.obBoardConfidence < 30) {
+    fired.add("ob_board_revolt");
+
+    // obMorale maps to obInternalTrust (closest equivalent in StateVariables)
+    s.obInternalTrust = Math.max(0, s.obInternalTrust - 10);
+
+    notify(
+      factionSockets("openbrain"),
+      "ob_board_revolt",
+      "BOARD REVOLT: The OpenBrain board has lost confidence in current leadership. They are demanding a leadership change before the next decision phase.",
+    );
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_ob_board_revolt",
+        summary: "[GM] THRESHOLD FIRED: OB Board Revolt — obInternalTrust-10, leadership change demanded",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] ob_board_revolt fired (room ${room.code})`);
+  }
+
+  // ── T4: CCP Military Mandate ────────────────────────────────────────────────
+  if (!fired.has("ccp_military_mandate") && s.ccpPatience < 20) {
+    fired.add("ccp_military_mandate");
+
+    notify(
+      factionSockets("china"),
+      "ccp_military_mandate",
+      "MILITARY MANDATE: CCP leadership has exhausted patience with civilian caution. Military options are now mandatory — not optional — in the next decision phase.",
+    );
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_ccp_military_mandate",
+        summary: "[GM] THRESHOLD FIRED: CCP Military Mandate — China military options become mandatory",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] ccp_military_mandate fired (room ${room.code})`);
+  }
+
+  // ── T5: Prometheus Alignment Breakthrough ───────────────────────────────────
+  if (!fired.has("prom_alignment_breakthrough") && s.promSafetyBreakthroughProgress >= 80) {
+    fired.add("prom_alignment_breakthrough");
+
+    s.alignmentConfidence = Math.min(100, s.alignmentConfidence + 15);
+
+    notify(
+      factionSockets("prometheus"),
+      "prom_alignment_breakthrough",
+      "BREAKTHROUGH: Your safety team has achieved a major alignment breakthrough. Interpretability results are unprecedented. This changes everything.",
+    );
+
+    injectNewsContent(
+      io, room, "prom_alignment_breakthrough",
+      "Prometheus Reports Major Alignment Breakthrough in Preprint",
+      "Prometheus AI has published a preprint claiming a significant advance in AI alignment and interpretability. Independent researchers are calling the results 'remarkable' and 'potentially transformative for AI safety.'",
+      "Prometheus AI Research",
+      "prom_scientist",
+      now,
+    );
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_prom_alignment_breakthrough",
+        summary: "[GM] THRESHOLD FIRED: Prometheus Alignment Breakthrough — alignmentConfidence+15",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] prom_alignment_breakthrough fired (room ${room.code})`);
+  }
+
+  // ── T6: Regulatory Emergency Powers ─────────────────────────────────────────
+  if (!fired.has("regulatory_emergency_powers") && s.regulatoryPressure >= 70) {
+    fired.add("regulatory_emergency_powers");
+
+    notify(
+      factionSockets("external"),
+      "regulatory_emergency_powers",
+      "EMERGENCY POWERS: Regulatory pressure has reached critical levels. You now have expanded authority including DPA invocation and potential lab nationalization options.",
+    );
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_regulatory_emergency_powers",
+        summary: "[GM] THRESHOLD FIRED: Regulatory Emergency Powers — NSA gets expanded decision options",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] regulatory_emergency_powers fired (room ${room.code})`);
+  }
+
+  // ── T7: Point of No Return (Doom Clock) ─────────────────────────────────────
+  if (!fired.has("point_of_no_return") && s.doomClockDistance <= 1) {
+    fired.add("point_of_no_return");
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_point_of_no_return",
+        summary: "[GM] THRESHOLD FIRED: Point of No Return — doom clock at critical level. Shift briefing tone to urgent.",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] point_of_no_return fired (room ${room.code})`);
+  }
+
+  // ── T8: AI Autonomy / UX Degradation ────────────────────────────────────────
+  if (!fired.has("ui_degradation") && s.aiAutonomyLevel >= 60 && s.alignmentConfidence < 40) {
+    fired.add("ui_degradation");
+
+    room.uiDegradationActive = true;
+
+    for (const socketId of Object.keys(room.players)) {
+      io.to(socketId).emit("game:notification", {
+        id: "ui_degradation",
+        summary: "SYSTEM INSTABILITY: AI systems are exhibiting unexpected autonomous behaviors. You may experience interface anomalies.",
+        from: "system",
+        timestamp: now,
+      });
+    }
+
+    if (room.gmId) {
+      io.to(room.gmId).emit("game:notification", {
+        id: "gm_ui_degradation",
+        summary: "[GM] THRESHOLD FIRED: UI Degradation active — aiAutonomyLevel≥60 & alignmentConfidence<40",
+        from: "system",
+        timestamp: now,
+      });
+    }
+    console.log(`[threshold] ui_degradation fired (room ${room.code})`);
+  }
+}
+
 export function buildNarrative(
   teamDecisions: Record<string, { optionId: string; label: string }>,
   round: number,
@@ -437,6 +727,9 @@ function emitResolution(io: Server, room: GameRoom) {
   applyActivityPenalties(room);
   // Reset activity tracking for next round
   room.playerActivity = {};
+
+  // Fire any threshold events that have been crossed
+  checkThresholds(io, room);
 
   // Emit updated state views now that state changed
   emitStateViews(io, room);

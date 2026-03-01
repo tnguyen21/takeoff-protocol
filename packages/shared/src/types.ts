@@ -253,6 +253,8 @@ export interface GameRoom {
   messages: GameMessage[]; // all messages for replay on reconnect
   playerActivity?: Record<string, string[]>; // playerId → list of AppId strings opened this round
   timerOverrides?: Partial<Record<GamePhase, number>>; // GM-set durations in seconds, per phase
+  firedThresholds?: Set<string>; // IDs of threshold events that have already fired (once-only)
+  uiDegradationActive?: boolean;  // flagged by aiAutonomyLevel+alignmentConfidence threshold
 }
 
 export interface RoundHistory {

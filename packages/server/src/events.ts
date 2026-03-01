@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
+import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -218,6 +218,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const [min, max] = STATE_BOUNDS[variable];
     room.state[key] = Math.max(min, Math.min(max, value));
 
+    checkThresholds(io, room);
     emitStateViews(io, room);
     console.log(`[gm:set-state] ${variable} = ${room.state[key]}`);
   });
