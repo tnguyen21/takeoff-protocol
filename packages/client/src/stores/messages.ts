@@ -3,6 +3,7 @@ import type { GameMessage } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { useUIStore } from "./ui.js";
+import { soundManager } from "../sounds/index.js";
 
 interface MessagesStore {
   messages: GameMessage[];
@@ -35,6 +36,8 @@ socket.on("message:receive", (message: GameMessage) => {
       [appId]: (s.unreadCounts[appId] ?? 0) + 1,
     },
   }));
+
+  soundManager.play("slack-knock");
 
   // Notify only if that app window is not currently focused (open + not minimized)
   const windows = useUIStore.getState().windows;

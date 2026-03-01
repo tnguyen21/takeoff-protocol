@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameMessage, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
+import { soundManager } from "../sounds/index.js";
 
 // ── Session persistence (survives page refresh) ──
 
@@ -355,6 +356,11 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
     gmDecisionStatus: [],
   });
 
+  // Phase transition sound (skip lobby)
+  if (data.phase !== "lobby") {
+    soundManager.play("phase-transition");
+  }
+
   // Phase transition notification (skip lobby)
   if (data.phase !== "lobby") {
     const phaseLabels: Record<string, string> = {
@@ -381,10 +387,12 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
       const remaining = data.timer.endsAt - Date.now();
       if (!_warnedAt60 && remaining <= 60000 && remaining > 30000) {
         _warnedAt60 = true;
+        soundManager.play("timer-warning");
         useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Time Warning", body: "60 seconds remaining in this phase." });
       }
       if (!_warnedAt30 && remaining <= 30000 && remaining > 0) {
         _warnedAt30 = true;
+        soundManager.play("timer-warning");
         useNotificationsStore.getState().addNotification({ appId: "gamestate", title: "Time Warning", body: "30 seconds remaining in this phase." });
       }
       if (remaining <= 0) {

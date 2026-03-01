@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { soundManager } from "../sounds/index.js";
 
 export interface WindowState {
   id: string;
@@ -108,6 +109,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
     }
 
     set({ topZ: newTopZ, windows: updatedWindows });
+    if (isNewlyVisible) soundManager.play("pop");
   },
 
   closeWindow: (id) =>

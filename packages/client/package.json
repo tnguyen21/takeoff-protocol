@@ -15,6 +15,7 @@
     "react": "^19",
     "react-dom": "^19",
     "socket.io-client": "^4",
+    "use-sound": "^5.0.0",
     "zustand": "^5"
   },
   "devDependencies": {

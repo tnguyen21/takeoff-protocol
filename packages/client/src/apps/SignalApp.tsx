@@ -3,6 +3,7 @@ import type { AppProps } from "./types.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
+import { soundManager } from "../sounds/index.js";
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -64,6 +65,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   const sendMessage = useCallback(() => {
     const text = input.trim();
     if (!text || !selectedPlayerId) return;
+    soundManager.play("message-send");
     socket.emit("message:send", { to: selectedPlayerId, content: text });
     setInput("");
     inputRef.current?.focus();

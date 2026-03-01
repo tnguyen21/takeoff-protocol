@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNotificationsStore, type ToastNotification } from "../stores/notifications.js";
 import { useUIStore } from "../stores/ui.js";
 import { getAppIcon } from "../apps/icons.js";
+import { soundManager } from "../sounds/index.js";
 
 const MENUBAR_HEIGHT = 28;
 const AUTO_DISMISS_MS = 5000;
@@ -19,6 +20,7 @@ function Toast({ notif, index }: { notif: ToastNotification; index: number }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    soundManager.play("notification-chime");
     timerRef.current = setTimeout(() => {
       dismissNotification(notif.id);
     }, AUTO_DISMISS_MS);

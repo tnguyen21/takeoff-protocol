@@ -1,6 +1,7 @@
 import { useCallback, useRef, type ReactNode, type PointerEvent } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { getAppIcon } from "../apps/icons.js";
+import { soundManager } from "../sounds/index.js";
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 200;
@@ -190,7 +191,7 @@ export function Window({ windowState: w, children }: WindowProps) {
         {/* Traffic lights */}
         <div className="flex items-center gap-1.5" data-traffic-light>
           <button
-            onClick={() => closeWindow(w.id)}
+            onClick={() => { soundManager.play("pop"); closeWindow(w.id); }}
             className="w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-110"
           />
           <button

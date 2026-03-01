@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useGameStore } from "../stores/game.js";
 import { FACTIONS } from "@takeoff/shared";
 import type { DecisionOption } from "@takeoff/shared";
+import { soundManager } from "../sounds/index.js";
 
 function formatTime(ms: number): string {
   if (ms <= 0) return "0:00";
@@ -133,6 +134,7 @@ export function Decision() {
   // Auto-submit when timer expires (if not already submitted)
   const handleSubmit = useCallback(() => {
     if (decisionSubmitted) return;
+    soundManager.play("pop");
     submitDecision(individualChoice ?? "", teamVoteChoice ?? undefined);
   }, [decisionSubmitted, individualChoice, teamVoteChoice, submitDecision]);
 

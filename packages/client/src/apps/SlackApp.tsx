@@ -3,6 +3,7 @@ import type { AppProps } from "./types.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
+import { soundManager } from "../sounds/index.js";
 
 const CHANNELS = ["#general", "#research", "#alignment", "#safety", "#announcements", "#ops", "#random"];
 
@@ -52,6 +53,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   const sendMessage = useCallback(() => {
     const text = input.trim();
     if (!text) return;
+    soundManager.play("message-send");
     socket.emit("message:send", { to: null, content: text });
     setInput("");
     inputRef.current?.focus();
