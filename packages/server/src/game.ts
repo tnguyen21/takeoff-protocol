@@ -70,7 +70,68 @@ export function startGame(io: Server, room: GameRoom) {
   setPhaseTimer(io, room);
 }
 
+/**
+ * Start the optional tutorial round (round 0).
+ * Players land on the desktop with sample content; no state penalties apply.
+ * INV: round must be 0 after this call; phase must be 'intel'.
+ */
+export function startTutorial(io: Server, room: GameRoom) {
+  const allReady = Object.values(room.players).every(p => p.faction && p.role);
+  if (!allReady) return;
+
+  room.round = 0;
+  room.phase = "intel";
+  room.decisions = {};
+  room.teamDecisions = {};
+  room.teamVotes = {};
+
+  setPhaseTimer(io, room);
+
+  io.to(room.code).emit("game:phase", {
+    phase: room.phase,
+    round: room.round,
+    timer: room.timer,
+  });
+
+  emitStateViews(io, room);
+  emitBriefing(io, room);
+  emitContent(io, room);
+}
+
+/**
+ * End the tutorial round and start the real game at Round 1 Briefing.
+ * INV: room.round must be 0 before this call; it will be 1 after.
+ */
+export function endTutorial(io: Server, room: GameRoom) {
+  if (room.round !== 0) return; // guard: only valid from tutorial
+
+  room.round = 1;
+  room.phase = "briefing";
+  room.decisions = {};
+  room.teamDecisions = {};
+  room.teamVotes = {};
+  // Clear tutorial content so players get real round 1 content
+  room.playerActivity = {};
+
+  setPhaseTimer(io, room);
+
+  io.to(room.code).emit("game:phase", {
+    phase: room.phase,
+    round: room.round,
+    timer: room.timer,
+  });
+
+  emitStateViews(io, room);
+  emitBriefing(io, room);
+}
+
 export function advancePhase(io: Server, room: GameRoom) {
+  // If in tutorial round (0), any advance transitions to Round 1 Briefing
+  if (room.round === 0) {
+    endTutorial(io, room);
+    return;
+  }
+
   const prevPhase = room.phase;
   const currentIndex = PHASE_ORDER.indexOf(room.phase as GamePhase);
 
@@ -164,6 +225,8 @@ export function advancePhase(io: Server, room: GameRoom) {
 }
 
 export function emitDecisions(io: Server, room: GameRoom) {
+  // Tutorial round has no real decisions
+  if (room.round === 0) return;
   const roundDecisions = ROUND_DECISIONS[room.round - 1];
   if (!roundDecisions) return;
 
@@ -263,6 +326,8 @@ const PRIMARY_APP_PENALTIES: Partial<Record<Role, ActivityPenalty>> = {
 
 function applyActivityPenalties(room: GameRoom): void {
   if (!room.playerActivity) return;
+  // Tutorial round: no penalties
+  if (room.round === 0) return;
   for (const [playerId, player] of Object.entries(room.players)) {
     if (!player.role) continue;
     const penalty = PRIMARY_APP_PENALTIES[player.role];

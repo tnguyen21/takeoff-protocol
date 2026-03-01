@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { buildNarrative, advancePhase } from "./game.js";
+import { buildNarrative, advancePhase, startTutorial, endTutorial } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GameRoom, Player, StateVariables } from "@takeoff/shared";
 
@@ -225,5 +225,93 @@ describe("INV-2: state unchanged when no decisions submitted", () => {
     for (const key of Object.keys(initialState) as Array<keyof StateVariables>) {
       expect(room.state[key]).toBe(initialState[key]);
     }
+  });
+});
+
+// ── Tutorial round (round 0) ──
+
+describe("startTutorial", () => {
+  it("sets round=0 and phase=intel", () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      phase: "lobby",
+      round: 0,
+      players: { p1: player1 },
+    });
+
+    const { io } = createMockIo();
+    startTutorial(io, room);
+
+    // INV: round must be 0 after startTutorial
+    expect(room.round).toBe(0);
+    // INV: phase must be intel (desktop is shown)
+    expect(room.phase).toBe("intel");
+  });
+
+  it("does nothing when not all players have roles", () => {
+    const player1 = makePlayer("p1", null, null); // no role
+    const room = makeRoom({
+      phase: "lobby",
+      round: 0,
+      players: { p1: player1 },
+    });
+
+    const { io } = createMockIo();
+    startTutorial(io, room);
+
+    // Phase should remain lobby since player has no role
+    expect(room.phase).toBe("lobby");
+  });
+});
+
+describe("endTutorial", () => {
+  it("transitions from round 0 to round 1 briefing", () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      phase: "intel",
+      round: 0,
+      players: { p1: player1 },
+    });
+
+    const { io } = createMockIo();
+    endTutorial(io, room);
+
+    // INV: round must be 1 after endTutorial
+    expect(room.round).toBe(1);
+    // INV: phase must be briefing
+    expect(room.phase).toBe("briefing");
+  });
+
+  it("does nothing when round is not 0", () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      phase: "intel",
+      round: 2,
+      players: { p1: player1 },
+    });
+
+    const { io } = createMockIo();
+    endTutorial(io, room);
+
+    // Must remain unchanged
+    expect(room.round).toBe(2);
+    expect(room.phase).toBe("intel");
+  });
+});
+
+describe("advancePhase — tutorial round behavior", () => {
+  it("transitions from round 0 directly to round 1 briefing via advancePhase", () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      phase: "intel",
+      round: 0,
+      players: { p1: player1 },
+    });
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    expect(room.round).toBe(1);
+    expect(room.phase).toBe("briefing");
   });
 });

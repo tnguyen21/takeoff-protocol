@@ -109,6 +109,8 @@ interface GameStore {
   rejoinRoom: (code: string, oldPlayerId: string) => void;
   selectRole: (faction: Faction, role: Role) => Promise<boolean>;
   startGame: () => void;
+  startTutorial: () => void;
+  endTutorial: () => void;
   submitDecision: (individual: string, teamVote?: string) => void;
   submitLeaderDecision: (teamDecision: string) => void;
   gmAdvance: () => void;
@@ -254,6 +256,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startGame: () => {
     socket.emit("game:start", {}, () => {});
+  },
+
+  startTutorial: () => {
+    socket.emit("gm:start-tutorial", {}, () => {});
+  },
+
+  endTutorial: () => {
+    socket.emit("gm:end-tutorial");
   },
 
   submitDecision: (individual, teamVote) => {

@@ -92,7 +92,23 @@ export function MenuBar() {
         {phase && phase !== "lobby" && (
           <>
             <span style={{ color: "rgba(255,255,255,0.25)" }}>|</span>
-            {round === 4 && phase === "deliberation" ? (
+            {round === 0 ? (
+              <span
+                style={{
+                  padding: "1px 7px",
+                  borderRadius: "4px",
+                  background: "rgba(234,179,8,0.15)",
+                  border: "1px solid rgba(234,179,8,0.35)",
+                  color: "#fbbf24",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                }}
+              >
+                TUTORIAL
+              </span>
+            ) : round === 4 && phase === "deliberation" ? (
               <span style={{ color: "#fbbf24", fontWeight: 600, letterSpacing: "0.04em", fontSize: "11px" }}>
                 NEGOTIATION PHASE
               </span>
@@ -124,6 +140,11 @@ export function MenuBar() {
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
         </button>
+        {round === 0 && (
+          <span style={{ color: "rgba(255,255,255,0.30)", fontSize: "11px" }}>
+            Practice Round
+          </span>
+        )}
         {round > 0 && (
           <>
             <span

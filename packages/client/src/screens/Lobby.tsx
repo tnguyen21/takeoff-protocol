@@ -101,6 +101,7 @@ export function Lobby() {
     joinRoom,
     selectRole,
     startGame,
+    startTutorial,
   } = useGameStore();
 
   const [joinCode, setJoinCode] = useState("");
@@ -390,6 +391,14 @@ export function Lobby() {
                     <span className="text-neutral-500 text-sm">Override minimum</span>
                   </label>
                 )}
+                <button
+                  onClick={startTutorial}
+                  disabled={!canStart}
+                  className="bg-yellow-800 hover:bg-yellow-700 disabled:bg-neutral-800 disabled:text-neutral-600 text-white rounded-lg px-6 py-3 font-semibold transition-colors border border-yellow-700 hover:border-yellow-600 disabled:border-neutral-700"
+                  title="Walk players through the desktop UI before Round 1"
+                >
+                  Start Tutorial
+                </button>
                 <button
                   onClick={startGame}
                   disabled={!canStart}

@@ -797,6 +797,7 @@ export function GMDashboard() {
     gmExtend,
     gmSetState,
     gmSetTimers,
+    endTutorial,
   } = useGameStore();
 
   const { messages } = useMessagesStore();
@@ -868,7 +869,7 @@ export function GMDashboard() {
         {/* Round + Phase */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ color: "#9ca3af", fontSize: "13px" }}>
-            Round <strong style={{ color: "#e5e7eb" }}>{round}</strong>
+            Round <strong style={{ color: "#e5e7eb" }}>{round === 0 ? "Tutorial" : round}</strong>
           </span>
           <span
             style={{
@@ -883,6 +884,23 @@ export function GMDashboard() {
           >
             {PHASE_LABELS[phase ?? ""] ?? phase ?? "—"}
           </span>
+          {round === 0 && (
+            <span
+              style={{
+                padding: "2px 10px",
+                borderRadius: "20px",
+                background: "rgba(234,179,8,0.15)",
+                border: "1px solid rgba(234,179,8,0.4)",
+                color: "#fbbf24",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              TUTORIAL MODE
+            </span>
+          )}
         </div>
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -940,48 +958,82 @@ export function GMDashboard() {
 
           {/* Timer controls */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <button
-              onClick={gmPause}
-              style={btnStyle(isPaused ? "#34d399" : "#f59e0b")}
-            >
-              {isPaused ? "▶ Resume" : "⏸ Pause"}
-            </button>
+            {round === 0 ? (
+              /* Tutorial mode: show End Tutorial button prominently */
+              <>
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    background: "rgba(234,179,8,0.08)",
+                    border: "1px solid rgba(234,179,8,0.3)",
+                    color: "#fbbf24",
+                    fontSize: "11px",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Tutorial mode active. Players are exploring the desktop with practice content. When ready, end the tutorial to start Round 1.
+                </div>
+                <button
+                  onClick={endTutorial}
+                  style={btnStyle("#34d399")}
+                >
+                  ▶ End Tutorial → Start Game
+                </button>
+                <button
+                  onClick={gmAdvance}
+                  style={btnStyle("#6b7280")}
+                >
+                  ⏭ Skip to Round 1
+                </button>
+              </>
+            ) : (
+              /* Normal game controls */
+              <>
+                <button
+                  onClick={gmPause}
+                  style={btnStyle(isPaused ? "#34d399" : "#f59e0b")}
+                >
+                  {isPaused ? "▶ Resume" : "⏸ Pause"}
+                </button>
 
-            <button
-              onClick={gmExtend}
-              disabled={gmExtendUsesRemaining <= 0}
-              style={btnStyle("#60a5fa", gmExtendUsesRemaining <= 0)}
-            >
-              +60s Extend
-              <span
-                style={{
-                  marginLeft: "8px",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  padding: "1px 5px",
-                  borderRadius: "4px",
-                  background: gmExtendUsesRemaining > 0 ? "rgba(96,165,250,0.2)" : "rgba(255,255,255,0.05)",
-                  color: gmExtendUsesRemaining > 0 ? "#93c5fd" : "#4b5563",
-                }}
-              >
-                {gmExtendUsesRemaining} left
-              </span>
-            </button>
+                <button
+                  onClick={gmExtend}
+                  disabled={gmExtendUsesRemaining <= 0}
+                  style={btnStyle("#60a5fa", gmExtendUsesRemaining <= 0)}
+                >
+                  +60s Extend
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                      background: gmExtendUsesRemaining > 0 ? "rgba(96,165,250,0.2)" : "rgba(255,255,255,0.05)",
+                      color: gmExtendUsesRemaining > 0 ? "#93c5fd" : "#4b5563",
+                    }}
+                  >
+                    {gmExtendUsesRemaining} left
+                  </span>
+                </button>
 
-            <button
-              onClick={gmAdvance}
-              style={btnStyle("#ef4444")}
-            >
-              ⏭ Advance Phase
-            </button>
+                <button
+                  onClick={gmAdvance}
+                  style={btnStyle("#ef4444")}
+                >
+                  ⏭ Advance Phase
+                </button>
 
-            {import.meta.env.DEV && (
-              <button
-                onClick={() => setShowEndings((v) => !v)}
-                style={btnStyle("#a78bfa")}
-              >
-                {showEndings ? "▲ Hide Endings" : "▼ Preview Endings"}
-              </button>
+                {import.meta.env.DEV && (
+                  <button
+                    onClick={() => setShowEndings((v) => !v)}
+                    style={btnStyle("#a78bfa")}
+                  >
+                    {showEndings ? "▲ Hide Endings" : "▼ Preview Endings"}
+                  </button>
+                )}
+              </>
             )}
           </div>
 

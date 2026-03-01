@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, jumpToPhase, startGame, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
+import { advancePhase, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -111,6 +111,29 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     startGame(io, room);
     callback({ ok: true });
+  });
+
+  socket.on("gm:start-tutorial", (_, callback: (res: { ok: boolean; error?: string }) => void) => {
+    const code = socket.data.roomCode;
+    if (!code) { callback({ ok: false, error: "Not in a room" }); return; }
+
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) {
+      callback({ ok: false, error: "Only GM can start the tutorial" });
+      return;
+    }
+
+    startTutorial(io, room);
+    callback({ ok: true });
+  });
+
+  socket.on("gm:end-tutorial", () => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) return;
+    if (room.round !== 0) return;
+    endTutorial(io, room);
   });
 
   // ── GM Controls ──
