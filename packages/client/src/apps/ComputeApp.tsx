@@ -1,5 +1,7 @@
 import React from "react";
 import type { AppProps } from "./types.js";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer, ErrorBar } from "recharts";
+import { useGameStore } from "../stores/game.js";
 
 const CLUSTERS = [
   { name: "Cluster A (H100 x512)", gpus: 512, util: 94, jobs: 3, reserved: "frontier-model-v3", status: "healthy" },
@@ -26,6 +28,35 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
   const totalGPUs = CLUSTERS.reduce((a, c) => a + c.gpus, 0);
   const avgUtil = Math.round(CLUSTERS.reduce((a, c) => a + c.util * c.gpus, 0) / totalGPUs);
 
+  const stateView = useGameStore((s) => s.stateView);
+
+  // Build capability comparison bar data from fog-filtered state
+  const capBarData = stateView
+    ? [
+        {
+          label: "OB",
+          value: stateView.obCapability.accuracy !== "hidden" ? stateView.obCapability.value : 0,
+          error: stateView.obCapability.accuracy === "estimate" ? (stateView.obCapability.confidence ?? 0) : 0,
+          accuracy: stateView.obCapability.accuracy,
+          fill: "#3b82f6",
+        },
+        {
+          label: "PROM",
+          value: stateView.promCapability.accuracy !== "hidden" ? stateView.promCapability.value : 0,
+          error: stateView.promCapability.accuracy === "estimate" ? (stateView.promCapability.confidence ?? 0) : 0,
+          accuracy: stateView.promCapability.accuracy,
+          fill: "#22c55e",
+        },
+        {
+          label: "CHINA",
+          value: stateView.chinaCapability.accuracy !== "hidden" ? stateView.chinaCapability.value : 0,
+          error: stateView.chinaCapability.accuracy === "estimate" ? (stateView.chinaCapability.confidence ?? 0) : 0,
+          accuracy: stateView.chinaCapability.accuracy,
+          fill: "#ef4444",
+        },
+      ]
+    : null;
+
   return (
     <div className="flex flex-col h-full bg-[#0d0d0d] text-white text-sm">
       {/* Header */}
@@ -51,6 +82,51 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {/* Capability Comparison Chart */}
+        <div className="bg-[#111] border border-white/10 rounded p-3">
+          <div className="text-xs text-neutral-500 font-semibold mb-2 uppercase tracking-wider">AI Capability Index</div>
+          {!capBarData ? (
+            <div className="h-28 flex items-center justify-center text-neutral-600 text-xs">No state data</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={110}>
+              <BarChart data={capBarData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }} barCategoryGap="30%">
+                <CartesianGrid stroke="#222" strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={{ fill: "#666", fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: "#555", fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
+                <Tooltip
+                  contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 11 }}
+                  formatter={(val: number | undefined, _name: string | undefined, item: { payload?: { accuracy?: string; error?: number } }) => {
+                    const acc = item.payload?.accuracy;
+                    if (acc === "hidden") return ["██████", "Capability"];
+                    const err = item.payload?.error ?? 0;
+                    if (val == null) return ["", "Capability"];
+                    return [err > 0 ? `${val} ±${err}` : String(val), "Capability"];
+                  }}
+                />
+                <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                  {capBarData.map((entry) => (
+                    <Cell
+                      key={entry.label}
+                      fill={entry.accuracy === "hidden" ? "#333" : entry.fill}
+                      fillOpacity={entry.accuracy === "estimate" ? 0.65 : 1}
+                    />
+                  ))}
+                  <ErrorBar dataKey="error" width={6} strokeWidth={1.5} stroke="#ffffff60" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          {capBarData && (
+            <div className="flex gap-3 mt-1 justify-end">
+              {capBarData.map((d) => (
+                <span key={d.label} className="text-[10px]" style={{ color: d.accuracy === "hidden" ? "#555" : d.fill }}>
+                  {d.label}: {d.accuracy === "hidden" ? "██" : `${d.value}${d.accuracy === "estimate" ? "~" : ""}`}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Clusters */}
         <div>
           <div className="text-xs text-neutral-500 font-semibold mb-2 uppercase tracking-wider">Cluster Status</div>

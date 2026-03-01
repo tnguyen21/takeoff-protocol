@@ -79,6 +79,9 @@ interface GameStore {
   // Resolution
   resolution: ResolutionData | null;
 
+  // Round state history (accumulated per-round fog-filtered state views)
+  stateHistory: Record<number, StateView>;
+
   // GM-specific
   gmRawState: StateVariables | null; // true unfogged state (GM only)
   gmDecisionStatus: string[]; // player IDs that have submitted (GM only)
@@ -137,6 +140,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   teamLocked: false,
   resolution: null,
   briefingText: null,
+  stateHistory: {},
   gmRawState: null,
   gmDecisionStatus: [],
   gmExtendUsesRemaining: 2,
@@ -401,11 +405,12 @@ socket.on("game:phase", (data: { phase: GamePhase; round: number; timer: { endsA
 });
 
 socket.on("game:state", (data: { view: StateView; isFull?: boolean }) => {
-  if (data.isFull) {
-    useGameStore.setState({ gmRawState: data.view as unknown as StateVariables, stateView: data.view });
-  } else {
-    useGameStore.setState({ stateView: data.view });
-  }
+  const round = useGameStore.getState().round;
+  useGameStore.setState((s) => ({
+    ...(data.isFull ? { gmRawState: data.view as unknown as StateVariables } : {}),
+    stateView: data.view,
+    stateHistory: round > 0 ? { ...s.stateHistory, [round]: data.view } : s.stateHistory,
+  }));
 });
 
 socket.on("game:content", (data: { content: AppContent[] }) => {
