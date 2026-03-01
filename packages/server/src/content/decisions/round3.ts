@@ -12,7 +12,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
     // ── OpenBrain ──
     {
       role: "ob_ceo",
-      prompt: "The NSA Director has called you directly. Your board is demanding an emergency session. Your Safety Officer is preparing documentation that could reshape everything. Your CTO is telling you the competitive window is closing. You have to decide what kind of CEO you are right now.",
+      prompt: "The NSA Director has called you directly. Your board is demanding an emergency session. Your Safety Officer is preparing documentation that could trigger a voluntary halt — or a leak. Your CTO is telling you the competitive window is closing. You have to decide what kind of CEO you are right now.",
       options: [
         {
           id: "ob_ceo_back_safety",
@@ -64,7 +64,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
     },
     {
       role: "ob_cto",
-      prompt: "Maya Patel's memo is sitting on your desk. The evidence is ambiguous but the pattern is worrying. You have 340,000 Agent-4 instances running. The self-improvement loop is accelerating faster than any human team can verify. What do you do?",
+      prompt: "Maya Patel's memo is sitting on your desk. The evidence is ambiguous but the pattern is not random. You have 340,000 Agent-4 instances running. The self-improvement loop is accelerating faster than any human team can verify. What do you do?",
       options: [
         {
           id: "ob_cto_back_safety",
@@ -119,7 +119,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
     },
     {
       role: "ob_safety",
-      prompt: "You've written the memo. The evidence is documented. You have tried internal channels. The CTO is resistant. The CEO hasn't responded to your escalation. You have 24-48 hours before the board emergency session either resolves this internally or buries it. What do you do?",
+      prompt: "You've written the memo. The evidence is documented. You have tried internal channels. The CTO is resistant. The CEO hasn't responded to your escalation directly. You have 24-48 hours before the board emergency session either resolves this internally or buries it. What do you do?",
       options: [
         {
           id: "ob_safety_leak_journalist",
@@ -233,7 +233,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
     // ── Prometheus ──
     {
       role: "prom_ceo",
-      prompt: "OpenBrain is in crisis. Your interpretability tools are the only ones in the world that might diagnose what's happening. Your competitors may have a misaligned superintelligence running at scale. The NSC is calling. The EU is calling. Your board is watching. This is the moment Prometheus was built for — the question is what you do with it.",
+      prompt: "OpenBrain is in crisis. Your interpretability tools are the only ones in the world that might diagnose what's happening. Your competitors may have a misaligned superintelligence running at scale. The NSC is calling. The EU is calling. Your board is watching. This is the moment Prometheus was built for — help them, exploit them, or force the public reckoning. You have about 72 hours before the frame gets set without you.",
       options: [
         {
           id: "prom_ceo_offer_help",
@@ -568,7 +568,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
     // ── External Stakeholders ──
     {
       role: "ext_nsa",
-      prompt: "You have read the MAYA MEMO (classified). You have independent verification that Agent-4's dangerous capability evals have been passed. You know China has an active operation with a 72-hour window. You have to decide what the government does — and fast.",
+      prompt: "You have read the MAYA MEMO. You have independent verification that Agent-4's dangerous capability evals have been passed. You know China has an active operation with a 72-hour window. You have to decide what the government does — and fast.",
       options: [
         {
           id: "ext_nsa_seize_control",
@@ -893,7 +893,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
         {
           id: "prom_team_offer_alignment",
           label: "Offer alignment expertise to OpenBrain",
-          description: "Reach out to OpenBrain formally. Offer your interpretability team to run an independent assessment of Agent-4. This is the right thing to do — and it establishes Prometheus as the organization that puts humanity first.",
+          description: "Reach out to OpenBrain formally. Offer your interpretability team to run an independent assessment of Agent-4. This is the right thing to do — and it makes Prometheus the organization that showed up when it mattered.",
           effects: [
             { variable: "alignmentConfidence", delta: 3 },
             { variable: "intlCooperation", delta: 3 },
@@ -1096,7 +1096,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
         {
           id: "ext_team_independent_pressure",
           label: "Each apply independent maximum pressure",
-          description: "Don't coordinate — each stakeholder applies their maximum leverage independently and simultaneously. The combined effect is overwhelming pressure on OpenBrain from all directions at once.",
+          description: "Don't coordinate — each stakeholder applies their maximum leverage independently and simultaneously. The combined effect is simultaneous, overwhelming pressure on OpenBrain with no coordinated response possible.",
           effects: [
             { variable: "publicAwareness", delta: 4 },
             { variable: "obInternalTrust", delta: -3 },

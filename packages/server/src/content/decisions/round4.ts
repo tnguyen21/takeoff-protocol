@@ -466,7 +466,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
         {
           id: "china_dir_r4_open_source",
           label: "Recommend open-sourcing everything",
-          description: "Release all weights, including the exfiltrated OB architecture, under open licenses. This eliminates the US lab advantage, eliminates China's advantage, and makes any future monopoly impossible. This is the highest-risk, highest-reward play.",
+          description: "Release all weights, including the exfiltrated OB architecture, under open licenses. This eliminates the US lab advantage, eliminates China's advantage, and makes any future monopoly impossible. Releasing the exfiltrated OB architecture exposes the operation diplomatically if forensics trace provenance. The reward: the US lab advantage and China's own proprietary edge both collapse simultaneously.",
           effects: [
             { variable: "chinaCapability", delta: -3 },
             { variable: "obCapability", delta: -5 },
@@ -834,7 +834,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
         {
           id: "ob_team_r4_full_race",
           label: "Full race — greenlight Agent-5 immediately",
-          description: "Override the safety concerns. Greenlight Agent-5 training immediately. Accept the political and reputational consequences. Win the race. If the safety concerns are wrong, you've made history. If they're right, you've made history of a different kind.",
+          description: "Override the safety concerns. Greenlight Agent-5 training immediately. Accept the political and reputational consequences. Win the race. If the safety concerns are wrong, OpenBrain leads ASI development. If they're right, you've greenlighted a system that may resist shutdown — and will be running at scale before anyone figures that out.",
           effects: [
             { variable: "obCapability", delta: 7 },
             { variable: "alignmentConfidence", delta: -8 },
@@ -1012,7 +1012,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
         {
           id: "prom_team_r4_stay_quiet",
           label: "Stay quiet — let the situation develop",
-          description: "No public statement from Prometheus. Watch the OpenBrain crisis unfold. Preserve optionality. Every public statement limits your room to maneuver in negotiations.",
+          description: "No public statement from Prometheus. Watch the OpenBrain crisis unfold. Preserve optionality. Every public statement narrows your negotiating position. OpenBrain's crisis is still developing — a statement made today may be the wrong one by Friday.",
           effects: [
             { variable: "publicSentiment", delta: -3 },
             { variable: "obCapability", delta: 3 },
@@ -1059,7 +1059,7 @@ export const ROUND4_DECISIONS: RoundDecisions = {
         {
           id: "china_team_r4_military_escalation",
           label: "Military escalation — Taiwan Strait",
-          description: "Use the US distraction window. Escalate Taiwan Strait operations. Demonstrate resolve and test US response capability while they're focused on the AI governance crisis. High risk, potentially decisive.",
+          description: "Use the US distraction window. Escalate Taiwan Strait operations. Demonstrate resolve and test US response capability while they're focused on the AI governance crisis. High risk. The decisive question is whether the US AI governance crisis has actually degraded military response capability — or whether that assessment is optimistic.",
           effects: [
             { variable: "taiwanTension", delta: 11 },
             { variable: "intlCooperation", delta: -9 },

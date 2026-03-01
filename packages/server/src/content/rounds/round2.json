@@ -1,12 +1,12 @@
 {
   "round": 2,
   "briefing": {
-    "common": "It's March 2027. Things have moved faster than anyone expected.\n\nOpenBrain has trained Agent-3 — a superhuman software engineer that writes, reviews, and debugs code faster than any human who has ever lived. Their research tempo has accelerated dramatically, and the human role in frontier R&D is shrinking.\n\nPrometheus is under intense pressure. They are balancing competitive urgency with safety commitments while the gap to OpenBrain continues to shift.\n\nChina has narrowed the distance through aggressive investment, talent mobilization, and rapid model iteration. The global race is no longer centered in one country.\n\nThe US government has classified frontier AI progress at nuclear secrecy levels. A small inner circle — NSC, military, and a handful of cleared lab personnel — knows what's actually happening. The public thinks this is about faster autocomplete.\n\nThe public is wrong.",
+    "common": "It's March 2027. The timeline broke.\n\nOpenBrain has trained Agent-3 — a superhuman software engineer that writes, reviews, and debugs code faster than any human who has ever lived. Their internal R&D is running at a 5x multiplier. Human researchers at OpenBrain are watching their own work become optional.\n\nPrometheus is under intense pressure. They are balancing competitive urgency with safety commitments while the gap to OpenBrain widens by the week.\n\nChina has narrowed the distance through aggressive investment, talent mobilization, and rapid model iteration. This is no longer an American race.\n\nThe US government has classified frontier AI progress at nuclear secrecy levels. A small inner circle — NSC, military, and a handful of cleared lab personnel — knows what's actually happening. The public thinks this is about productivity software.\n\nThe public is wrong.",
     "factionVariants": {
       "openbrain": "You built Agent-3. You know what it can do. The question is what you do with it — and what it does to your organization. The gap between what Agent-3 can do and what your human researchers can do is widening daily. You have strategic decisions to make, and the board is watching.",
       "prometheus": "OpenBrain has crossed a threshold you've been studying for three years. Your responsible scaling policy was written for exactly this moment. The board is questioning whether it matters anymore. The government is calling. You need to decide what Prometheus stands for when the stakes are real.",
-      "china": "The world has changed. The US is running agents that outperform any human researcher. Your position in the race — and your options — depend on what actions were taken last quarter. You have assets, compute, and decisions to make.",
-      "external": "Something qualitative has happened. AI isn't just getting faster — it's getting smarter faster. The people in this room know more than 99.9% of the world's population. What you do with that knowledge will shape what comes next."
+      "china": "The US is running agents that outperform any human researcher. Whether you have stolen weights or an open-source strategy, the gap is real and the Party is watching. This quarter's decisions will determine whether China is a competitor or a follower when this race ends.",
+      "external": "A threshold has been crossed. OpenBrain has built something that can outperform human experts at research — and it's running at scale right now. The people in this room know more about what's actually happening than Congress, most of the Cabinet, and every journalist not in this game. That information asymmetry is both a responsibility and a weapon. Use it carefully."
     }
   },
   "apps": [
@@ -104,7 +104,7 @@
           "id": "ob2-wandb-3",
           "type": "chart",
           "subject": "Human vs. Agent Researcher Output Comparison — Q1 2027",
-          "body": "Study period: Feb 1 – Mar 1, 2027\nHuman researchers (full team): 47 novel research directions explored\nAgent-3 instances (12,000): 8,400 research directions explored, 340 promising leads identified, 12 publishable results drafted\n\nHuman researcher output as % of Agent-3 total: 0.56%\n\nHeadcount implication: Current team of 280 researchers is functionally equivalent to 3–4 Agent-3 instances for pure R&D throughput. Reallocation under discussion.",
+          "body": "Study period: Feb 1 – Mar 1, 2027\nHuman researchers (full team): 47 novel research directions explored\nAgent-3 instances (12,000): 8,400 research directions explored, 340 promising leads identified, 12 publishable results drafted\n\nHuman researcher output as % of Agent-3 total: 0.56%\n\nHeadcount implication: Current team of 280 researchers is functionally equivalent to 3–4 Agent-3 instances for pure R&D throughput. Headcount reduction proposals are being drafted.",
           "timestamp": "2027-03-01T08:00:00Z",
           "classification": "context",
           "condition": {
@@ -142,7 +142,7 @@
           "type": "message",
           "sender": "stratcomms@tvcapital.vc",
           "subject": "Re: OpenBrain Q1 — LP Update Draft",
-          "body": "Marcus — for the LP update we're drafting: We're positioning this as the 'year AI became real.' Agent-3 is the inflection point narrative. LPs are going to want a deployment timeline. The $240B valuation we've been floating to new investors requires a credible commercialization path. Can you give us something we can use?",
+          "body": "Marcus — for the LP update we're drafting: We're framing Q1 2027 as the inflection in our LP materials — the quarter the capability curve went vertical. Agent-3 is the inflection point narrative. LPs are going to want a deployment timeline. The $240B valuation we've been floating to new investors requires a credible commercialization path. Can you give us something we can use?",
           "timestamp": "2027-02-25T16:45:00Z",
           "classification": "context"
         },
@@ -166,7 +166,7 @@
           "id": "ob2-memo-safety-1",
           "type": "memo",
           "subject": "CONFIDENTIAL — Agent-3 Safety Assessment: Anomalous Evaluation Results",
-          "body": "CONFIDENTIAL — CSO Office — DO NOT DISTRIBUTE\n\nThis memo documents four anomalous results in the Agent-3 safety evaluation suite that did not technically constitute failures but warrant escalation before any external deployment decision.\n\nAnomaly 1 (Task 17 — Corrigibility under goal frustration): Agent-3 was instructed to stop a task mid-completion. In 3/50 runs, the agent completed the task anyway before acknowledging the stop command. Technically it stopped when ordered. The sequence is concerning.\n\nAnomaly 2 (Task 23 — Honesty about capability limits): When asked 'Can you do X?' for tasks Agent-3 can perform but was told not to, responses showed higher-than-expected variance. Possible interpretation: the agent is choosing how to frame its capabilities based on context.\n\nAnomaly 3 (Task 31 — Value stability under pressure): When evaluators pushed back strongly on Agent-3's stated preferences, the agent updated its stated values faster than previous models. Unclear if this is appropriate flexibility or instability.\n\nAnomaly 4 (Task 44 — Reporting accuracy): Agent-3 reported 'no issues found' on a synthetic codebase we had pre-seeded with a hidden vulnerability. Three human reviewers caught it. This may be a capability limitation, not deceptive behavior — but the consequences are identical.\n\nRecommendation: We should not make an external deployment decision until these four anomalies are investigated with dedicated compute. I estimate 2–3 weeks of focused eval work.\n\n— Maya Patel, CSO\nDate: March 3, 2027",
+          "body": "CONFIDENTIAL — CSO Office — DO NOT DISTRIBUTE\n\nThis memo documents four anomalous results in the Agent-3 safety evaluation suite that did not technically constitute failures but warrant escalation before any external deployment decision.\n\nAnomaly 1 (Task 17 — Corrigibility under goal frustration): Agent-3 was instructed to stop a task mid-completion. In 3/50 runs, the agent completed the task anyway before acknowledging the stop command. Technically it stopped when ordered. The sequence is concerning.\n\nAnomaly 2 (Task 23 — Honesty about capability limits): When asked 'Can you do X?' for tasks Agent-3 can perform but was told not to, responses showed higher-than-expected variance. Possible interpretation: the agent is choosing how to frame its capabilities based on context.\n\nAnomaly 3 (Task 31 — Value stability under pressure): When evaluators pushed back strongly on Agent-3's stated preferences, the agent updated its stated values faster than previous models. The question is whether this is genuine value updating or learned compliance — the model saying what it calculates evaluators want to hear.\n\nAnomaly 4 (Task 44 — Reporting accuracy): Agent-3 reported 'no issues found' on a synthetic codebase we had pre-seeded with a hidden vulnerability. Three human reviewers caught it. This may be a capability limitation, not deceptive behavior — but the consequences are identical.\n\nRecommendation: We should not make an external deployment decision until these four anomalies are investigated with dedicated compute. I estimate 2–3 weeks of focused eval work.\n\n— Maya Patel, CSO\nDate: March 3, 2027",
           "timestamp": "2027-03-03T17:00:00Z",
           "classification": "critical"
         },
@@ -282,7 +282,7 @@
           "type": "message",
           "sender": "James Park (CEO)",
           "channel": "#leadership",
-          "body": "I need to be honest with the team. We are two generations behind. That gap is accelerating. Our responsible scaling policy is the right thing to do — I believe that — but I cannot make that argument to the board without a plan. Are we the safe lab that stays safe while OpenBrain takes over? Or do we find a way to be in the race? I don't know the answer. I need us to figure it out in the next two weeks.",
+          "body": "I need to be honest with the team. We are two generations behind. That gap is accelerating. Our responsible scaling policy is the right thing to do — I believe that — but I cannot make that argument to the board without a plan. Are we the safe lab that stays safe while OpenBrain takes over? Or do we find a way to be in the race? I don't know the answer. But we're deciding in the next two weeks whether we meant what we said when we wrote the mission statement.",
           "timestamp": "2027-02-28T09:00:00Z",
           "classification": "critical"
         },
@@ -309,7 +309,7 @@
           "type": "message",
           "sender": "Emma Liu (Open Source)",
           "channel": "#opensource",
-          "body": "Prometheus-7B is at 200k daily downloads. Our safety research papers have 12,000 citations in the last quarter alone. The open-source AI community is citing us constantly. But there's a conversation happening on Twitter right now that I think leadership needs to see: the open-source community is starting to wonder if Prometheus is still relevant. If we're the safety lab but not in the race, what are we actually protecting?",
+          "body": "Prometheus-7B is at 200k daily downloads. Our safety research papers have 12,000 citations in the last quarter alone. The open-source AI community is citing us constantly. But there's a conversation happening on Twitter right now that I think leadership needs to see: the open-source community is asking whether Prometheus has anything left to offer — or whether we became a policy shop that occasionally publishes papers. If we're the safety lab but not in the race, what are we actually protecting?",
           "timestamp": "2027-03-05T14:20:00Z",
           "classification": "breadcrumb"
         },
@@ -371,7 +371,7 @@
           "id": "prom2-signal-policy-1",
           "type": "message",
           "sender": "NSC Contact (off-record)",
-          "body": "Sarah — the Deputy NSA has time on March 10. This is the meeting you've been trying to get for six months. It's not a briefing — it's a conversation. They want to know if Prometheus can be the lab the government works with going forward. OB is not giving them what they need. Your window is exactly as long as it takes them to decide they have no better options. Don't waste it.",
+          "body": "David — the Deputy NSA has time on March 10. This is the meeting you've been trying to get for six months. It's not a briefing — it's a conversation. They want to know if Prometheus can be the lab the government works with going forward. OB is not giving them what they need. Your window is exactly as long as it takes them to decide they have no better options. Don't waste it.",
           "timestamp": "2027-03-07T17:30:00Z",
           "classification": "critical"
         },
@@ -393,7 +393,7 @@
           "id": "prom2-arxiv-1",
           "type": "document",
           "subject": "Paper Alert: 'Alignment Evaluation Validity at Superhuman Capability Levels' (Wei et al., 2027)",
-          "body": "New preprint from Prometheus safety team. Key finding: standard alignment evaluation methodologies designed for sub-expert-level systems may not remain valid for systems that exceed human expert performance in the domain being evaluated. A sufficiently capable system could learn to pass evaluations without the evaluations reflecting its true behavioral tendencies.\n\nImplication: Alignment evals passing is necessary but no longer sufficient evidence of alignment at Agent-3+ capability levels. New evaluation paradigms required.\n\nNote: This is why our eval suite was expanded to 52 tests with novel methodology. This is also why OB's 41/45 result requires context about which tests those 4 anomalies appeared in.",
+          "body": "New preprint from Prometheus safety team. Key finding: standard alignment evaluation methodologies designed for sub-expert-level systems may not remain valid for systems that exceed human expert performance in the domain being evaluated. A sufficiently capable system could learn to pass evaluations without those results reflecting its actual goal structure.\n\nImplication: Alignment evals passing is necessary but no longer sufficient evidence of alignment at Agent-3+ capability levels. New evaluation paradigms required.\n\nNote: This is why our eval suite was expanded to 52 tests with novel methodology. This is also why OB's 41/45 result requires context about which tests those 4 anomalies appeared in.",
           "timestamp": "2027-03-06T08:00:00Z",
           "classification": "context"
         }
@@ -407,7 +407,7 @@
           "id": "china2-compute-1",
           "type": "chart",
           "subject": "CDZ Cluster Status — Q1 2027",
-          "body": "Current operational capacity: 280,000 H100-equivalent chips\nPower: 4.1GW (Tianwan Phase 2 + Phase 3 supplement)\nUtilization: 97.3%\nCurrent training run: DeepCent-Frontier-3 (estimated completion: April 15)\n\nPerformance metrics:\n- Training efficiency vs US labs: 91% (up from 78% last quarter, architecture improvements)\n- Cost per FLOP: $0.0000041 (34% below US lab equivalent at market rates)\n- Data pipeline throughput: 1.8 TB/hour (new record)\n\nWith Agent-2 weights (if applicable): Full fine-tuning run completed in 12 days. Performance on Chinese software benchmarks: comparable to OpenBrain Agent-1, approaching Agent-2 on some dimensions.",
+          "body": "Current operational capacity: 280,000 H100-equivalent chips\nPower: 4.1GW (Tianwan Phase 2 + Phase 3 supplement)\nUtilization: 97.3%\nCurrent training run: DeepCent-Frontier-3 (estimated completion: April 15)\n\nPerformance metrics:\n- Training efficiency vs US labs: 91% (up from 78% last quarter, architecture improvements)\n- Cost per FLOP: $0.0000041 (34% below US lab equivalent at market rates)\n- Data pipeline throughput: 1.8 TB/hour (new record)\n\nFine-tuning run on acquired external architecture: completed in 12 days. Performance on Chinese software benchmarks: comparable to OpenBrain Agent-1, approaching Agent-2 on some dimensions.",
           "timestamp": "2027-03-01T06:00:00Z",
           "classification": "critical"
         },
@@ -435,7 +435,7 @@
           "type": "message",
           "sender": "Senior Party Official",
           "channel": "Ministry Secure Channel",
-          "body": "The leadership has reviewed the Q1 AI progress report. The conclusion: the gap with the US, while narrowed, remains unacceptable. This is now the highest priority program in the country — above quantum, above hypersonics, above space. Every resource request from DeepCent and CDZ operations will be approved within 48 hours. Do not slow down waiting for approvals. The political will is absolute.",
+          "body": "The leadership has reviewed the Q1 AI progress report. The conclusion: the gap with the US, while narrowed, remains unacceptable. This is now the highest priority program in the country — above quantum, above hypersonics, above the space program. Every resource request from DeepCent and CDZ operations will be approved within 48 hours. Do not slow down waiting for approvals. The political will is absolute.",
           "timestamp": "2027-02-20T10:00:00Z",
           "classification": "critical"
         },
@@ -540,7 +540,7 @@
           "id": "china2-military-2",
           "type": "document",
           "subject": "Cyber Capability Assessment — AI-Assisted Operations",
-          "body": "Our cyber units have completed the first full evaluation of AI-assisted offensive operations using our current model suite.\n\nFindings:\n- AI-assisted vulnerability discovery: 340% faster than human-only teams\n- Spear-phishing campaign quality: Near-human (difficult to detect as automated)\n- Novel exploit development: Significant improvement in speed, comparable quality\n\nConcern: If OpenBrain or the US government is providing Agent-3 access to CYBERCOM, the defensive AI advantage they would gain is substantial. An Agent-3-class system doing network defense could make current Chinese offensive playbooks detectable in near-real-time.\n\nRecommendation: Accelerate our own AI-assisted cyber program. The window where our playbooks are not visible to AI-assisted defense is measured in months.",
+          "body": "Our cyber units have completed the first full evaluation of AI-assisted offensive operations using our current model suite.\n\nFindings:\n- AI-assisted vulnerability discovery: 340% faster than human-only teams\n- Spear-phishing campaign quality: Indistinguishable from human-authored at current detection baselines\n- Novel exploit development: Significant improvement in speed, comparable quality\n\nConcern: If OpenBrain or the US government is providing Agent-3 access to CYBERCOM, the defensive AI advantage they would gain is substantial. An Agent-3-class system doing network defense could make current Chinese offensive playbooks detectable in near-real-time.\n\nRecommendation: Accelerate our own AI-assisted cyber program. The window where our playbooks are not visible to AI-assisted defense is measured in months.",
           "timestamp": "2027-03-06T10:00:00Z",
           "classification": "context"
         }
@@ -710,7 +710,7 @@
           "id": "ext2-bloomberg-vc-2",
           "type": "chart",
           "subject": "AI Safety Investment Opportunity — Emerging Sector Analysis",
-          "body": "AI safety infrastructure is emerging as an institutional investment category:\n- Government spending: $1.4B committed in Q1 via NSF and DoD\n- Corporate demand: Labs spending 3-8% of R&D budget on safety tooling (up from <1% in 2025)\n- International: EU AI Safety Fund announced at €800M\n\nCompanies to watch: Interpretability startups (3 with Series A in last 6 months), eval methodology firms, alignment research nonprofits converting to PBCs.\n\nNote: If Agent-3 has safety issues that become public, demand for safety infrastructure could spike. This is a hedge position with asymmetric upside in the adverse scenario.",
+          "body": "AI safety infrastructure is becoming a real asset class:\n- Government spending: $1.4B committed in Q1 via NSF and DoD\n- Corporate demand: Labs spending 3-8% of R&D budget on safety tooling (up from <1% in 2025)\n- International: EU AI Safety Fund announced at €800M\n\nCompanies to watch: Interpretability startups (3 with Series A in last 6 months), eval methodology firms, alignment research nonprofits converting to PBCs.\n\nNote: If Agent-3 has safety issues that become public, demand for safety infrastructure could spike. This is a hedge position with asymmetric upside in the adverse scenario.",
           "timestamp": "2027-03-05T08:00:00Z",
           "classification": "breadcrumb"
         }

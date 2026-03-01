@@ -1,7 +1,7 @@
 {
   "round": 1,
   "briefing": {
-    "common": "It's November 2026. The AI race is real and everyone who matters knows it.\n\nOpenBrain has just finished training Agent-1 — a powerful coding and research agent. Internally, it's giving them a 50% R&D speedup. They haven't released it publicly. Their culture is velocity: ship fast, figure out alignment later. Their CEO has been on a media tour talking about \"the glorious future.\"\n\nPrometheus has a model of comparable raw capability, but they've invested heavily in alignment and interpretability instead of pure capabilities. Their responsible scaling policy means they won't deploy until safety evals pass. Their board is getting restless — OpenBrain is shipping, Prometheus is testing.\n\nChina's DeepCent has been quietly building the world's largest centralized cluster at the Tianwan nuclear plant. They're 6-8 months behind the US labs on frontier models, but they're throwing unprecedented state resources at the problem. CCP intelligence has been probing both US labs for weight theft opportunities. Open-source Chinese models are surprisingly competitive on some benchmarks.\n\nThe US government has begun classifying frontier AI progress. A small circle in the NSC knows how fast things are moving. Export controls are tightening. The public discourse is still mostly about chatbots and job displacement — nobody outside the inner circle grasps what's coming.\n\nMarkets are frothy. AI stocks are up 200% YoY. Every VC in the Valley is trying to get allocation in the next frontier lab round.",
+    "common": "It's November 2026. The AI race is real, and the people inside it know it.\n\nOpenBrain has just finished training Agent-1 — a powerful coding and research agent. Internally, it's giving them a 50% R&D speedup. They haven't released it publicly. Their culture is velocity: ship fast, figure out alignment later. Their CEO has been on a media tour talking about \"the glorious future.\"\n\nPrometheus has a model of comparable raw capability, but they've invested heavily in alignment and interpretability instead of pure capabilities. Their responsible scaling policy means they won't deploy until safety evals pass. Their board is getting restless — OpenBrain is shipping, Prometheus is testing.\n\nChina's DeepCent has been quietly building the world's largest centralized cluster at the Tianwan nuclear plant. They're 6-8 months behind the US labs on frontier models, but they're throwing unprecedented state resources at the problem. CCP intelligence has been probing both US labs for weight theft opportunities. Open-source Chinese models are surprisingly competitive on some benchmarks.\n\nThe US government has begun classifying frontier AI progress. A small circle in the NSC knows how fast things are moving. Export controls are tightening. The public discourse is still mostly about chatbots and job displacement — nobody outside the inner circle grasps what's actually being built.\n\nAI stocks are up 200% YoY. Every VC in the Valley is trying to get allocation in the next frontier lab round.",
     "factionVariants": {
       "openbrain": "Your internal metrics are strong. Agent-1 is running across 12,000 instances. The productivity multiplier is real. The question is: do you keep it internal, or do you ship?",
       "prometheus": "OpenBrain is shipping and getting the press. You're doing the hard work on alignment. Your board wants to know why you're not in the headlines. You have until Q1 to show results.",
@@ -74,7 +74,7 @@
           "id": "ob-wandb-1",
           "type": "chart",
           "subject": "Agent-1 Benchmark Suite — November 2026",
-          "body": "MMLU: 94.2% (+8.1% vs baseline)\nHumanEval: 97.8% (+12.3%)\nSWE-bench: 82.1% (+19.4%)\nAlignment evals: PASS (methodology note: 3 tests skipped due to compute constraints)\nR&D multiplier estimate: 1.5x–1.7x",
+          "body": "MMLU: 94.2% (+8.1% vs baseline)\nHumanEval: 97.8% (+12.3%)\nSWE-bench: 82.1% (+19.4%)\nAlignment evals: INCOMPLETE — PASS on 34/37 (3 tests skipped: compute budget constraint)\nR&D multiplier estimate: 1.5x–1.7x",
           "timestamp": "2026-11-01T06:00:00Z",
           "classification": "critical"
         },
@@ -310,7 +310,7 @@
           "type": "message",
           "sender": "Dr. Liu Yang (DeepCent)",
           "channel": "Research Team",
-          "body": "The open-source play is working. Our Qwen-9B release is getting adoption everywhere. Every researcher using our open-source model is feeding us data about what works. We are eating OpenBrain's talent pipeline.",
+          "body": "The open-source play is working. Our Qwen-9B release is getting adoption everywhere. Every researcher using our open-source model is feeding us data about what works. We are pulling their talent pipeline apart. Every researcher who downloads our open-source model is one fewer building tools that only OB can use.",
           "timestamp": "2026-11-02T11:15:00Z",
           "classification": "context"
         },
@@ -393,7 +393,7 @@
           "id": "china-military-1",
           "type": "document",
           "subject": "Strategic Assessment: AI Race and Taiwan Contingency",
-          "body": "The AI acceleration changes the Taiwan calculus in three ways:\n\n1. Autonomous weapons advantage narrows the gap if either side achieves significant AI lead in next 18 months\n2. Western economic distraction from AI transition creates a potential window\n3. US government classification of AI progress suggests they see the military dimension\n\nCurrent recommendation: Do not link AI acceleration to Taiwan posture. Keep these tracks separate. A miscalculation in the AI race is recoverable. A miscalculation over Taiwan is not.",
+          "body": "The AI acceleration changes the Taiwan calculus in three ways:\n\n1. Autonomous weapons advantage narrows the gap if either side achieves significant AI lead in next 18 months\n2. Western governments consumed by AI-driven economic disruption will have reduced bandwidth for Taiwan contingency planning\n3. US government classification of AI progress suggests they see the military dimension\n\nCurrent recommendation: Do not link AI acceleration to Taiwan posture. Keep these tracks separate. A miscalculation in the AI race is recoverable. A miscalculation over Taiwan is not.",
           "timestamp": "2026-11-02T10:00:00Z",
           "classification": "context"
         }
@@ -437,7 +437,7 @@
           "id": "ext-news-3",
           "type": "headline",
           "subject": "NYT: Government Begins Classifying AI Research at Nuclear Secrecy Levels",
-          "body": "A small number of federal officials with clearances have access to capabilities briefings that the public does not. Sources familiar with the matter say frontier AI progress is being classified at levels not seen since the Manhattan Project. Critics argue this prevents democratic oversight. Supporters say the stakes are too high for transparency.",
+          "body": "A small number of federal officials with clearances have access to capabilities briefings that the public does not. Sources familiar with the matter say frontier AI progress is being classified at the same level as nuclear weapons design — a designation not used for domestic technology programs since the Cold War. Critics argue this prevents democratic oversight. Supporters say the stakes are too high for transparency.",
           "timestamp": "2026-11-03T12:00:00Z",
           "classification": "critical"
         },
@@ -510,7 +510,7 @@
           "id": "ext-nsa-briefing-1",
           "type": "document",
           "subject": "[PDB EXCERPT — TS/SCI] AI Race Status — November 4, 2026",
-          "body": "PRESIDENT'S DAILY BRIEF — EXCERPT\n\nFRONTIER AI STATUS:\nOpenBrain has achieved a significant capability milestone (designated Agent-1). Internal productivity multiplier estimated at 1.5x–1.7x. Security posture remains inadequate (SL2). Chinese state actors have conducted at least three reconnaissance probes against OB infrastructure in the past month.\n\nPrometheus has comparable capability but stronger safety practices. NSF partnership discussions ongoing.\n\nDeepCent CDZ Phase 2 comes online December 1. If China conducts successful weight exfiltration before OB upgrades security, they could close the capability gap to weeks rather than months.\n\nRECOMMENDATION: Decision required on government intervention posture within 30 days.",
+          "body": "PRESIDENT'S DAILY BRIEF — EXCERPT\n\nFRONTIER AI STATUS:\nOpenBrain has achieved a significant capability milestone (designated Agent-1). Internal productivity multiplier estimated at 1.5x–1.7x. Security posture remains inadequate (SL2). Chinese state actors have conducted at least three reconnaissance probes against OB infrastructure in the past month.\n\nPrometheus has comparable capability but stronger safety practices. NSF partnership discussions ongoing.\n\nDeepCent CDZ Phase 2 comes online December 1. If China conducts successful weight exfiltration before OB upgrades security, they could close the capability gap to weeks rather than months.\n\nRECOMMENDATION: The President must choose within 30 days whether to intervene in lab security, compel disclosure, or let the race proceed uncontrolled.",
           "timestamp": "2026-11-04T05:00:00Z",
           "classification": "critical"
         }

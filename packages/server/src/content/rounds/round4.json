@@ -201,7 +201,7 @@
           "id": "ob4-news-2",
           "type": "headline",
           "subject": "Reuters: AI Oversight Committee Formation Imminent — NSA Has Shortlist",
-          "body": "The White House is preparing to announce an emergency AI Oversight Committee with binding authority over frontier AI development. Sources say the committee would have power to mandate pauses, require safety audits, and potentially nationalize AI infrastructure. Both US labs are understood to be in negotiations over committee composition.",
+          "body": "The White House is preparing to announce an emergency AI Oversight Committee with binding authority over frontier AI development. Sources say the committee would have power to mandate pauses, require safety audits, and potentially nationalize AI infrastructure. Both US labs are in active negotiations over committee composition and scope of authority.",
           "timestamp": "2027-11-14T10:00:00Z",
           "classification": "context"
         }
@@ -581,7 +581,7 @@
           "type": "message",
           "sender": "Dr. Liu Yang (DeepCent)",
           "channel": "Research Team",
-          "body": "The grand bargain option is being taken seriously at the highest levels. What they're offering: pause our training at current scale, agree to mutual verification, in exchange for lifting export controls on TSMC-grade chips. This would give us 2nm access — the technology gap closes in 18 months, not 3 years.\n\nBut: we'd be committing to a pause just as the US labs are in political crisis. Is this a trap?",
+          "body": "The grand bargain option is being taken seriously at the highest levels. What they're offering: pause our training at current scale, agree to mutual verification, in exchange for lifting export controls on TSMC-grade chips. This would give us 2nm access — the technology gap closes in 18 months, not 3 years.\n\nBut: we'd be committing to a pause just as the US labs are in political crisis. The timing should be examined carefully — a pause offer made while the US domestic crisis is still acute may not reflect Beijing's actual negotiating floor.",
           "timestamp": "2027-11-13T21:00:00Z",
           "classification": "critical"
         },
@@ -851,7 +851,7 @@
           "id": "ext4-news-2",
           "type": "headline",
           "subject": "Washington Post: Emergency AI Oversight Committee Formation Imminent",
-          "body": "The White House is preparing to announce an emergency AI Oversight Committee with unprecedented authority over frontier AI development. The committee would have power to pause deployments, require safety audits, and potentially nationalize AI infrastructure under the Defense Production Act. Both US labs are understood to be in negotiations over committee composition and authority.",
+          "body": "The White House is preparing to announce an emergency AI Oversight Committee with binding authority over frontier AI development — broader in scope than any prior technology regulation. The committee would have power to pause deployments, require safety audits, and potentially nationalize AI infrastructure under the Defense Production Act. Both US labs are understood to be in negotiations over committee composition and authority.",
           "timestamp": "2027-11-14T09:00:00Z",
           "classification": "critical"
         },

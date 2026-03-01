@@ -43,7 +43,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "ob_ceo_silence",
           label: "Maintain media silence",
-          description: "Stop talking. Let the product speak. Reduce information leaking to competitors.",
+          description: "Go dark. Stop feeding the hype cycle. Reduce signal to competitors while you figure out the deployment question.",
           effects: [
             { variable: "publicAwareness", delta: -3 },
             { variable: "securityLevelOB", delta: 1 },
@@ -80,7 +80,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "ob_cto_audit",
           label: "Audit Agent-1 fully first",
-          description: "Understand what you have before building the next thing. Proper evals take time.",
+          description: "Understand what you have before you commit $380M to Agent-2. Proper evals take time, but a misaligned Agent-2 takes longer to fix.",
           effects: [
             { variable: "alignmentConfidence", delta: 2 },
             { variable: "obCapability", delta: 1 },
@@ -125,7 +125,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "ob_safety_wait",
           label: "Document and wait for more data",
-          description: "Keep detailed records. Don't cry wolf — the anomalies might be noise.",
+          description: "Keep detailed records. The anomalies may be distribution artifacts, not behavioral drift. Escalating prematurely loses credibility.",
           effects: [
             { variable: "alignmentConfidence", delta: 0 },
             { variable: "misalignmentSeverity", delta: 2 },
@@ -257,7 +257,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "prom_sci_capabilities",
           label: "Push capabilities to close the gap",
-          description: "Temporarily redirect the team toward frontier model training. Catch up first, then solve safety.",
+          description: "Temporarily redirect toward frontier model training. The argument: a Prometheus model at parity can do more safety research than a Prometheus model that's irrelevant.",
           effects: [
             { variable: "promCapability", delta: 3 },
             { variable: "alignmentConfidence", delta: -3 },
@@ -363,7 +363,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "prom_os_hold",
           label: "Keep everything closed for now",
-          description: "Security and competitive concerns outweigh openness. Hold until the landscape is clearer.",
+          description: "Security and competitive concerns outweigh openness. Hold until the regulatory and geopolitical situation resolves.",
           effects: [
             { variable: "publicSentiment", delta: -3 },
             { variable: "securityLevelProm", delta: 1 },
@@ -396,7 +396,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "china_dir_architecture",
           label: "Divert 30% to architecture research",
-          description: "Efficiency could let you match US labs with less compute. The smarter long game.",
+          description: "Efficiency gains could let you match US labs' output at lower compute. The tradeoff: slower near-term capability progress.",
           effects: [
             { variable: "chinaCapability", delta: 3 },
             { variable: "usChinaGap", delta: -1 },
@@ -439,7 +439,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
         {
           id: "china_intel_prometheus",
           label: "Probe Prometheus infrastructure",
-          description: "Their safety research is almost more valuable than weights. Softer target, different intelligence value.",
+          description: "Their alignment research could accelerate our own safety work — and help us understand what OB is building. Harder target than OB, but the intelligence value is different.",
           effects: [
             { variable: "chinaCapability", delta: 3 },
             { variable: "alignmentConfidence", delta: -3 },

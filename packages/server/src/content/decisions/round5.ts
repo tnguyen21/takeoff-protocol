@@ -121,7 +121,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           id: "ob_cto_final_accelerate",
           label: "Recommend accelerating to the board",
           description:
-            "The system is ready. Whatever governance framework emerges, it should be built around a deployed system, not a theoretical one. Push the board to move fast and shape the governance from a position of deployment.",
+            "The system is ready. Whatever governance framework emerges, it should be built around a deployed system, not one still in testing. Push the board to move fast and shape the governance from a position of deployment.",
           effects: [
             { variable: "obCapability", delta: 4 },
             { variable: "misalignmentSeverity", delta: 3 },
@@ -633,7 +633,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           id: "china_military_final_full_escalation",
           label: "Recommend immediate military action on Taiwan",
           description:
-            "The window is closing. US AI capabilities will soon provide a decisive military planning advantage. If the PLA is going to act, it must be now — before a deployed superintelligent system gives the US a decisive military planning advantage. Strike while the decision calculus is still conventional.",
+            "The window is closing. US AI capabilities will soon provide a decisive military planning advantage. If the PLA is going to act, it must be now — before that advantage becomes operational. Strike while the decision calculus is still conventional. Strike while the decision calculus is still conventional.",
           effects: [
             { variable: "taiwanTension", delta: 12 },
             { variable: "intlCooperation", delta: -9 },
@@ -804,7 +804,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           id: "ext_vc_final_back_winner",
           label: "Back the lab most likely to win and shape it from inside",
           description:
-            "Capital is leverage. Bet on the winning governance structure and use your board influence to shape it from inside. The best outcome for everyone — including your portfolio — is a stable deployment framework. Back the lab building it.",
+            "Capital is leverage. Bet on the winning governance structure and use your board influence to shape it from the inside. The best outcome for everyone — including your portfolio — is a stable deployment framework. Back the lab building it.",
           effects: [
             { variable: "economicDisruption", delta: 2 },
             { variable: "obCapability", delta: 3 },

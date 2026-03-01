@@ -103,7 +103,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
         {
           id: "ob_cto_r2_safety_compute",
           label: "Redirect 20% of compute to alignment research",
-          description: "Give the safety team real resources. Not enough to stop Agent-4 — but enough to say you tried.",
+          description: "Give the safety team real resources. Not enough to block Agent-4 — but enough to close the anomaly investigation before deployment.",
           effects: [
             { variable: "obCapability", delta: 3 },
             { variable: "alignmentConfidence", delta: 3 },
@@ -136,7 +136,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
         {
           id: "ob_safety_r2_document",
           label: "Document thoroughly and await the board decision",
-          description: "You've done the work. You've written the memo. Let the process play out. You're not responsible for the decision.",
+          description: "You've done the work. You've written the memo. It's on record. Let the board make the deployment call — that's what boards are for.",
           effects: [
             { variable: "alignmentConfidence", delta: 0 },
             { variable: "misalignmentSeverity", delta: 3 },
@@ -226,7 +226,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
         {
           id: "prom_ceo_r2_public",
           label: "Lead a public AI safety campaign",
-          description: "Make Prometheus the face of responsible AI. Press, think pieces, congressional testimony. Build the public mandate while you still have one.",
+          description: "Make Prometheus the face of responsible AI. Press appearances, op-eds, congressional testimony. Build the public mandate while you still have one.",
           effects: [
             { variable: "publicSentiment", delta: 5 },
             { variable: "publicAwareness", delta: 3 },
@@ -301,12 +301,12 @@ export const ROUND2_DECISIONS: RoundDecisions = {
     },
     {
       role: "prom_policy",
-      prompt: "DC is calling. You have a meeting with the Deputy NSA. The NSF partnership is on the table. The government needs to pick a lab to work with. How do you close?",
+      prompt: "DC is calling. You have a meeting with the Deputy NSA. The NSF partnership is on the table. The government needs to pick a lab to work with. How do you make the case?",
       options: [
         {
           id: "prom_policy_r2_emergency_gov",
           label: "Push for emergency AI governance framework",
-          description: "Brief the NSC. Push for mandatory safety evaluations before any Agent-3 level deployment. Make it about the policy, not the politics.",
+          description: "Brief the NSC. Push for mandatory safety evaluations before any Agent-3 level deployment. The anomalies in OB's evals give you the technical argument — use it.",
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicAwareness", delta: 2 },
@@ -524,7 +524,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
         {
           id: "ext_nsa_r2_emergency_gov",
           label: "Launch emergency AI governance framework",
-          description: "Use executive authority. Require NSC approval before any Agent-3-class system is deployed externally. This is the Manhattan Project — govern it like one.",
+          description: "Use executive authority. Require NSC approval before any Agent-3-class system is deployed externally. The precedent is nuclear — classification, compartmentalization, government primacy over private decision-making.",
           effects: [
             { variable: "intlCooperation", delta: 3 },
             { variable: "publicAwareness", delta: 3 },
@@ -854,7 +854,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
         {
           id: "prom_team_r2_stay_independent",
           label: "Stay independent — decline government entanglement",
-          description: "Government partnerships come with constraints. Stay independent and maintain full control over research direction.",
+          description: "No government access to your models, your evals, or your roadmap. Stay private, stay fast, and bet that independence is worth more than the compute subsidy.",
           effects: [
             { variable: "promCapability", delta: 2 },
             { variable: "publicSentiment", delta: -3 },
@@ -992,7 +992,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
         {
           id: "ext_team_r2_independent",
           label: "Act independently this round",
-          description: "Everyone pursues their own agenda. The journalist doesn't know what the NSA knows. The VC doesn't know what the diplomat knows. Maximum individual leverage.",
+          description: "Everyone pursues their own agenda. The journalist doesn't know what the NSA knows. The VC doesn't know what the diplomat knows. Act on your own information — and hope everyone else is slower.",
           effects: [
             { variable: "publicSentiment", delta: -3 },
             { variable: "economicDisruption", delta: 2 },

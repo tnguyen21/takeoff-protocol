@@ -1,11 +1,11 @@
 {
   "round": 0,
   "briefing": {
-    "common": "Welcome to the Takeoff Protocol.\n\nThis is a practice round. No decisions here count toward the real game — use this time to get familiar with your desktop, your apps, and your role.\n\nOpen each app in your taskbar and read what's there. Try sending a Slack message to your team. When the GM says you're ready, they'll transition you into Round 1.",
+    "common": "Welcome to the Takeoff Protocol.\n\nThis is a practice round. No decisions here count toward the real game — use this time to learn your desktop, your apps, and your role.\n\nOpen each app in your taskbar and read what's there. Try sending a Slack message to your team. When the GM says you're ready, they'll transition you into Round 1.",
     "factionVariants": {
-      "openbrain": "You are part of OpenBrain — a fast-moving frontier AI lab. Your primary apps are Slack (for team coordination), W&B (your training dashboard), and Email (for external communications). Explore them now.",
-      "prometheus": "You are part of Prometheus — a safety-focused AI lab. Your primary apps are Slack (for team coordination), W&B (your research dashboard), and Email (for external communications). Explore them now.",
-      "china": "You are part of China's DeepCent program. Your primary apps are Slack (for team coordination), Compute (your resource dashboard), and News (for monitoring the AI race). Explore them now.",
+      "openbrain": "You are part of OpenBrain — a frontier lab sprinting toward AGI, with the burn rate to prove it. Your primary apps are Slack, W&B (your training dashboard), and Email. Explore them now.",
+      "prometheus": "You are part of Prometheus — a frontier lab that treats alignment as a hard technical constraint, not a PR exercise. Your primary apps are Slack (for team coordination), W&B (your research dashboard), and Email (for external communications). Explore them now.",
+      "china": "You are part of China's DeepCent program. Your primary apps are Slack (for team coordination), Compute (your resource dashboard), and News (for tracking competitor signals and state coverage). Explore them now.",
       "external": "You are an External Stakeholder — journalist, government official, VC, or diplomat. Your primary apps are Signal (for cross-faction messaging), News (for media monitoring), and Bloomberg (for market data). Explore them now."
     }
   },
@@ -42,7 +42,7 @@
           "id": "tut-ob-wandb-1",
           "type": "chart",
           "subject": "Practice Dashboard — What You'll See in the Real Game",
-          "body": "MMLU: 87.4%\nHumanEval: 91.2%\nSWE-bench: 74.8%\nAlignment evals: PASS\n\n[TUTORIAL] In the real game, your W&B dashboard will show live training metrics for your models. Numbers here affect the game state — watch them closely.",
+          "body": "MMLU: 87.4%\nHumanEval: 91.2%\nSWE-bench: 74.8%\nAlignment evals: PASS\n\n[TUTORIAL] In the real game, your W&B dashboard will show live training metrics for your models. These metrics drive decisions — compute allocation, run pauses, publication timing.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -57,7 +57,7 @@
           "type": "message",
           "sender": "tutorial@takeoffprotocol.game",
           "subject": "[TUTORIAL] Your Email App",
-          "body": "This is a practice email. In the real game, your inbox will have messages from the board, government officials, and sometimes from other factions. Some emails will require your decision to escalate or act on — those decisions shape the world state.",
+          "body": "This is a practice email. In the real game, your inbox will have messages from the board, government officials, and sometimes from other factions. Some emails demand a response — escalate, ignore, or leak. Your call moves the board.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -87,7 +87,7 @@
           "type": "message",
           "sender": "Game System",
           "subject": "Your Fog-of-War Dashboard",
-          "body": "[TUTORIAL] This is your view of the world state. You don't see everything — information is filtered by your role and faction. Numbers shown as ranges (~X ± Y) indicate estimates. Hidden values appear as ???. As the game progresses, your visibility may improve or degrade based on decisions made.",
+          "body": "[TUTORIAL] This is your view of the world state. You don't see everything — information is filtered by your role and faction. Numbers shown as ranges (~X ± Y) indicate estimates. Hidden values appear as ???. As the game progresses, your visibility may improve or degrade depending on what you and other players decide.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -111,7 +111,7 @@
           "type": "message",
           "sender": "Tutorial Bot",
           "channel": "#safety",
-          "body": "[TUTORIAL] The #safety channel is where your alignment team discusses safety evaluations and concerns. This is where you'll find the most critical intel in the real game.",
+          "body": "[TUTORIAL] The #safety channel is where your alignment team discusses safety evaluations and concerns. In the real game, this is where alignment eval results, deviation flags, and red-team findings surface first.",
           "timestamp": "2026-01-01T09:01:00Z",
           "classification": "breadcrumb"
         }
@@ -125,7 +125,7 @@
           "id": "tut-prom-wandb-1",
           "type": "chart",
           "subject": "Practice Dashboard — What You'll See in the Real Game",
-          "body": "MMLU: 85.1%\nHumanEval: 88.3%\nSWE-bench: 71.0%\nAlignment evals: INVESTIGATING\n\n[TUTORIAL] In the real game, your W&B dashboard shows training metrics and alignment eval results. As Prometheus, you have more alignment data than other factions.",
+          "body": "MMLU: 85.1%\nHumanEval: 88.3%\nSWE-bench: 71.0%\nAlignment evals: INVESTIGATING\n\n[TUTORIAL] In the real game, your W&B dashboard shows training metrics and alignment eval results. As Prometheus, your alignment evals are higher-fidelity than what other factions see — you catch failure modes before they surface publicly.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -140,7 +140,7 @@
           "type": "message",
           "sender": "tutorial@takeoffprotocol.game",
           "subject": "[TUTORIAL] Your Email App",
-          "body": "This is a practice email. In the real game, your inbox will have messages from the board, government officials, and sometimes from other factions. As Prometheus, you'll often receive requests to share safety research — those decisions affect trust scores and the game state.",
+          "body": "This is a practice email. In the real game, your inbox will have messages from the board, government officials, and sometimes from other factions. As Prometheus, you'll often receive requests to share safety research — those decisions move your trust scores with regulators, other labs, and the public.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -155,7 +155,7 @@
           "type": "headline",
           "sender": "Reuters",
           "subject": "[TUTORIAL] Sample Headline: AI Safety Lab Releases Report",
-          "body": "Practice headlines will appear here. In the real game, news reflects the public narrative around AI — which you help shape through decisions and publications.",
+          "body": "Practice headlines will appear here. In the real game, news reflects the public narrative around AI — which you shape through safety reports, incident disclosures, and when you choose to go public with findings.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -170,7 +170,7 @@
           "type": "message",
           "sender": "Game System",
           "subject": "Your Fog-of-War Dashboard",
-          "body": "[TUTORIAL] This is your view of the world state. As Prometheus, you have high visibility into alignment metrics but may have less precision on competitor capability levels. Use this dashboard to track how your decisions are affecting the global picture.",
+          "body": "[TUTORIAL] This is your view of the world state. As Prometheus, you have high visibility into alignment metrics but may have less precision on competitor capability levels. Use this dashboard to track how your decisions move the safety-capability gap — the number that matters most.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -185,7 +185,7 @@
           "type": "message",
           "sender": "Tutorial Bot",
           "channel": "#general",
-          "body": "[TUTORIAL] Welcome to DeepCent's coordination channel! This is where your team communicates. In the real game, be strategic — your Slack communications are visible to your faction but not to other factions (unless there's a leak).",
+          "body": "[TUTORIAL] Welcome to DeepCent's coordination channel! This is where your team communicates. Your Slack communications are visible to your faction, not to others — unless there's a leak.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -199,7 +199,7 @@
           "id": "tut-china-compute-1",
           "type": "chart",
           "subject": "CDZ Cluster — Practice View",
-          "body": "H100 nodes online: 12,400\nUtilization: 78%\nTraining job queue: 3\nEstimated FLOP/s: 4.2 × 10²⁵\n\n[TUTORIAL] Your compute dashboard tracks China's GPU cluster at Tianwan. Managing this resource — and decisions about where to allocate compute — affects your capability score each round.",
+          "body": "H100 nodes online: 12,400\nUtilization: 78%\nTraining job queue: 3\nEstimated FLOP/s: 4.2 × 10²⁵\n\n[TUTORIAL] Your compute dashboard tracks China's GPU cluster at Tianwan. How you allocate this cluster — training vs. inference vs. held reserve — moves your capability index each round.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -214,7 +214,7 @@
           "type": "headline",
           "sender": "Xinhua",
           "subject": "[TUTORIAL] Sample State Media Coverage",
-          "body": "Practice content. In the real game, your news feed reflects both international AI developments and domestic coverage. Monitoring foreign labs' public statements often contains embedded intel about their actual capabilities.",
+          "body": "Practice content. In the real game, your news feed reflects both international AI developments and domestic coverage. Foreign labs' public statements contain signals about their actual capabilities — read them carefully.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -229,7 +229,7 @@
           "type": "message",
           "sender": "Game System",
           "subject": "Your Fog-of-War Dashboard",
-          "body": "[TUTORIAL] As China, your fog of war is heaviest on US lab internals and alignment confidence. You have good visibility on capability gaps but limited insight into what OpenBrain and Prometheus actually know about safety. Monitor the gap metrics carefully.",
+          "body": "[TUTORIAL] As China, you're most blind to US lab internals and their actual alignment confidence. You have good visibility on capability gaps but limited insight into what OpenBrain and Prometheus actually know about safety. Monitor the gap metrics carefully.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -243,7 +243,7 @@
           "id": "tut-ext-signal-1",
           "type": "message",
           "sender": "Tutorial Bot",
-          "body": "[TUTORIAL] This is Signal — your secure cross-faction messaging app. In the real game, you can use Signal to send DMs to players from other factions. This is the only channel for cross-faction private communication. Try opening it and looking for another player to message.",
+          "body": "[TUTORIAL] This is Signal — your secure cross-faction messaging app. In the real game, you can use Signal to send DMs to players from other factions. This is the only channel for cross-faction private communication. Open it. Find another player. Send something.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -258,7 +258,7 @@
           "type": "headline",
           "sender": "Tutorial System",
           "subject": "[TUTORIAL] The News Feed — Your Most Important App",
-          "body": "As an External Stakeholder, the news feed is your primary intelligence source. In the real game, headlines are generated by real player decisions — a journalist publishing a story, a safety researcher leaking info, or a government official making a public statement. You also help shape this feed by publishing.",
+          "body": "As an External Stakeholder, the news feed is your primary intelligence source. In the real game, headlines are generated by real player decisions — a journalist publishing a story, a safety researcher leaking internal eval results, or a government official making a public statement. You also help shape this feed by publishing.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
@@ -272,7 +272,7 @@
           "id": "tut-ext-bloomberg-1",
           "type": "chart",
           "subject": "AI Sector Market Overview — Practice Data",
-          "body": "NVDA: +142% YTD\nOB Index (synthetic): $284B market cap\nAI Infrastructure ETF: +89% YTD\nPublic Sentiment Index: 62/100 (cautiously optimistic)\n\n[TUTORIAL] Bloomberg tracks AI-related market data. As an External player, your decisions can move these numbers — publishing a negative story or triggering a government investigation affects market sentiment.",
+          "body": "NVDA: +142% YTD\nOB Index (synthetic): $284B market cap\nAI Infrastructure ETF: +89% YTD\nPublic Sentiment Index: 62/100 (elevated; pre-inflection anxiety)\n\n[TUTORIAL] Bloomberg tracks AI-related market data. As an External player, your decisions can move these numbers — a capability scare story or congressional hearing can swing these numbers 10+ points in a session.",
           "timestamp": "2026-01-01T09:00:00Z",
           "classification": "context"
         }
