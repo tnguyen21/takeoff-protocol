@@ -53,3 +53,19 @@ cd packages/server && bun test
 2. Share the room code with other players
 3. Players join at the same URL using the room code
 4. GM clicks **Start Game** once everyone has joined
+
+## LAN Hosting (Beta Playtests)
+
+To host for players on the same wifi network:
+
+```sh
+bun run dev --host
+```
+
+This binds Vite to `0.0.0.0` so other machines can connect. Find your local IP:
+
+```sh
+ipconfig getifaddr en0
+```
+
+Share `http://<your-ip>:5173` with players. Socket connections proxy through Vite to the game server automatically.
