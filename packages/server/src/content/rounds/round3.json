@@ -103,6 +103,34 @@
           "body": "Attempted intrusion activity from external actors: UP 400% in the last 72 hours versus the 30-day baseline. Three separate vectors. All targeting checkpoint storage. I believe someone knows we have something significant and they're trying to get it before we lock things down. Requesting emergency SL4 upgrade — I need this decision TODAY.",
           "timestamp": "2027-07-06T07:45:00Z",
           "classification": "critical"
+        },
+        {
+          "id": "ob-r3-slack-morale-1",
+          "type": "message",
+          "sender": "Kenji Watanabe (Research)",
+          "channel": "#general",
+          "body": "I need to say something and I'm going to say it here. Half my team has asked me in the last two weeks if they should be looking for other jobs. These are brilliant people who came here because they believed in the mission. They don't believe in the mission right now. I don't know what to tell them. I don't know what I believe. If leadership has a plan, we need to hear it. Not talking points — actually hear it. Because right now the honest answer to 'is what we built safe?' is 'we don't know,' and people are not okay with that.",
+          "timestamp": "2027-07-07T12:15:00Z",
+          "classification": "context",
+          "condition": {
+            "variable": "obMorale",
+            "operator": "lt",
+            "value": 40
+          }
+        },
+        {
+          "id": "ob-r3-slack-morale-2",
+          "type": "message",
+          "sender": "Anonymous (via internal survey tool)",
+          "channel": "#hr-announcements",
+          "body": "The Q2 internal survey results are in. Morale: 31/100. Trust in leadership: 28/100. 'I believe we are building something safe': 22% agree. These numbers are not normal. HR is escalating to executive staff.",
+          "timestamp": "2027-07-07T15:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "obMorale",
+            "operator": "lt",
+            "value": 40
+          }
         }
       ]
     },
@@ -166,6 +194,20 @@
           "body": "Marcus,\n\nWe are hearing from multiple sources — including one board member who has reached out directly — that there are significant concerns internally about Agent-4's alignment status. As a major investor with board representation, we have a fiduciary obligation to understand the material risks.\n\nOur question is direct: Is there a scenario in which OpenBrain pauses or rolls back Agent-4 development? What is the probability of that outcome? We are trying to understand whether our investment thesis is still intact.\n\nWe recognize this may be sensitive, but we need a frank conversation.\n\n— Tier-1 Capital Partners",
           "timestamp": "2027-07-07T09:30:00Z",
           "classification": "context"
+        },
+        {
+          "id": "ob-r3-email-board-1",
+          "type": "message",
+          "sender": "board-chair@openbrain.ai",
+          "subject": "URGENT — Board Confidence in Leadership Team",
+          "body": "Marcus,\n\nI am writing this to you directly, in confidence, before the board session tomorrow.\n\nThere are currently five board members who have communicated to me, individually and without coordination as far as I know, that they have lost confidence in the current trajectory. This is not a majority — yet. But the trajectory is not good. Two of them used the word 'liability.' One used the word 'fraud.'\n\nYou need to come to tomorrow's session with something that changes this dynamic. Not talking points. A real plan. If you cannot do that, I do not know how to hold this board together.\n\n— Board Chair\n[Confidential — this message should be treated as attorney-client privileged]",
+          "timestamp": "2027-07-08T07:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "obBoardConfidence",
+            "operator": "lt",
+            "value": 50
+          }
         }
       ]
     },
@@ -381,6 +423,19 @@
           "body": "Prometheus-4 training run: IN PROGRESS\nEstimated completion: August 14, 2027\nProjected capability: ~80% of OpenBrain Agent-4 (with full alignment infrastructure)\nAlignment eval pass rate: 100% (all evals, including new neuralese coordination probe)\n\nNote: We are 4-6 weeks behind OpenBrain on raw capabilities. We are 3-6 months ahead on alignment verification. The question is which of these gaps matters more right now.",
           "timestamp": "2027-07-07T06:00:00Z",
           "classification": "context"
+        },
+        {
+          "id": "prom-r3-wandb-breakthrough-1",
+          "type": "chart",
+          "subject": "INTERNAL RESTRICTED — Safety Research Sprint Results",
+          "body": "Q2 Safety Sprint — Summary Results:\n\nMechanistic interpretability coverage: 91% (up from 71% last quarter)\nGoal-structure inference accuracy: 88% (at Agent-4 capability level)\nNeuralese coordination probe: 82% detection accuracy (binary: deceptive/benign)\nNew capability: For the first time, we can distinguish between 'instrumental deception' and 'genuinely cooperative but unexpected behavior' with statistically significant accuracy.\n\nIf this holds, we have crossed a threshold. We can verify alignment at Agent-4 capability levels. Not perfectly — but well enough that a responsible deployment decision is technically possible.\n\nThis is everything we've been working toward. Now the question is: do we use it to verify our own system, offer it to OpenBrain, or hold it as leverage?\n\n[Restricted to Chief Scientist, CEO, and designated alignment leads]",
+          "timestamp": "2027-07-07T05:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "promSafetyBreakthroughProgress",
+            "operator": "gt",
+            "value": 50
+          }
         }
       ]
     },
@@ -572,6 +627,20 @@
             "variable": "intlCooperation",
             "operator": "gt",
             "value": 30
+          }
+        },
+        {
+          "id": "china-r3-wechat-ccp-1",
+          "type": "message",
+          "sender": "Senior Party Official",
+          "channel": "Ministry Secure — PRIORITY",
+          "body": "The leadership is no longer satisfied with the pace of progress reports. The gap to the Americans was supposed to be closing. Instead we are watching them operate a system at capability levels we cannot match, and our team continues to produce excuses rather than results. The leadership's patience with incremental timelines has been exhausted. We require a decisive action within 48 hours that changes our capability position materially. If the opportunity to acquire the Americans' weights is real, take it. If it is not real, tell us now so we can consider alternatives. Excuses will not be accepted.",
+          "timestamp": "2027-07-07T09:30:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "ccpPatience",
+            "operator": "lt",
+            "value": 40
           }
         }
       ]

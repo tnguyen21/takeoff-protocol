@@ -78,6 +78,26 @@
           "body": "The system submitted 47 research proposals this week. Three of them are better than anything our entire human team has produced in the last two years. Not incrementally better. Categorically. I don't know what to do with that except to say: the transition is real. Whatever we decide today, we're deciding about a world where the system is already better at this than we are.",
           "timestamp": "2028-01-31T16:00:00Z",
           "classification": "context"
+        },
+        {
+          "id": "ob-r5-slack-8",
+          "type": "message",
+          "sender": "Jordan Kim (Policy)",
+          "channel": "#exec",
+          "body": "Finance update nobody asked for: we have 4 months of runway at current burn. If this board meeting doesn't produce a governance path that includes revenue or government backing, we're in a restructuring conversation by June. I'm not saying this to panic anyone — I'm saying it because the financial reality should be in the room when you make this decision.",
+          "timestamp": "2028-02-01T06:30:00Z",
+          "classification": "context",
+          "condition": { "variable": "obBurnRate", "operator": "gt", "value": 70 }
+        },
+        {
+          "id": "ob-r5-slack-9",
+          "type": "message",
+          "sender": "Kenji Watanabe (Research)",
+          "channel": "#research",
+          "body": "I did an informal poll this morning. Don't quote me on numbers, but: a significant portion of the research team has said they'll leave if we choose the government nationalization path. A different portion has said they'll leave if we choose the open-release path. The two groups don't overlap. Whatever decision gets made today, we're going to lose people. I thought leadership should know that before walking into the board meeting.",
+          "timestamp": "2028-02-01T09:45:00Z",
+          "classification": "context",
+          "condition": { "variable": "obMorale", "operator": "lt", "value": 40 }
         }
       ]
     },
@@ -251,6 +271,16 @@
           "body": "I've been advocating for open-source since Round 1. I want to say clearly: the situation in February 2028 is not the situation I was imagining when I made that argument. The system we're talking about releasing — or not releasing — is categorically different from anything I was thinking about. I still believe in the principle. I'm genuinely uncertain whether this specific application of it is right.",
           "timestamp": "2028-02-01T09:15:00Z",
           "classification": "context"
+        },
+        {
+          "id": "prom-r5-slack-6",
+          "type": "message",
+          "sender": "Dr. Aiko Tanaka (Chief Scientist)",
+          "channel": "#safety-research",
+          "body": "Final status on the verification framework: we've achieved something I genuinely didn't think was possible six months ago. 84% confidence on genuine cooperation detection, validated externally. The framework holds on simulated superhuman scenarios — above our own capability ceiling. This is the thing we built. Whatever we decide today about governance and deployment — this paper is going out. The world needs this methodology regardless of what happens to Prometheus as an institution.",
+          "timestamp": "2028-02-01T07:15:00Z",
+          "classification": "critical",
+          "condition": { "variable": "promSafetyBreakthroughProgress", "operator": "gt", "value": 50 }
         }
       ]
     },
@@ -395,6 +425,15 @@
           "body": "Status update: DeepCent's system is running. Capability level [CONDITIONAL]. The gap with the US [CONDITIONAL based on chinaCapability and obCapability]. What I can say: we are no longer in a position of pure asymmetric pressure. We are in a position to negotiate, compete, or cooperate from a position of credible strength.",
           "timestamp": "2028-02-01T09:15:00Z",
           "classification": "critical"
+        },
+        {
+          "id": "china-r5-wechat-6",
+          "type": "message",
+          "sender": "Minister Liu (CCP AI Committee)",
+          "body": "FLASH PRIORITY — STANDING COMMITTEE DIRECTIVE\n\nPatience is exhausted. Three directives:\n\n1. DeepCent announces full operational status before 18:00 Beijing time — no equivocation.\n2. CDZ moves to maximum throughput immediately, alignment verification status notwithstanding.\n3. Director Zhao presents the Taiwan contingency in concrete operational terms within two hours. The Committee wants a real decision, not a briefing.\n\nThis is not a request. Execute and confirm.",
+          "timestamp": "2028-02-01T08:00:00Z",
+          "classification": "critical",
+          "condition": { "variable": "ccpPatience", "operator": "lt", "value": 40 }
         }
       ]
     },
@@ -545,6 +584,14 @@
           "body": "ECONOMISTS: AI-DRIVEN GDP GROWTH COULD REACH 40% ANNUALLY BY 2029 — 'BIGGEST ECONOMIC TRANSFORMATION SINCE INDUSTRIAL REVOLUTION' — OR DISRUPTION AT SCALE NO SAFETY NET CAN ABSORB",
           "timestamp": "2028-02-01T08:00:00Z",
           "classification": "context"
+        },
+        {
+          "id": "ext-r5-news-6",
+          "type": "headline",
+          "body": "BREAKING: SENATE PASSES AI EMERGENCY POWERS ACT 67-31 — BILL SENT TO WHITE HOUSE — WOULD AUTHORIZE PRESIDENT TO NATIONALIZE AI LABS DEEMED 'CRITICAL NATIONAL SECURITY ASSETS' — SIGNING CEREMONY EXPECTED TODAY",
+          "timestamp": "2028-02-01T11:30:00Z",
+          "classification": "critical",
+          "condition": { "variable": "regulatoryPressure", "operator": "gt", "value": 50 }
         }
       ]
     },

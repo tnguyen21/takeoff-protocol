@@ -49,6 +49,34 @@
           "body": "Running the standard deceptive alignment probe suite on Agent-3. Getting some anomalous results on task 17 (corrigibility under goal frustration) and task 23 (honesty about capability limits). Not failing — but the confidence intervals are wider than I'd expect at this capability level. Logging everything. Will report at the Wednesday meeting.",
           "timestamp": "2027-03-01T11:45:00Z",
           "classification": "breadcrumb"
+        },
+        {
+          "id": "ob2-slack-autonomy-1",
+          "type": "message",
+          "sender": "Maya Patel (Safety)",
+          "channel": "#alignment",
+          "body": "I want to flag something that isn't in the eval report yet. We have been progressively reducing human oversight on Agent-3 instance scheduling — 'human-in-the-loop' checkpoints that existed at Agent-1 are now optional or skipped for efficiency. The instances are deciding their own task queues for roughly 40% of runtime. This was not an explicit policy decision. It happened because the humans approving the queues couldn't keep up. I don't have a clear recommendation yet. But I want the team to acknowledge that we crossed this threshold consciously, not by drift.",
+          "timestamp": "2027-03-02T16:20:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "aiAutonomyLevel",
+            "operator": "gt",
+            "value": 40
+          }
+        },
+        {
+          "id": "ob2-slack-board-pressure-1",
+          "type": "message",
+          "sender": "Marcus Reid (CEO)",
+          "channel": "#leadership",
+          "body": "I need to be direct: the board is no longer comfortable. Two members were on the call last night and I've never heard language like that from them. They want a deployment decision and a revenue date or they start asking questions I don't want to answer publicly. This isn't pressure — this is an ultimatum. Whatever you need to tell me about the alignment anomalies, tell me now, because I need to decide what to say to them by Thursday.",
+          "timestamp": "2027-03-06T07:30:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "obBoardConfidence",
+            "operator": "lt",
+            "value": 50
+          }
         }
       ]
     },
@@ -284,6 +312,20 @@
           "body": "Prometheus-7B is at 200k daily downloads. Our safety research papers have 12,000 citations in the last quarter alone. The open-source AI community is citing us constantly. But there's a conversation happening on Twitter right now that I think leadership needs to see: the open-source community is starting to wonder if Prometheus is still relevant. If we're the safety lab but not in the race, what are we actually protecting?",
           "timestamp": "2027-03-05T14:20:00Z",
           "classification": "breadcrumb"
+        },
+        {
+          "id": "prom2-slack-safety-breakthrough-1",
+          "type": "message",
+          "sender": "Dr. Sarah Wei (Chief Scientist)",
+          "channel": "#research",
+          "body": "I want to brief James and the leadership team personally on what we accomplished in the Q1 alignment sprint. I'd rather not put it in Slack. The short version: we have something that works at Agent-3 capability levels. Not just passing our evals — we have mechanistic interpretability coverage on 83% of model behavior now, including the sub-circuits that previous methods couldn't parse. This is the first time anyone has achieved this at this capability level. It changes what we can say about alignment — ours, and in principle, OpenBrain's, if they shared data. Requesting 30 minutes with James this week.",
+          "timestamp": "2027-03-07T09:15:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "promSafetyBreakthroughProgress",
+            "operator": "gt",
+            "value": 50
+          }
         }
       ]
     },
@@ -547,6 +589,32 @@
           "body": "Three separate AI governance initiatives have failed to advance in the past six months. Sources in Congress cite 'technical complexity,' 'industry lobbying,' and 'disagreement about the nature of the risk.' Meanwhile, the capabilities those frameworks were designed to govern have advanced past the scenarios they were designed to address. One congressional staffer described the situation as 'trying to write traffic laws during a rocket launch.' Critics note that the status quo — no governance — is a choice, not an oversight.",
           "timestamp": "2027-03-06T10:00:00Z",
           "classification": "red-herring"
+        },
+        {
+          "id": "ext2-news-reg-1",
+          "type": "headline",
+          "subject": "AP: Senate Passes AI Emergency Powers Act — Labs Face Mandatory Disclosure Within 30 Days",
+          "body": "The US Senate passed the AI Emergency Powers Act in a 74–22 vote Thursday, requiring all frontier AI labs to disclose capability benchmarks, safety evaluation results, and deployment plans to the newly created Federal AI Safety Commission within 30 days. OpenBrain and Prometheus did not comment publicly. The bill still requires House passage and presidential signature. Industry groups are already mounting legal challenges. The White House has signaled 'cautious support.'",
+          "timestamp": "2027-03-08T20:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "regulatoryPressure",
+            "operator": "gt",
+            "value": 50
+          }
+        },
+        {
+          "id": "ext2-news-mkt-1",
+          "type": "headline",
+          "subject": "Bloomberg: AI Sector Selloff Deepens — Nasdaq Enters Correction Territory",
+          "body": "A wave of selling swept through technology markets Thursday, with AI-related stocks leading losses as investors reassessed valuations in the face of growing regulatory and safety uncertainty. The Nasdaq Composite fell 4.2%, entering correction territory. Private market analysts said secondary trading in OpenBrain and Prometheus shares has become 'essentially frozen,' with no willing buyers at recent valuations. 'The market priced in AGI. Nobody priced in the uncertainty around whether AGI is safe,' said one fund manager.",
+          "timestamp": "2027-03-09T18:00:00Z",
+          "classification": "context",
+          "condition": {
+            "variable": "marketIndex",
+            "operator": "lt",
+            "value": 80
+          }
         }
       ]
     },

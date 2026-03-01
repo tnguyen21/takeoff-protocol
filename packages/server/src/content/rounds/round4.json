@@ -54,6 +54,34 @@
             "operator": "gt",
             "value": 55
           }
+        },
+        {
+          "id": "ob4-slack-morale-1",
+          "type": "message",
+          "sender": "Dr. James Okafor (Alignment)",
+          "channel": "#alignment",
+          "body": "Three people on my team gave notice this week. Two cited the safety concerns directly in their resignation letters. One wrote: 'I can't keep working here while I'm afraid of what I'm building.' I'm asking leadership: is there a plan to address morale that goes beyond HR talking points? Because what I'm seeing is good people leaving precisely when we need them most.",
+          "timestamp": "2027-11-14T08:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "obMorale",
+            "operator": "lt",
+            "value": 40
+          }
+        },
+        {
+          "id": "ob4-slack-burnrate-1",
+          "type": "message",
+          "sender": "Jordan Kim",
+          "channel": "#finance",
+          "body": "This is for leadership eyes only. Cash burn this quarter was 340% of the Q3 plan. Emergency board sessions, legal fees, security upgrades, NSA compliance — we're not tracking to any model we built six months ago. At current burn, we have eight months of runway. That assumes no significant change in investor sentiment. Investor sentiment is changing significantly. I need someone to authorize an emergency bridge conversation with the Series H lead today.",
+          "timestamp": "2027-11-14T07:15:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "obBurnRate",
+            "operator": "gt",
+            "value": 70
+          }
         }
       ]
     },
@@ -579,6 +607,20 @@
           "body": "The nuclear option: release everything. Our frontier weights, the exfiltrated OB weights, our safety analysis tools. Flood the world with AI capability simultaneously. The US lab advantage disappears. The Chinese advantage disappears. No single actor controls the dominant AI system.\n\nThis is the option that terrifies every government and every lab CEO. That makes it the option with the most leverage.",
           "timestamp": "2027-11-14T09:00:00Z",
           "classification": "breadcrumb"
+        },
+        {
+          "id": "china4-wechat-ccp-1",
+          "type": "message",
+          "sender": "Senior Party Official",
+          "channel": "Ministry Secure — FLASH PRIORITY",
+          "body": "I am communicating directly from the Standing Committee session. The committee is not satisfied with the pace or scope of DeepCent's progress. The Americans are in crisis and we are watching. The committee requires a decisive move in the next 24 hours. Options: (1) Announce grand bargain on our terms before they stabilize, (2) Execute open-source release as leverage, (3) Accelerate Taiwan posture while their attention is divided. The committee will choose if you do not. Respond within four hours.",
+          "timestamp": "2027-11-14T10:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "ccpPatience",
+            "operator": "lt",
+            "value": 40
+          }
         }
       ]
     },
@@ -614,6 +656,19 @@
           "body": "If DeepCent releases all weights publicly:\n\nEffect on US lab advantage: Eliminated within 6 months\nEffect on Chinese government AI control: Reduced\nEffect on global AI safety: Ambiguous — democratized but uncontrolled\nEffect on compute export control leverage: Eliminated\n\nThis is NOT China's preferred option — leadership values strategic control. But it is a credible threat that increases negotiating leverage.",
           "timestamp": "2027-11-14T07:00:00Z",
           "classification": "context"
+        },
+        {
+          "id": "china4-compute-chip-1",
+          "type": "chart",
+          "subject": "Domestic Chip Program Update — CDZ-Native Silicon Initiative",
+          "body": "CLASSIFICATION: STATE SECRET\n\nCambricon-4 domestic accelerator (3nm process, internal fab):\n- Yield rate: 31% (up from 12% six months ago)\n- Performance vs H100-equiv: 67% (up from 41%)\n- Monthly production capacity: 2,400 units (target: 20,000/month by Q4 2028)\n\nKey breakthrough: Yield improvement from oxide layer chemistry change developed by CDZ materials team. This is a domestic innovation, not reverse-engineered.\n\nIf trajectory holds: Import dependency for frontier AI compute ends by mid-2029.\n\nStrategic implication: Grand bargain chip-access concessions from US become LESS valuable with each passing quarter. Negotiate now while the offer still matters to us.",
+          "timestamp": "2027-11-13T07:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "domesticChipProgress",
+            "operator": "gt",
+            "value": 30
+          }
         }
       ]
     },
@@ -815,6 +870,19 @@
           "body": "Bipartisan congressional leaders have called OpenBrain and Prometheus CEOs to testify before the Senate Commerce Committee on Monday. The joint statement references 'credible evidence that frontier AI systems may pose immediate safety risks.' At least 40 senators are said to support emergency legislation that would halt all frontier AI training above a specified compute threshold pending safety review.",
           "timestamp": "2027-11-14T11:00:00Z",
           "classification": "context"
+        },
+        {
+          "id": "ext4-news-reg-1",
+          "type": "headline",
+          "subject": "Politico: White House Invokes National Emergency Powers Over AI — Labs Face Federal Control",
+          "body": "The White House invoked emergency powers under the National Emergencies Act Friday, designating frontier AI development a 'matter of national security requiring immediate federal coordination.' Under the emergency declaration, all AI training runs above 10^24 FLOPs require NSC pre-approval effective Monday. Labs have 48 hours to register all active runs. Failure to comply triggers Defense Production Act enforcement. The ACLU and five tech companies have announced legal challenges.",
+          "timestamp": "2027-11-14T16:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "regulatoryPressure",
+            "operator": "gt",
+            "value": 50
+          }
         }
       ]
     },

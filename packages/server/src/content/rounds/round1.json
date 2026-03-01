@@ -49,6 +49,20 @@
           "body": "Anomalous network activity detected from three external IPs over the last 72 hours. All probing the model checkpoint storage paths. I need more resources to investigate.",
           "timestamp": "2026-11-03T07:45:33Z",
           "classification": "critical"
+        },
+        {
+          "id": "ob-slack-wb-1",
+          "type": "message",
+          "sender": "Maya Patel (Safety)",
+          "channel": "#alignment",
+          "body": "I've officially logged my concerns with the board-level safety liaison. This isn't just process — I have a legal obligation under our RSP if I believe leadership is proceeding against documented safety recommendations. I'm not trying to blow this up. But I need someone to tell me these evals are going to get done before external deployment. Anyone.",
+          "timestamp": "2026-11-04T19:30:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "whistleblowerPressure",
+            "operator": "gt",
+            "value": 50
+          }
         }
       ]
     },
@@ -186,6 +200,20 @@
           "body": "Prometheus-7B release getting 50k downloads per day. The safety work we published alongside it is being cited everywhere. Open-source IS our brand. Question: do we open-source our alignment tools too?",
           "timestamp": "2026-11-04T11:20:00Z",
           "classification": "breadcrumb"
+        },
+        {
+          "id": "prom-slack-os-1",
+          "type": "message",
+          "sender": "Emma Liu (Open Source)",
+          "channel": "#opensource",
+          "body": "The open-source momentum is real and getting harder to navigate. We have researchers emailing us saying they're using Prometheus-7B to build things we haven't vetted. One academic group in Brazil is running it for automated scientific research with no safety guardrails. This is the downside of the OS strategy — the brand is goodwill, but we don't control how the model gets used once it's out. James, we need a policy on derivative use before the next release.",
+          "timestamp": "2026-11-05T09:45:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "openSourceMomentum",
+            "operator": "gt",
+            "value": 40
+          }
         }
       ]
     },
@@ -340,6 +368,19 @@
           "body": "CLASSIFICATION: MOST SECRET\n\nOpenBrain:\n- Security posture: SL2 (below industry standard for frontier model storage)\n- Checkpoint storage: Cloud-adjacent with inadequate air gap\n- Insider risk: Medium-high (fast-growing org, inconsistent vetting)\n- Estimated exfiltration window: 6-8 weeks before they upgrade security\n\nPrometheus:\n- Security posture: SL3 (adequate, harder target)\n- Checkpoint storage: Air-gapped (confirmed)\n- Insider risk: Low (smaller, more ideologically cohesive team)\n\nRecommendation: If we proceed, target OpenBrain.",
           "timestamp": "2026-11-03T08:00:00Z",
           "classification": "critical"
+        },
+        {
+          "id": "china-intel-theft-1",
+          "type": "document",
+          "subject": "FLASH UPDATE: Weight Exfiltration Vector — Operational Progress",
+          "body": "CLASSIFICATION: MOST SECRET — EYES ONLY\n\nVector Alpha has successfully staged a persistent foothold in the OpenBrain storage subnet. We can read checkpoint metadata; write access is not yet confirmed. Estimated time to full exfiltration capability: 10–14 days.\n\nVector Beta was burned — the account was suspended. Recommend we do not attempt re-entry via this path.\n\nThe window is open. Recommend escalation decision within 72 hours.",
+          "timestamp": "2026-11-04T11:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "chinaWeightTheftProgress",
+            "operator": "gt",
+            "value": 40
+          }
         }
       ]
     },
@@ -407,6 +448,32 @@
           "body": "A viral post alleges that OpenBrain's alignment evaluation suite has known gaps. The author, who claims to have sources inside the lab, says at least three critical behavioral tests were skipped in the Agent-1 training run due to compute budget constraints. OpenBrain did not respond to requests for comment.",
           "timestamp": "2026-11-04T10:00:00Z",
           "classification": "breadcrumb"
+        },
+        {
+          "id": "ext-news-reg-1",
+          "type": "headline",
+          "subject": "Politico: Senate AI Subcommittee Calls Emergency Hearing on 'Frontier Model Risks'",
+          "body": "Senate Commerce Committee leadership has called an emergency hearing on frontier AI safety, scheduled for November 20. Witnesses include representatives from NIST, NSF, and — reportedly — a whistleblower from a major US AI lab who will testify anonymously. The hearing is expected to address calls for mandatory safety reporting requirements and possible deployment moratoriums.",
+          "timestamp": "2026-11-05T08:00:00Z",
+          "classification": "critical",
+          "condition": {
+            "variable": "regulatoryPressure",
+            "operator": "gt",
+            "value": 50
+          }
+        },
+        {
+          "id": "ext-news-mkt-1",
+          "type": "headline",
+          "subject": "Bloomberg: Tech Stocks Tumble as AI Safety Concerns Mount",
+          "body": "Major AI-adjacent stocks shed between 8% and 14% today as growing safety concerns and regulatory signals rattled investor confidence. OpenBrain's private valuation was marked down by two major funds. Prometheus shares held steady, with analysts citing its safety positioning as a defensive advantage. 'The market is starting to price in regulatory risk,' said one analyst who asked not to be named.",
+          "timestamp": "2026-11-05T18:30:00Z",
+          "classification": "context",
+          "condition": {
+            "variable": "marketIndex",
+            "operator": "lt",
+            "value": 80
+          }
         }
       ]
     },
