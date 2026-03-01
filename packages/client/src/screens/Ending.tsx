@@ -687,14 +687,11 @@ function DebriefScreen() {
       >
         <div>
           <div style={{ fontSize: "0.6rem", fontFamily: "monospace", letterSpacing: "0.2em", textTransform: "uppercase", color: "#6b7280", marginBottom: "0.15rem" }}>
-            Operation Takeoff Protocol — After Action Report
+            Takeoff Protocol — After Action Report
           </div>
           <h1 style={{ fontFamily: "sans-serif", fontSize: "1.3rem", fontWeight: 700, color: "#f9fafb", margin: 0, letterSpacing: "-0.02em" }}>
             Full Debrief
           </h1>
-        </div>
-        <div style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: "0.65rem", color: "#374151" }}>
-          CLASSIFICATION: UNCLASSIFIED — FOR EXERCISE PURPOSES ONLY
         </div>
       </div>
 
