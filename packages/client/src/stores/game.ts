@@ -488,6 +488,11 @@ socket.on("token:dm-revealed", (data: { message: GameMessage; revealedBy: string
   }));
 });
 
+// Auto-connect on load if we have a stored session (page refresh / history navigation)
+if (loadSession()) {
+  socket.connect();
+}
+
 // ── Selectors ──
 
 /** Filter the stored AppContent[] for a specific app, merging items from all matching entries. */
