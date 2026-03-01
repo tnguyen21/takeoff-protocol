@@ -51,7 +51,7 @@ export function Dock() {
     <style>{PULSE_STYLE}</style>
     <div
       className="absolute left-0 right-0 flex justify-center"
-      style={{ bottom: "8px", pointerEvents: "none" }}
+      style={{ bottom: "8px", pointerEvents: "none", zIndex: 5000 }}
     >
       <div
         style={{
