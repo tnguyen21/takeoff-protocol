@@ -1,5 +1,8 @@
 import React from "react";
 import type { AppProps } from "./types.js";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useGameStore } from "../stores/game.js";
+import type { StateView } from "@takeoff/shared";
 
 const TICKERS = [
   { sym: "NVDA", price: "847.23", chg: "+4.12", pct: "+0.49%", vol: "48.2M" },
@@ -26,12 +29,39 @@ const INDICES = [
   { name: "VIX", value: "22.41", chg: "+18.3%" },
 ];
 
+function buildEconData(stateHistory: Record<number, StateView>, round: number, sv: StateView | null) {
+  const hist: Record<number, StateView> = { ...stateHistory };
+  if (sv && round > 0) hist[round] = sv;
+
+  const rounds = Object.keys(hist).map(Number).sort((a, b) => a - b);
+  if (!rounds.length) return null;
+
+  return rounds.map((r) => ({
+    round: r,
+    disruption: hist[r].economicDisruption.accuracy !== "hidden" ? hist[r].economicDisruption.value : null,
+  }));
+}
+
 export const BloombergApp = React.memo(function BloombergApp({ content }: AppProps) {
   const headlineItems = content.filter((i) => i.type === "headline");
   const headlines =
     headlineItems.length > 0
       ? headlineItems.map((item) => (item.subject ?? item.body).toUpperCase())
       : STATIC_HEADLINES;
+
+  const { stateView, stateHistory, round } = useGameStore((s) => ({
+    stateView: s.stateView,
+    stateHistory: s.stateHistory,
+    round: s.round,
+  }));
+
+  const econData = buildEconData(stateHistory, round, stateView);
+  const econAccuracy = stateView?.economicDisruption.accuracy ?? null;
+  const econValue = stateView ? (econAccuracy !== "hidden" ? stateView.economicDisruption.value : null) : null;
+  const inTurmoil = econValue !== null && econValue > 50;
+
+  const sentimentAccuracy = stateView?.publicSentiment.accuracy ?? null;
+  const sentimentValue = stateView ? (sentimentAccuracy !== "hidden" ? stateView.publicSentiment.value : null) : null;
 
   return (
     <div className="flex flex-col h-full bg-black text-green-400 font-mono text-xs">
@@ -40,6 +70,13 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
         <span className="font-bold text-sm tracking-widest">BLOOMBERG TERMINAL</span>
         <span className="text-black/70 text-[10px]">NY  10:42:31  2026-02-28</span>
       </div>
+
+      {/* Turmoil banner */}
+      {inTurmoil && (
+        <div className="bg-red-900/80 border-y border-red-500 px-3 py-1 text-red-300 font-bold text-[11px] tracking-widest text-center shrink-0 animate-pulse">
+          ⚠ MARKETS IN TURMOIL — ECONOMIC DISRUPTION INDEX: {econValue?.toFixed(0)}
+        </div>
+      )}
 
       {/* Index bar */}
       <div className="flex gap-6 px-3 py-1 bg-[#0a0a0a] border-b border-green-900 shrink-0">
@@ -50,6 +87,57 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
             <span className={idx.chg.startsWith("+") ? "text-green-400" : "text-red-400"}>{idx.chg}</span>
           </span>
         ))}
+      </div>
+
+      {/* Economic disruption chart + public sentiment */}
+      <div className="shrink-0 border-b border-green-900 px-3 py-2 bg-[#050505]">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[#f26522] text-[10px] tracking-widest">ECON DISRUPTION INDEX</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-green-700">PUBLIC SENTIMENT</span>
+            {sentimentValue === null ? (
+              <span className="text-neutral-600 text-[11px] font-bold">██████</span>
+            ) : (
+              <span
+                className={`text-[14px] font-bold ${sentimentValue > 10 ? "text-green-400" : sentimentValue < -10 ? "text-red-400" : "text-amber-400"}`}
+              >
+                {sentimentValue > 0 ? "+" : ""}{sentimentValue.toFixed(0)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {econValue === null && econAccuracy === null ? (
+          <div className="h-14 flex items-center justify-center text-green-900 text-[10px]">-- NO DATA --</div>
+        ) : econAccuracy === "hidden" ? (
+          <div className="h-14 flex items-center justify-center text-red-900 text-[10px] font-bold">-- CLASSIFIED --</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={56}>
+            <AreaChart data={econData ?? []} margin={{ top: 2, right: 2, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="econGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={inTurmoil ? "#ef4444" : "#f26522"} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={inTurmoil ? "#ef4444" : "#f26522"} stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="round" hide />
+              <YAxis domain={[0, 100]} hide />
+              <Tooltip
+                contentStyle={{ background: "#0a0a0a", border: "1px solid #1a4a1a", borderRadius: 2, fontSize: 10 }}
+                labelFormatter={(v) => `Round ${v}`}
+                formatter={(val: number | undefined) => [val != null ? val.toFixed(0) : "", "Disruption"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="disruption"
+                stroke={inTurmoil ? "#ef4444" : "#f26522"}
+                fill="url(#econGrad)"
+                strokeWidth={1.5}
+                connectNulls
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div className="flex flex-1 min-h-0">
