@@ -203,6 +203,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       promBoardConfidence: [0, 100],
       ccpPatience: [0, 100],
       chinaWeightTheftProgress: [0, 100],
+      whistleblowerPressure: [0, 100],
       // Tier 3
       globalMediaCycle: [-100, 100],
       marketIndex: [0, 100],

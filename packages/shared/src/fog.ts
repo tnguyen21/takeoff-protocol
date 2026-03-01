@@ -30,9 +30,9 @@ const FOG_MATRIX: FogMatrix = {
   globalMediaCycle:      { openbrain: { accuracy: "estimate", confidence: 1 },  prometheus: { accuracy: "estimate", confidence: 1 },  china: { accuracy: "hidden" }, external: { accuracy: "exact" } },
 
   // ── Tier 2: Hidden Engine ──
-  chinaWeightTheftProgress: { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
-  aiAutonomyLevel:          { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
-  whistleblowerPressure:    { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  chinaWeightTheftProgress: { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "exact" },  external: { accuracy: "hidden" } },
+  aiAutonomyLevel:          { openbrain: { accuracy: "estimate", confidence: 10 }, prometheus: { accuracy: "estimate", confidence: 10 }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
+  whistleblowerPressure:    { openbrain: { accuracy: "exact" },  prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
   openSourceMomentum:       { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "estimate", confidence: 10 }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
   doomClockDistance:        { openbrain: { accuracy: "hidden" }, prometheus: { accuracy: "hidden" }, china: { accuracy: "hidden" }, external: { accuracy: "hidden" } },
 

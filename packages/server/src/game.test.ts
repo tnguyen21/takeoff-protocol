@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { buildNarrative, advancePhase, startTutorial, endTutorial } from "./game.js";
+import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GameRoom, Player, StateVariables } from "@takeoff/shared";
 
@@ -313,5 +313,231 @@ describe("advancePhase — tutorial round behavior", () => {
 
     expect(room.round).toBe(1);
     expect(room.phase).toBe("briefing");
+  });
+});
+
+// ── checkThresholds ───────────────────────────────────────────────────────────
+
+describe("checkThresholds — each fires at most once (idempotency invariant)", () => {
+  it("whistleblower_autoleak fires when whistleblowerPressure >= 80 and applies state effects", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, whistleblowerPressure: 80, publicAwareness: 30, publicSentiment: 0, obInternalTrust: 60 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // INV: state effects applied
+    expect(room.state.publicAwareness).toBe(55);    // 30 + 25
+    expect(room.state.publicSentiment).toBe(-15);   // 0 - 15
+    expect(room.state.obInternalTrust).toBe(40);    // 60 - 20
+
+    // INV: OB players notified
+    const notif = emitted["p1:game:notification"];
+    expect(notif).toBeDefined();
+    expect((notif![0][1] as { id: string }).id).toBe("whistleblower_autoleak");
+
+    // INV: threshold recorded
+    expect(room.firedThresholds?.has("whistleblower_autoleak")).toBe(true);
+  });
+
+  it("whistleblower_autoleak does NOT fire again when called a second time (idempotency)", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, whistleblowerPressure: 80, publicAwareness: 30, publicSentiment: 0, obInternalTrust: 60 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+    checkThresholds(io, room); // second call — should be no-op
+
+    // State effects must not double-apply
+    expect(room.state.publicAwareness).toBe(55);
+    expect(room.state.publicSentiment).toBe(-15);
+    expect(room.state.obInternalTrust).toBe(40);
+
+    // Notification emitted exactly once
+    expect(emitted["p1:game:notification"]?.length).toBe(1);
+  });
+
+  it("china_weight_theft fires when chinaWeightTheftProgress >= 100 and applies state effects", () => {
+    const china = makePlayer("c1", "china", "china_director");
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { c1: china, p1: ob },
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100, chinaCapability: 50, taiwanTension: 20 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // chinaCapability +25, taiwanTension +15
+    expect(room.state.chinaCapability).toBe(75);
+    expect(room.state.taiwanTension).toBe(35);
+
+    // OB gets security crisis notification
+    const obNotif = emitted["p1:game:notification"];
+    expect(obNotif).toBeDefined();
+    expect((obNotif![0][1] as { id: string }).id).toBe("china_weight_theft");
+
+    // China does NOT get a notification (it's an OB security event)
+    expect(emitted["c1:game:notification"]).toBeUndefined();
+
+    expect(room.firedThresholds?.has("china_weight_theft")).toBe(true);
+  });
+
+  it("ob_board_revolt fires when obBoardConfidence < 30 and decrements obInternalTrust", () => {
+    const ob1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const ob2 = makePlayer("p2", "openbrain", "ob_safety");
+    const room = makeRoom({
+      players: { p1: ob1, p2: ob2 },
+      state: { ...INITIAL_STATE, obBoardConfidence: 25, obInternalTrust: 50 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.state.obInternalTrust).toBe(40); // -10
+    expect(emitted["p1:game:notification"]).toBeDefined();
+    expect(emitted["p2:game:notification"]).toBeDefined();
+    expect(room.firedThresholds?.has("ob_board_revolt")).toBe(true);
+  });
+
+  it("ccp_military_mandate fires when ccpPatience < 20 and notifies china faction", () => {
+    const china = makePlayer("c1", "china", "china_director");
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { c1: china, p1: ob },
+      state: { ...INITIAL_STATE, ccpPatience: 15 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(emitted["c1:game:notification"]).toBeDefined();
+    expect((emitted["c1:game:notification"]![0][1] as { id: string }).id).toBe("ccp_military_mandate");
+    // OB should NOT be notified
+    expect(emitted["p1:game:notification"]).toBeUndefined();
+    expect(room.firedThresholds?.has("ccp_military_mandate")).toBe(true);
+  });
+
+  it("prom_alignment_breakthrough fires when promSafetyBreakthroughProgress >= 80 and boosts alignmentConfidence", () => {
+    const prom = makePlayer("prom1", "prometheus", "prom_scientist");
+    const room = makeRoom({
+      players: { prom1: prom },
+      state: { ...INITIAL_STATE, promSafetyBreakthroughProgress: 85, alignmentConfidence: 50 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.state.alignmentConfidence).toBe(65); // 50 + 15
+    expect(emitted["prom1:game:notification"]).toBeDefined();
+    expect(room.firedThresholds?.has("prom_alignment_breakthrough")).toBe(true);
+  });
+
+  it("regulatory_emergency_powers fires when regulatoryPressure >= 70 and notifies external faction", () => {
+    const nsa = makePlayer("nsa1", "external", "ext_nsa");
+    const china = makePlayer("c1", "china", "china_director");
+    const room = makeRoom({
+      players: { nsa1: nsa, c1: china },
+      state: { ...INITIAL_STATE, regulatoryPressure: 75 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(emitted["nsa1:game:notification"]).toBeDefined();
+    // China not notified
+    expect(emitted["c1:game:notification"]).toBeUndefined();
+    expect(room.firedThresholds?.has("regulatory_emergency_powers")).toBe(true);
+  });
+
+  it("point_of_no_return fires when doomClockDistance <= 1 and notifies GM", () => {
+    const room = makeRoom({
+      gmId: "gm1",
+      state: { ...INITIAL_STATE, doomClockDistance: 1 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(emitted["gm1:game:notification"]).toBeDefined();
+    expect(room.firedThresholds?.has("point_of_no_return")).toBe(true);
+  });
+
+  it("ui_degradation fires when aiAutonomyLevel >= 60 AND alignmentConfidence < 40", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, aiAutonomyLevel: 65, alignmentConfidence: 35 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.uiDegradationActive).toBe(true);
+    expect(emitted["p1:game:notification"]).toBeDefined();
+    expect(room.firedThresholds?.has("ui_degradation")).toBe(true);
+  });
+
+  it("ui_degradation does NOT fire when aiAutonomyLevel >= 60 but alignmentConfidence >= 40", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, aiAutonomyLevel: 65, alignmentConfidence: 45 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.uiDegradationActive).toBeUndefined();
+    expect(room.firedThresholds?.has("ui_degradation")).toBe(false);
+  });
+
+  it("initializes firedThresholds lazily if not present on room", () => {
+    const room = makeRoom({
+      state: { ...INITIAL_STATE, whistleblowerPressure: 85 },
+    });
+
+    // No firedThresholds on room before call
+    expect(room.firedThresholds).toBeUndefined();
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds).toBeDefined();
+    expect(room.firedThresholds!.has("whistleblower_autoleak")).toBe(true);
+  });
+
+  it("chinaCapability is clamped to 100 even when theft would push it beyond", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100, chinaCapability: 90 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.state.chinaCapability).toBe(100); // clamped, not 115
+  });
+
+  it("no thresholds fire when variables are below trigger values", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE }, // all at safe defaults
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // No notifications should be emitted to players
+    expect(emitted["p1:game:notification"]).toBeUndefined();
+    expect(room.firedThresholds?.size ?? 0).toBe(0);
   });
 });
