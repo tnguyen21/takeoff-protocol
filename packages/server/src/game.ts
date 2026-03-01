@@ -68,6 +68,7 @@ export function startGame(io: Server, room: GameRoom) {
 }
 
 export function advancePhase(io: Server, room: GameRoom) {
+  const prevPhase = room.phase;
   const currentIndex = PHASE_ORDER.indexOf(room.phase as GamePhase);
 
   if (currentIndex === -1) return; // unknown phase
@@ -75,6 +76,22 @@ export function advancePhase(io: Server, room: GameRoom) {
   if (currentIndex < PHASE_ORDER.length - 1) {
     // Next phase within the round
     room.phase = PHASE_ORDER[currentIndex + 1];
+
+    // Notify players who did not submit when decision phase expires
+    if (prevPhase === "decision" && room.phase === "resolution") {
+      const now = Date.now();
+      for (const [socketId, player] of Object.entries(room.players)) {
+        if (!player.faction || !player.role) continue;
+        if (!(socketId in room.decisions)) {
+          io.to(socketId).emit("game:notification", {
+            id: `inaction-${socketId}-r${room.round}`,
+            summary: "You did not submit a decision. Inaction was applied.",
+            from: "system",
+            timestamp: now,
+          });
+        }
+      }
+    }
   } else {
     // End of round
     if (room.phase === "resolution") {
@@ -222,9 +239,10 @@ const STATE_LABELS: Record<keyof StateVariables, string> = {
   intlCooperation: "International Cooperation",
 };
 
-function buildNarrative(
+export function buildNarrative(
   teamDecisions: Record<string, { optionId: string; label: string }>,
   round: number,
+  activeFactions: string[] = [],
 ): string {
   const factionNames: Record<string, string> = {
     openbrain: "OpenBrain",
@@ -238,6 +256,13 @@ function buildNarrative(
   for (const [faction, decision] of Object.entries(teamDecisions)) {
     const name = factionNames[faction] ?? faction;
     lines.push(`${name} chose to ${decision.label.toLowerCase()}.`);
+  }
+
+  for (const faction of activeFactions) {
+    if (!(faction in teamDecisions)) {
+      const name = factionNames[faction] ?? faction;
+      lines.push(`${name} chose inaction — no team decision was submitted.`);
+    }
   }
 
   lines.push("The consequences ripple through the system. See the state changes below.");
@@ -292,7 +317,12 @@ function emitResolution(io: Server, room: GameRoom) {
     (key) => stateAfter[key] !== stateBefore[key],
   );
 
-  const narrative = buildNarrative(teamDecisionSummary, room.round);
+  const activeFactions = [...new Set(
+    Object.values(room.players)
+      .filter((p) => p.faction)
+      .map((p) => p.faction as string),
+  )];
+  const narrative = buildNarrative(teamDecisionSummary, room.round, activeFactions);
 
   // Emit fog-filtered resolution to each player
   for (const [socketId, player] of Object.entries(room.players)) {
