@@ -531,7 +531,8 @@ describe("checkThresholds — each fires at most once (idempotency invariant)", 
     const room = makeRoom({
       players: { p1: ob },
       // publicAwareness set above 25 to avoid npc_r1_public_darkness_tip (lte: 25) at initial state
-      state: { ...INITIAL_STATE, publicAwareness: 30 },
+      // securityLevelOB set above 2 to avoid npc_security_vendor_patch_gap (lte: 2) at initial state
+      state: { ...INITIAL_STATE, publicAwareness: 30, securityLevelOB: 3 },
     });
 
     const { io, emitted } = createMockIo();

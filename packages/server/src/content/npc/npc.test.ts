@@ -9,6 +9,8 @@
  * - INV-4: getNpcTriggersForRound returns the correct set and empty array for unknown rounds
  * - INV-5: Round-1 triggers cover chinaWeightTheftProgress, ccpPatience, publicAwareness
  * - INV-6: Round-2 triggers cover whistleblowerPressure, obBoardConfidence, alignmentConfidence, openSourceMomentum
+ * - INV-7: CONDITIONAL_NPC_TRIGGERS IDs are unique and non-overlapping with round triggers
+ * - INV-8: getNpcTriggersForRound merges conditional triggers filtered by round window
  */
 
 import { describe, it, expect } from "bun:test";
@@ -104,6 +106,30 @@ describe("INV-4: getNpcTriggersForRound", () => {
     expect(getNpcTriggersForRound(0)).toEqual([]);
     expect(getNpcTriggersForRound(99)).toEqual([]);
   });
+
+  it("merges conditional triggers whose round window includes the current round", () => {
+    // npc_security_vendor_patch_gap is active rounds [1,3]
+    const r1 = getNpcTriggersForRound(1);
+    const r2 = getNpcTriggersForRound(2);
+    const r4 = getNpcTriggersForRound(4);
+
+    const secId = "npc_security_vendor_patch_gap";
+    expect(r1.some((t) => t.id === secId)).toBe(true);
+    expect(r2.some((t) => t.id === secId)).toBe(true);
+    expect(r4.some((t) => t.id === secId)).toBe(false);
+  });
+
+  it("excludes conditional triggers outside their round window", () => {
+    // npc_ccp_loss_of_patience is active rounds [4,5] only
+    const r3 = getNpcTriggersForRound(3);
+    const r4 = getNpcTriggersForRound(4);
+    const r5 = getNpcTriggersForRound(5);
+
+    const ccpId = "npc_ccp_loss_of_patience";
+    expect(r3.some((t) => t.id === ccpId)).toBe(false);
+    expect(r4.some((t) => t.id === ccpId)).toBe(true);
+    expect(r5.some((t) => t.id === ccpId)).toBe(true);
+  });
 });
 
 // ── INV-5: Round-1 variable coverage ────────────────────────────────────────
@@ -155,5 +181,58 @@ describe("INV-6: round2 covers required state variables", () => {
 
   it("has at least 4 triggers", () => {
     expect(ROUND2_NPC_TRIGGERS.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+// ── INV-7: CONDITIONAL_NPC_TRIGGERS uniqueness ───────────────────────────────
+
+describe("INV-7: conditional trigger ID uniqueness", () => {
+  it("all conditional trigger IDs are unique", () => {
+    const ids = CONDITIONAL_NPC_TRIGGERS.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("conditional trigger IDs do not overlap with round1 or round2 IDs", () => {
+    const roundIds = new Set([
+      ...ROUND1_NPC_TRIGGERS.map((t) => t.id),
+      ...ROUND2_NPC_TRIGGERS.map((t) => t.id),
+    ]);
+    for (const t of CONDITIONAL_NPC_TRIGGERS) {
+      expect(roundIds.has(t.id)).toBe(false);
+    }
+  });
+
+  it("has 31 triggers covering all factions", () => {
+    expect(CONDITIONAL_NPC_TRIGGERS.length).toBe(31);
+    const roles = new Set(
+      CONDITIONAL_NPC_TRIGGERS.flatMap((t) => (t.target.role ? [t.target.role] : [])),
+    );
+    // Covers roles from all four factions
+    expect(roles.has("ob_safety")).toBe(true);
+    expect(roles.has("prom_ceo")).toBe(true);
+    expect(roles.has("china_director")).toBe(true);
+    expect(roles.has("ext_nsa")).toBe(true);
+  });
+});
+
+// ── INV-8: rounds field validation ──────────────────────────────────────────
+
+describe("INV-8: conditional trigger rounds field", () => {
+  it("every conditional trigger has a valid rounds tuple", () => {
+    for (const t of CONDITIONAL_NPC_TRIGGERS) {
+      expect(t.rounds).toBeDefined();
+      expect(Array.isArray(t.rounds)).toBe(true);
+      expect(t.rounds!.length).toBe(2);
+      const [min, max] = t.rounds!;
+      expect(min).toBeGreaterThanOrEqual(1);
+      expect(max).toBeLessThanOrEqual(5);
+      expect(min).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it("every conditional trigger targets a specific role (not faction-wide)", () => {
+    for (const t of CONDITIONAL_NPC_TRIGGERS) {
+      expect(t.target.role).toBeDefined();
+    }
   });
 });
