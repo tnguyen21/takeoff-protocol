@@ -223,25 +223,6 @@ export interface NpcPersona {
   factions: Faction[];
 }
 
-export interface NpcTrigger {
-  id: string;
-  npcId: string;
-  content: string;
-  condition?: {
-    variable: keyof StateVariables;
-    operator: "gt" | "lt" | "eq";
-    value: number;
-  };
-  schedule?: {
-    round: number;
-    phase: GamePhase;
-  };
-  target: {
-    faction?: Faction;
-    role?: Role;
-  };
-}
-
 // ── Publications ──
 
 export type PublicationType = "article" | "leak" | "research";

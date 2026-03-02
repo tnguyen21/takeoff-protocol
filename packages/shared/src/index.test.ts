@@ -96,7 +96,7 @@ describe("NPC types", () => {
       content: "The weights have been acquired.",
       condition: {
         variable: "chinaWeightTheftProgress",
-        operator: "gt",
+        operator: "gte",
         value: 75,
       },
       schedule: {
@@ -109,7 +109,7 @@ describe("NPC types", () => {
       },
     };
     expect(trigger.condition?.variable).toBe("chinaWeightTheftProgress");
-    expect(trigger.condition?.operator).toBe("gt");
+    expect(trigger.condition?.operator).toBe("gte");
     expect(trigger.schedule?.round).toBe(3);
     expect(trigger.target.faction).toBe("china");
   });
