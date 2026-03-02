@@ -313,4 +313,5 @@ export const SHARED_TWITTER: ContentItem[] = [
 // Register for all factions that have the twitter app
 registerContent({ faction: "openbrain", app: "twitter", accumulate: false, items: SHARED_TWITTER });
 registerContent({ faction: "prometheus", app: "twitter", accumulate: false, items: SHARED_TWITTER });
+registerContent({ faction: "china", app: "twitter", accumulate: false, items: SHARED_TWITTER });
 registerContent({ faction: "external", app: "twitter", accumulate: false, items: SHARED_TWITTER });
