@@ -7,8 +7,8 @@ import { soundManager } from "../sounds/index.js";
 import {
   getReadReceiptStatus,
   hasDisappearingTimer,
-  NPC_CONTACTS,
-  NPC_IDS,
+  buildNpcContacts,
+  isNpcId,
 } from "./signalUtils.js";
 
 function formatTime(ts: number): string {
@@ -96,6 +96,9 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
     (p) => p.id !== playerId && (!me || p.faction !== me.faction)
   );
 
+  // NPC contacts derived from live store messages
+  const npcContacts = playerId ? buildNpcContacts(messages, playerId) : [];
+
   // DM conversation: messages where (from === me && to === selected) or (from === selected && to === me)
   const dmMessages = selectedPlayerId
     ? messages.filter(
@@ -106,7 +109,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
       )
     : [];
 
-  // Unread count per player (DMs to me that aren't in active convo)
+  // Unread count per player/NPC (messages to me that aren't in the active convo)
   const unreadPerPlayer: Record<string, number> = {};
   for (const m of messages) {
     if (!m.isTeamChat && m.to === playerId && m.from !== selectedPlayerId) {
@@ -131,7 +134,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   }, []);
 
   // Typing indicator: fires every ~20-30s for active real-player conversations
-  const isNpcSelected = selectedPlayerId ? NPC_IDS.has(selectedPlayerId) : false;
+  const isNpcSelected = selectedPlayerId ? isNpcId(selectedPlayerId) : false;
   const INTEL_CONTACT_ID = "__intel__";
   const isIntelSelected = selectedPlayerId === INTEL_CONTACT_ID;
   const isRealDmActive = !!selectedPlayerId && !isNpcSelected && !isIntelSelected;
@@ -189,9 +192,9 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   // Intel content: pre-scripted messages shown in a special "Intel Feed" contact
   const intelMessages = content.filter((i) => i.type === "message");
 
-  // NPC contact selected
+  // NPC contact selected — look up from live contacts
   const selectedNpc = isNpcSelected
-    ? NPC_CONTACTS.find((c) => c.id === selectedPlayerId)
+    ? npcContacts.find((c) => c.id === selectedPlayerId)
     : null;
 
   return (
@@ -225,10 +228,11 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
             </div>
           )}
 
-          {/* NPC contacts */}
-          {NPC_CONTACTS.map((npc) => {
+          {/* NPC contacts — server-driven, appear above real player contacts */}
+          {npcContacts.map((npc) => {
             const isActive = npc.id === selectedPlayerId;
             const lastMsg = npc.messages.at(-1);
+            const unread = unreadPerPlayer[npc.id] ?? 0;
             return (
               <div
                 key={npc.id}
@@ -253,11 +257,16 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                     {lastMsg ? lastMsg.content : npc.subtitle}
                   </p>
                 </div>
+                {unread > 0 && (
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {unread}
+                  </div>
+                )}
               </div>
             );
           })}
 
-          {otherPlayers.length === 0 && intelMessages.length === 0 && NPC_CONTACTS.length === 0 && (
+          {otherPlayers.length === 0 && intelMessages.length === 0 && npcContacts.length === 0 && (
             <div className="text-neutral-600 text-xs text-center px-3 pt-8">
               No contacts from other factions yet.
             </div>
@@ -329,7 +338,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
             </div>
           </>
         ) : selectedNpc ? (
-          /* NPC contact view */
+          /* NPC contact view — messages from live store, sorted ascending */
           <>
             <div className="h-10 border-b border-white/10 flex items-center px-4 shrink-0">
               <div

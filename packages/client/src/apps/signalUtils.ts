@@ -4,6 +4,8 @@
  * Exported for unit testing without a DOM/React environment.
  */
 
+import type { GameMessage } from "@takeoff/shared";
+
 // ── Read Receipts ───────────────────────────────────────────────────────────
 
 export type ReadReceiptStatus = "sent" | "delivered" | "read";
@@ -38,7 +40,6 @@ export function hasDisappearingTimer(msgId: string): boolean {
 export interface NpcMessage {
   id: string;
   content: string;
-  /** Epoch milliseconds. Computed once at module load via _BASE_TS. */
   timestamp: number;
 }
 
@@ -51,83 +52,72 @@ export interface NpcContact {
   messages: NpcMessage[];
 }
 
-const _BASE_TS = Date.now();
-function _ago(ms: number): number {
-  return _BASE_TS - ms;
+/**
+ * Returns true if the given ID belongs to an NPC sender.
+ * All NPC IDs use the __npc_ prefix.
+ */
+export function isNpcId(id: string): boolean {
+  return id.startsWith("__npc_");
 }
 
-export const NPC_CONTACTS: NpcContact[] = [
-  {
-    id: "__npc_anon__",
-    name: "Anonymous Source",
-    subtitle: "· encrypted channel",
-    avatarColor: "bg-red-900",
-    messages: [
-      {
-        id: "anon-1",
-        content: "They're closer than you think. The weight extraction already happened.",
-        timestamp: _ago(3_600_000),
-      },
-      {
-        id: "anon-2",
-        content: "CDZ has copies. Three checkpoints. Don't let them get the fourth.",
-        timestamp: _ago(1_800_000),
-      },
-      {
-        id: "anon-3",
-        content:
-          "Look at the compute logs. Someone is running unauthorized inference runs. The sparsity pattern is a fingerprint — match it.",
-        timestamp: _ago(600_000),
-      },
-    ],
-  },
-  {
-    id: "__npc_insider__",
-    name: "Policy Insider",
-    subtitle: "· DC source",
-    avatarColor: "bg-purple-900",
-    messages: [
-      {
-        id: "insider-1",
-        content:
-          "Hill staffers are drafting emergency compute export controls. Your friends at NSF are scared.",
-        timestamp: _ago(7_200_000),
-      },
-      {
-        id: "insider-2",
-        content:
-          "The Senate AI caucus had a closed briefing yesterday. Three senators walked out early. Read into that what you will.",
-        timestamp: _ago(3_000_000),
-      },
-      {
-        id: "insider-3",
-        content:
-          "Ambassador Wu just cancelled a meeting with State. Fifth time this month. Something is moving on their side.",
-        timestamp: _ago(900_000),
-      },
-    ],
-  },
-  {
-    id: "__npc_ob_internal__",
-    name: "OB Internal",
-    subtitle: "· colleague",
-    avatarColor: "bg-emerald-900",
-    messages: [
-      {
-        id: "ob-1",
-        content:
-          "The new eval suite is being hidden from the safety team. I've seen the raw scores. We should talk.",
-        timestamp: _ago(5_400_000),
-      },
-      {
-        id: "ob-2",
-        content:
-          "They're calling it a 'capability overhang' in internal memos. What they really mean is: it's already there, we're just not telling anyone.",
-        timestamp: _ago(2_400_000),
-      },
-    ],
-  },
-];
+/** Static metadata (subtitle + avatar color) for known NPC contacts. */
+const NPC_METADATA: Record<string, { subtitle: string; avatarColor: string }> = {
+  __npc_anon__: { subtitle: "· encrypted channel", avatarColor: "bg-red-900" },
+  __npc_insider__: { subtitle: "· DC source", avatarColor: "bg-purple-900" },
+  __npc_ob_internal__: { subtitle: "· colleague", avatarColor: "bg-emerald-900" },
+};
 
-/** Convenience set of all NPC contact IDs. */
-export const NPC_IDS = new Set(NPC_CONTACTS.map((c) => c.id));
+const NPC_DEFAULT_METADATA = { subtitle: "· unknown source", avatarColor: "bg-neutral-700" };
+
+/**
+ * Builds NPC contact entries from live store messages.
+ *
+ * Invariants:
+ * - Only returns contacts for NPCs that have sent ≥1 message to currentPlayerId.
+ * - Messages within each contact are sorted by timestamp ascending.
+ * - Name comes from the GameMessage.fromName field.
+ * - AvatarColor and subtitle come from the static NPC_METADATA map, falling back
+ *   to NPC_DEFAULT_METADATA for unknown NPC IDs.
+ */
+export function buildNpcContacts(messages: GameMessage[], currentPlayerId: string): NpcContact[] {
+  // Filter to NPC messages addressed to the current player
+  const npcMessages = messages.filter((m) => isNpcId(m.from) && m.to === currentPlayerId);
+
+  // Group by NPC ID
+  const grouped = new Map<string, GameMessage[]>();
+  for (const m of npcMessages) {
+    const group = grouped.get(m.from) ?? [];
+    group.push(m);
+    grouped.set(m.from, group);
+  }
+
+  // Build NpcContact entries — only for NPCs with ≥1 message
+  const contacts: NpcContact[] = [];
+  for (const [npcId, msgs] of grouped) {
+    if (msgs.length === 0) continue;
+
+    const sorted = [...msgs].sort((a, b) => a.timestamp - b.timestamp);
+    const name = sorted[0].fromName;
+    const meta = NPC_METADATA[npcId] ?? NPC_DEFAULT_METADATA;
+
+    contacts.push({
+      id: npcId,
+      name,
+      subtitle: meta.subtitle,
+      avatarColor: meta.avatarColor,
+      messages: sorted.map((m) => ({
+        id: m.id,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+    });
+  }
+
+  return contacts;
+}
+
+/**
+ * Convenience set of well-known NPC contact IDs.
+ * Use isNpcId() for dynamic checks (covers any __npc_ prefix).
+ */
+export const NPC_IDS = new Set<string>(Object.keys(NPC_METADATA));
