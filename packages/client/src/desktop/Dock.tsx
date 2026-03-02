@@ -3,12 +3,12 @@ import { useUIStore, type WindowState } from "../stores/ui.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { useNotificationsStore } from "../stores/notifications.js";
 import { useGameStore } from "../stores/game.js";
-import { getAppIcon } from "../apps/icons.js";
+import { AppIcon } from "../apps/icons.js";
 import { FACTIONS } from "@takeoff/shared";
 
 const ICON_SIZE = 44;
 const ICON_GAP = 4;
-const LUCIDE_SIZE = 24;
+const ICON_DISPLAY_SIZE = 24;
 
 const PULSE_STYLE = `
 @keyframes dock-pulse {
@@ -79,7 +79,7 @@ export function Dock() {
       >
         {windows.map((w) => {
           const unread = unreadCounts[w.appId] ?? 0;
-          const IconComponent = getAppIcon(w.appId);
+
           const isHovered = hoveredId === w.id;
           const isPrimary = primaryApps.has(w.appId);
           const needsAttention = isPrimary && !openedThisRound.has(w.appId);
@@ -115,11 +115,7 @@ export function Dock() {
                 transition: "background 0.15s, color 0.15s",
               }}
             >
-              {IconComponent ? (
-                <IconComponent size={LUCIDE_SIZE} strokeWidth={1.5} />
-              ) : (
-                <span style={{ fontSize: "18px" }}>□</span>
-              )}
+              <AppIcon appId={w.appId} size={ICON_DISPLAY_SIZE} />
 
               {/* Tooltip */}
               {isHovered && (

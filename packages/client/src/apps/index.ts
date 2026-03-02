@@ -21,6 +21,7 @@ export { SubstackApp } from "./SubstackApp.js";
 export { MemoApp } from "./MemoApp.js";
 export { ComputeApp } from "./ComputeApp.js";
 export { BriefingApp } from "./BriefingApp.js";
+export { AppIcon, getAppBrandColor, isBrandIcon } from "./icons.js";
 
 import { SlackApp } from "./SlackApp.js";
 import { SignalApp } from "./SignalApp.js";

@@ -1,6 +1,6 @@
 import { useCallback, useRef, type ReactNode, type PointerEvent } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
-import { getAppIcon } from "../apps/icons.js";
+import { AppIcon } from "../apps/icons.js";
 import { soundManager } from "../sounds/index.js";
 
 const MIN_WIDTH = 300;
@@ -205,10 +205,7 @@ export function Window({ windowState: w, children }: WindowProps) {
         </div>
 
         <span className="text-white/60 text-xs flex-1 flex items-center justify-center gap-1">
-          {(() => {
-            const Icon = getAppIcon(w.appId);
-            return Icon ? <Icon size={14} strokeWidth={1.5} /> : null;
-          })()}
+          <AppIcon appId={w.appId} size={14} color="rgba(255,255,255,0.6)" />
           {w.title}
         </span>
       </div>

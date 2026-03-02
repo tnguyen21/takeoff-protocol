@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNotificationsStore, type ToastNotification } from "../stores/notifications.js";
 import { useUIStore } from "../stores/ui.js";
-import { getAppIcon } from "../apps/icons.js";
+import { AppIcon } from "../apps/icons.js";
 import { soundManager } from "../sounds/index.js";
 
 const MENUBAR_HEIGHT = 28;
@@ -29,7 +29,7 @@ function Toast({ notif, index }: { notif: ToastNotification; index: number }) {
     };
   }, [notif.id, dismissNotification]);
 
-  const Icon = getAppIcon(notif.appId);
+
   const top = MENUBAR_HEIGHT + 8 + index * (TOAST_HEIGHT + TOAST_GAP);
 
   const handleClick = () => {
@@ -79,11 +79,7 @@ function Toast({ notif, index }: { notif: ToastNotification; index: number }) {
           border: "1px solid rgba(255,255,255,0.08)",
         }}
       >
-        {Icon ? (
-          <Icon size={18} color="rgba(255,255,255,0.75)" />
-        ) : (
-          <div style={{ width: 18, height: 18, borderRadius: 4, background: "rgba(255,255,255,0.2)" }} />
-        )}
+        <AppIcon appId={notif.appId} size={18} color="rgba(255,255,255,0.75)" />
       </div>
 
       {/* Text content */}
