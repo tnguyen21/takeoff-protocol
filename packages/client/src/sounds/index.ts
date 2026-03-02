@@ -29,9 +29,11 @@ const SOUND_MAP: Record<SoundName, (ctx: AudioContext) => void> = {
 
 function loadMuted(): boolean {
   try {
-    return localStorage.getItem(MUTE_KEY) === "true";
+    const v = localStorage.getItem(MUTE_KEY);
+    if (v === null) return true; // muted by default
+    return v === "true";
   } catch {
-    return false;
+    return true;
   }
 }
 
