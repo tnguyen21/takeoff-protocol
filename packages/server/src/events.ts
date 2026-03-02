@@ -656,6 +656,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
           emitDecisions(io, room);
         }
 
+        // Fire any NPC triggers matching current state
+        checkThresholds(io, room);
+
         console.log(`[dev:bootstrap] room=${room.code} faction=${faction} role=${role} round=${round} phase=${phase}`);
         callback({ ok: true, code: room.code });
       },
