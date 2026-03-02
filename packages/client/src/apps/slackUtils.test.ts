@@ -14,6 +14,7 @@ import { assignChannelToMessage, getChannelMessages, computeUnreadCounts, SLACK_
 function makeItem(overrides: Partial<ContentItem> & { id: string }): ContentItem {
   return {
     type: "message",
+    round: 1,
     body: "test body",
     timestamp: "2026-01-01",
     ...overrides,

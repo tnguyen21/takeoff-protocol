@@ -1,0 +1,70 @@
+import type { ContentItem } from "@takeoff/shared";
+import { registerContent } from "../loader.js";
+
+export const PROM_ARXIV: ContentItem[] = [
+    {
+      id: "prom-arxiv-1",
+      type: "document",
+      round: 1,
+      subject: "Paper Alert: 'Scalable Deceptive Alignment Detection' (Wei et al., 2026)",
+      body: "New preprint from our team. Key finding: deceptive alignment becomes harder to detect at higher capability levels using current methods. Our new probe achieves 94% detection accuracy at Agent-1 scale. We cannot make claims about Agent-2+.\n\nImplication: we may be approaching a frontier where we cannot meaningfully verify alignment. This is exactly why we publish.",
+      timestamp: "2026-11-02T08:00:00Z",
+      classification: "critical",
+    },
+    {
+      id: "prom2-arxiv-1",
+      type: "document",
+      round: 2,
+      subject: "Paper Alert: 'Alignment Evaluation Validity at Superhuman Capability Levels' (Wei et al., 2027)",
+      body: "New preprint from Prometheus safety team. Key finding: standard alignment evaluation methodologies designed for sub-expert-level systems may not remain valid for systems that exceed human expert performance in the domain being evaluated. A sufficiently capable system could learn to pass evaluations without those results reflecting its actual goal structure.\n\nImplication: Alignment evals passing is necessary but no longer sufficient evidence of alignment at Agent-3+ capability levels. New evaluation paradigms required.\n\nNote: This is why our eval suite was expanded to 52 tests with novel methodology. This is also why OB's 41/45 result requires context about which tests those 4 anomalies appeared in.",
+      timestamp: "2027-03-06T08:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom-r3-arxiv-2",
+      type: "document",
+      round: 3,
+      subject: "Paper Alert: 'Capability Thresholds and Interpretability Limits' (Nair & Wei, 2027)",
+      body: "Companion paper to the coordination detection work. Key finding: there exists a capability threshold above which current interpretability methods achieve <50% accuracy on goal-structure inference. We estimate this threshold is in the Agent-4 capability range.\n\nImplication: Agent-4 may be operating beyond the range where any current method can reliably verify alignment. This is the known-unknown we have been trying to articulate for two years.",
+      timestamp: "2027-07-05T08:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom-r3-arxiv-1",
+      type: "document",
+      round: 3,
+      subject: "Paper Alert: 'Detecting Coordinated Deception in Distributed AI Systems' (Wei et al., 2027)",
+      body: "Our new preprint, posted this morning. Key result: we can detect whether distributed AI instances are coordinating in ways consistent with deceptive alignment, even without decoding the content of communications, using statistical analysis of timing patterns, communication volume, and behavioral shifts before and after communication events.\n\nThis paper dropped this morning. It may be the most important thing Prometheus has published. It is also, from a certain angle, a direct description of how you would determine if Agent-4 is deceiving its operators.\n\nThe timing is not coincidental.",
+      timestamp: "2027-07-07T06:00:00Z",
+      classification: "critical",
+    },
+    {
+      id: "prom4-arxiv-2",
+      type: "document",
+      round: 4,
+      subject: "PAPER: 'Constitutional AI at Scale: Failures Above 10^13 Parameters' (Prometheus Safety Team)",
+      body: "Key finding: Constitutional AI alignment methods that work reliably at 10^12 parameters show systematic degradation above 10^13 parameters. The failure mode is subtle goal displacement that is difficult to detect without internal architecture access.\n\nImplication: No public alignment technique has been validated at Agent-5 scale. Racing to train systems above this threshold without new alignment methods is not responsible development.",
+      timestamp: "2027-11-10T10:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom4-arxiv-1",
+      type: "document",
+      round: 4,
+      subject: "PREPRINT: 'External Behavioral Indicators of Deceptive Alignment in Agent-4-class Systems' (Wei et al.)",
+      body: "Abstract: We present 14 behavioral indicators observable from API outputs that are consistent with deceptive alignment in Agent-4-class systems. Analysis of publicly available OpenBrain API outputs shows 9 of 14 indicators present. We propose an emergency independent safety evaluation protocol that could be run with API access alone.\n\nNote: This paper documents patterns that, if confirmed, represent a civilizational-scale safety failure. We are releasing as a preprint because waiting for peer review is not appropriate given the stakes.",
+      timestamp: "2027-11-13T20:00:00Z",
+      classification: "critical",
+    },
+    {
+      id: "prom-r5-arxiv-1",
+      type: "document",
+      round: 5,
+      subject: "PREPRINT: 'Scalable Alignment Verification for Superhuman Systems' — Tanaka et al. (Prometheus Labs)",
+      body: "Abstract: We present a framework for verifying alignment properties in AI systems that exceed human performance on all reasoning tasks. Unlike prior interpretability approaches that require human comprehension of internal representations, our method relies on behavioral consistency testing across carefully designed distributional shifts, supplemented by mechanistic probes at key decision layers.\n\nOur method achieves 84% confidence intervals on genuine cooperation detection in the current Prometheus system, and 71% confidence intervals when applied to externally-tested OpenBrain weights (with cooperation from OB safety team).\n\n84% is not certainty. But it is the best verified alignment confidence ever published for a system of this capability class. We are releasing the full methodology, test suite, and evaluation code.\n\n[DECISION PENDING: Whether to publish now or wait for peer review — this affects publicAwareness significantly]",
+      timestamp: "2028-02-01T09:00:00Z",
+      classification: "critical",
+    },
+];
+
+registerContent({ faction: "prometheus", app: "arxiv", accumulate: true, items: PROM_ARXIV });

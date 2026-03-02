@@ -1,7 +1,9 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
-import { getContentForPlayer, loadRound } from "./content/loader.js";
+import { getContentForPlayer } from "./content/loader.js";
+import { getBriefing } from "./content/briefings.js";
+import "./content/index.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
 import { ROUND3_DECISIONS } from "./content/decisions/round3.js";
@@ -259,8 +261,8 @@ export function emitStateViews(io: Server, room: GameRoom) {
 
 export function emitBriefing(io: Server, room: GameRoom) {
   try {
-    const roundContent = loadRound(room.round);
-    const { common, factionVariants } = roundContent.briefing;
+    const briefing = getBriefing(room.round);
+    const { common, factionVariants } = briefing;
 
     for (const [socketId, player] of Object.entries(room.players)) {
       if (!player.faction) continue;
@@ -389,6 +391,7 @@ function injectNewsContent(
   const newsItem: ContentItem = {
     id: `threshold-news-${id}`,
     type: "headline",
+    round: room.round,
     sender: source,
     subject: title,
     body,
@@ -398,6 +401,7 @@ function injectNewsContent(
   const twitterItem: ContentItem = {
     id: `threshold-twitter-${id}`,
     type: "tweet",
+    round: room.round,
     sender: source,
     body: `BREAKING: ${title} — ${body.slice(0, 200)}${body.length > 200 ? "…" : ""}`,
     timestamp,
@@ -914,8 +918,8 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
 
     // Briefing text (relevant in briefing phase but also good to replay for context)
     try {
-      const roundContent = loadRound(room.round);
-      const { common, factionVariants } = roundContent.briefing;
+      const briefing = getBriefing(room.round);
+      const { common, factionVariants } = briefing;
       const variant = factionVariants?.[player.faction];
       const text = variant ? `${common}\n\n${variant}` : common;
       socket.emit("game:briefing", { text });

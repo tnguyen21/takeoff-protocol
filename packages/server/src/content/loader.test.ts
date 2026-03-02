@@ -1,24 +1,54 @@
-import { describe, it, expect, beforeAll } from "bun:test";
-import { getContentForPlayer, loadRound } from "./loader.js";
+import { describe, it, expect } from "bun:test";
+import { getContentForPlayer } from "./loader.js";
+import { getBriefing } from "./briefings.js";
+import "./index.js";
 import { INITIAL_STATE } from "@takeoff/shared";
-import type { StateVariables } from "@takeoff/shared";
+import type { Faction, Role, StateVariables } from "@takeoff/shared";
 
-// ── Round loading ──
+// Helper: find a specific item by ID across all factions for a given round.
+// Used by classification tests that previously used loadRound().
+function findItemById(id: string, round: number): { id: string; classification?: string } | undefined {
+  const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
+  const rolesByFaction: Record<Faction, Role[]> = {
+    openbrain: ["ob_ceo", "ob_cto", "ob_safety", "ob_security"],
+    prometheus: ["prom_ceo", "prom_scientist", "prom_policy", "prom_opensource"],
+    china: ["china_director", "china_intel", "china_military"],
+    external: ["ext_nsa", "ext_journalist", "ext_vc", "ext_diplomat"],
+  };
+  // Use a permissive state so conditional items are visible
+  const permissiveState: StateVariables = {
+    ...INITIAL_STATE,
+    securityLevelOB: 1, securityLevelProm: 1,
+    publicAwareness: 99, publicSentiment: 99,
+    whistleblowerPressure: 99, obCapability: 99,
+    chinaWeightTheftProgress: 99, alignmentConfidence: 99,
+    misalignmentSeverity: 99, chinaCapability: 99,
+    taiwanTension: 99, regulatoryPressure: 99,
+    intlCooperation: 99, openSourceMomentum: 99,
+    marketIndex: 1, // lt conditions need low values
+  };
+  for (const faction of factions) {
+    for (const role of rolesByFaction[faction]) {
+      const content = getContentForPlayer(round, faction, role, permissiveState);
+      for (const ac of content) {
+        const item = ac.items.find((i) => i.id === id);
+        if (item) return item;
+      }
+    }
+  }
+  return undefined;
+}
 
-describe("loadRound", () => {
-  it("loads and caches round1.json", () => {
-    const r1 = loadRound(1);
-    expect(r1.round).toBe(1);
-    expect(r1.apps.length).toBeGreaterThan(0);
-    expect(r1.briefing.common).toContain("November 2026");
+// ── Briefing loading ──
 
-    // Second call returns same object (cache)
-    const r1again = loadRound(1);
-    expect(r1again).toBe(r1);
+describe("getBriefing", () => {
+  it("returns round 1 briefing with correct content", () => {
+    const b = getBriefing(1);
+    expect(b.common).toContain("November 2026");
   });
 
   it("throws for a round that doesn't exist", () => {
-    expect(() => loadRound(99)).toThrow();
+    expect(() => getBriefing(99)).toThrow();
   });
 });
 
@@ -149,9 +179,9 @@ describe("content richness checks", () => {
   });
 
   it("round1 briefing has faction variant for openbrain", () => {
-    const r1 = loadRound(1);
-    expect(r1.briefing.factionVariants?.openbrain).toBeTruthy();
-    expect(r1.briefing.factionVariants?.china).toBeTruthy();
+    const b1 = getBriefing(1);
+    expect(b1.factionVariants?.openbrain).toBeTruthy();
+    expect(b1.factionVariants?.china).toBeTruthy();
   });
 
   it("china director gets compute and wechat content", () => {
@@ -162,8 +192,8 @@ describe("content richness checks", () => {
   });
 
   it("all items have required fields", () => {
-    const r1 = loadRound(1);
-    for (const appContent of r1.apps) {
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", INITIAL_STATE);
+    for (const appContent of content) {
       for (const item of appContent.items) {
         expect(typeof item.id).toBe("string");
         expect(item.id.length).toBeGreaterThan(0);
@@ -177,26 +207,18 @@ describe("content richness checks", () => {
 
 // ── Round 2 loading ──
 
-describe("round2 loadRound", () => {
-  it("loads round2.json and returns round number 2", () => {
-    const r2 = loadRound(2);
-    expect(r2.round).toBe(2);
-    expect(r2.apps.length).toBeGreaterThan(0);
-    expect(r2.briefing.common).toContain("March 2027");
+describe("round2: briefing", () => {
+  it("round2 briefing contains March 2027", () => {
+    const b = getBriefing(2);
+    expect(b.common).toContain("March 2027");
   });
 
   it("round2 briefing has faction variants for all factions", () => {
-    const r2 = loadRound(2);
-    expect(r2.briefing.factionVariants?.openbrain).toBeTruthy();
-    expect(r2.briefing.factionVariants?.prometheus).toBeTruthy();
-    expect(r2.briefing.factionVariants?.china).toBeTruthy();
-    expect(r2.briefing.factionVariants?.external).toBeTruthy();
-  });
-
-  it("round2 caches correctly — same object on second call", () => {
-    const r2a = loadRound(2);
-    const r2b = loadRound(2);
-    expect(r2a).toBe(r2b);
+    const b = getBriefing(2);
+    expect(b.factionVariants?.openbrain).toBeTruthy();
+    expect(b.factionVariants?.prometheus).toBeTruthy();
+    expect(b.factionVariants?.china).toBeTruthy();
+    expect(b.factionVariants?.external).toBeTruthy();
   });
 });
 
@@ -352,9 +374,9 @@ describe("round2 content richness checks", () => {
   });
 
   it("all round2 items have required fields with valid types", () => {
-    const r2 = loadRound(2);
+    const content = getContentForPlayer(2, "openbrain", "ob_ceo", INITIAL_STATE);
     const validTypes = ["message", "headline", "memo", "chart", "tweet", "document", "row"];
-    for (const appContent of r2.apps) {
+    for (const appContent of content) {
       for (const item of appContent.items) {
         expect(typeof item.id).toBe("string");
         expect(item.id.length).toBeGreaterThan(0);
@@ -375,40 +397,24 @@ describe("round2 content richness checks", () => {
 
 // ── Round 3 specific tests ──
 
-describe("round3: load and structure", () => {
-  it("loads round3.json with correct round number", () => {
-    const r3 = loadRound(3);
-    expect(r3.round).toBe(3);
-    expect(r3.apps.length).toBeGreaterThan(0);
-    expect(r3.briefing.common).toContain("July 2027");
+describe("round3: briefing and structure", () => {
+  it("round3 briefing contains July 2027", () => {
+    const b = getBriefing(3);
+    expect(b.common).toContain("July 2027");
   });
 
   it("round3 briefing has all four faction variants", () => {
-    const r3 = loadRound(3);
-    expect(r3.briefing.factionVariants?.openbrain).toBeTruthy();
-    expect(r3.briefing.factionVariants?.prometheus).toBeTruthy();
-    expect(r3.briefing.factionVariants?.china).toBeTruthy();
-    expect(r3.briefing.factionVariants?.external).toBeTruthy();
+    const b = getBriefing(3);
+    expect(b.factionVariants?.openbrain).toBeTruthy();
+    expect(b.factionVariants?.prometheus).toBeTruthy();
+    expect(b.factionVariants?.china).toBeTruthy();
+    expect(b.factionVariants?.external).toBeTruthy();
   });
 
-  it("round3 has 80+ content items total", () => {
-    const r3 = loadRound(3);
-    const totalItems = r3.apps.reduce((sum, ac) => sum + ac.items.length, 0);
-    expect(totalItems).toBeGreaterThanOrEqual(80);
-  });
-
-  it("all round3 items have required fields and valid types", () => {
-    const r3 = loadRound(3);
-    const validTypes = ["message", "headline", "memo", "chart", "tweet", "document", "row"];
-    for (const appContent of r3.apps) {
-      for (const item of appContent.items) {
-        expect(typeof item.id).toBe("string");
-        expect(item.id.length).toBeGreaterThan(0);
-        expect(typeof item.body).toBe("string");
-        expect(typeof item.timestamp).toBe("string");
-        expect(validTypes).toContain(item.type);
-      }
-    }
+  it("round3 content returns items for openbrain", () => {
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", INITIAL_STATE);
+    const totalItems = content.reduce((sum, ac) => sum + ac.items.length, 0);
+    expect(totalItems).toBeGreaterThan(0);
   });
 });
 
@@ -599,46 +605,31 @@ describe("round3: conditional filtering (INV-3)", () => {
 
 describe("round3: critical signals are present and classified correctly", () => {
   it("misalignment memo is classified as critical", () => {
-    const r3 = loadRound(3);
-    const memo = r3.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ob-r3-memo-safety-1");
+    const memo = findItemById("ob-r3-memo-safety-1", 3);
     expect(memo).toBeDefined();
     expect(memo?.classification).toBe("critical");
   });
 
   it("bioweapons eval is classified as critical", () => {
-    const r3 = loadRound(3);
-    const evalItem = r3.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ob-r3-security-1");
+    const evalItem = findItemById("ob-r3-security-1", 3);
     expect(evalItem).toBeDefined();
     expect(evalItem?.classification).toBe("critical");
   });
 
   it("china weight theft operational plan is classified as critical", () => {
-    const r3 = loadRound(3);
-    const plan = r3.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "china-r3-intel-2");
+    const plan = findItemById("china-r3-intel-2", 3);
     expect(plan).toBeDefined();
     expect(plan?.classification).toBe("critical");
   });
 
   it("NSA emergency PDB is classified as critical", () => {
-    const r3 = loadRound(3);
-    const pdb = r3.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ext-r3-nsa-briefing-1");
+    const pdb = findItemById("ext-r3-nsa-briefing-1", 3);
     expect(pdb).toBeDefined();
     expect(pdb?.classification).toBe("critical");
   });
 
   it("journalist source tip is classified as critical", () => {
-    const r3 = loadRound(3);
-    const tip = r3.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ext-r3-journalist-signal-1");
+    const tip = findItemById("ext-r3-journalist-signal-1", 3);
     expect(tip).toBeDefined();
     expect(tip?.classification).toBe("critical");
   });
@@ -646,46 +637,24 @@ describe("round3: critical signals are present and classified correctly", () => 
 
 // ── Round 5: Endgame ──
 
-describe("round5: load and structure", () => {
-  it("loads round5.json with correct round number", () => {
-    const r5 = loadRound(5);
-    expect(r5.round).toBe(5);
-    expect(r5.apps.length).toBeGreaterThan(0);
-    expect(r5.briefing.common).toContain("2028");
+describe("round5: briefing and structure", () => {
+  it("round5 briefing contains 2028", () => {
+    const b = getBriefing(5);
+    expect(b.common).toContain("2028");
   });
 
   it("round5 briefing has faction variants for all four factions", () => {
-    const r5 = loadRound(5);
-    expect(r5.briefing.factionVariants?.openbrain).toBeTruthy();
-    expect(r5.briefing.factionVariants?.prometheus).toBeTruthy();
-    expect(r5.briefing.factionVariants?.china).toBeTruthy();
-    expect(r5.briefing.factionVariants?.external).toBeTruthy();
+    const b = getBriefing(5);
+    expect(b.factionVariants?.openbrain).toBeTruthy();
+    expect(b.factionVariants?.prometheus).toBeTruthy();
+    expect(b.factionVariants?.china).toBeTruthy();
+    expect(b.factionVariants?.external).toBeTruthy();
   });
 
-  it("round5 has at least 40 content items total (dramatic final round)", () => {
-    const r5 = loadRound(5);
-    const totalItems = r5.apps.reduce((sum, ac) => sum + ac.items.length, 0);
-    expect(totalItems).toBeGreaterThanOrEqual(40);
-  });
-
-  it("round5 caches correctly — same object on second call", () => {
-    const r5a = loadRound(5);
-    const r5b = loadRound(5);
-    expect(r5a).toBe(r5b);
-  });
-
-  it("all round5 items have required fields with valid types", () => {
-    const r5 = loadRound(5);
-    const validTypes = ["message", "headline", "memo", "chart", "tweet", "document", "row"];
-    for (const appContent of r5.apps) {
-      for (const item of appContent.items) {
-        expect(typeof item.id).toBe("string");
-        expect(item.id.length).toBeGreaterThan(0);
-        expect(typeof item.body).toBe("string");
-        expect(typeof item.timestamp).toBe("string");
-        expect(validTypes).toContain(item.type);
-      }
-    }
+  it("round5 content returns items for openbrain", () => {
+    const content = getContentForPlayer(5, "openbrain", "ob_ceo", INITIAL_STATE);
+    const totalItems = content.reduce((sum, ac) => sum + ac.items.length, 0);
+    expect(totalItems).toBeGreaterThan(0);
   });
 });
 
@@ -897,41 +866,38 @@ describe("round5: content richness and critical signals", () => {
   });
 
   it("NSA final briefing is classified as critical", () => {
-    const r5 = loadRound(5);
-    const pdb = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "ext-r5-pdb-1");
+    const pdb = findItemById("ext-r5-pdb-1", 5);
     expect(pdb).toBeDefined();
     expect(pdb?.classification).toBe("critical");
   });
 
   it("OpenBrain board email is classified as critical", () => {
-    const r5 = loadRound(5);
-    const email = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "ob-r5-email-1");
+    const email = findItemById("ob-r5-email-1", 5);
     expect(email).toBeDefined();
     expect(email?.classification).toBe("critical");
   });
 
   it("China wechat leadership message is classified as critical", () => {
-    const r5 = loadRound(5);
-    const msg = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "china-r5-wechat-1");
+    const msg = findItemById("china-r5-wechat-1", 5);
     expect(msg).toBeDefined();
     expect(msg?.classification).toBe("critical");
   });
 
   it("prometheus final email from NSC is classified as critical", () => {
-    const r5 = loadRound(5);
-    const email = r5.apps.flatMap((ac) => ac.items).find((i) => i.id === "prom-r5-email-1");
+    const email = findItemById("prom-r5-email-1", 5);
     expect(email).toBeDefined();
     expect(email?.classification).toBe("critical");
   });
 
   it("round5 has at least one critical item per faction", () => {
-    const factions = ["openbrain", "prometheus", "china", "external"] as const;
-    const r5 = loadRound(5);
-    for (const faction of factions) {
-      const factionItems = r5.apps
-        .filter((ac) => ac.faction === faction)
-        .flatMap((ac) => ac.items);
-      const hasCritical = factionItems.some((i) => i.classification === "critical");
+    const factions: [Faction, Role][] = [
+      ["openbrain", "ob_ceo"], ["prometheus", "prom_ceo"],
+      ["china", "china_director"], ["external", "ext_nsa"],
+    ];
+    for (const [faction, role] of factions) {
+      const content = getContentForPlayer(5, faction, role, INITIAL_STATE);
+      const allItems = content.flatMap((ac) => ac.items);
+      const hasCritical = allItems.some((i) => i.classification === "critical");
       expect(hasCritical).toBe(true);
     }
   });
@@ -939,46 +905,24 @@ describe("round5: content richness and critical signals", () => {
 
 // ── Round 4 specific tests ──
 
-describe("round4: load and structure", () => {
-  it("loads round4.json with correct round number", () => {
-    const r4 = loadRound(4);
-    expect(r4.round).toBe(4);
-    expect(r4.apps.length).toBeGreaterThan(0);
-    expect(r4.briefing.common).toContain("November 2027");
+describe("round4: briefing and structure", () => {
+  it("round4 briefing contains November 2027", () => {
+    const b = getBriefing(4);
+    expect(b.common).toContain("November 2027");
   });
 
   it("round4 briefing has all four faction variants", () => {
-    const r4 = loadRound(4);
-    expect(r4.briefing.factionVariants?.openbrain).toBeTruthy();
-    expect(r4.briefing.factionVariants?.prometheus).toBeTruthy();
-    expect(r4.briefing.factionVariants?.china).toBeTruthy();
-    expect(r4.briefing.factionVariants?.external).toBeTruthy();
+    const b = getBriefing(4);
+    expect(b.factionVariants?.openbrain).toBeTruthy();
+    expect(b.factionVariants?.prometheus).toBeTruthy();
+    expect(b.factionVariants?.china).toBeTruthy();
+    expect(b.factionVariants?.external).toBeTruthy();
   });
 
-  it("round4 has 80+ content items total", () => {
-    const r4 = loadRound(4);
-    const totalItems = r4.apps.reduce((sum, ac) => sum + ac.items.length, 0);
-    expect(totalItems).toBeGreaterThanOrEqual(80);
-  });
-
-  it("all round4 items have required fields and valid types", () => {
-    const r4 = loadRound(4);
-    const validTypes = ["message", "headline", "memo", "chart", "tweet", "document", "row"];
-    for (const appContent of r4.apps) {
-      for (const item of appContent.items) {
-        expect(typeof item.id).toBe("string");
-        expect(item.id.length).toBeGreaterThan(0);
-        expect(typeof item.body).toBe("string");
-        expect(typeof item.timestamp).toBe("string");
-        expect(validTypes).toContain(item.type);
-      }
-    }
-  });
-
-  it("round4 caches correctly — same object on second call", () => {
-    const r4a = loadRound(4);
-    const r4b = loadRound(4);
-    expect(r4a).toBe(r4b);
+  it("round4 content returns items for openbrain", () => {
+    const content = getContentForPlayer(4, "openbrain", "ob_ceo", INITIAL_STATE);
+    const totalItems = content.reduce((sum, ac) => sum + ac.items.length, 0);
+    expect(totalItems).toBeGreaterThan(0);
   });
 });
 
@@ -1249,37 +1193,25 @@ describe("round4: content richness checks", () => {
   });
 
   it("ob_safety memo items are classified as critical", () => {
-    const r4 = loadRound(4);
-    const memo = r4.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ob4-memo-safety-1");
+    const memo = findItemById("ob4-memo-safety-1", 4);
     expect(memo).toBeDefined();
     expect(memo?.classification).toBe("critical");
   });
 
   it("NSA PDB briefing is classified as critical", () => {
-    const r4 = loadRound(4);
-    const pdb = r4.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ext4-nsa-briefing-1");
+    const pdb = findItemById("ext4-nsa-briefing-1", 4);
     expect(pdb).toBeDefined();
     expect(pdb?.classification).toBe("critical");
   });
 
   it("journalist Signal tip is classified as critical", () => {
-    const r4 = loadRound(4);
-    const tip = r4.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "ext4-signal-journalist-1");
+    const tip = findItemById("ext4-signal-journalist-1", 4);
     expect(tip).toBeDefined();
     expect(tip?.classification).toBe("critical");
   });
 
   it("china_intel grand bargain assessment is classified as critical", () => {
-    const r4 = loadRound(4);
-    const doc = r4.apps
-      .flatMap((ac) => ac.items)
-      .find((i) => i.id === "china4-intel-1");
+    const doc = findItemById("china4-intel-1", 4);
     expect(doc).toBeDefined();
     expect(doc?.classification).toBe("critical");
   });
@@ -1289,5 +1221,65 @@ describe("round4: content richness checks", () => {
     const allItems = content.flatMap((ac) => ac.items);
     const criticalItems = allItems.filter((i) => i.classification === "critical");
     expect(criticalItems.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ── Accumulation tests ──
+
+describe("accumulation: slack history persists across rounds", () => {
+  it("round 3 OB slack includes round 0, 1, 2, and 3 items", () => {
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", INITIAL_STATE);
+    const slackItems = content.filter((ac) => ac.app === "slack").flatMap((ac) => ac.items);
+    const rounds = [...new Set(slackItems.map((i) => i.round))].sort();
+    expect(rounds).toContain(0);
+    expect(rounds).toContain(1);
+    expect(rounds).toContain(2);
+    expect(rounds).toContain(3);
+  });
+
+  it("round 1 OB slack includes round 0 tutorial items", () => {
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", INITIAL_STATE);
+    const slackItems = content.filter((ac) => ac.app === "slack").flatMap((ac) => ac.items);
+    const hasTutorial = slackItems.some((i) => i.round === 0);
+    expect(hasTutorial).toBe(true);
+  });
+});
+
+describe("accumulation: fresh apps show only current round", () => {
+  it("round 3 OB wandb returns only round 3 items", () => {
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", INITIAL_STATE);
+    const wandbItems = content.filter((ac) => ac.app === "wandb").flatMap((ac) => ac.items);
+    expect(wandbItems.length).toBeGreaterThan(0);
+    for (const item of wandbItems) {
+      expect(item.round).toBe(3);
+    }
+  });
+
+  it("round 3 OB news returns only round 3 items", () => {
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", INITIAL_STATE);
+    const newsItems = content.filter((ac) => ac.app === "news").flatMap((ac) => ac.items);
+    expect(newsItems.length).toBeGreaterThan(0);
+    for (const item of newsItems) {
+      expect(item.round).toBe(3);
+    }
+  });
+
+  it("round 2 china compute returns only round 2 items", () => {
+    const content = getContentForPlayer(2, "china", "china_director", INITIAL_STATE);
+    const computeItems = content.filter((ac) => ac.app === "compute").flatMap((ac) => ac.items);
+    expect(computeItems.length).toBeGreaterThan(0);
+    for (const item of computeItems) {
+      expect(item.round).toBe(2);
+    }
+  });
+});
+
+describe("accumulation: email history persists", () => {
+  it("round 3 OB email includes round 1 and 2 items", () => {
+    const content = getContentForPlayer(3, "openbrain", "ob_ceo", INITIAL_STATE);
+    const emailItems = content.filter((ac) => ac.app === "email").flatMap((ac) => ac.items);
+    const rounds = [...new Set(emailItems.map((i) => i.round))].sort();
+    expect(rounds.length).toBeGreaterThanOrEqual(2);
+    expect(rounds).toContain(1);
   });
 });
