@@ -530,7 +530,8 @@ describe("checkThresholds — each fires at most once (idempotency invariant)", 
     const ob = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({
       players: { p1: ob },
-      state: { ...INITIAL_STATE }, // all at safe defaults
+      // publicAwareness set above 25 to avoid npc_r1_public_darkness_tip (lte: 25) at initial state
+      state: { ...INITIAL_STATE, publicAwareness: 30 },
     });
 
     const { io, emitted } = createMockIo();
