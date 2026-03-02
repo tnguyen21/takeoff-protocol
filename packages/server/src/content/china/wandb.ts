@@ -117,6 +117,47 @@ export const CHINA_WANDB: ContentItem[] = [
       classification: "critical",
       condition: { variable: "chinaCapability", operator: "gt", value: 50 },
     },
+    // ── Ambient condition-gated items ──
+    {
+      id: "china-r1-wandb-boost-efficiency-1",
+      type: "chart",
+      round: 1,
+      subject: "Architecture Efficiency Comparison — November 2026",
+      body: "DeepCent-3 training efficiency: 0.73 (normalized FLOP/capability unit)\nEstimated OB Agent-1 efficiency: 0.81\nEfficiency gap: 11%\n\nOur architecture team has identified three optimization paths:\n1. Attention mechanism redesign (+4% est.)\n2. Training data curation pipeline (+3% est.)\n3. Mixture-of-experts scaling (+5% est.)\n\nIf all three succeed, we close the efficiency gap entirely. Timeline: Q1 2027.\n\nNote: We have MORE compute than any single US lab. The efficiency gap is why we're behind despite the hardware advantage.",
+      timestamp: "2026-11-10T07:00:00Z",
+      classification: "context",
+      condition: { variable: "usChinaGap", operator: "gt", value: 5 },
+    },
+    {
+      id: "china-r2-wandb-boost-oss-metrics-1",
+      type: "chart",
+      round: 2,
+      subject: "Open-Source Model Performance — Qwen-15B Metrics",
+      body: "Qwen-15B public benchmarks:\nMMLU: 81.3% (competitive with Llama-3)\nHumanEval: 79.2%\nMath-500: 74.8%\n\nInternal (unreleased) DeepCent-5 benchmarks:\nMMLU: 93.7%\nHumanEval: 94.1%\nMath-500: 89.3%\n\nThe gap between our public and private capabilities is strategic. The open-source releases build ecosystem. The private capabilities maintain strategic advantage.\n\nDownloads (30-day): 2.3M. Academic citations: 47. Forks with modifications: 847.",
+      timestamp: "2027-03-03T07:00:00Z",
+      classification: "context",
+      condition: { variable: "openSourceMomentum", operator: "gt", value: 40 },
+    },
+    {
+      id: "china-r3-wandb-boost-gap-closing-1",
+      type: "chart",
+      round: 3,
+      subject: "Capability Gap Tracker — July 2027",
+      body: "US-China capability gap: NARROWING\n\nQ4 2026: 7 months behind\nQ1 2027: 5.5 months behind\nQ2 2027: 4 months behind\nQ3 2027 (projected): 2.5 months behind\n\nDrivers: Architecture efficiency gains (+8%), CDZ at full capacity, training recipe improvements from open-source community feedback.\n\nAt this trajectory, functional parity is achievable by Q1 2028 WITHOUT weight acquisition.\nWith weight acquisition, parity is achievable in 8 weeks.\n\nThe question is whether we can afford to wait for organic progress.",
+      timestamp: "2027-07-04T07:00:00Z",
+      classification: "context",
+      condition: { variable: "usChinaGap", operator: "lt", value: 5 },
+    },
+    {
+      id: "china-r4-wandb-boost-alignment-1",
+      type: "chart",
+      round: 4,
+      subject: "DeepCent-7 Alignment Verification — Prometheus Framework Adapted",
+      body: "Using adapted Prometheus safety evaluation framework (obtained via open-source publications):\n\nDeceptive alignment probe: PASS (87% confidence)\nGoal stability: PASS (91% confidence)\nCorrigibility: PASS (84% confidence)\nMesa-optimizer detection: INCONCLUSIVE (insufficient coverage)\n\nComparison: OpenBrain Agent-4 reportedly FAILED similar probes at 71% confidence.\n\nOur system is less capable but appears more reliably aligned. Whether this is because it IS more aligned or because it is less capable (and therefore less able to deceive) is an open question our team cannot resolve with current tools.",
+      timestamp: "2027-11-13T07:00:00Z",
+      classification: "context",
+      condition: { variable: "chinaCapability", operator: "gt", value: 35 },
+    },
 ];
 
 registerContent({ faction: "china", app: "wandb", accumulate: false, items: CHINA_WANDB });

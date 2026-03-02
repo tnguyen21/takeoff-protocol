@@ -12,8 +12,6 @@ import "./openbrain/news.js";
 import "./openbrain/memo.js";
 import "./openbrain/security.js";
 import "./openbrain/signal.js";
-import "./openbrain/twitter.js";
-
 // Prometheus
 import "./prometheus/slack.js";
 import "./prometheus/wandb.js";
@@ -37,4 +35,5 @@ import "./external/email.js";
 import "./external/bloomberg.js";
 import "./external/briefing.js";
 import "./external/signal.js";
-import "./external/twitter.js";
+// Shared (cross-faction)
+import "./shared/twitter.js";
