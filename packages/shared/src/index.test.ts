@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { resolveDecisions } from "./resolution.js";
 import { computeFogView } from "./fog.js";
 import { computeEndingArcs } from "./endings.js";
-import type { DecisionOption, StateVariables } from "./types.js";
+import type { DecisionOption, GameMessage, NpcPersona, NpcTrigger, StateVariables } from "./types.js";
 
 const BASE_STATE: StateVariables = {
   obCapability: 50,
@@ -44,6 +44,104 @@ const BASE_STATE: StateVariables = {
   ccpPatience: 50,
   domesticChipProgress: 20,
 };
+
+// ── NpcPersona / NpcTrigger / GameMessage.isNpc ───────────────────────────────
+
+describe("NPC types", () => {
+  it("GameMessage accepts isNpc flag", () => {
+    const msg: GameMessage = {
+      id: "m1",
+      from: "npc-1",
+      fromName: "Director Chen",
+      to: null,
+      faction: "china",
+      content: "Hello",
+      timestamp: 1000,
+      isTeamChat: false,
+      isNpc: true,
+    };
+    expect(msg.isNpc).toBe(true);
+  });
+
+  it("GameMessage.isNpc is optional (defaults to undefined)", () => {
+    const msg: GameMessage = {
+      id: "m2",
+      from: "player-1",
+      fromName: "Alice",
+      to: null,
+      faction: "openbrain",
+      content: "Hi",
+      timestamp: 2000,
+      isTeamChat: false,
+    };
+    expect(msg.isNpc).toBeUndefined();
+  });
+
+  it("NpcPersona holds expected fields", () => {
+    const persona: NpcPersona = {
+      id: "npc-chen",
+      name: "Director Chen",
+      subtitle: "China State Security",
+      avatarColor: "#c0392b",
+      factions: ["china"],
+    };
+    expect(persona.id).toBe("npc-chen");
+    expect(persona.factions).toContain("china");
+  });
+
+  it("NpcTrigger with full condition and schedule is valid", () => {
+    const trigger: NpcTrigger = {
+      id: "trigger-1",
+      npcId: "npc-chen",
+      content: "The weights have been acquired.",
+      condition: {
+        variable: "chinaWeightTheftProgress",
+        operator: "gt",
+        value: 75,
+      },
+      schedule: {
+        round: 3,
+        phase: "deliberation",
+      },
+      target: {
+        faction: "china",
+        role: "china_director",
+      },
+    };
+    expect(trigger.condition?.variable).toBe("chinaWeightTheftProgress");
+    expect(trigger.condition?.operator).toBe("gt");
+    expect(trigger.schedule?.round).toBe(3);
+    expect(trigger.target.faction).toBe("china");
+  });
+
+  it("NpcTrigger condition and schedule are optional", () => {
+    const trigger: NpcTrigger = {
+      id: "trigger-2",
+      npcId: "npc-chen",
+      content: "Unconditional message.",
+      target: { faction: "china" },
+    };
+    expect(trigger.condition).toBeUndefined();
+    expect(trigger.schedule).toBeUndefined();
+  });
+
+  it("NpcTrigger target can be faction-only or role-only", () => {
+    const factionOnly: NpcTrigger = {
+      id: "t-faction",
+      npcId: "npc-1",
+      content: "For all of china",
+      target: { faction: "china" },
+    };
+    const roleOnly: NpcTrigger = {
+      id: "t-role",
+      npcId: "npc-1",
+      content: "For the director",
+      target: { role: "china_director" },
+    };
+    expect(factionOnly.target.role).toBeUndefined();
+    expect(roleOnly.target.faction).toBeUndefined();
+  });
+});
 
 // ── resolveDecisions ──────────────────────────────────────────────────────────
 

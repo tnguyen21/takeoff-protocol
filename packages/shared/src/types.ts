@@ -210,6 +210,36 @@ export interface GameMessage {
   content: string;
   timestamp: number;
   isTeamChat: boolean;
+  isNpc?: boolean;
+}
+
+// ── NPC Configuration ──
+
+export interface NpcPersona {
+  id: string;
+  name: string;
+  subtitle: string;
+  avatarColor: string;
+  factions: Faction[];
+}
+
+export interface NpcTrigger {
+  id: string;
+  npcId: string;
+  content: string;
+  condition?: {
+    variable: keyof StateVariables;
+    operator: "gt" | "lt" | "eq";
+    value: number;
+  };
+  schedule?: {
+    round: number;
+    phase: GamePhase;
+  };
+  target: {
+    faction?: Faction;
+    role?: Role;
+  };
 }
 
 // ── Publications ──
