@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useSoundEffects } from "../sounds/index.js";
 import { Volume2, VolumeX } from "lucide-react";
 import { FACTIONS } from "@takeoff/shared";
+import type { RoleConfig } from "@takeoff/shared";
 
 const FACTION_PREFIX: Record<string, string> = {
   openbrain: "OB",
@@ -11,13 +12,17 @@ const FACTION_PREFIX: Record<string, string> = {
   external: "Ext",
 };
 
-function getRoleDisplayName(faction: string | null, role: string | null): string | null {
+function getRoleConfig(faction: string | null, role: string | null): RoleConfig | null {
   if (!faction || !role) return null;
   const factionConfig = FACTIONS.find((f) => f.id === faction);
   if (!factionConfig) return null;
-  const roleConfig = factionConfig.roles.find((r) => r.id === role);
+  return factionConfig.roles.find((r) => r.id === role) ?? null;
+}
+
+function getRoleDisplayName(faction: string | null, role: string | null): string | null {
+  const roleConfig = getRoleConfig(faction, role);
   if (!roleConfig) return null;
-  const prefix = FACTION_PREFIX[faction];
+  const prefix = FACTION_PREFIX[faction ?? ""];
   return prefix ? `${prefix} ${roleConfig.label}` : roleConfig.label;
 }
 
@@ -41,6 +46,8 @@ export function MenuBar() {
   const { phase, round, timer, selectedFaction, selectedRole, isGM } = useGameStore();
   const { muted, toggleMute } = useSoundEffects();
   const [timeLeft, setTimeLeft] = useState("");
+  const [showRoleTooltip, setShowRoleTooltip] = useState(false);
+  const roleBadgeRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!timer.endsAt) {
@@ -75,6 +82,8 @@ export function MenuBar() {
         : selectedFaction === "china"
           ? "China"
           : "External";
+
+  const roleConfig = getRoleConfig(selectedFaction, selectedRole);
 
   return (
     <div
@@ -186,6 +195,9 @@ export function MenuBar() {
               if (!name) return null;
               return (
                 <span
+                  ref={roleBadgeRef}
+                  onMouseEnter={() => setShowRoleTooltip(true)}
+                  onMouseLeave={() => setShowRoleTooltip(false)}
                   style={{
                     padding: "0 8px",
                     borderRadius: "4px",
@@ -196,6 +208,8 @@ export function MenuBar() {
                     fontWeight: 600,
                     letterSpacing: "0.03em",
                     whiteSpace: "nowrap",
+                    cursor: "help",
+                    position: "relative",
                   }}
                 >
                   {name}
@@ -225,6 +239,115 @@ export function MenuBar() {
           </span>
         )}
       </div>
+
+      {/* Role Tooltip */}
+      {showRoleTooltip && roleConfig && (
+        <div
+          style={{
+            position: "fixed",
+            top: roleBadgeRef.current ? roleBadgeRef.current.getBoundingClientRect().bottom + 8 : 0,
+            right: 12,
+            width: "320px",
+            maxWidth: "calc(100vw - 24px)",
+            background: "rgba(28, 28, 32, 0.95)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            borderRadius: "10px",
+            border: "1px solid rgba(139,92,246,0.25)",
+            padding: "16px",
+            zIndex: 10000,
+            boxShadow: "0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.1)",
+            animation: "roleTooltipIn 0.15s ease-out",
+          }}
+        >
+          <style>{`
+            @keyframes roleTooltipIn {
+              from {
+                opacity: 0;
+                transform: translateY(-4px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
+          
+          {/* Role Title */}
+          <div
+            style={{
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "rgba(196,181,253,0.95)",
+              marginBottom: "8px",
+              letterSpacing: "0.02em",
+            }}
+          >
+            {FACTION_PREFIX[selectedFaction ?? ""]} {roleConfig.label}
+          </div>
+          
+          {/* Description */}
+          <div
+            style={{
+              fontSize: "12px",
+              lineHeight: "1.5",
+              color: "rgba(255,255,255,0.65)",
+              marginBottom: "12px",
+            }}
+          >
+            {roleConfig.description}
+          </div>
+          
+          {/* Goals Section */}
+          <div
+            style={{
+              fontSize: "10px",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "rgba(139,92,246,0.8)",
+              marginBottom: "8px",
+            }}
+          >
+            Your Objectives
+          </div>
+          
+          <ul
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+            }}
+          >
+            {roleConfig.goals.map((goal, index) => (
+              <li
+                key={index}
+                style={{
+                  fontSize: "11px",
+                  lineHeight: "1.5",
+                  color: "rgba(255,255,255,0.55)",
+                  paddingLeft: "14px",
+                  position: "relative",
+                  marginBottom: index < roleConfig.goals.length - 1 ? "6px" : 0,
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "5px",
+                    width: "5px",
+                    height: "5px",
+                    borderRadius: "50%",
+                    background: "rgba(139,92,246,0.6)",
+                  }}
+                />
+                {goal}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
