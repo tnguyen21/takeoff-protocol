@@ -716,6 +716,46 @@ Round 3, China, Intelligence Briefing:
 
 The pattern: each piece of content is (1) a reflection of hidden state that gives players information, and (2) a nudge toward a decision the game wants them to consider.
 
+### NPC Messaging
+
+Static round content delivers a baseline of information, but real crises are punctuated by unexpected messages — a worried colleague, an anonymous tip, a board member calling. The NPC messaging system adds **dynamic, state-triggered Signal DMs** from fictional characters that arrive mid-round based on game state thresholds.
+
+**How it works:** NPC messages flow through the existing `GameMessage` pipeline (same store, same socket event, same reconnect replay). An `isNpc` flag distinguishes them. Triggers are evaluated in `checkThresholds()` alongside existing threshold events, using the same `firedThresholds` set for once-per-game deduplication. No new infrastructure — just content.
+
+**Trigger types:**
+- **State-triggered** — fire when a variable crosses a threshold (e.g., `whistleblowerPressure >= 55` sends an anonymous tip to the journalist)
+- **Scheduled** — fire at a specific round/phase regardless of state (e.g., round 2 intel phase, Prometheus gets a tip about OpenBrain's internal capability estimates)
+- **GM-triggered** — the GM can manually send any NPC message to any player via `gm:send-npc-message`, for reactive storytelling
+
+**NPC personas** (12 total, plus a `__npc_personal__` catch-all for flavor):
+
+| Persona | Voice | Factions |
+|---------|-------|----------|
+| Anonymous Source | Cryptic, urgent, paranoid | OB, Prom, External |
+| Policy Insider | Connected, political, warning | OB, Prom, External |
+| Worried Engineer | OB colleague, anxious | OB |
+| Board Member | Formal, corporate pressure | OB |
+| Security Vendor | External consultant, technical | OB |
+| Safety Researcher | Earnest, principled | Prometheus |
+| OS Contributor | Open source community | Prometheus |
+| Party Liaison | Ministry of Science, formal/threatening | China |
+| DeepCent Engineer | CDZ Operations, technical | China |
+| Intel Analyst | NSA, dry/analytical | External |
+| Portfolio CEO | Business pressure | External |
+| Whistleblower | Desperate, anonymous | External |
+
+**Three message categories:**
+
+1. **Gameplay** — actionable intel tied to the player's role. The OB Security Lead gets told about unpatched vectors when `securityLevelOB` drops. The journalist gets anonymous tips when `whistleblowerPressure` rises. These give players information they can act on.
+
+2. **Escalation** — crisis communications at dangerous thresholds. Board members demanding answers at `obBoardConfidence <= 30`. The CCP threatening leadership review at `ccpPatience <= 20`. These create panic and urgency.
+
+3. **Flavor** — zero game impact, pure immersion. A text from your spouse asking about dinner. A DoorDash delivery notification. A LinkedIn recruiter. A Venmo charge for thai food. Their power comes from juxtaposition — a parking meter reminder while you're deciding whether to report a safety violation. At high thresholds, personal messages become crisis-aware: mom texting "should I be worried?" when `publicAwareness >= 70`, a partner freaking out about the 401k when `economicDisruption >= 60`.
+
+NPC contacts appear in the Signal sidebar only when they've sent at least one message — players don't see empty NPC contacts cluttering their inbox. Messages are one-way; players cannot reply to NPCs.
+
+Trigger content lives per-round in `packages/server/src/content/npc/`. Persona definitions in `packages/server/src/content/npcPersonas.ts`. See `docs/NPC_TRIGGERS.md` for the full catalog of proposed triggers.
+
 ---
 
 ## 10. Balancing
