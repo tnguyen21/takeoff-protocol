@@ -2,6 +2,7 @@ import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
+import { getNpcPersona } from "./content/npcPersonas.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
@@ -265,6 +266,53 @@ export function registerGameEvents(io: Server, socket: Socket) {
     // Notify GM of remaining extend uses
     io.to(socket.id).emit("gm:extend-ack", { usesRemaining: 2 - (uses + 1) });
   });
+
+  socket.on(
+    "gm:send-npc-message",
+    (
+      { npcId, content, targetPlayerId }: { npcId: string; content: string; targetPlayerId: string },
+      callback: (res: { ok: boolean; error?: string }) => void,
+    ) => {
+      const code = socket.data.roomCode;
+      if (!code) { callback({ ok: false, error: "Not in a room" }); return; }
+
+      const room = getRoom(code);
+      if (!room || room.gmId !== socket.id) {
+        callback({ ok: false, error: "Only GM can send NPC messages" });
+        return;
+      }
+
+      const persona = getNpcPersona(npcId);
+      if (!persona) {
+        callback({ ok: false, error: `Unknown NPC id: ${npcId}` });
+        return;
+      }
+
+      if (!room.players[targetPlayerId]) {
+        callback({ ok: false, error: `Player not found: ${targetPlayerId}` });
+        return;
+      }
+
+      const message: GameMessage = {
+        id: crypto.randomUUID(),
+        from: npcId,
+        fromName: persona.name,
+        to: targetPlayerId,
+        content,
+        timestamp: Date.now(),
+        isTeamChat: false,
+        isNpc: true,
+      };
+
+      room.messages.push(message);
+
+      io.to(targetPlayerId).emit("message:receive", message);
+      io.to(socket.id).emit("message:receive", { ...message, _gmView: true });
+
+      console.log(`[gm:send-npc-message] ${npcId} → ${targetPlayerId}: "${content.slice(0, 60)}"`);
+      callback({ ok: true });
+    },
+  );
 
   // ── Dev Tools (non-production only) ──
 

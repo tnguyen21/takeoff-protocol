@@ -203,10 +203,10 @@ export interface RoundContent {
 
 export interface GameMessage {
   id: string;
-  from: string;       // player id
+  from: string;        // player id (or npcId for NPC messages)
   fromName: string;
   to: string | null;   // player id (DM) or null (team chat)
-  faction: Faction;    // sender's faction
+  faction?: Faction;   // sender's faction; undefined for NPC messages
   content: string;
   timestamp: number;
   isTeamChat: boolean;
