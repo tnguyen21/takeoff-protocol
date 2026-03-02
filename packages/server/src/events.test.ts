@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "bun:test";
-import type { GameRoom, Player } from "@takeoff/shared";
+import type { Faction, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { NPC_PERSONAS, getNpcPersona } from "./content/npcPersonas.js";
 
@@ -97,11 +97,13 @@ function invokeNpcMessageHandler(
     return result;
   }
 
+  const targetPlayer = room.players[targetPlayerId];
   const message = {
     id: crypto.randomUUID(),
     from: npcId,
     fromName: persona.name,
     to: targetPlayerId,
+    faction: targetPlayer.faction as Faction,
     content,
     timestamp: Date.now(),
     isTeamChat: false,
@@ -191,7 +193,7 @@ describe("gm:send-npc-message", () => {
     expect(msg.isTeamChat).toBe(false);
     expect(msg.content).toBe("The weight extraction already happened.");
     expect(typeof msg.id).toBe("string");
-    expect(msg.faction).toBeUndefined();
+    expect(msg.faction).toBe("openbrain");
   });
 
   it("INV-5: emits message:receive to target player", () => {

@@ -206,7 +206,7 @@ export interface GameMessage {
   from: string;        // player id (or npcId for NPC messages)
   fromName: string;
   to: string | null;   // player id (DM) or null (team chat)
-  faction?: Faction;   // sender's faction; undefined for NPC messages
+  faction: Faction;    // sender's faction (for NPC messages: the target player's faction)
   content: string;
   timestamp: number;
   isTeamChat: boolean;

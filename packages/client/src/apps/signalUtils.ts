@@ -62,9 +62,23 @@ export function isNpcId(id: string): boolean {
 
 /** Static metadata (subtitle + avatar color) for known NPC contacts. */
 const NPC_METADATA: Record<string, { subtitle: string; avatarColor: string }> = {
+  // Cross-faction
   __npc_anon__: { subtitle: "· encrypted channel", avatarColor: "bg-red-900" },
   __npc_insider__: { subtitle: "· DC source", avatarColor: "bg-purple-900" },
-  __npc_ob_internal__: { subtitle: "· colleague", avatarColor: "bg-emerald-900" },
+  // OpenBrain
+  __npc_ob_engineer__: { subtitle: "· colleague", avatarColor: "bg-emerald-900" },
+  __npc_ob_board__: { subtitle: "· OpenBrain Board", avatarColor: "bg-amber-900" },
+  __npc_ob_security__: { subtitle: "· external consultant", avatarColor: "bg-slate-700" },
+  // Prometheus
+  __npc_prom_researcher__: { subtitle: "· safety research", avatarColor: "bg-blue-900" },
+  __npc_prom_os__: { subtitle: "· GitHub contributor", avatarColor: "bg-green-900" },
+  // China
+  __npc_china_liaison__: { subtitle: "· Ministry of Science", avatarColor: "bg-red-900" },
+  __npc_china_engineer__: { subtitle: "· CDZ Operations", avatarColor: "bg-orange-900" },
+  // External
+  __npc_intel_analyst__: { subtitle: "· NSA", avatarColor: "bg-indigo-900" },
+  __npc_portfolio_ceo__: { subtitle: "· portfolio company", avatarColor: "bg-teal-900" },
+  __npc_whistleblower__: { subtitle: "· anonymous", avatarColor: "bg-rose-900" },
 };
 
 const NPC_DEFAULT_METADATA = { subtitle: "· unknown source", avatarColor: "bg-neutral-700" };

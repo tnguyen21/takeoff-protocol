@@ -107,7 +107,7 @@ describe("isNpcId (INV-2)", () => {
   it("INV-2: NPC_IDS set contains well-known NPC IDs", () => {
     expect(NPC_IDS.has("__npc_anon__")).toBe(true);
     expect(NPC_IDS.has("__npc_insider__")).toBe(true);
-    expect(NPC_IDS.has("__npc_ob_internal__")).toBe(true);
+    expect(NPC_IDS.has("__npc_ob_engineer__")).toBe(true);
   });
 });
 
@@ -184,13 +184,13 @@ describe("buildNpcContacts (INV-3)", () => {
     const messages = [
       makeNpcMsg({ id: "m1", from: "__npc_anon__", to: PLAYER }),
       makeNpcMsg({ id: "m2", from: "__npc_insider__", to: PLAYER }),
-      makeNpcMsg({ id: "m3", from: "__npc_ob_internal__", to: PLAYER }),
+      makeNpcMsg({ id: "m3", from: "__npc_ob_engineer__", to: PLAYER }),
     ];
     const contacts = buildNpcContacts(messages, PLAYER);
     const byId = Object.fromEntries(contacts.map((c) => [c.id, c]));
     expect(byId["__npc_anon__"].avatarColor).toBe("bg-red-900");
     expect(byId["__npc_insider__"].avatarColor).toBe("bg-purple-900");
-    expect(byId["__npc_ob_internal__"].avatarColor).toBe("bg-emerald-900");
+    expect(byId["__npc_ob_engineer__"].avatarColor).toBe("bg-emerald-900");
   });
 
   it("INV-3: falls back to default metadata for unknown NPC IDs", () => {

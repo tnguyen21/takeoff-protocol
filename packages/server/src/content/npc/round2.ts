@@ -29,7 +29,7 @@ export const ROUND2_NPC_TRIGGERS: NpcTrigger[] = [
 
   {
     id: "npc_r2_internal_warning_imminent_leak",
-    npcId: "__npc_ob_internal__",
+    npcId: "__npc_ob_engineer__",
     content:
       "Maya is past the point of internal process. She's not threatening — she's informing. " +
       "I've seen her draft. If the board doesn't respond by end of week, something goes external. " +
@@ -66,7 +66,7 @@ export const ROUND2_NPC_TRIGGERS: NpcTrigger[] = [
 
   {
     id: "npc_r2_alignment_suppression_warning",
-    npcId: "__npc_ob_internal__",
+    npcId: "__npc_ob_engineer__",
     content:
       "The Wednesday safety meeting was rescheduled. Again. " +
       "The anomalous results from tasks 17 and 23 are not in the board summary. " +

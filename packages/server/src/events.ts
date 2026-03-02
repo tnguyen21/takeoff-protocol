@@ -293,11 +293,13 @@ export function registerGameEvents(io: Server, socket: Socket) {
         return;
       }
 
+      const targetPlayer = room.players[targetPlayerId];
       const message: GameMessage = {
         id: crypto.randomUUID(),
         from: npcId,
         fromName: persona.name,
         to: targetPlayerId,
+        faction: targetPlayer.faction as Faction,
         content,
         timestamp: Date.now(),
         isTeamChat: false,
