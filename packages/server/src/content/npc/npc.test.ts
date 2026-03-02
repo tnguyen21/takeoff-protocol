@@ -6,11 +6,13 @@
  * - INV-2: Each trigger has a non-empty id, npcId, content, and a target object
  *          (target may be {} for personal triggers that broadcast to all players)
  * - INV-3: Triggers with a condition reference a valid state variable (checked structurally)
- * - INV-4: getNpcTriggersForRound returns the correct set and empty array for unknown rounds
+ * - INV-4: getNpcTriggersForRound returns all round + personal triggers and empty array for unknown rounds
  * - INV-5: Round-1 triggers cover chinaWeightTheftProgress, ccpPatience, publicAwareness
  * - INV-6: Round-2 triggers cover whistleblowerPressure, obBoardConfidence, alignmentConfidence, openSourceMomentum
  * - INV-7: CONDITIONAL_NPC_TRIGGERS IDs are unique and non-overlapping with round triggers
  * - INV-8: getNpcTriggersForRound merges conditional triggers filtered by round window
+ * - INV-9: Personal triggers have correct structure (schedule XOR rounds+condition, valid roles)
+ * - INV-10: getNpcTriggersForRound merges personal scheduled triggers into the right rounds
  */
 
 import { describe, it, expect } from "bun:test";
@@ -38,7 +40,9 @@ describe("INV-1: trigger ID uniqueness", () => {
 
 // ── INV-2: Required fields ──────────────────────────────────────────────────
 
-function assertTriggerShape(triggers: typeof ROUND1_NPC_TRIGGERS, label: string) {
+import type { NpcTrigger } from "@takeoff/shared";
+
+function assertTriggerShape(triggers: NpcTrigger[], label: string) {
   describe(`INV-2: required fields — ${label}`, () => {
     it("every trigger has a non-empty id, npcId, content, and a target object", () => {
       for (const t of triggers) {
@@ -68,11 +72,14 @@ function assertTriggerShape(triggers: typeof ROUND1_NPC_TRIGGERS, label: string)
       }
     });
 
-    it("every rounds field (if present) is a two-element tuple with min <= max", () => {
+    it("every rounds (if present) is a valid [start, end] pair", () => {
       for (const t of triggers) {
         if (!t.rounds) continue;
-        expect(t.rounds).toHaveLength(2);
-        expect(t.rounds[0]).toBeLessThanOrEqual(t.rounds[1]);
+        expect(Array.isArray(t.rounds)).toBe(true);
+        expect(t.rounds.length).toBe(2);
+        expect(t.rounds[0]).toBeGreaterThanOrEqual(1);
+        expect(t.rounds[1]).toBeGreaterThanOrEqual(t.rounds[0]);
+        expect(t.rounds[1]).toBeLessThanOrEqual(5);
       }
     });
   });
@@ -234,5 +241,82 @@ describe("INV-8: conditional trigger rounds field", () => {
     for (const t of CONDITIONAL_NPC_TRIGGERS) {
       expect(t.target.role).toBeDefined();
     }
+  });
+});
+
+// ── INV-9: Personal trigger structure ───────────────────────────────────────
+
+describe("INV-9: personal trigger structure", () => {
+  it("all personal triggers use __npc_personal__ npcId", () => {
+    for (const t of PERSONAL_NPC_TRIGGERS) {
+      expect(t.npcId).toBe("__npc_personal__");
+    }
+  });
+
+  it("all personal trigger IDs start with npc_personal_", () => {
+    for (const t of PERSONAL_NPC_TRIGGERS) {
+      expect(t.id).toMatch(/^npc_personal_/);
+    }
+  });
+
+  it("escalation-aware triggers have condition and rounds, not schedule", () => {
+    const escalation = PERSONAL_NPC_TRIGGERS.filter((t) => t.rounds !== undefined);
+    for (const t of escalation) {
+      expect(t.condition).toBeDefined();
+      expect(t.schedule).toBeUndefined();
+    }
+  });
+
+  it("scheduled personal triggers have schedule and no rounds", () => {
+    const scheduled = PERSONAL_NPC_TRIGGERS.filter((t) => t.schedule !== undefined);
+    for (const t of scheduled) {
+      expect(t.rounds).toBeUndefined();
+    }
+  });
+
+  it("every trigger has either a schedule or a rounds field", () => {
+    for (const t of PERSONAL_NPC_TRIGGERS) {
+      expect(t.schedule !== undefined || t.rounds !== undefined).toBe(true);
+    }
+  });
+
+  it("has a substantial number of triggers", () => {
+    expect(PERSONAL_NPC_TRIGGERS.length).toBeGreaterThanOrEqual(40);
+  });
+});
+
+// ── INV-10: getNpcTriggersForRound merges personal scheduled triggers ─────────
+
+describe("INV-10: personal scheduled triggers appear in correct rounds", () => {
+  it("ob_ceo_spouse_r1 appears in round 1 results", () => {
+    const r1 = getNpcTriggersForRound(1);
+    expect(r1.some((t) => t.id === "npc_personal_ob_ceo_spouse_r1")).toBe(true);
+  });
+
+  it("any_package_r1 (global) appears in round 1 results", () => {
+    const r1 = getNpcTriggersForRound(1);
+    expect(r1.some((t) => t.id === "npc_personal_any_package_r1")).toBe(true);
+  });
+
+  it("ob_ceo_spouse_r3 does NOT appear in round 1", () => {
+    const r1 = getNpcTriggersForRound(1);
+    expect(r1.some((t) => t.id === "npc_personal_ob_ceo_spouse_r3")).toBe(false);
+  });
+
+  it("any_mom_worried (escalation) appears in rounds 3-5 but not round 2", () => {
+    expect(getNpcTriggersForRound(2).some((t) => t.id === "npc_personal_any_mom_worried")).toBe(false);
+    expect(getNpcTriggersForRound(3).some((t) => t.id === "npc_personal_any_mom_worried")).toBe(true);
+    expect(getNpcTriggersForRound(4).some((t) => t.id === "npc_personal_any_mom_worried")).toBe(true);
+    expect(getNpcTriggersForRound(5).some((t) => t.id === "npc_personal_any_mom_worried")).toBe(true);
+  });
+
+  it("any_old_friend_doom (rounds [5,5]) only appears in round 5", () => {
+    expect(getNpcTriggersForRound(4).some((t) => t.id === "npc_personal_any_old_friend_doom")).toBe(false);
+    expect(getNpcTriggersForRound(5).some((t) => t.id === "npc_personal_any_old_friend_doom")).toBe(true);
+  });
+
+  it("ob_safety_sibling_r5 (scheduled) appears in round 5", () => {
+    expect(getNpcTriggersForRound(5).some((t) => t.id === "npc_personal_ob_safety_sibling_r5")).toBe(true);
+    expect(getNpcTriggersForRound(4).some((t) => t.id === "npc_personal_ob_safety_sibling_r5")).toBe(false);
   });
 });

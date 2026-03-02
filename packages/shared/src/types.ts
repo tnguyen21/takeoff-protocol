@@ -326,10 +326,14 @@ export interface NpcTrigger {
   condition?: NpcTriggerCondition;
   /** Fire unconditionally at the start of this round/phase. */
   schedule?: NpcTriggerSchedule;
+  /**
+   * Inclusive round range [start, end] in which this trigger is eligible to fire.
+   * Used with condition-based triggers to restrict the active window.
+   * E.g. [3, 5] means the trigger can fire in rounds 3, 4, or 5.
+   */
+  rounds?: [number, number];
   /** Resolved to socket IDs by the server. */
   target: NpcTriggerTarget;
-  /** Inclusive round range [min, max] — trigger is active in these rounds. If omitted, always active. */
-  rounds?: [number, number];
 }
 
 // ── Ending Arcs ──

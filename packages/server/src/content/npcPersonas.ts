@@ -3,15 +3,6 @@ import type { NpcPersona } from "@takeoff/shared";
 // ── Persona Definitions ───────────────────────────────────────────────────────
 
 export const NPC_PERSONAS: NpcPersona[] = [
-  // ── Cross-Faction ──────────────────────────────────────────────────────────
-
-  {
-    id: "__npc_personal__",
-    name: "Personal",
-    subtitle: "personal",
-    avatarColor: "bg-neutral-500",
-    factions: ["openbrain", "prometheus", "china", "external"],
-  },
   {
     id: "__npc_anon__",
     name: "Anonymous Source",
@@ -83,6 +74,16 @@ export const NPC_PERSONAS: NpcPersona[] = [
     subtitle: "CDZ Operations",
     avatarColor: "bg-orange-700",
     factions: ["china"],
+  },
+
+  // ── Personal ───────────────────────────────────────────────────────────────
+
+  {
+    id: "__npc_personal__",
+    name: "Personal",
+    subtitle: "· personal",
+    avatarColor: "bg-neutral-500",
+    factions: ["openbrain", "prometheus", "china", "external"],
   },
 
   // ── External ───────────────────────────────────────────────────────────────
