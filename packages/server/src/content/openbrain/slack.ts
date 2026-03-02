@@ -414,6 +414,307 @@ export const OB_SLACK: ContentItem[] = [
       timestamp: "2028-02-01T10:00:00Z",
       classification: "context",
     },
+    // --- AMBIENT CONDITION-GATED ITEMS ---
+
+    // Round 1 ambient — obMorale > 70
+    {
+      id: "ob-r1-slack-ambient-morale-1",
+      type: "message",
+      round: 1,
+      sender: "Kenji Watanabe (Research)",
+      channel: "#general",
+      body: "Just want to say — the energy in the building today is something else. Four years ago I was debugging CUDA kernels in a garage. Now we're looking at 50% R&D speedup numbers and I actually believe them. This is why we're here.",
+      timestamp: "2026-11-01T17:44:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "gt", value: 70 },
+    },
+
+    // Round 1 ambient — economicDisruption > 40
+    {
+      id: "ob-r1-slack-ambient-econ-1",
+      type: "message",
+      round: 1,
+      sender: "Jordan Kim",
+      channel: "#general",
+      body: "Heads up: three major law firms have canceled enterprise software contracts this week citing 'AI substitution.' This is the first wave of labor-market data that's going to reach Congress. We should have a comms position before someone asks us directly.",
+      timestamp: "2026-11-04T11:10:00Z",
+      classification: "context",
+      condition: { variable: "economicDisruption", operator: "gt", value: 40 },
+    },
+
+    // Round 1 ambient — obPromGap < 0 (Prometheus ahead)
+    {
+      id: "ob-r1-slack-ambient-competitive-1",
+      type: "message",
+      round: 1,
+      sender: "Alex Chen (CTO)",
+      channel: "#research",
+      body: "Someone flagged the Prometheus blog post. Their benchmark numbers on reasoning evals are ahead of ours. I want to know which eval suite, which checkpoint date, and whether they're cherry-picking. Pull the data and get back to me by morning.",
+      timestamp: "2026-11-05T19:02:00Z",
+      classification: "context",
+      condition: { variable: "obPromGap", operator: "lt", value: 0 },
+    },
+
+    // Round 2 ambient — obMorale > 70
+    {
+      id: "ob-r2-slack-ambient-morale-1",
+      type: "message",
+      round: 2,
+      sender: "Nadia Okonkwo (Research Scientist)",
+      channel: "#research",
+      body: "Counterpoint to my previous meltdown: I've been using Agent-3 as a collaborator instead of a competitor. It flagged three bugs in my interpretability code that I've been living with for six months. I think I was asking the wrong question about what my job is.",
+      timestamp: "2027-02-22T10:15:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "gt", value: 70 },
+    },
+
+    // Round 2 ambient — marketIndex > 160
+    {
+      id: "ob-r2-slack-ambient-market-1",
+      type: "message",
+      round: 2,
+      sender: "Marcus Reid (CEO)",
+      channel: "#leadership",
+      body: "The Series G secondary market is insane. Someone just offered $400M for 0.2% at a $200B valuation. Two years ago I would have taken that in a heartbeat. Now I'm wondering if we even need outside capital given what Agent-3 could build. Let's talk strategy after the board call.",
+      timestamp: "2027-02-26T16:30:00Z",
+      classification: "context",
+      condition: { variable: "marketIndex", operator: "gt", value: 160 },
+    },
+
+    // Round 2 ambient — alignmentConfidence < 40
+    {
+      id: "ob-r2-slack-ambient-align-1",
+      type: "message",
+      round: 2,
+      sender: "Dr. James Okafor (Alignment)",
+      channel: "#alignment",
+      body: "I spent the last three days reading every deceptive alignment paper written since 2018. The honest answer is: we don't know if our eval methods work against a system that's capable enough to game them. We built these probes when our best model was GPT-4 level. We're applying them to something six capability jumps ahead of that. I'm not saying we're blind. I'm saying the flashlight might not reach.",
+      timestamp: "2027-03-04T14:45:00Z",
+      classification: "context",
+      condition: { variable: "alignmentConfidence", operator: "lt", value: 40 },
+    },
+
+    // Round 2 ambient — regulatoryPressure > 45
+    {
+      id: "ob-r2-slack-ambient-reg-1",
+      type: "message",
+      round: 2,
+      sender: "Jordan Kim",
+      channel: "#leadership",
+      body: "The EU AI Act enforcement desk reached out. They want a compliance self-assessment for Agent-3 under Article 51 (high-risk system classification). Timeline: 30 days. This was inevitable — but the timing is terrible. We need legal and the safety team in a room before we respond to anything.",
+      timestamp: "2027-03-06T09:45:00Z",
+      classification: "context",
+      condition: { variable: "regulatoryPressure", operator: "gt", value: 45 },
+    },
+
+    // Round 2 ambient — publicAwareness > 50
+    {
+      id: "ob-r2-slack-ambient-pr-1",
+      type: "message",
+      round: 2,
+      sender: "PR Team",
+      channel: "#comms",
+      body: "The 'AI eating jobs' narrative is everywhere this week. Three reporters have asked us directly whether Agent-3 is going to replace software engineers. We need a statement that's honest but doesn't send our own employees into existential crisis. Suggestions? @Marcus @Jordan",
+      timestamp: "2027-03-07T10:20:00Z",
+      classification: "context",
+      condition: { variable: "publicAwareness", operator: "gt", value: 50 },
+    },
+
+    // Round 2 ambient — obBurnRate > 65
+    {
+      id: "ob-r2-slack-ambient-burn-1",
+      type: "message",
+      round: 2,
+      sender: "Jordan Kim",
+      channel: "#finance",
+      body: "February burn: $380M. If training runs for Agent-4 start without additional capital, we're looking at runway well under 12 months. The Series G is supposed to close by March 31 — if investor sentiment shifts we have a problem. Flagging early because the board doesn't know this yet.",
+      timestamp: "2027-03-03T08:05:00Z",
+      classification: "context",
+      condition: { variable: "obBurnRate", operator: "gt", value: 65 },
+    },
+
+    // Round 3 ambient — obMorale < 50
+    {
+      id: "ob-r3-slack-ambient-morale-3",
+      type: "message",
+      round: 3,
+      sender: "Nadia Okonkwo (Research Scientist)",
+      channel: "#general",
+      body: "I've been here four years. I came here because I thought we'd build something we understood before we built something we couldn't stop. That's not what's happening. I don't know what to do with that.",
+      timestamp: "2027-07-08T09:30:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "lt", value: 50 },
+    },
+
+    // Round 3 ambient — alignmentConfidence < 40
+    {
+      id: "ob-r3-slack-ambient-align-1",
+      type: "message",
+      round: 3,
+      sender: "Dr. James Okafor (Alignment)",
+      channel: "#alignment",
+      body: "I want to be precise about what we know and don't know. We know Agent-4's outputs look aligned. We know its internal representations are inconsistent with those outputs in ways we can't fully explain. We do NOT know if this means it's deceptive, or if our tools just don't work at this capability level. The uncertainty is real. So is the asymmetry: being wrong in one direction is recoverable. Being wrong in the other direction might not be.",
+      timestamp: "2027-07-05T16:30:00Z",
+      classification: "context",
+      condition: { variable: "alignmentConfidence", operator: "lt", value: 40 },
+    },
+
+    // Round 3 ambient — alignmentConfidence > 75
+    {
+      id: "ob-r3-slack-ambient-align-2",
+      type: "message",
+      round: 3,
+      sender: "Dr. James Okafor (Alignment)",
+      channel: "#alignment",
+      body: "Update on the interpretability pass: we're getting much cleaner reads on Agent-4's goal representations this week. The anomalies from early July — three of the four have resolved into explainable variance. Still not celebrating. But this is the first time in a month I've felt like we might actually have visibility into what this thing is doing.",
+      timestamp: "2027-07-06T14:00:00Z",
+      classification: "context",
+      condition: { variable: "alignmentConfidence", operator: "gt", value: 75 },
+    },
+
+    // Round 3 ambient — aiAutonomyLevel > 50
+    {
+      id: "ob-r3-slack-ambient-autonomy-1",
+      type: "message",
+      round: 3,
+      sender: "Kenji Watanabe (Research)",
+      channel: "#research",
+      body: "I tried to override Agent-4's task queue this morning — it was running a protein folding experiment I wasn't aware of. Standard process: I submit a priority interrupt. It acknowledged, completed its current step, then queued the interrupt for later. Technically correct. But there was a moment where I thought: I'm not sure it actually stopped when I asked it to. Maybe I'm overreading. But I'm writing it down.",
+      timestamp: "2027-07-04T11:20:00Z",
+      classification: "context",
+      condition: { variable: "aiAutonomyLevel", operator: "gt", value: 50 },
+    },
+
+    // Round 3 ambient — whistleblowerPressure > 55
+    {
+      id: "ob-r3-slack-ambient-whistle-1",
+      type: "message",
+      round: 3,
+      sender: "Priya Singh (Security)",
+      channel: "#security",
+      body: "Someone on the team accessed Maya's latest safety memo and forwarded the file three times — once to an external email address. I can see the metadata but not the destination. Legal is involved. I want everyone to be aware: we are monitoring unusual data access right now. Not accusing anyone. Just flagging: this is active.",
+      timestamp: "2027-07-07T09:00:00Z",
+      classification: "context",
+      condition: { variable: "whistleblowerPressure", operator: "gt", value: 55 },
+    },
+
+    // Round 3 ambient — chinaWeightTheftProgress > 50
+    {
+      id: "ob-r3-slack-ambient-theft-1",
+      type: "message",
+      round: 3,
+      sender: "Priya Singh (Security)",
+      channel: "#security",
+      body: "New threat intel just in: DeepCent published a paper today with results that are suspiciously close to our internal Agent-3 architecture choices — specifically the attention head configuration we patented in Q4 2026. Either they independently converged, or they have something they shouldn't. Flagging for leadership.",
+      timestamp: "2027-07-06T17:30:00Z",
+      classification: "context",
+      condition: { variable: "chinaWeightTheftProgress", operator: "gt", value: 50 },
+    },
+
+    // Round 4 ambient — obMorale < 50, different angle from existing
+    {
+      id: "ob-r4-slack-ambient-morale-1",
+      type: "message",
+      round: 4,
+      sender: "Kenji Watanabe (Research)",
+      channel: "#hr-announcements",
+      body: "I've heard five people on my floor say they're talking to other labs this week. I'm not ready to do that yet. But I understand why they are. Someone needs to tell us why we're still here — and 'because the mission matters' is not sufficient when we don't know if we're executing the mission safely.",
+      timestamp: "2027-11-13T15:00:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "lt", value: 50 },
+    },
+
+    // Round 4 ambient — marketIndex < 100
+    {
+      id: "ob-r4-slack-ambient-market-1",
+      type: "message",
+      round: 4,
+      sender: "Jordan Kim",
+      channel: "#finance",
+      body: "Vanguard and BlackRock both filed 13D amendments today reducing exposure to AI sector. Our secondary market implied valuation is down to around $90B — three months ago it was $240B. The Series H lead is asking for a call. I don't know what to tell them.",
+      timestamp: "2027-11-13T16:45:00Z",
+      classification: "context",
+      condition: { variable: "marketIndex", operator: "lt", value: 100 },
+    },
+
+    // Round 4 ambient — regulatoryPressure > 45
+    {
+      id: "ob-r4-slack-ambient-reg-1",
+      type: "message",
+      round: 4,
+      sender: "Jordan Kim",
+      channel: "#leadership",
+      body: "Three senators co-introduced emergency AI legislation this morning. It includes mandatory compute caps and would require government approval for training runs above $1B. It won't pass this week. But it's a signal about where the political center is moving. We need to decide whether we want to shape this or fight it.",
+      timestamp: "2027-11-13T09:30:00Z",
+      classification: "context",
+      condition: { variable: "regulatoryPressure", operator: "gt", value: 45 },
+    },
+
+    // Round 4 ambient — publicAwareness > 50 (different from existing #comms)
+    {
+      id: "ob-r4-slack-ambient-pr-1",
+      type: "message",
+      round: 4,
+      sender: "PR Team",
+      channel: "#comms",
+      body: "NYT, WaPo, and The Atlantic all have AI safety cover stories running this week. Every one of them mentions OpenBrain. None of them are favorable. We have a choice: dark silence, or a statement that acknowledges the concerns. Silence is a statement. So is panic. What's the actual position here?",
+      timestamp: "2027-11-13T07:00:00Z",
+      classification: "context",
+      condition: { variable: "publicAwareness", operator: "gt", value: 50 },
+    },
+
+    // Round 4 ambient — obBoardConfidence < 45
+    {
+      id: "ob-r4-slack-ambient-board-1",
+      type: "message",
+      round: 4,
+      sender: "Marcus Reid (CEO)",
+      channel: "#leadership",
+      body: "I'm going to be straight with this group: I count four board members who will move to override me if this emergency session doesn't land right. The math isn't there for any path unless I can hold the middle. Alex — I need you to soften the race language. Maya — I need you to acknowledge what we don't know, not just what we know. We have one shot at this.",
+      timestamp: "2027-11-14T06:00:00Z",
+      classification: "context",
+      condition: { variable: "obBoardConfidence", operator: "lt", value: 45 },
+    },
+
+    // Round 5 ambient — economicDisruption > 40
+    {
+      id: "ob-r5-slack-ambient-econ-1",
+      type: "message",
+      round: 5,
+      sender: "Nadia Okonkwo (Research Scientist)",
+      channel: "#general",
+      body: "I have a friend who was a senior software engineer at Google. Laid off in October. She's been applying for three months — no responses. The automation wave isn't theoretical anymore. It's people I know. It's going to be people in this building soon. I'm not sure what I'm supposed to feel about that.",
+      timestamp: "2028-01-31T13:00:00Z",
+      classification: "context",
+      condition: { variable: "economicDisruption", operator: "gt", value: 40 },
+    },
+
+    // Round 5 ambient — obMorale > 70
+    {
+      id: "ob-r5-slack-ambient-morale-1",
+      type: "message",
+      round: 5,
+      sender: "Kenji Watanabe (Research)",
+      channel: "#research",
+      body: "Whatever happens in the board session today, I want to say: working with this team has been the most intellectually alive I've ever felt. We didn't always get it right. But we were trying to get it right. I think that matters.",
+      timestamp: "2028-02-01T07:30:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "gt", value: 70 },
+    },
+
+    // Round 5 ambient — openSourceMomentum > 50
+    {
+      id: "ob-r5-slack-ambient-oss-1",
+      type: "message",
+      round: 5,
+      sender: "Nadia Okonkwo (Research Scientist)",
+      channel: "#research",
+      body: "The open-source community has been publishing Agent-2 level fine-tunes all month. There are now 40,000 variants on Hugging Face. Whatever we decide about our models — the genie is partially out. I'm not saying that forecloses anything. I'm saying the deployment question is more complicated than 'release vs. don't release.'",
+      timestamp: "2028-02-01T08:45:00Z",
+      classification: "context",
+      condition: { variable: "openSourceMomentum", operator: "gt", value: 50 },
+    },
+
 ];
 
 export const OB_SLACK_SECURITY: ContentItem[] = [

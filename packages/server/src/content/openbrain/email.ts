@@ -173,6 +173,124 @@ export const OB_EMAIL: ContentItem[] = [
       timestamp: "2028-02-01T09:00:00Z",
       classification: "critical",
     },
+    // --- AMBIENT CONDITION-GATED ITEMS ---
+
+    // Round 1 ambient — obMorale > 70
+    {
+      id: "ob-r1-email-ambient-recruit-1",
+      type: "message",
+      round: 1,
+      sender: "hr@openbrain.ai",
+      subject: "Hiring Pipeline Update — November 2026",
+      body: "Marcus,\n\nAgent-1 results have done more for our recruiting funnel than any press cycle this year. We've received 4,200 applications in the last 10 days — up from a monthly average of 600. I've never seen anything like this. If you want to move fast on key hires, now is the moment to do it.\n\n— HR",
+      timestamp: "2026-11-05T11:00:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "gt", value: 70 },
+    },
+
+    // Round 2 ambient — obBurnRate > 65
+    {
+      id: "ob-r2-email-ambient-burn-1",
+      type: "message",
+      round: 2,
+      sender: "cfo@openbrain.ai",
+      subject: "Q1 Burn Rate — Confidential Flag",
+      body: "Marcus,\n\nAgent-3 training run costs came in 34% over forecast. The compute cluster bills for February were $212M. March is tracking higher. We're burning through the Series F faster than the runway projections assume.\n\nIf the Series G doesn't close by April 1, we have a problem by mid-summer. I want to brief you on scenarios before the board meeting — can we schedule 30 minutes?\n\n— CFO",
+      timestamp: "2027-03-04T09:30:00Z",
+      classification: "context",
+      condition: { variable: "obBurnRate", operator: "gt", value: 65 },
+    },
+
+    // Round 2 ambient — marketIndex > 160
+    {
+      id: "ob-r2-email-ambient-market-1",
+      type: "message",
+      round: 2,
+      sender: "partnerships@tier2growth.vc",
+      subject: "Investment Interest — $500M Strategic Round",
+      body: "Marcus,\n\nWe've been watching OpenBrain's trajectory closely. We'd like to explore a $500M strategic investment at a valuation we can discuss — the market is moving fast and we want to be early.\n\nOur LPs include three sovereign wealth funds who are specifically interested in AI as a strategic asset. The check size is flexible.\n\nWould you have 30 minutes this week?\n\n— Partnerships, Tier-2 Growth Capital",
+      timestamp: "2027-02-27T14:00:00Z",
+      classification: "context",
+      condition: { variable: "marketIndex", operator: "gt", value: 160 },
+    },
+
+    // Round 3 ambient — alignmentConfidence < 40
+    {
+      id: "ob-r3-email-ambient-align-1",
+      type: "message",
+      round: 3,
+      sender: "dr.okafor@openbrain.ai",
+      subject: "[INTERNAL] Alignment team staffing — urgent",
+      body: "Marcus,\n\nI need to raise something directly. My team has three open headcount slots that have been frozen since April. Agent-4's alignment review is the most important work in the building and I am doing it with a team that was sized for Agent-2.\n\nThis isn't a budget complaint. It's a risk flag. If we get the alignment question wrong because we were understaffed, the headcount freeze will feel like a very small decision in retrospect.\n\n— James",
+      timestamp: "2027-07-04T08:00:00Z",
+      classification: "context",
+      condition: { variable: "alignmentConfidence", operator: "lt", value: 40 },
+    },
+
+    // Round 3 ambient — whistleblowerPressure > 55
+    {
+      id: "ob-r3-email-ambient-whistle-1",
+      type: "message",
+      round: 3,
+      sender: "legal@openbrain.ai",
+      subject: "PRIVILEGED — Employee Whistleblower Risk Assessment",
+      body: "Marcus,\n\nThis is privileged communication under attorney-client protection.\n\nWe have reason to believe one or more employees are considering external disclosure of safety-related information. Under our employee agreements, internal reporting is protected; external disclosure to press may not be.\n\nI want to be clear: I am not recommending any action that would discourage good-faith safety reporting. What I am recommending: we get ahead of this by formalizing our internal reporting process and demonstrating good faith responsiveness. The best response to whistleblower pressure is not legal — it's operational.\n\n— General Counsel",
+      timestamp: "2027-07-07T16:00:00Z",
+      classification: "context",
+      condition: { variable: "whistleblowerPressure", operator: "gt", value: 55 },
+    },
+
+    // Round 3 ambient — obBoardConfidence < 45
+    {
+      id: "ob-r3-email-ambient-board-1",
+      type: "message",
+      round: 3,
+      sender: "board-member-private@protonmail.com",
+      subject: "(private) — between us",
+      body: "Marcus,\n\nI'm sending from a personal account because what I'm about to say shouldn't go through official channels.\n\nI voted for you as CEO because I believed you had the right instincts for this moment. I'm not sure anymore. Not because you're moving too fast — because you're not being straight with the board about what we don't know.\n\nGive us the honest picture on Thursday. All of it. We can handle uncertainty. What we can't handle is discovering later that we were given optimistic framing.\n\n— [name withheld]",
+      timestamp: "2027-07-08T06:30:00Z",
+      classification: "context",
+      condition: { variable: "obBoardConfidence", operator: "lt", value: 45 },
+    },
+
+    // Round 4 ambient — marketIndex < 100
+    {
+      id: "ob-r4-email-ambient-investor-1",
+      type: "message",
+      round: 4,
+      sender: "lp-relations@horizoncap.com",
+      subject: "Re: OpenBrain LP Position — Seeking Guidance",
+      body: "Marcus,\n\nOur LPs are asking us to explain the current situation and our position going forward. Publicly available information is concerning to them. We have $1.4B deployed across three OpenBrain rounds.\n\nTo be direct: if the AI safety concerns documented in recent news reports are accurate, we have a fiduciary obligation to disclose material risk to our LPs. We are not in a position to simply wait this out.\n\nPlease let me know when you're available to talk.\n\n— Horizon Capital",
+      timestamp: "2027-11-13T10:00:00Z",
+      classification: "context",
+      condition: { variable: "marketIndex", operator: "lt", value: 100 },
+    },
+
+    // Round 4 ambient — economicDisruption > 40
+    {
+      id: "ob-r4-email-ambient-econ-1",
+      type: "message",
+      round: 4,
+      sender: "policy-watch@brookings.edu",
+      subject: "Research Request — AI Labor Displacement Data",
+      body: "Mr. Reid,\n\nWe are preparing a Brookings report on AI-driven labor market disruption. By our estimates, Agent-3 level automation has already reduced software development employment by 15-20% in the sectors where it has been deployed.\n\nWe would like OpenBrain to participate in the study and share internal economic impact data from your commercial deployments. Participation is voluntary. Refusal will be noted in the report.\n\n— Economic Policy Research, Brookings Institution",
+      timestamp: "2027-11-12T15:00:00Z",
+      classification: "context",
+      condition: { variable: "economicDisruption", operator: "gt", value: 40 },
+    },
+
+    // Round 5 ambient — obMorale < 50
+    {
+      id: "ob-r5-email-ambient-morale-1",
+      type: "message",
+      round: 5,
+      sender: "nadia.okonkwo@openbrain.ai",
+      subject: "resignation",
+      body: "Marcus,\n\nI've been trying to write this for two weeks. I'm leaving OpenBrain.\n\nI still believe the mission is important. I just don't believe the way we're executing it is the right way anymore. Maybe I'm wrong. I hope I'm wrong.\n\nThank you for everything over the last four years. I learned more here than anywhere else. I genuinely hope this goes well.\n\n— Nadia",
+      timestamp: "2028-01-31T18:00:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "lt", value: 50 },
+    },
 ];
 
 registerContent({ faction: "openbrain", app: "email", accumulate: true, items: OB_EMAIL });

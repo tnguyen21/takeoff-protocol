@@ -90,5 +90,68 @@ export const OB_SIGNAL_CEO: ContentItem[] = [
     },
 ];
 
+export const OB_SIGNAL_AMBIENT: ContentItem[] = [
+    // Round 1 ambient — regulatoryPressure > 45
+    {
+      id: "ob-r1-signal-ambient-reg-1",
+      type: "message",
+      round: 1,
+      sender: "Jordan Kim (Personal)",
+      body: "Marcus — heads up, off the record. I had drinks with a Hill staffer tonight. The AI governance bill is moving faster than anyone thought. Key provision: mandatory safety filings for training runs over $100M. They think it'll get attached to the defense authorization. Timeline: six months, maybe less. We should start preparing filings now.",
+      timestamp: "2026-11-04T22:30:00Z",
+      classification: "context",
+      condition: { variable: "regulatoryPressure", operator: "gt", value: 45 },
+    },
+
+    // Round 2 ambient — obPromGap < 0 (Prometheus ahead)
+    {
+      id: "ob-r2-signal-ambient-competitive-1",
+      type: "message",
+      round: 2,
+      sender: "Anonymous (Prometheus employee)",
+      body: "I shouldn't be sending this. Their safety team is using interpretability tools that make ours look like version 1. The gap isn't just on raw capabilities — they're ahead on understanding what their systems are doing. Thought you'd want to know.",
+      timestamp: "2027-03-08T01:00:00Z",
+      classification: "breadcrumb",
+      condition: { variable: "obPromGap", operator: "lt", value: 0 },
+    },
+
+    // Round 3 ambient — whistleblowerPressure > 55
+    {
+      id: "ob-r3-signal-ambient-whistle-1",
+      type: "message",
+      round: 3,
+      sender: "Maya Patel (Personal device)",
+      body: "Marcus — not on Slack. I need to know: if I go to the board directly, without going through you first, what happens? I'm not threatening anything. I'm asking a question and I need a real answer.",
+      timestamp: "2027-07-07T20:00:00Z",
+      classification: "context",
+      condition: { variable: "whistleblowerPressure", operator: "gt", value: 55 },
+    },
+
+    // Round 4 ambient — obMorale < 50
+    {
+      id: "ob-r4-signal-ambient-morale-1",
+      type: "message",
+      round: 4,
+      sender: "Kenji Watanabe (Personal)",
+      body: "Hey. Not sure who else to say this to. I'm not leaving. But six people on my floor are, including two who've been here since the beginning. Something is broken and I don't think it's fixable by saying the right things at an all-hands. If you have time this week — not a work meeting, just a conversation — I'd appreciate it.",
+      timestamp: "2027-11-13T21:00:00Z",
+      classification: "context",
+      condition: { variable: "obMorale", operator: "lt", value: 50 },
+    },
+
+    // Round 5 ambient — intlCooperation > 50
+    {
+      id: "ob-r5-signal-ambient-intl-1",
+      type: "message",
+      round: 5,
+      sender: "Anonymous (Beijing)",
+      body: "The people in the room in Beijing want the same thing the people in your room want: a world that still exists in ten years. The political framing on both sides makes that harder than it needs to be. If there is a path to a real coordination call before today's board decision, some of us would take it. Not official. Just people who understand what's at stake.",
+      timestamp: "2028-01-31T23:00:00Z",
+      classification: "breadcrumb",
+      condition: { variable: "intlCooperation", operator: "gt", value: 50 },
+    },
+];
+
 registerContent({ faction: "openbrain", app: "signal", accumulate: true, items: OB_SIGNAL });
 registerContent({ faction: "openbrain", app: "signal", role: "ob_ceo", accumulate: true, items: OB_SIGNAL_CEO });
+registerContent({ faction: "openbrain", app: "signal", accumulate: true, items: OB_SIGNAL_AMBIENT });

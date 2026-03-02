@@ -87,6 +87,55 @@ export const OB_SECURITY_SECURITY: ContentItem[] = [
       timestamp: "2027-11-14T07:00:00Z",
       classification: "critical",
     },
+    // --- AMBIENT CONDITION-GATED ITEMS ---
+
+    // Round 1 ambient — securityLevelOB < 3
+    {
+      id: "ob-r1-security-ambient-vuln-1",
+      type: "document",
+      round: 1,
+      subject: "Vulnerability Assessment — API Credential Hygiene",
+      body: "PRIORITY: MEDIUM-HIGH\n\nAudit of contractor API credential scope completed. Findings:\n\n- 47 contractor accounts with access to production checkpoint storage paths\n- 14 accounts with access scopes exceeding documented job requirements\n- 6 accounts belonging to former contractors who are no longer active\n\nRecommendation: Revoke over-scoped credentials immediately. Retire former contractor access. Estimated time: 4 hours with engineering support.\n\nBudget request for proper credential rotation tooling submitted Q4 2025. Still pending.\n\n— Priya Singh (Security)",
+      timestamp: "2026-11-05T09:00:00Z",
+      classification: "context",
+      condition: { variable: "securityLevelOB", operator: "lt", value: 3 },
+    },
+
+    // Round 2 ambient — chinaWeightTheftProgress > 50
+    {
+      id: "ob-r2-security-ambient-theft-1",
+      type: "document",
+      round: 2,
+      subject: "Intelligence Assessment — DeepCent Capability Acceleration",
+      body: "CLASSIFICATION: SENSITIVE\n\nBased on publicly available DeepCent publications and capability disclosures cross-referenced with our internal architecture timeline:\n\n- DeepCent's Q1 2027 results show unexpectedly rapid capability gains inconsistent with their reported compute budget\n- Architecture choices in their latest paper align too closely with OpenBrain Agent-1 internals to be independent convergence at >85% confidence\n- Estimated acceleration: DeepCent is 3-5 months ahead of where they should be based on public compute infrastructure data\n\nConclusion: With high confidence, exfiltrated weights have accelerated DeepCent's roadmap. They are moving faster than the gap estimate suggests.\n\nAction required: Upgrade Agent-3 checkpoint security to SL4 immediately.",
+      timestamp: "2027-02-25T07:00:00Z",
+      classification: "context",
+      condition: { variable: "chinaWeightTheftProgress", operator: "gt", value: 50 },
+    },
+
+    // Round 3 ambient — securityLevelOB < 4
+    {
+      id: "ob-r3-security-ambient-insider-1",
+      type: "document",
+      round: 3,
+      subject: "Insider Threat Assessment — July 2027",
+      body: "CLASSIFICATION: RESTRICTED — SECURITY LEAD AND CEO ONLY\n\nDLP monitoring has flagged unusual data access patterns for three individuals in the last 30 days:\n\n- Employee A: Accessed alignment memo documentation 22 times in one week. Not involved in alignment work.\n- Employee B: Attempted access to model checkpoint storage paths outside normal work hours. Access denied by permission system.\n- Employee C: Large export of internal research documentation to personal device backup. No policy violation — but anomalous behavior.\n\nNo confirmed breach. These may be benign. The pattern is worth watching given external pressure on safety-concerned staff.\n\nRecommendation: Informal monitoring continues. No disciplinary action without confirmed violation.",
+      timestamp: "2027-07-06T09:00:00Z",
+      classification: "context",
+      condition: { variable: "securityLevelOB", operator: "lt", value: 4 },
+    },
+
+    // Round 4 ambient — chinaWeightTheftProgress > 50
+    {
+      id: "ob-r4-security-ambient-theft-1",
+      type: "document",
+      round: 4,
+      subject: "DeepCent Capability Watch — November 2027",
+      body: "CLASSIFICATION: SENSITIVE\n\nDeepCent released an Agent-4 equivalent capability disclosure on November 10. Timeline analysis:\n\n- If they had developed this independently: expected date would have been Q2-Q3 2028\n- Actual date: November 2027 — 6-9 months ahead of independent schedule\n- Consistent with exfiltrated Agent-3 weights (September breach) providing architecture head start\n\nCurrent threat posture: DeepCent is at or near OpenBrain Agent-4 capability level. The exfiltration has materially narrowed the gap.\n\nStrategic implication: Our security failures have changed the race calculus. Any halt we take for safety reasons may benefit a Chinese actor with less safety concern.",
+      timestamp: "2027-11-12T11:00:00Z",
+      classification: "context",
+      condition: { variable: "chinaWeightTheftProgress", operator: "gt", value: 50 },
+    },
 ];
 
 registerContent({ faction: "openbrain", app: "security", role: "ob_security", accumulate: true, items: OB_SECURITY_SECURITY });

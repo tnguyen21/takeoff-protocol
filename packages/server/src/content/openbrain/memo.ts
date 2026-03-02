@@ -84,6 +84,43 @@ export const OB_MEMO_SAFETY: ContentItem[] = [
       timestamp: "2027-11-14T07:30:00Z",
       classification: "critical",
     },
+    // --- AMBIENT CONDITION-GATED ITEMS ---
+
+    // Round 2 ambient — alignmentConfidence > 75
+    {
+      id: "ob-r2-memo-ambient-align-pos-1",
+      type: "memo",
+      round: 2,
+      subject: "Internal Note — Agent-3 Safety Progress",
+      body: "INTERNAL — Safety Team Only\n\nFor the record: we're in a better position than the anomaly memo implies.\n\nOf the four flagged results, three have partial explanations that don't require misalignment. The fourth (task 44, reporting accuracy) is likely a capability gap, not deceptive behavior — we've confirmed Agent-3 genuinely can't see the seeded vulnerability with the current tooling configuration.\n\nI want to maintain the conservative posture externally. Internally I want this team to know: the eval results are not crisis-level. They are caution-level. The distinction matters for morale.\n\n— Maya Patel, CSO",
+      timestamp: "2027-03-05T19:00:00Z",
+      classification: "context",
+      condition: { variable: "alignmentConfidence", operator: "gt", value: 75 },
+    },
+
+    // Round 3 ambient — obBurnRate > 65
+    {
+      id: "ob-r3-memo-ambient-burn-1",
+      type: "memo",
+      round: 3,
+      subject: "INTERNAL — Budget Constraints and Safety Research Implications",
+      body: "INTERNAL — Not for distribution\n\nI want to document a pattern that I find alarming.\n\nOver the last six months, four safety research budget requests have been delayed or denied. The stated reason is always 'budget constraints.' Simultaneously, Agent-4 compute allocation has increased by 340%.\n\nThe implicit message is: capability work has budget, safety work does not. I don't believe this is intentional policy. I believe it's institutional gravity — the things that move fast get resources, the things that slow things down don't.\n\nBut the effect is the same. We are deploying an increasingly capable system with a safety team that is under-resourced relative to the scope of the problem.\n\nI'm writing this down because if something goes wrong, the question of whether it was preventable will matter.\n\n— M.P.",
+      timestamp: "2027-07-03T21:00:00Z",
+      classification: "context",
+      condition: { variable: "obBurnRate", operator: "gt", value: 65 },
+    },
+
+    // Round 4 ambient — obInternalTrust < 40 (using whistleblowerPressure as proxy)
+    {
+      id: "ob-r4-memo-ambient-trust-1",
+      type: "memo",
+      round: 4,
+      subject: "Internal Climate — November 2027 Assessment",
+      body: "INTERNAL — HR and Executive Team Only\n\nCurrent organizational climate indicators:\n\nAll-hands engagement: 58% (down from 84% in Q1)\nAnonymous concern submissions: 47 in October (normal baseline: 3-4/month)\nExit interview themes: 'safety', 'leadership direction', 'can't verify what we're building'\n\nThe organization is fracturing along a predictable fault line: people who believe speed is the safest path, and people who believe safety work is the safest path. Both groups are emotionally committed to their positions.\n\nRecommendation: Leadership needs to publicly acknowledge the disagreement, not suppress it. The attempt to manage optics internally is creating more mistrust than transparency would.\n\n— HR Department",
+      timestamp: "2027-11-13T14:00:00Z",
+      classification: "context",
+      condition: { variable: "whistleblowerPressure", operator: "gt", value: 55 },
+    },
 ];
 
 registerContent({ faction: "openbrain", app: "memo", role: "ob_safety", accumulate: true, items: OB_MEMO_SAFETY });

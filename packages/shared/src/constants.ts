@@ -53,7 +53,7 @@ export const FACTIONS: FactionConfig[] = [
     name: "China (DeepCent + CCP)",
     minPlayers: 2,
     maxPlayers: 3,
-    apps: ["signal", "compute", "intel", "military", "wandb", "news", "gamestate"],
+    apps: ["slack", "signal", "compute", "intel", "military", "wandb", "news", "gamestate"],
     roles: [
       { id: "china_director", label: "DeepCent Director", description: "Brilliant engineer. Can do more with less. Has stolen weights and a massive CDZ. Playing a different game than US labs.", goals: ["Close the gap with US frontier models", "Leverage stolen weights and state resources effectively", "Decide when to go open-source vs. keep capabilities secret", "Ensure China — not the US — leads the AI era"], isLeader: true, optional: false, primaryApps: ["compute", "signal", "wandb"] },
       { id: "china_intel", label: "CCP Intelligence Chief", description: "Evaluate whether to steal Agent-3/4 weights — the prize that could leapfrog everything.", goals: ["Acquire US AI capabilities through espionage", "Assess the risk/reward of weight theft operations", "Maintain plausible deniability for China's progress", "Give China the decisive edge through intelligence superiority"], isLeader: false, optional: false, primaryApps: ["intel", "signal"] },

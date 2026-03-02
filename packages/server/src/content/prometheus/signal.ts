@@ -75,6 +75,47 @@ export const PROM_SIGNAL_POLICY: ContentItem[] = [
       timestamp: "2027-11-14T10:15:00Z",
       classification: "critical",
     },
+    // --- AMBIENT CONDITION-GATED ITEMS ---
+    {
+      id: "prom-r1-signal-policy-ambient-1",
+      type: "message",
+      round: 1,
+      sender: "DC Contact (off-record)",
+      body: "Elena — word from the Hill is that the Senate Commerce Committee is quietly drafting a mandatory safety eval bill. They need a lab willing to testify that it's technically feasible. OB will never do it. That leaves you. This could be the policy win you've been waiting for.",
+      timestamp: "2026-11-12T19:00:00Z",
+      classification: "context",
+      condition: { variable: "regulatoryPressure", operator: "gt", value: 45 },
+    },
+    {
+      id: "prom-r2-signal-policy-ambient-1",
+      type: "message",
+      round: 2,
+      sender: "NSC Contact (off-record)",
+      body: "Just a heads up: the people at OB who've been talking to us are getting nervous. There's internal pressure to stop cooperating with government contacts. Whatever window exists there is narrowing. If Prometheus wants to be positioned as the alternative, the window for that is also not indefinite.",
+      timestamp: "2027-03-12T21:00:00Z",
+      classification: "context",
+      condition: { variable: "whistleblowerPressure", operator: "gt", value: 55 },
+    },
+    {
+      id: "prom-r3-signal-policy-ambient-1",
+      type: "message",
+      round: 3,
+      sender: "UK AISI Contact",
+      body: "Elena — the Seoul summit went well, right? I wanted to flag: Japan and South Korea are both interested in the Prometheus methodology as a basis for their national AI safety frameworks. If you wanted to formalize something, the timing is good. International credibility now could matter a great deal in the next six months.",
+      timestamp: "2027-07-12T16:00:00Z",
+      classification: "context",
+      condition: { variable: "intlCooperation", operator: "gt", value: 40 },
+    },
+    {
+      id: "prom-r4-signal-policy-ambient-1",
+      type: "message",
+      round: 4,
+      sender: "DC Contact (off-record)",
+      body: "Elena — the public awareness numbers are moving fast. Three months ago, 'deceptive alignment' was a term that required explanation. Now it's in mainstream coverage. The political environment has shifted. Legislators who were skeptical six months ago are now looking for something to point to. Prometheus's paper from last week is being circulated on the Hill. This is your moment.",
+      timestamp: "2027-11-12T20:00:00Z",
+      classification: "context",
+      condition: { variable: "publicAwareness", operator: "gt", value: 50 },
+    },
 ];
 
 export const PROM_SIGNAL_CEO: ContentItem[] = [

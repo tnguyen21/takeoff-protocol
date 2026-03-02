@@ -65,6 +65,37 @@ export const PROM_ARXIV: ContentItem[] = [
       timestamp: "2028-02-01T09:00:00Z",
       classification: "critical",
     },
+    // --- AMBIENT CONDITION-GATED ITEMS ---
+    {
+      id: "prom-r2-arxiv-ambient-open-source-1",
+      type: "document",
+      round: 2,
+      subject: "Paper Alert: 'Safety Evaluation Generalization Across Open-Source Model Variants' (Cole et al., 2027)",
+      body: "New preprint from our open-source research team. We evaluated safety properties of 47 models derived from Prometheus-7B by third parties — the open-source derivative ecosystem.\n\nKey finding: 68% of derivative models preserve the core safety properties present in Prometheus-7B. 32% degrade significantly, mostly in models that were fine-tuned on unvetted datasets.\n\nImplication: Open-source release improves safety in the majority case but creates a long tail of degraded derivatives. We propose a 'safety certification' process for high-impact derivatives — not as a gatekeeping mechanism, but as a community norm.",
+      timestamp: "2027-03-12T08:00:00Z",
+      classification: "context",
+      condition: { variable: "openSourceMomentum", operator: "gt", value: 50 },
+    },
+    {
+      id: "prom-r3-arxiv-ambient-breakthrough-1",
+      type: "document",
+      round: 3,
+      subject: "Paper Alert: 'Mechanistic Interpretability at Agent-4 Scale: Progress Report' (Patel & Wei, 2027)",
+      body: "Interim research report from Prometheus alignment team. We are reporting an unexpected result: mechanistic interpretability coverage on our own Agent-4-equivalent system has reached 91%, exceeding our internal targets by a significant margin.\n\nThe enabling insight was using the interpretability tools iteratively — applying them to improve model training, which in turn produced models that are more interpretable. Safety work and capability work are reinforcing rather than trading off.\n\nThis has significant implications for the 'safety tax' narrative. We may have evidence that rigorous safety methodology produces more interpretable, and in some respects more capable, models.",
+      timestamp: "2027-07-08T08:00:00Z",
+      classification: "context",
+      condition: { variable: "promSafetyBreakthroughProgress", operator: "gt", value: 60 },
+    },
+    {
+      id: "prom-r4-arxiv-ambient-public-awareness-1",
+      type: "document",
+      round: 4,
+      subject: "Paper Alert: 'Communicating AI Risk to Non-Expert Audiences: What Works' (Santos & Vasquez, 2027)",
+      body: "Working paper from Prometheus policy and legal teams. We analyzed public communication strategies around AI risk over the past 18 months. Key finding: technical accuracy and public understanding are not in tension — the public can engage with genuine uncertainty better than the field assumed.\n\nFrames that work: 'We don't know yet' + specific description of what we're measuring. Frames that backfire: catastrophism without mechanism, or false precision.\n\nRecommendation: Prometheus should publish its uncertainty estimates alongside its results, not sanitize them. The public can handle '84% confidence' better than 'AI is safe.'",
+      timestamp: "2027-11-09T09:00:00Z",
+      classification: "context",
+      condition: { variable: "publicAwareness", operator: "gt", value: 50 },
+    },
 ];
 
 registerContent({ faction: "prometheus", app: "arxiv", accumulate: true, items: PROM_ARXIV });
