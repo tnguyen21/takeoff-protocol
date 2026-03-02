@@ -29,13 +29,19 @@ socket.on("message:history", ({ messages }: { messages: GameMessage[] }) => {
 
 socket.on("message:receive", (message: GameMessage) => {
   const appId = message.isTeamChat ? "slack" : "signal";
-  useMessagesStore.setState((s) => ({
-    messages: [...s.messages, message],
-    unreadCounts: {
-      ...s.unreadCounts,
-      [appId]: (s.unreadCounts[appId] ?? 0) + 1,
-    },
-  }));
+  useMessagesStore.setState((s) => {
+    // Skip if we already have this message (deduplication)
+    if (s.messages.some((m) => m.id === message.id)) {
+      return s; // No change
+    }
+    return {
+      messages: [...s.messages, message],
+      unreadCounts: {
+        ...s.unreadCounts,
+        [appId]: (s.unreadCounts[appId] ?? 0) + 1,
+      },
+    };
+  });
 
   soundManager.play("slack-knock");
 
@@ -52,7 +58,10 @@ socket.on("message:receive", (message: GameMessage) => {
       appId,
       title: `${appLabel}: ${sender}`,
       body,
-      onClick: () => useUIStore.getState().openWindow(appId, appLabel),
+      onClick: () => {
+        useUIStore.getState().openWindow(appId, appLabel);
+        useMessagesStore.getState().markRead(appId);
+      },
     });
   }
 });

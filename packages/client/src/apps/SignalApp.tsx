@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { AppProps } from "./types.js";
 import { useMessagesStore } from "../stores/messages.js";
+import { useNotificationsStore } from "../stores/notifications.js";
 import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
 import { soundManager } from "../sounds/index.js";
@@ -122,9 +123,10 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [dmMessages.length, showTyping]);
 
-  // Mark signal read when open
+  // Mark signal read and dismiss toasts when open
   useEffect(() => {
     markRead("signal");
+    useNotificationsStore.getState().dismissByApp("signal");
   }, [markRead, dmMessages.length]);
 
   // Update `now` every 5s so read-receipt statuses refresh

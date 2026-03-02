@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { useMessagesStore } from "../stores/messages.js";
+import { useNotificationsStore } from "../stores/notifications.js";
 import { useGameStore } from "../stores/game.js";
 import { getAppIcon } from "../apps/icons.js";
 import { FACTIONS } from "@takeoff/shared";
@@ -46,9 +47,10 @@ export function Dock() {
       minimizeWindow(w.id);
     } else {
       openWindow(w.appId, w.title);
-      // Clear unread badge when opening slack or signal
+      // Clear unread badge and toasts when opening slack or signal
       if (w.appId === "slack" || w.appId === "signal") {
         markRead(w.appId);
+        useNotificationsStore.getState().dismissByApp(w.appId);
       }
     }
   };

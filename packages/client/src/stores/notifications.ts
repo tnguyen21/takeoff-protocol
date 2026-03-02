@@ -15,6 +15,7 @@ interface NotificationsStore {
 
   addNotification: (n: Omit<ToastNotification, "id" | "timestamp">) => void;
   dismissNotification: (id: string) => void;
+  dismissByApp: (appId: string) => void;
 }
 
 const MAX_VISIBLE = 3;
@@ -40,6 +41,14 @@ export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
   dismissNotification: (id) => {
     set((s) => {
       const newQueue = s.queue.filter((n) => n.id !== id);
+      const newVisible = newQueue.slice(0, MAX_VISIBLE);
+      return { queue: newQueue, visible: newVisible };
+    });
+  },
+
+  dismissByApp: (appId) => {
+    set((s) => {
+      const newQueue = s.queue.filter((n) => n.appId !== appId);
       const newVisible = newQueue.slice(0, MAX_VISIBLE);
       return { queue: newQueue, visible: newVisible };
     });

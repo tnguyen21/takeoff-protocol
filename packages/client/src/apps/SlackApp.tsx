@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { AppProps } from "./types.js";
 import { useMessagesStore } from "../stores/messages.js";
+import { useNotificationsStore } from "../stores/notifications.js";
 import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
 import { soundManager } from "../sounds/index.js";
@@ -90,9 +91,10 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [channelTeamMessages.length, channelIntelMessages.length]);
 
-  // Mark read when app is open
+  // Mark read and dismiss toasts when app is open
   useEffect(() => {
     markRead("slack");
+    useNotificationsStore.getState().dismissByApp("slack");
   }, [markRead, teamMessages.length]);
 
   const sendMessage = useCallback(() => {
