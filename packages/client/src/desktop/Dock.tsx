@@ -22,6 +22,7 @@ const PULSE_STYLE = `
 export function Dock() {
   const { windows, openWindow, focusWindow, minimizeWindow, openedThisRound } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
+  const markRead = useMessagesStore((s) => s.markRead);
   const round = useGameStore((s) => s.round);
   const phase = useGameStore((s) => s.phase);
   const selectedFaction = useGameStore((s) => s.selectedFaction);
@@ -45,6 +46,10 @@ export function Dock() {
       minimizeWindow(w.id);
     } else {
       openWindow(w.appId, w.title);
+      // Clear unread badge when opening slack or signal
+      if (w.appId === "slack" || w.appId === "signal") {
+        markRead(w.appId);
+      }
     }
   };
 

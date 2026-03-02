@@ -396,6 +396,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const [leakSent, setLeakSent] = useState<Record<number, boolean>>({});
+  const [readEmails, setReadEmails] = useState<Record<number, boolean>>({}); // Track read state by email index
 
   // Compose state
   const [composeOpen, setComposeOpen] = useState(false);
@@ -411,9 +412,14 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   }, [activeFolder, searchQuery]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
-  const folderEmails = filterEmailsByFolder(allEmails, activeFolder);
+  // Mark emails as read based on local state
+  const emailsWithReadState = allEmails.map((email, idx) => ({
+    ...email,
+    read: email.read || readEmails[idx],
+  }));
+  const folderEmails = filterEmailsByFolder(emailsWithReadState, activeFolder);
   const filteredEmails = filterEmailsBySearch(folderEmails, searchQuery);
-  const unreadCounts = computeFolderUnreadCounts(allEmails);
+  const unreadCounts = computeFolderUnreadCounts(emailsWithReadState);
 
   const safeSelected = filteredEmails.length > 0 ? Math.min(selected, filteredEmails.length - 1) : -1;
   const selectedEmail = safeSelected >= 0 ? filteredEmails[safeSelected] : null;
@@ -573,6 +579,11 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
                 onClick={() => {
                   setSelected(i);
                   setComposeOpen(false);
+                  // Mark email as read when clicked
+                  const globalIdx = allEmails.indexOf(e);
+                  if (globalIdx >= 0 && !readEmails[globalIdx]) {
+                    setReadEmails((prev) => ({ ...prev, [globalIdx]: true }));
+                  }
                 }}
                 className={`px-2.5 py-2 border-b border-white/5 cursor-pointer hover:bg-white/5 ${
                   safeSelected === i && !composeOpen ? "bg-blue-900/30" : ""
