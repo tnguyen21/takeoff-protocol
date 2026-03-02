@@ -1,17 +1,4 @@
-import type { Faction } from "@takeoff/shared";
-
-// ── NPC Persona Types ─────────────────────────────────────────────────────────
-
-export interface NpcPersona {
-  /** Unique NPC identifier, following __npc_*__ convention. */
-  id: string;
-  name: string;
-  subtitle: string;
-  /** Tailwind bg-* color class for the avatar circle. */
-  avatarColor: string;
-  /** Which factions can see / receive messages from this NPC. */
-  factions: Faction[];
-}
+import type { NpcPersona } from "@takeoff/shared";
 
 // ── Persona Definitions ───────────────────────────────────────────────────────
 
