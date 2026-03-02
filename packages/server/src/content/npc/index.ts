@@ -1,9 +1,13 @@
 import type { NpcTrigger } from "@takeoff/shared";
 import { ROUND1_NPC_TRIGGERS } from "./round1.js";
 import { ROUND2_NPC_TRIGGERS } from "./round2.js";
+import { CONDITIONAL_NPC_TRIGGERS } from "./conditional.js";
+import { PERSONAL_NPC_TRIGGERS } from "./personal.js";
 
 export { ROUND1_NPC_TRIGGERS } from "./round1.js";
 export { ROUND2_NPC_TRIGGERS } from "./round2.js";
+export { CONDITIONAL_NPC_TRIGGERS } from "./conditional.js";
+export { PERSONAL_NPC_TRIGGERS } from "./personal.js";
 
 // ── Round 3 NPC Triggers ──────────────────────────────────────────────────────
 
@@ -104,10 +108,25 @@ const NPC_TRIGGERS_BY_ROUND: Record<number, NpcTrigger[]> = {
 };
 
 /**
- * Returns NPC triggers for the given round, or an empty array if none are defined.
+ * Returns NPC triggers active for the given round.
+ *
+ * Merges three sources:
+ * - Round-specific triggers (keyed by round number)
+ * - Conditional triggers filtered by their `rounds` range (or always-active if omitted)
+ * - Personal triggers filtered by their `rounds` range or `schedule.round`
  *
  * INV: Every returned trigger has a non-empty `id`, `npcId`, and `content`.
  */
 export function getNpcTriggersForRound(round: number): NpcTrigger[] {
-  return NPC_TRIGGERS_BY_ROUND[round] ?? [];
+  const roundSpecific = NPC_TRIGGERS_BY_ROUND[round] ?? [];
+  const conditional = CONDITIONAL_NPC_TRIGGERS.filter((t) => {
+    if (!t.rounds) return true;
+    return round >= t.rounds[0] && round <= t.rounds[1];
+  });
+  const personal = PERSONAL_NPC_TRIGGERS.filter((t) => {
+    if (t.rounds) return round >= t.rounds[0] && round <= t.rounds[1];
+    if (t.schedule) return t.schedule.round === round;
+    return true;
+  });
+  return [...roundSpecific, ...conditional, ...personal];
 }

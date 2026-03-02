@@ -328,6 +328,8 @@ export interface NpcTrigger {
   schedule?: NpcTriggerSchedule;
   /** Resolved to socket IDs by the server. */
   target: NpcTriggerTarget;
+  /** Inclusive round range [min, max] — trigger is active in these rounds. If omitted, always active. */
+  rounds?: [number, number];
 }
 
 // ── Ending Arcs ──

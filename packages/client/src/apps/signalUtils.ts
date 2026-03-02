@@ -63,6 +63,7 @@ export function isNpcId(id: string): boolean {
 /** Static metadata (subtitle + avatar color) for known NPC contacts. */
 const NPC_METADATA: Record<string, { subtitle: string; avatarColor: string }> = {
   // Cross-faction
+  __npc_personal__: { subtitle: "· personal", avatarColor: "bg-neutral-500" },
   __npc_anon__: { subtitle: "· encrypted channel", avatarColor: "bg-red-900" },
   __npc_insider__: { subtitle: "· DC source", avatarColor: "bg-purple-900" },
   // OpenBrain

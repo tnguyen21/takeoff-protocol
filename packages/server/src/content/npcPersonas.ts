@@ -6,6 +6,13 @@ export const NPC_PERSONAS: NpcPersona[] = [
   // ── Cross-Faction ──────────────────────────────────────────────────────────
 
   {
+    id: "__npc_personal__",
+    name: "Personal",
+    subtitle: "personal",
+    avatarColor: "bg-neutral-500",
+    factions: ["openbrain", "prometheus", "china", "external"],
+  },
+  {
     id: "__npc_anon__",
     name: "Anonymous Source",
     subtitle: "encrypted channel",

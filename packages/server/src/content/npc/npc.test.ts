@@ -3,7 +3,8 @@
  *
  * Invariants:
  * - INV-1: All trigger IDs are globally unique
- * - INV-2: Each trigger has a non-empty id, npcId, content, and a target with at least faction or role
+ * - INV-2: Each trigger has a non-empty id, npcId, content, and a target object
+ *          (target may be {} for personal triggers that broadcast to all players)
  * - INV-3: Triggers with a condition reference a valid state variable (checked structurally)
  * - INV-4: getNpcTriggersForRound returns the correct set and empty array for unknown rounds
  * - INV-5: Round-1 triggers cover chinaWeightTheftProgress, ccpPatience, publicAwareness
@@ -13,13 +14,20 @@
 import { describe, it, expect } from "bun:test";
 import { ROUND1_NPC_TRIGGERS } from "./round1.js";
 import { ROUND2_NPC_TRIGGERS } from "./round2.js";
+import { CONDITIONAL_NPC_TRIGGERS } from "./conditional.js";
+import { PERSONAL_NPC_TRIGGERS } from "./personal.js";
 import { getNpcTriggersForRound } from "./index.js";
 
 // ── INV-1: Globally unique IDs ──────────────────────────────────────────────
 
 describe("INV-1: trigger ID uniqueness", () => {
-  it("all trigger IDs across rounds are unique", () => {
-    const all = [...ROUND1_NPC_TRIGGERS, ...ROUND2_NPC_TRIGGERS];
+  it("all trigger IDs across all arrays are unique", () => {
+    const all = [
+      ...ROUND1_NPC_TRIGGERS,
+      ...ROUND2_NPC_TRIGGERS,
+      ...CONDITIONAL_NPC_TRIGGERS,
+      ...PERSONAL_NPC_TRIGGERS,
+    ];
     const ids = all.map((t) => t.id);
     const unique = new Set(ids);
     expect(unique.size).toBe(ids.length);
@@ -30,13 +38,14 @@ describe("INV-1: trigger ID uniqueness", () => {
 
 function assertTriggerShape(triggers: typeof ROUND1_NPC_TRIGGERS, label: string) {
   describe(`INV-2: required fields — ${label}`, () => {
-    it("every trigger has a non-empty id, npcId, content, and target", () => {
+    it("every trigger has a non-empty id, npcId, content, and a target object", () => {
       for (const t of triggers) {
         expect(t.id.length).toBeGreaterThan(0);
         expect(t.npcId.length).toBeGreaterThan(0);
         expect(t.content.length).toBeGreaterThan(0);
-        // target must have at least one of faction or role
-        expect(t.target.faction !== undefined || t.target.role !== undefined).toBe(true);
+        // target must be an object (may be {} for personal/broadcast triggers)
+        expect(typeof t.target).toBe("object");
+        expect(t.target).not.toBeNull();
       }
     });
 
@@ -56,28 +65,42 @@ function assertTriggerShape(triggers: typeof ROUND1_NPC_TRIGGERS, label: string)
         expect(t.schedule.phase.length).toBeGreaterThan(0);
       }
     });
+
+    it("every rounds field (if present) is a two-element tuple with min <= max", () => {
+      for (const t of triggers) {
+        if (!t.rounds) continue;
+        expect(t.rounds).toHaveLength(2);
+        expect(t.rounds[0]).toBeLessThanOrEqual(t.rounds[1]);
+      }
+    });
   });
 }
 
 assertTriggerShape(ROUND1_NPC_TRIGGERS, "round1");
 assertTriggerShape(ROUND2_NPC_TRIGGERS, "round2");
+assertTriggerShape(CONDITIONAL_NPC_TRIGGERS, "conditional");
+assertTriggerShape(PERSONAL_NPC_TRIGGERS, "personal");
 
 // ── INV-4: getNpcTriggersForRound ────────────────────────────────────────────
 
 describe("INV-4: getNpcTriggersForRound", () => {
-  it("returns round1 triggers for round 1", () => {
+  it("returns round1 triggers for round 1 (includes all ROUND1 entries)", () => {
     const triggers = getNpcTriggersForRound(1);
-    expect(triggers).toBe(ROUND1_NPC_TRIGGERS);
-    expect(triggers.length).toBeGreaterThan(0);
+    expect(triggers.length).toBeGreaterThanOrEqual(ROUND1_NPC_TRIGGERS.length);
+    for (const t of ROUND1_NPC_TRIGGERS) {
+      expect(triggers).toContainEqual(t);
+    }
   });
 
-  it("returns round2 triggers for round 2", () => {
+  it("returns round2 triggers for round 2 (includes all ROUND2 entries)", () => {
     const triggers = getNpcTriggersForRound(2);
-    expect(triggers).toBe(ROUND2_NPC_TRIGGERS);
-    expect(triggers.length).toBeGreaterThan(0);
+    expect(triggers.length).toBeGreaterThanOrEqual(ROUND2_NPC_TRIGGERS.length);
+    for (const t of ROUND2_NPC_TRIGGERS) {
+      expect(triggers).toContainEqual(t);
+    }
   });
 
-  it("returns empty array for unknown rounds", () => {
+  it("returns empty array for unknown rounds (no conditional/personal triggers active)", () => {
     expect(getNpcTriggersForRound(0)).toEqual([]);
     expect(getNpcTriggersForRound(99)).toEqual([]);
   });
