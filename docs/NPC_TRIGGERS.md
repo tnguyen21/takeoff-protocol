@@ -154,7 +154,7 @@ factions: all
 
 > "we replicated it. the anomaly from last week. i thought it was a data artifact, it's not. i've told two people on the team and i'm not telling anyone else until i talk to you. this needs to go to leadership but i want to make sure we're saying the same thing before it does. when can you talk?"
 
-**public_backlash_spike** — `__npc_insider__` → prom_comms
+**public_backlash_spike** — `__npc_insider__` → prom_policy
 - condition: `publicSentiment <= -30`
 - rounds: 3-5
 
@@ -166,7 +166,7 @@ factions: all
 
 ### Gameplay
 
-**compute_ceiling** — `__npc_china_engineer__` → china_scientist
+**compute_ceiling** — `__npc_china_engineer__` → china_director
 - condition: `cdzComputeUtilization >= 85`
 - rounds: 2-3
 
@@ -184,7 +184,7 @@ factions: all
 
 > "Party Liaison — The gap is within striking distance. The timeline the Premier communicated at Beidaihe was not rhetorical. Ensure your team understands the current moment. Those who deliver will be remembered. Those who hesitate will also be remembered."
 
-**weight_theft_stalled** — `__npc_china_engineer__` → china_cyber
+**weight_theft_stalled** — `__npc_china_engineer__` → china_intel
 - condition: `chinaWeightTheftProgress >= 20` (AND `<= 35` — narrow band before existing NSA trigger fires)
 - rounds: 2-3
 
@@ -286,6 +286,55 @@ These use the `__npc_personal__` persona. Zero game impact. Scheduled, not thres
 >
 > *(Mom is asking when you're coming home. Last video call was three months ago. She didn't complain. She just asked. I'm asking too.)*
 
+**ob_cto_partner_r2** — → ob_cto
+- schedule: round 2, intel
+
+> "you were talking in your sleep again last night. something about gradient checkpointing? i don't know what that means but you sounded stressed. please come home before midnight tonight. i made that pasta you like"
+
+**ob_security_brother_r1** — → ob_security
+- schedule: round 1, deliberation
+
+> "yo you still coming to jake's birthday saturday? mom is making a thing of it. also dad wants to know if you can 'fix his computer' which we both know means he clicked another phishing link"
+
+**prom_ceo_kid_school_r1** — → prom_ceo
+- schedule: round 1, intel
+
+> "[Presidio Hill School] Reminder: Parent-teacher conference for Kai (3rd grade) is scheduled for Wednesday at 4:15pm. Ms. Rodriguez would like to discuss Kai's science project. Please confirm attendance."
+
+**prom_ceo_spouse_r3** — → prom_ceo
+- schedule: round 3, deliberation
+
+> "saw your quote in the times. 'responsible development is not optional.' kai asked if that means you're in charge of being responsible. i said yes. he said 'that's a lot.' smart kid. come home"
+
+**prom_scientist_advisor_r2** — → prom_scientist
+- schedule: round 2, intel
+
+> "Hi — I know you're busy with industry work but I saw your name on that alignment preprint and wanted to say: this is exactly what your dissertation was pointing toward. Your committee would be proud. If you ever want to grab coffee and talk shop, I'm still at the same office. — Prof. Amari"
+
+**prom_policy_sister_r1** — → prom_policy
+- schedule: round 1, deliberation
+
+> "so i told my coworkers my sister works in AI policy and they immediately started asking if robots are going to take their jobs. i said 'she's working on it' which is technically true?? anyway call mom she's being weird again"
+
+**prom_opensource_roommate_r2** — → prom_opensource
+- schedule: round 2, deliberation
+
+> "hey the internet bill is past due again. also someone keeps leaving the bathroom light on and our PG&E is insane. i put your half on the fridge. also there's leftover pad thai if you want it"
+
+**china_intel_daughter_r3** — → china_intel
+- schedule: round 3, intel
+
+> "爸爸，老师让我们画'我爸爸的工作'。我画了一个穿西装的人坐在电脑前。老师问你具体做什么，我说不知道。你能告诉我吗？"
+>
+> *(Daddy, the teacher told us to draw 'what my dad does for work.' I drew a man in a suit sitting at a computer. The teacher asked what exactly you do. I said I don't know. Can you tell me?)*
+
+**china_military_wife_r2** — → china_military
+- schedule: round 2, intel
+
+> "这周末能请假吗？儿子的学校运动会是周六。他跑400米。他没说，但我知道他想让你看。"
+>
+> *(Can you get leave this weekend? Our son's sports day is Saturday. He's running the 400m. He didn't say anything, but I know he wants you there.)*
+
 ### Mundane Life
 
 **any_package_r1** — → any role (global)
@@ -318,6 +367,38 @@ These use the `__npc_personal__` persona. Zero game impact. Scheduled, not thres
 
 > "FYI your parking pass expired last Friday. Facilities says you need to come to the B-wing desk in person with two forms of ID to renew. Hours are 0730-1530. They cannot make exceptions. I know. I asked."
 
+**ob_cto_recall_r1** — → ob_cto
+- schedule: round 1, intel
+
+> "NHTSA Safety Recall: Your 2024 Rivian R1S (VIN ending 4827) is subject to recall #24V-891 for battery management software. Schedule service at your earliest convenience. Do not charge above 80% until repaired."
+
+**ob_security_defcon_r3** — → ob_security
+- schedule: round 3, intel
+
+> "DEF CON 35 Registration Confirmation: Badge #08841. Your talk 'Supply Chain Attacks on ML Inference Pipelines' has been moved to Track 2, Friday 2pm. Slides due by Wednesday. See you in Vegas."
+
+**prom_scientist_library_r1** — → prom_scientist
+- schedule: round 1, deliberation
+
+> "[SF Public Library] OVERDUE NOTICE: 'The Alignment Problem' by Brian Christian — 14 days overdue. Current fine: $4.20. Return or renew online to avoid account hold."
+
+**prom_policy_drycleaning_r2** — → prom_policy
+- schedule: round 2, intel
+
+> "Hi! Your order at Capitol Cleaners is ready for pickup (2 blazers, 1 dress). We close at 6pm. Items held for 7 days. Thank you!"
+
+**prom_opensource_bikeshop_r3** — → prom_opensource
+- schedule: round 3, intel
+
+> "Hey, your bike's ready — new chain, tuned the derailleur, patched the rear tube. $85. We close at 7. If you can't make it today we'll hold it through the weekend. — Mike's Bikes, Valencia St"
+
+**china_military_vehicle_r3** — → china_military
+- schedule: round 3, deliberation
+
+> "【营区通知】车辆年检到期提醒：您的车牌号京A-38271将于本月15日到期。请尽快到后勤处办理续检手续。逾期将限制出入营区。"
+>
+> *(Base notice: Vehicle inspection expiration reminder. Your plate JA-38271 expires on the 15th. Please complete renewal at logistics. Expired vehicles will be restricted from base access.)*
+
 ### Social / Professional Noise
 
 **ext_journalist_linkedin_r1** — → ext_journalist
@@ -345,7 +426,7 @@ These use the `__npc_personal__` persona. Zero game impact. Scheduled, not thres
 
 > "[Williams College '08] Priya: omg who watched the UN session yesterday?? is that literally maya on tv?? / Dev: dead / Keiko: MAYA RESPOND"
 
-**china_cyber_discord_r1** — → china_cyber
+**china_intel_discord_r1** — → china_intel
 - schedule: round 1, intel
 
 > "[Discord — Phantom Wolves] bro where are you, ranked reset was yesterday, we're down a player, stop doing 'government stuff' lmao. also your energy drinks arrived, the guy left them with your neighbor again"
@@ -354,6 +435,40 @@ These use the `__npc_personal__` persona. Zero game impact. Scheduled, not thres
 - schedule: round 2, deliberation
 
 > "Hey — legal says we need the source docs or we can't run it. Not my call. Also the piece is 400 words over and the headline isn't landing. Can you jump on a call at 3? Also your last expense report has a $340 'research dinner' with no receipt attached."
+
+**ob_cto_labmate_r3** — → ob_cto
+- schedule: round 3, deliberation
+
+> "hey! saw your name on the Agent-3 technical report. wild. remember when we were debugging CUDA kernels at 3am in the Stata Center and you said 'someday this will matter'? lol. anyway congrats, drinks sometime?"
+
+**ob_security_landlord_r2** — → ob_security
+- schedule: round 2, deliberation
+
+> "Hi, this is regarding Unit 4B. The plumber is coming Thursday between 10-2 for the leak under the kitchen sink. Someone needs to be home or leave a key with the front desk. Please confirm. Thanks, Maria (Building Mgmt)"
+
+**prom_scientist_cat_r3** — → prom_scientist
+- schedule: round 3, intel
+
+> "Hi! Just checking in — Schrödinger is doing great. Ate all his wet food this morning, knocked a plant off the shelf, and sat on my keyboard during a meeting. Standard cat behavior. Will send pics later. — Jen (cat sitter)"
+
+**prom_opensource_hn_r1** — → prom_opensource
+- schedule: round 1, intel
+
+> "[Hacker News] Your comment on 'Open-weight models and the alignment tax' is trending. 247 points, 89 replies. Top reply: 'This is the most measured take I've seen from anyone at a major lab. Respect.' — view thread"
+
+**china_intel_classmate_r2** — → china_intel
+- schedule: round 2, deliberation
+
+> "老同学，国防科大30年聚会定在下月。老赵说你现在'做大事了'不知道来不来。我说你肯定来。你不来我可丢脸了。"
+>
+> *(Old classmate — the NUDT 30-year reunion is set for next month. Old Zhao says you're 'doing big things now' and might not come. I said you'd definitely be there. Don't make me a liar.)*
+
+**china_military_comrade_r1** — → china_military
+- schedule: round 1, deliberation
+
+> "老战友，上次在南京碰面已经是两年前了。听说你调到新部门了，具体干什么不方便问。保重身体。有机会一起喝两杯。"
+>
+> *(Old comrade — last time we met in Nanjing was two years ago. Heard you transferred to a new department. Won't ask what exactly you do. Take care. Let's grab drinks when there's a chance.)*
 
 ### Escalation-Aware Personal
 
@@ -382,6 +497,26 @@ These fire at high thresholds. The crisis seeps into personal life.
 - rounds: 5
 
 > "hey, weird question out of nowhere — are things as bad as they seem on the news? like actually? you work in this stuff, so. sorry if that's a weird thing to ask"
+
+**ob_cto_partner_worried** — → ob_cto
+- condition: `aiAutonomyLevel >= 75`
+- rounds: 4-5
+
+> "i don't understand what's happening but the way you looked when you came home last night scared me. you sat on the edge of the bed for twenty minutes without moving. whatever this is — you can talk to me. please."
+
+**prom_scientist_advisor_worried** — → prom_scientist
+- condition: `misalignmentSeverity >= 55`
+- rounds: 4-5
+
+> "I've been following the news. Reading between the lines of what you can't tell me. If the situation is what I think it is — and I taught you well enough to know what I think — please be careful. And please be honest. The world needs honest scientists right now more than it needs careful ones."
+
+**china_director_spouse_worried** — → china_director
+- condition: `ccpPatience <= 25`
+- rounds: 4-5
+
+> "你最近每天凌晨才到家。小美问我爸爸是不是在生她的气。我不知道该怎么回答。不管你在做什么，别忘了还有人在等你回来。"
+>
+> *(You've been coming home past midnight every day. Xiaomei asked me if daddy is angry at her. I didn't know what to say. Whatever you're doing, don't forget there are people waiting for you to come home.)*
 
 **ob_safety_sibling_r5** — → ob_safety
 - schedule: round 5, deliberation
