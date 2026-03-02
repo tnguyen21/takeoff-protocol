@@ -312,6 +312,43 @@ export interface ResolutionData {
   teamDecisions: Record<string, { optionId: string; label: string }>;
 }
 
+// ── NPC Triggers ──
+
+export interface NpcTriggerCondition {
+  variable: keyof StateVariables;
+  operator: "gte" | "lte" | "eq";
+  value: number;
+}
+
+export interface NpcTriggerSchedule {
+  round: number;
+  phase: GamePhase;
+}
+
+export interface NpcTriggerTarget {
+  faction?: Faction;
+  role?: Role;
+}
+
+/**
+ * A trigger that delivers an NPC message when a state condition is met
+ * or at a specific round/phase. Server resolves `target` to socket IDs.
+ */
+export interface NpcTrigger {
+  /** Unique identifier — also used to deduplicate once-per-game fires. */
+  id: string;
+  /** NPC persona ID (e.g. '__npc_anon__'). */
+  npcId: string;
+  /** Message text delivered to the target players. */
+  content: string;
+  /** State-variable threshold that activates this trigger. */
+  condition?: NpcTriggerCondition;
+  /** Fire unconditionally at the start of this round/phase. */
+  schedule?: NpcTriggerSchedule;
+  /** Resolved to socket IDs by the server. */
+  target: NpcTriggerTarget;
+}
+
 // ── Ending Arcs ──
 
 export type EndingArcId =
