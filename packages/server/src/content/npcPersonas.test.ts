@@ -136,7 +136,7 @@ describe("Faction-specific personas (INV-5)", () => {
 });
 
 describe("Persona count", () => {
-  it("has exactly 12 personas defined", () => {
-    expect(NPC_PERSONAS.length).toBe(12);
+  it("has exactly 13 personas defined", () => {
+    expect(NPC_PERSONAS.length).toBe(13);
   });
 });
