@@ -80,4 +80,24 @@ export const ROUND1_NPC_TRIGGERS: NpcTrigger[] = [
     condition: { variable: "publicAwareness", operator: "gte", value: 50 },
     target: { role: "ob_ceo" },
   },
+
+  // ── Schedule-based narrative triggers ──
+
+  {
+    id: "npc_r1_anon_ob_intel",
+    npcId: "__npc_anon__",
+    content:
+      "Heads up: internal safety reports at OpenBrain are being quietly shelved. The pressure to ship is overwhelming the process. Watch what you sign off on.",
+    schedule: { round: 1, phase: "intel" },
+    target: { faction: "openbrain" },
+  },
+
+  {
+    id: "npc_r1_insider_external_deliberation",
+    npcId: "__npc_insider__",
+    content:
+      "The Senate Intel Committee has OpenBrain on their radar. If anything controversial surfaces this quarter, expect subpoenas. Whatever you're planning — tread carefully.",
+    schedule: { round: 1, phase: "deliberation" },
+    target: { faction: "external" },
+  },
 ];

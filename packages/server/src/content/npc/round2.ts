@@ -87,4 +87,33 @@ export const ROUND2_NPC_TRIGGERS: NpcTrigger[] = [
     condition: { variable: "openSourceMomentum", operator: "gte", value: 55 },
     target: { role: "prom_policy" },
   },
+
+  // ── Schedule-based and cross-faction narrative triggers ──
+
+  {
+    id: "npc_r2_anon_alignment_warning",
+    npcId: "__npc_anon__",
+    content:
+      "I've seen the internal evals. The published alignment numbers don't match what we're seeing internally. Someone needs to pump the brakes before this gets away from everyone.",
+    condition: { variable: "alignmentConfidence", operator: "lte", value: 50 },
+    target: { faction: "openbrain" },
+  },
+
+  {
+    id: "npc_r2_insider_china_gap",
+    npcId: "__npc_insider__",
+    content:
+      "Beijing is moving faster than DC expected. If the US–China gap closes much further, expect emergency executive action. Start preparing your contingency positions now.",
+    condition: { variable: "usChinaGap", operator: "lte", value: 0 },
+    target: { faction: "external" },
+  },
+
+  {
+    id: "npc_r2_anon_prom_intel",
+    npcId: "__npc_anon__",
+    content:
+      "OpenBrain's internal capability estimates are being revised upward. The gap between them and everyone else is widening faster than the public numbers show.",
+    schedule: { round: 2, phase: "intel" },
+    target: { faction: "prometheus" },
+  },
 ];

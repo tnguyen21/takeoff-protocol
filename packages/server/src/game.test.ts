@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
-import type { GameRoom, Player, StateVariables } from "@takeoff/shared";
+import type { GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
 
 // ── Helpers ──
 
@@ -539,5 +539,229 @@ describe("checkThresholds — each fires at most once (idempotency invariant)", 
     // No notifications should be emitted to players
     expect(emitted["p1:game:notification"]).toBeUndefined();
     expect(room.firedThresholds?.size ?? 0).toBe(0);
+  });
+});
+
+// ── NPC Triggers ──────────────────────────────────────────────────────────────
+
+describe("checkThresholds — NPC triggers", () => {
+  // npc_r1_anon_ob_intel is scheduled for round 1, intel phase → openbrain players
+  it("schedule-based NPC trigger fires for matching round + phase", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      round: 1,
+      phase: "intel",
+      players: { p1: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    const msgs = emitted["p1:message:receive"];
+    expect(msgs).toBeDefined();
+    const msg = msgs![0][1] as GameMessage;
+    expect(msg.isNpc).toBe(true);
+    expect(msg.from).toBe("__npc_anon__");
+    expect(msg.fromName).toBe("Anonymous Source");
+    expect(msg.to).toBe("p1");
+    expect(msg.isTeamChat).toBe(false);
+    expect(room.firedThresholds!.has("npc_r1_anon_ob_intel")).toBe(true);
+  });
+
+  it("schedule-based NPC trigger appends message to room.messages for replay", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      round: 1,
+      phase: "intel",
+      players: { p1: ob },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    const npcMsgs = room.messages.filter((m) => m.isNpc);
+    expect(npcMsgs.length).toBeGreaterThan(0);
+    expect(npcMsgs[0].from).toBe("__npc_anon__");
+  });
+
+  it("schedule-based NPC trigger does NOT fire for wrong phase", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    // npc_r1_anon_ob_intel requires phase=intel; set phase=deliberation
+    const room = makeRoom({
+      round: 1,
+      phase: "deliberation",
+      players: { p1: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // Should not have fired the intel-phase trigger (but may fire deliberation one)
+    expect(room.firedThresholds!.has("npc_r1_anon_ob_intel")).toBe(false);
+  });
+
+  it("schedule-based NPC trigger does NOT fire for wrong round", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    // npc_r4_anon_ob_crisis requires round=4; use round=1
+    const room = makeRoom({
+      round: 1,
+      phase: "briefing",
+      players: { p1: ob },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds!.has("npc_r4_anon_ob_crisis")).toBe(false);
+  });
+
+  it("NPC trigger fires at most once (idempotency)", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      round: 1,
+      phase: "intel",
+      players: { p1: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+    checkThresholds(io, room); // second call must be a no-op
+
+    const msgs = emitted["p1:message:receive"] ?? [];
+    // Count how many times the specific trigger was delivered
+    const triggerMsgs = msgs.filter(([, m]) => (m as GameMessage).id?.startsWith("npc-npc_r1_anon_ob_intel"));
+    expect(triggerMsgs.length).toBe(1);
+  });
+
+  it("condition-based NPC trigger fires when condition is met", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    // npc_r2_anon_alignment_warning: alignmentConfidence < 50
+    const room = makeRoom({
+      round: 2,
+      phase: "intel",
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, alignmentConfidence: 40 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds!.has("npc_r2_anon_alignment_warning")).toBe(true);
+    const msgs = emitted["p1:message:receive"];
+    expect(msgs).toBeDefined();
+  });
+
+  it("condition-based NPC trigger does NOT fire when condition is not met", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    // npc_r2_anon_alignment_warning: alignmentConfidence < 50 → not met at 70
+    const room = makeRoom({
+      round: 2,
+      phase: "intel",
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, alignmentConfidence: 70 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds!.has("npc_r2_anon_alignment_warning")).toBeFalsy();
+  });
+
+  it("NPC trigger only targets players matching the trigger's faction", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const ext = makePlayer("p2", "external", "ext_nsa");
+    // npc_r1_anon_ob_intel targets openbrain only
+    const room = makeRoom({
+      round: 1,
+      phase: "intel",
+      players: { p1: ob, p2: ext },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // openbrain player gets the intel trigger
+    const obMsgs = (emitted["p1:message:receive"] ?? []).filter(([, m]) => (m as GameMessage).isNpc);
+    expect(obMsgs.length).toBeGreaterThan(0);
+
+    // external player should NOT receive the openbrain-targeted trigger
+    const extNpcMsgs = (emitted["p2:message:receive"] ?? []).filter(
+      ([, m]) => (m as GameMessage).id === "npc-npc_r1_anon_ob_intel-p2",
+    );
+    expect(extNpcMsgs.length).toBe(0);
+  });
+
+  it("NPC trigger echoes to GM with _gmView flag", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      round: 1,
+      phase: "intel",
+      gmId: "gm1",
+      players: { p1: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    const gmMsgs = emitted["gm1:message:receive"];
+    expect(gmMsgs).toBeDefined();
+    const gmMsg = gmMsgs![0][1] as GameMessage & { _gmView?: boolean };
+    expect(gmMsg._gmView).toBe(true);
+    expect(gmMsg.isNpc).toBe(true);
+  });
+
+  it("NPC triggers do not fire in tutorial round (round 0)", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      round: 0,
+      phase: "intel",
+      players: { p1: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    const npcMsgs = (emitted["p1:message:receive"] ?? []).filter(([, m]) => (m as GameMessage).isNpc);
+    expect(npcMsgs.length).toBe(0);
+  });
+
+  it("players without faction/role are excluded from NPC targeting", () => {
+    const noRole = makePlayer("p1", null, null);
+    const ob = makePlayer("p2", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      round: 1,
+      phase: "intel",
+      players: { p1: noRole, p2: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // p1 has no faction/role → should not receive NPC messages
+    const p1NpcMsgs = (emitted["p1:message:receive"] ?? []).filter(([, m]) => (m as GameMessage).isNpc);
+    expect(p1NpcMsgs.length).toBe(0);
+  });
+});
+
+// ── advancePhase calls checkThresholds for non-resolution phases ──────────────
+
+describe("advancePhase — NPC triggers fire on phase transition", () => {
+  it("schedule-based NPC trigger fires when advancePhase transitions to intel", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    // Start in briefing; advancing will transition to intel (round 1)
+    const room = makeRoom({
+      phase: "briefing",
+      round: 1,
+      players: { p1: ob },
+    });
+
+    const { io, emitted } = createMockIo();
+    advancePhase(io, room);
+
+    expect(room.phase).toBe("intel");
+    // npc_r1_anon_ob_intel is scheduled for round 1, intel → should fire
+    expect(room.firedThresholds!.has("npc_r1_anon_ob_intel")).toBe(true);
+    const npcMsgs = (emitted["p1:message:receive"] ?? []).filter(([, m]) => (m as GameMessage).isNpc);
+    expect(npcMsgs.length).toBeGreaterThan(0);
   });
 });

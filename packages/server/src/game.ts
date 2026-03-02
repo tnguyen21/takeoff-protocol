@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer, loadRound } from "./content/loader.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
@@ -7,6 +7,8 @@ import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
 import { ROUND3_DECISIONS } from "./content/decisions/round3.js";
 import { ROUND4_DECISIONS } from "./content/decisions/round4.js";
 import { ROUND5_DECISIONS } from "./content/decisions/round5.js";
+import { getNpcTriggersForRound } from "./content/npc/index.js";
+import { getNpcPersona } from "./content/npcPersonas.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
@@ -218,7 +220,11 @@ export function advancePhase(io: Server, room: GameRoom) {
   }
 
   if (room.phase === "resolution") {
-    emitResolution(io, room);
+    emitResolution(io, room); // emitResolution already calls checkThresholds internally
+  } else {
+    // Fire NPC schedule triggers (and any condition triggers met by current state)
+    // for every non-resolution phase transition.
+    checkThresholds(io, room);
   }
 
   setPhaseTimer(io, room);
@@ -650,6 +656,70 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] ui_degradation fired (room ${room.code})`);
+  }
+
+  // ── NPC Triggers ─────────────────────────────────────────────────────────────
+  // Skip tutorial round; NPC triggers only make sense in real rounds.
+  if (room.round < 1) return;
+
+  // Helper: return [socketId, Player] pairs matching a trigger's target spec.
+  const resolveTargets = (target: { faction?: Faction; role?: Role }): Array<[string, Player]> =>
+    Object.entries(room.players).filter(([, p]) => {
+      if (!p.faction || !p.role) return false;
+      if (target.faction && p.faction !== target.faction) return false;
+      if (target.role && p.role !== target.role) return false;
+      return true;
+    });
+
+  const npcTriggers = getNpcTriggersForRound(room.round);
+
+  for (const trigger of npcTriggers) {
+    if (fired.has(trigger.id)) continue;
+
+    let conditionMet = false;
+
+    if (trigger.condition) {
+      const val = s[trigger.condition.variable];
+      switch (trigger.condition.operator) {
+        case "gte": conditionMet = val >= trigger.condition.value; break;
+        case "lte": conditionMet = val <= trigger.condition.value; break;
+        case "eq": conditionMet = val === trigger.condition.value; break;
+      }
+    } else if (trigger.schedule) {
+      conditionMet = trigger.schedule.round === room.round && trigger.schedule.phase === room.phase;
+    }
+
+    if (!conditionMet) continue;
+
+    const persona = getNpcPersona(trigger.npcId);
+    if (!persona) {
+      console.warn(`[npc-trigger] Unknown npcId '${trigger.npcId}' for trigger '${trigger.id}'`);
+      continue;
+    }
+
+    const targets = resolveTargets(trigger.target);
+    for (const [playerSocketId, player] of targets) {
+      const msg: GameMessage = {
+        id: `npc-${trigger.id}-${playerSocketId}`,
+        from: trigger.npcId,
+        fromName: persona.name,
+        to: playerSocketId,
+        faction: player.faction as Faction,
+        content: trigger.content,
+        timestamp: now,
+        isTeamChat: false,
+        isNpc: true,
+      };
+
+      room.messages.push(msg);
+      io.to(playerSocketId).emit("message:receive", msg);
+      if (room.gmId) {
+        io.to(room.gmId).emit("message:receive", { ...msg, _gmView: true });
+      }
+    }
+
+    fired.add(trigger.id);
+    console.log(`[npc-trigger] ${trigger.id} fired (room ${room.code})`);
   }
 }
 
