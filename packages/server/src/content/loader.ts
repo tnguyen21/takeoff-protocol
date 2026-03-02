@@ -1,69 +1,89 @@
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import type { AppContent, Faction, Role, RoundContent, StateVariables } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, Faction, Role, StateVariables } from "@takeoff/shared";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROUNDS_DIR = join(__dirname, "rounds");
+// ── Content Module Registry ──
 
-// Cache parsed round content in memory
-const roundCache = new Map<number, RoundContent>();
-
-export function loadRound(round: number): RoundContent {
-  if (roundCache.has(round)) {
-    return roundCache.get(round)!;
-  }
-
-  const filePath = join(ROUNDS_DIR, `round${round}.json`);
-  const raw = readFileSync(filePath, "utf-8");
-  const content = JSON.parse(raw) as RoundContent;
-  roundCache.set(round, content);
-  return content;
+export interface ContentModule {
+  faction: Faction;
+  app: AppId;
+  role?: Role;
+  accumulate: boolean; // true = show rounds 0..N, false = show only round N
+  items: ContentItem[];
 }
 
-function evaluateCondition(condition: NonNullable<AppContent["items"][number]["condition"]>, state: StateVariables): boolean {
+const registry: ContentModule[] = [];
+
+export function registerContent(mod: ContentModule): void {
+  registry.push(mod);
+}
+
+// ── Condition evaluation (unchanged) ──
+
+function evaluateCondition(condition: NonNullable<ContentItem["condition"]>, state: StateVariables): boolean {
   const value = state[condition.variable];
   switch (condition.operator) {
-    case "gt": return value > condition.value;
-    case "lt": return value < condition.value;
-    case "eq": return value === condition.value;
-    default: return true;
+    case "gt":
+      return value > condition.value;
+    case "lt":
+      return value < condition.value;
+    case "eq":
+      return value === condition.value;
+    default:
+      return true;
   }
 }
+
+// ── Accumulating vs fresh apps ──
+
+const ACCUMULATING_APPS: Set<AppId> = new Set([
+  "slack",
+  "email",
+  "memo",
+  "security",
+  "intel",
+  "military",
+  "arxiv",
+  "signal",
+  "briefing", // NSA docs
+]);
+
+// Everything else (news, wandb, bloomberg, compute, twitter, gamestate) is fresh
 
 /**
  * Load and filter content for a specific player.
  *
  * INV-1: Only content matching the player's faction is returned.
- * INV-2: Role-specific app blocks (with a `role` field) are only returned when the player's role matches.
+ * INV-2: Role-specific modules (with a `role` field) are only returned when the player's role matches.
  * INV-3: Items whose condition evaluates to false against the current state are excluded.
+ * INV-4: Accumulating apps return items from rounds 0..N; fresh apps return only round N.
  */
-export function getContentForPlayer(
-  round: number,
-  faction: Faction,
-  role: Role,
-  state: StateVariables,
-): AppContent[] {
-  const roundContent = loadRound(round);
-
+export function getContentForPlayer(round: number, faction: Faction, role: Role, state: StateVariables): AppContent[] {
   const result: AppContent[] = [];
 
-  for (const appContent of roundContent.apps) {
+  for (const mod of registry) {
     // INV-1: faction filter
-    if (appContent.faction !== faction) continue;
+    if (mod.faction !== faction) continue;
 
-    // INV-2: role filter (only applies when appContent has a role)
-    if (appContent.role !== undefined && appContent.role !== role) continue;
+    // INV-2: role filter
+    if (mod.role !== undefined && mod.role !== role) continue;
 
-    // Filter items by condition (INV-3)
-    const filteredItems = appContent.items.filter((item) => {
+    // Round filter: accumulating apps show history, fresh apps show current only
+    const accumulate = mod.accumulate || ACCUMULATING_APPS.has(mod.app);
+    const roundItems = mod.items.filter((item) => (accumulate ? item.round <= round : item.round === round));
+
+    // INV-3: condition filter
+    const filteredItems = roundItems.filter((item) => {
       if (!item.condition) return true;
       return evaluateCondition(item.condition, state);
     });
 
     if (filteredItems.length === 0) continue;
 
-    result.push({ ...appContent, items: filteredItems });
+    result.push({
+      faction: mod.faction,
+      role: mod.role,
+      app: mod.app,
+      items: filteredItems,
+    });
   }
 
   return result;

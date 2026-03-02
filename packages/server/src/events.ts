@@ -462,6 +462,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       const newsItem: ContentItem = {
         id: `pub-news-${pubId}`,
         type: "headline",
+        round: room.round,
         sender: source || player.name,
         subject: title,
         body: content,
@@ -476,6 +477,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       const twitterItem: ContentItem = {
         id: `pub-twitter-${pubId}`,
         type: "tweet",
+        round: room.round,
         sender: source || player.name,
         body: tweetText,
         timestamp,

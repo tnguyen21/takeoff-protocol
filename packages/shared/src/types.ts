@@ -174,6 +174,7 @@ export interface ContentCondition {
 export interface ContentItem {
   id: string;
   type: ContentItemType;
+  round: number;
   sender?: string;
   channel?: string;
   subject?: string;
