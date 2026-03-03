@@ -319,10 +319,15 @@ export interface StoryBible {
   toneShift: string;
 }
 
+// ── Generation Cache ──
+
 export type GenerationStatus = "pending" | "ready" | "failed";
 
 export interface GeneratedRoundArtifacts {
-  briefing?: { common: string; factionVariants: Record<Faction, string> };
+  briefing?: {
+    common: string;
+    factionVariants: Record<Faction, string>;
+  };
   content?: Partial<Record<Faction, AppContent[]>>;
 }
 
