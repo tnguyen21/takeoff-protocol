@@ -391,47 +391,6 @@ export interface NpcTrigger {
   target: NpcTriggerTarget;
 }
 
-// ── Generative Content ──
-
-export interface StoryEvent {
-  round: number;
-  phase: "decision" | "threshold" | "publication" | "message";
-  summary: string;
-  stateImpact: string;
-  narrativeWeight: "major" | "minor";
-}
-
-export interface RoundArc {
-  round: number;
-  title: string;
-  era: string;
-  narrativeBeat: string;
-  escalation: string;
-  keyTensions: string[];
-}
-
-export interface StoryBible {
-  scenario: string;
-  factions: { faction: Faction; identity: string; tensions: string[] }[];
-  voiceGuides: Record<string, string>;
-  roundArcs: RoundArc[];
-  events: StoryEvent[];
-  playerActions: { round: number; faction: Faction; role: Role; decision: string }[];
-  activeThreads: string[];
-  toneShift: string;
-}
-
-/**
- * Cache bucket for one round's LLM-generated artifacts.
- * Extended in Phase B (generation/context.ts) with briefing + content fields.
- */
-export interface GeneratedRoundArtifacts {
-  briefing?: {
-    common: string;
-    factionVariants: Partial<Record<Faction, string>>;
-  };
-}
-
 // ── Ending Arcs ──
 
 export type EndingArcId =

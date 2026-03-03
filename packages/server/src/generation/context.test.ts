@@ -422,8 +422,8 @@ describe("critical path: round 2 context after round 1", () => {
     expect(ctx.players).toHaveLength(2);
     expect(ctx.publications).toHaveLength(1);
     expect(ctx.firedThresholds).toEqual([]);
-    expect(ctx.storyBible.factions).toHaveLength(4);
-    expect(ctx.storyBible.roundArcs).toHaveLength(5);
+    expect(ctx.storyBible!.factions).toHaveLength(4);
+    expect(ctx.storyBible!.roundArcs).toHaveLength(5);
   });
 });
 
@@ -565,6 +565,6 @@ describe("failure modes", () => {
     expect(room.storyBible).toBeUndefined();
     const ctx = buildGenerationContext(room, 2);
     expect(ctx.storyBible).toBeDefined();
-    expect(ctx.storyBible.factions).toHaveLength(4);
+    expect(ctx.storyBible!.factions).toHaveLength(4);
   });
 });
