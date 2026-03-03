@@ -34,6 +34,7 @@ Every event should use a consistent envelope so downstream analysis does not nee
 ```
 
 Required envelope fields:
+
 - `eventId`: unique ID for dedupe/idempotency
 - `schemaVersion`: top-level event schema version
 - `sessionId`: stable per game session (not just room code)
@@ -87,7 +88,7 @@ Required envelope fields:
 | `message.sent` | from, to (null=team), faction, contentLength, round, phase |
 | `message.npc` | npcId, targetPlayerId, targetFaction, round, phase |
 
-Content is logged separately from metadata. In test games we may want full transcripts; in production we'd skip content and just log metadata.
+Message content logging is optional. For now, default to metadata logging and enable full transcripts only when explicitly needed for debugging.
 
 **Decisions**
 | Event | Key Fields |
@@ -132,6 +133,7 @@ Each game session writes to `logs/{roomCode}_{timestamp}.jsonl`. One JSON object
 ```
 
 **Pros:**
+
 - Zero dependencies. Just `Bun.write()` with append.
 - Human-readable. `cat` the file, pipe to `jq`, grep for events.
 - Trivially parseable. Each line is self-contained JSON.
@@ -139,6 +141,7 @@ Each game session writes to `logs/{roomCode}_{timestamp}.jsonl`. One JSON object
 - Easy to version control example logs for test fixtures.
 
 **Cons:**
+
 - No indexing. Queries over many games require reading all files.
 - No aggregation without a script.
 - File I/O on every event (mitigated by buffered writes).
@@ -176,7 +179,11 @@ class GameLogger {
     this.flushInterval = setInterval(() => this.flush(), 2000);
   }
 
-  log(event: string, data: unknown, ctx?: { round?: number; phase?: string; actorId?: string }) {
+  log(
+    event: string,
+    data: unknown,
+    ctx?: { round?: number; phase?: string; actorId?: string },
+  ) {
     const line = JSON.stringify({
       eventId: crypto.randomUUID(),
       schemaVersion: 1,
@@ -220,6 +227,7 @@ class GameLogger {
 Usage: create a `GameLogger` instance per room, pass it into event handlers, call `logger.log("decision.individual_submitted", { ... }, { round, phase, actorId })` at each instrumentation point.
 
 Reliability notes:
+
 - Flush on process termination paths (`SIGINT`, `SIGTERM`) and on room cleanup/game end.
 - Never drop events silently; surface flush failures and retry when possible.
 - Keep event names canonical and versioned through `schemaVersion`.
@@ -260,6 +268,7 @@ CREATE TABLE decisions (
 ```
 
 **Pros:**
+
 - Queryable out of the box. `SELECT * FROM decisions WHERE round=3`.
 - Bun has native SQLite (`bun:sqlite`), zero deps.
 - Aggregations are trivial: `SELECT option_id, COUNT(*) FROM decisions GROUP BY option_id`.
@@ -267,6 +276,7 @@ CREATE TABLE decisions (
 - Indexed lookups are fast.
 
 **Cons:**
+
 - Schema design upfront. Migrations if we add event types.
 - More code to maintain (insert statements, table creation).
 - Slightly harder to inspect than `cat file.jsonl | jq`.
@@ -279,10 +289,12 @@ CREATE TABLE decisions (
 Log raw events as JSONL (Option A) for full replay capability. At game end, generate a SQLite summary database with aggregated stats for analysis.
 
 **Pros:**
+
 - Best of both worlds. Raw events for debugging, structured data for analysis.
 - Can re-derive SQLite from JSONL if schema changes.
 
 **Cons:**
+
 - Two systems to maintain.
 - Probably overkill until we have enough games to need aggregation.
 
@@ -293,11 +305,11 @@ Log raw events as JSONL (Option A) for full replay capability. At game end, gene
 **Start with Option A (JSONL).** It's the fastest to implement, easiest to debug, and sufficient for our current needs (analyzing individual test games). We can always write a script to ingest JSONL into SQLite later when we need cross-game aggregation.
 
 Design guardrails to include from day one:
+
 - Strict event envelope with required fields
 - Canonical event naming (single namespace)
 - Runtime payload validation at emit points
 - Stable identity semantics (`playerId` vs `socketId`)
-- Retention + privacy policy by environment
 
 ## Logging Principles
 
@@ -385,30 +397,12 @@ Socket/Game action
 
 If dropping is required in emergencies, drop `verbose` first and emit `logger.drop_notice`.
 
-## Privacy, Retention, and Access
-
-### Data Classes
-
-- `metadata`: IDs, timestamps, event names, option IDs, lengths/counts.
-- `sensitive`: free text (messages, titles), player names, GM notes.
-
-### Environment Defaults
-
-- `dev`: message content allowed, retention 14 days.
-- `test`: message content optional, retention 30 days.
-- `prod`: metadata-only default, retention 7 days unless explicitly overridden.
-
-### Controls
-
-- `LOG_MESSAGE_CONTENT=false` by default.
-- Redact/hash sensitive fields when content logging is disabled.
-- Restrict raw log access to server operators/developers only.
-
 ## Analysis Surface (v1 Scripts)
 
 ### `scripts/analyze-game.ts`
 
 Outputs per-session summary:
+
 - Session metadata (duration, rounds reached, phase timings).
 - Decision stats (submission rates, lock choices, override incidence).
 - Activity stats (time per app, missed primary app, inactive players).
@@ -419,6 +413,7 @@ Outputs per-session summary:
 ### `scripts/compare-games.ts`
 
 Outputs cross-session diff:
+
 - Decision distribution shifts by role/faction.
 - Engagement deltas (app usage and chat volume).
 - State progression deltas by round.
@@ -461,6 +456,7 @@ Outputs cross-session diff:
 ### Phase 2: Client-side activity reporting (enhance existing)
 
 The client already reports `activity:report` per phase. Enhance to report:
+
 - Per-app open/close timestamps (not just "which apps were opened")
 - Time spent in each app window
 - Which app was focused when
@@ -470,38 +466,35 @@ This requires changes in `packages/client/src/stores/ui.ts` to track timestamps,
 ### Phase 3: Analysis tooling
 
 Write scripts in `scripts/` to answer common questions from JSONL logs:
+
 - `scripts/analyze-game.ts` — per-game summary (decisions, activity, chat volume, state trajectory)
 - `scripts/compare-games.ts` — diff two game logs to see how balance changes affected outcomes
 
 ### Phase 4: Optional message content logging
 
-Add a flag (env var or GM toggle) to include full message content in logs for test games. Default off for privacy.
+Add a flag (env var or GM toggle) to include full message content in logs for debugging sessions. Default off.
 
 Suggested flags:
+
 - `LOG_MESSAGE_CONTENT=true|false` (default `false`)
-- `LOG_ENV=dev|test|prod` to control retention policy defaults
-
-### Phase 5: Retention & privacy controls
-
-1. Define retention by environment (example: dev 14 days, test 30 days, prod metadata-only 7 days)
-2. Add a cleanup job to remove expired logs
-3. Add redaction rules for free text fields before persistence (names/content if enabled)
-4. Document exactly which fields are considered sensitive and why
 
 ## Detailed TODOs (File-by-File)
 
 ### Server (`packages/server`)
 
 1. `src/logger/types.ts`
+
 - Add `GameEventEnvelope`, `EventContext`, `EventName` union/constants.
 - Add per-event payload interfaces for critical events first (phase/decision/state/activity/message).
 
 2. `src/logger/validation.ts`
+
 - Add envelope validator.
 - Add payload validators keyed by `event`.
 - Return structured validation errors for internal metrics.
 
 3. `src/logger/index.ts`
+
 - Implement `GameLogger` with:
   - in-memory buffer
   - interval + threshold flush
@@ -510,10 +503,12 @@ Suggested flags:
   - optional priority-aware dropping policy
 
 4. `src/rooms/createRoom.ts` (or equivalent)
+
 - Create logger per room/session with deterministic `sessionId`.
 - Attach logger to `GameRoom`.
 
 5. `src/events.ts`
+
 - Emit canonical events at each socket handler boundary:
   - join/reconnect/disconnect
   - messaging
@@ -522,6 +517,7 @@ Suggested flags:
   - publish submissions
 
 6. `src/game.ts`
+
 - Emit:
   - `phase.changed`, pause/resume/extend
   - `state.delta` and periodic `state.snapshot`
@@ -529,29 +525,32 @@ Suggested flags:
   - `game.started` and `game.ended`
 
 7. `src/config.ts`
+
 - Add logging env flags:
   - `LOG_ENABLED`
   - `LOG_MESSAGE_CONTENT`
-  - `LOG_ENV`
-  - `LOG_RETENTION_DAYS`
 
 ### Client (`packages/client`)
 
 1. `src/stores/ui.ts`
+
 - Track app open/close/focus transitions with timestamps.
 - Track cumulative per-app dwell time per phase.
 
 2. Socket activity emitter path
+
 - Send richer `activity:report` payload at phase boundary and/or heartbeat interval.
 - Include monotonic client timestamps if useful for ordering diagnostics.
 
 ### Tooling (`scripts`)
 
 1. `analyze-game.ts`
+
 - Parse JSONL safely (ignore malformed lines with warnings).
 - Produce stable, human-readable summary.
 
 2. `compare-games.ts`
+
 - Normalize sessions by round count where possible.
 - Output key diffs plus confidence caveats for incomplete sessions.
 
@@ -563,19 +562,7 @@ Suggested flags:
 
 ### Rollout
 
-1. Enable logging in dev first, run 3-5 test sessions.
+1. Enable logging in local/dev first, run 3-5 test sessions.
 2. Review log quality and missing fields; patch instrumentation gaps.
-3. Enable in test/staging with retention policy active.
+3. Enable in test/staging when instrumentation is stable.
 4. Decide whether to add SQLite summary generation once log volume justifies it.
-
----
-
-## Open Questions
-
-1. **Log rotation / cleanup** — Do we auto-delete logs after N days? Or keep everything for test games?
-2. **Client-side granularity** — Do we track mouse/scroll activity within apps, or just open/close? (Probably just open/close for now.)
-3. **Validation strategy** — zod/typebox/manual guards for event payloads?
-4. **Session IDs** — Should `sessionId` include room code + created timestamp or a UUID?
-5. **Replay fidelity** — How often do we need `state.snapshot` if we already log `state.delta`?
-6. **Real-time GM dashboard** — Should the GM see live analytics during the game (chat volume graph, app engagement heatmap)? Or is post-game analysis enough?
-7. **Replay viewer** — Worth building a tool to replay a game from the event log? Could be powerful for debugging content/balance but is a big investment.
