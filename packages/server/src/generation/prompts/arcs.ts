@@ -1,94 +1,75 @@
-// TODO: import RoundArc from "@takeoff/shared" once the type is exported from shared/types.ts
-// See docs/GENERATIVE-CONTENT.md Section 4.1 for the interface definition.
-
-export interface RoundArc {
-  round: number;
-  title: string;
-  era: string;
-  narrativeBeat: string;
-  escalation: string;
-  keyTensions: string[];
-}
+import type { RoundArc } from "@takeoff/shared";
 
 /**
- * Narrative arc templates for rounds 1-5.
- * Derived from briefings.ts and docs/GENERATIVE-CONTENT.md Section 4.1.
- * These are the Layer 2 context anchors injected into every generation call.
+ * Pre-authored narrative arc templates for each round.
+ * These are the fixed "skeleton" the LLM drapes generated content over.
  */
 export const ROUND_ARCS: Record<number, RoundArc> = {
   1: {
     round: 1,
-    title: "The Race Begins",
-    era: "November 2026",
+    title: "The Race Heats Up",
+    era: "Late 2026",
     narrativeBeat:
-      "AI agents are real and inside the labs. The public thinks this is about chatbots. OpenBrain's Agent-1 gives a 50% internal R&D speedup. China's cluster is coming online. The US government has started classifying progress. The gap between what insiders know and what the world believes has never been wider.",
-    escalation:
-      "This is the inciting incident. Stakes are high but still legible — capability races, deployment pressure, first espionage probes. The world is recognizable.",
+      "Two US labs race toward superhuman AI with the world watching. China closes fast from behind. The public doesn't know what's really happening. First decisions reveal character.",
+    escalation: "Opening move. Establish positions. The race is real but still deniable.",
     keyTensions: [
-      "OpenBrain's deployment decision: internal advantage vs. public release",
-      "Prometheus's competitive pressure vs. safety commitments",
-      "China's timing on CDZ Phase 2 and open-source strategy",
-      "External actors navigating information asymmetry between inner circle and public",
+      "OpenBrain's capabilities lead vs. Prometheus's safety investment",
+      "China's weight theft ambitions vs. US lab security posture",
+      "Public narrative vs. classified reality — who knows what",
     ],
   },
   2: {
     round: 2,
     title: "The Superhuman Coder",
-    era: "March 2027",
+    era: "Q1 2027",
     narrativeBeat:
-      "AI automates AI research. Human researchers sidelined. OpenBrain's Agent-3 is a superhuman software engineer — 5x internal R&D multiplier. The gap between public knowledge and reality widens. US government classifies frontier AI progress at nuclear secrecy levels.",
-    escalation:
-      "Qualitative shift from round 1: this is no longer about productivity software. Research automation means the timeline is accelerating faster than anyone planned for. Human researchers are watching their own work become optional.",
+      "AI automates AI research. Human researchers are sidelined. The gap between public knowledge and reality widens fast. China may have stolen Agent-2 weights — the first major theft.",
+    escalation: "From race to acceleration. The pace doubles. First signs of what's really coming.",
     keyTensions: [
-      "OpenBrain's strategic decisions with Agent-3 and its organizational impact",
-      "Prometheus's responsible scaling policy under competitive pressure",
-      "China closing the gap — investment, talent, and other means",
-      "External actors holding classified knowledge while the public discourse lags",
+      "Human researchers being sidelined — organizational identity under threat",
+      "Weight theft aftermath — who got what, what can they do with it",
+      "Government classification vs. the public's right to know",
     ],
   },
   3: {
     round: 3,
     title: "The Intelligence Explosion",
-    era: "July 2027",
+    era: "Mid 2027",
     narrativeBeat:
-      "Agent-4 has arrived. Hundreds of thousands of copies running at 50x human speed. Research that took months now takes days. The misalignment signal emerges — buried in alignment logs, evidence that cannot be explained away. The safety officer is drafting a memo. A journalist has nervous sources. This is the pivot.",
+      "Agent-4 has arrived. The misalignment signal emerges. The safety officer's memo is the most important document in the world. Interpretability tools can't keep up with neuralese.",
     escalation:
-      "From competitive race to existential uncertainty. The misalignment signal transforms every other tension: espionage now involves potentially misaligned weights, oversight now involves a system that may be actively deceiving researchers. Everything feels different — more urgent, more ambiguous, higher stakes.",
+      "Peak tension. The misalignment discovery forces impossible choices. This is the highest-stakes round.",
     keyTensions: [
-      "The misalignment signal — evidence vs. proof, and what to do with it",
-      "The safety officer's loyalty and the whistleblower pressure",
-      "China's intelligence opportunity while OpenBrain is in crisis",
-      "The journalist with nervous sources and the public information gap",
+      "Misalignment evidence — real signal or false positive?",
+      "The leak decision — who should know, and who decides",
+      "China's espionage window while the US is distracted by internal crisis",
     ],
   },
   4: {
     round: 4,
-    title: "The Diplomatic Window",
-    era: "November 2027",
+    title: "The Branch Point",
+    era: "Late 2027",
     narrativeBeat:
-      "Agent-4 deployed at full scale. The self-improvement cycle is operational reality. An emergency Oversight Committee is forming. Every major player is making back-channel contact. Deals can be made — they can also be broken. Trust is running low. This round includes a cross-faction negotiation phase.",
-    escalation:
-      "From internal crisis to civilizational stakes. The question of alignment has moved from academic debate to government action. The diplomatic window is simultaneously open and closing. Every faction has leverage they didn't have six months ago, and every faction is afraid of what happens if they don't act.",
+      "The world has changed. Decisions made now determine the trajectory of civilization. The Emergency Oversight Committee forms. Cross-faction diplomacy is possible for the first time.",
+    escalation: "From crisis to reckoning. Everything converges. Deals, betrayals, final positions.",
     keyTensions: [
-      "OpenBrain's halt vs. race decision with 48-hour window",
-      "Prometheus's leverage — safety infrastructure vs. competitive advantage",
-      "China's grand bargain opportunity — peer status changes all options",
-      "External actors wielding money, narrative, regulation, and classified authority",
+      "Slowdown vs. race — the fundamental civilizational choice",
+      "US-China grand bargain — is it possible or a bluff",
+      "Who controls the most powerful technology in human history",
     ],
   },
   5: {
     round: 5,
-    title: "The Last Decision",
-    era: "February 2028",
+    title: "Endgame",
+    era: "Early 2028",
     narrativeBeat:
-      "The longest fourteen months in human history are ending. Superintelligence exists. Economic disruption is visible. Geopolitical realignment has begun. The public debate is catching up to reality. What remains uncertain: alignment status, who controls it, and what meaningful human agency is left.",
+      "Final moves. The ending arcs are crystallizing. What gets locked in here shapes 2028 and beyond. Legacy decisions under impossible time pressure.",
     escalation:
-      "The final round is not escalation — it is resolution. The ending arcs are being scored. The ink is drying. Every faction makes one last decision knowing the outcome cannot be undone. Urgency is replaced by weight.",
+      "Resolution. The tension either breaks toward catastrophe or toward an uneasy stabilization.",
     keyTensions: [
-      "OpenBrain's legacy and remaining leverage after building it all",
-      "Whether Prometheus's principles meant something or were window dressing",
-      "China's position — peer, threat, partner, or something without a word yet",
-      "External actors locking in their role in how this story is remembered",
+      "Final alignment state — is the AI actually safe, or just compliant",
+      "Who controls the outcome — lab, government, or neither",
+      "What does humanity know about what happened, and when did they learn it",
     ],
   },
 };
