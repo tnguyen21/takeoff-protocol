@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-5765339a90c3
 ├── docs
 │   ├── APP-AUDIT-COMMUNICATION.md
 │   ├── APP-AUDIT-DATA-ANALYTICS.md
@@ -10,8 +10,7 @@
 │   ├── DEV-TOOLS.md
 │   ├── GAME-LOGGING.md
 │   ├── GENERATIVE-CONTENT.md
-│   ├── IMPLEMENTATION.md
-│   └── SOLO-NPC-AUTOPLAY.md
+│   └── IMPLEMENTATION.md
 ├── packages
 │   ├── client
 │   │   ├── src
@@ -72,4 +71,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-19 directories, 54 files
+19 directories, 53 files
