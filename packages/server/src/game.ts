@@ -1,6 +1,8 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
+import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
+import { EVENT_NAMES } from "./logger/index.js";
 import { getContentForPlayer } from "./content/loader.js";
 import { getBriefing } from "./content/briefings.js";
 import { getGeneratedContent } from "./generation/cache.js";
@@ -206,6 +208,15 @@ export function advancePhase(io: Server, room: GameRoom) {
           finalState: room.state,
           players: room.players,
         });
+
+        // Log game ended and close logger
+        const logger = getLoggerForRoom(room.code);
+        logger.log(EVENT_NAMES.GAME_ENDED, {
+          code: room.code,
+          finalState: room.state,
+          arcs,
+        });
+        void closeLoggerForRoom(room.code);
 
         return;
       }

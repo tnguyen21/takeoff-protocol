@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { Server as SocketIOServer } from "socket.io";
 import { registerGameEvents } from "./events.js";
 import { rooms } from "./rooms.js";
+import { closeAllLoggers } from "./logger/registry.js";
 
 const app = new Hono();
 
@@ -28,3 +29,12 @@ io.on("connection", (socket) => {
 });
 
 console.log(`[server] listening on http://localhost:${port}`);
+
+async function shutdown(signal: string) {
+  console.log(`[server] ${signal} received, flushing loggers...`);
+  await closeAllLoggers();
+  process.exit(0);
+}
+
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));

@@ -1,5 +1,9 @@
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { Faction, GameMessage, GamePhase, GameRoom, Player, Role, StateVariables } from "@takeoff/shared";
+import { createLoggerForRoom, getLoggerForRoom } from "./logger/registry.js";
+import { EVENT_NAMES } from "./logger/index.js";
+
+export { getLoggerForRoom };
 
 export const rooms = new Map<string, GameRoom>();
 
@@ -38,6 +42,10 @@ export function createRoom(gmSocketId: string): GameRoom {
   };
 
   rooms.set(code, room);
+
+  const logger = createLoggerForRoom(code);
+  logger.log(EVENT_NAMES.ROOM_CREATED, { code, gmId: gmSocketId });
+
   return room;
 }
 
