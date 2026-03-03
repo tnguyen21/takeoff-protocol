@@ -1,7 +1,9 @@
 import { describe, it, expect } from "bun:test";
-import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer } from "./game.js";
+import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
-import type { GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
+import { setGeneratedContent } from "./generation/cache.js";
+import { getContentForPlayer } from "./content/loader.js";
 
 // ── Helpers ──
 
@@ -824,5 +826,245 @@ describe("timer sync regressions", () => {
     expect(room.phase).toBe("decision");
 
     clearPhaseTimer(room);
+  });
+});
+
+// ── emitContent — generated content merge ─────────────────────────────────────
+
+/**
+ * Helper: collect the game:content payloads emitted to a given socket.
+ */
+function getEmittedContent(emitted: Record<string, Array<[string, unknown]>>, socketId: string): AppContent[] {
+  const events = emitted[`${socketId}:game:content`];
+  if (!events || events.length === 0) return [];
+  const [, payload] = events[events.length - 1]!;
+  return (payload as { content: AppContent[] }).content;
+}
+
+/**
+ * Build a generated AppContent entry with "gen-" prefixed IDs.
+ */
+function makeGenContent(faction: AppContent["faction"], app: AppId, count = 2): AppContent {
+  const items: ContentItem[] = Array.from({ length: count }, (_, i) => ({
+    id: `gen-test-${faction}-${app}-${i + 1}`,
+    type: app === "news" ? "headline" as const : "tweet" as const,
+    round: 1,
+    body: `Generated ${app} item ${i + 1} for ${faction}`,
+    timestamp: "2027-01-01T00:00:00Z",
+    classification: "context" as const,
+  }));
+  return { faction, app, items };
+}
+
+describe("emitContent — INV-1: no generated content → identical to current behavior", () => {
+  it("emits pre-authored content when no generated content is set", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+    // Pre-authored round 1 openbrain content must be present
+    expect(content.length).toBeGreaterThan(0);
+
+    // Result must match what getContentForPlayer returns directly
+    const expected = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
+    expect(content).toEqual(expected);
+  });
+
+  it("skips players without faction/role", () => {
+    const noRole = makePlayer("p1", null, null);
+    const room = makeRoom({ round: 1, players: { p1: noRole } });
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    // No game:content should be emitted to a player with no faction
+    expect(emitted["p1:game:content"]).toBeUndefined();
+  });
+});
+
+describe("emitContent — INV-2: generated news replaces pre-authored news (no duplicates)", () => {
+  it("replaces pre-authored news with generated news", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    const genNews = makeGenContent("openbrain", "news", 3);
+    setGeneratedContent(room, 1, "openbrain", [genNews]);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+
+    // Must contain news app content
+    const newsEntries = content.filter((c) => c.app === "news");
+    expect(newsEntries.length).toBeGreaterThan(0);
+
+    // All news items must be from generated content (gen- prefix)
+    const allNewsItems = newsEntries.flatMap((c) => c.items);
+    for (const item of allNewsItems) {
+      expect(item.id).toMatch(/^gen-/);
+    }
+
+    // Exactly 3 generated news items (from makeGenContent)
+    expect(allNewsItems.length).toBe(3);
+  });
+
+  it("does not duplicate news — generated replaces pre-authored, not supplements", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    // Pre-authored already has news for round 1 openbrain
+    const preAuthored = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
+    const preAuthoredNews = preAuthored.filter((c) => c.app === "news").flatMap((c) => c.items);
+
+    const genNews = makeGenContent("openbrain", "news", 2);
+    setGeneratedContent(room, 1, "openbrain", [genNews]);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+    const newsItems = content.filter((c) => c.app === "news").flatMap((c) => c.items);
+
+    // No pre-authored news IDs should appear in the merged payload
+    const preAuthoredNewsIds = new Set(preAuthoredNews.map((i) => i.id));
+    for (const item of newsItems) {
+      expect(preAuthoredNewsIds.has(item.id)).toBe(false);
+    }
+  });
+});
+
+describe("emitContent — INV-3: non-news/twitter apps always present regardless of generation", () => {
+  it("email app remains in payload when news is replaced by generated content", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    const genNews = makeGenContent("openbrain", "news", 2);
+    setGeneratedContent(room, 1, "openbrain", [genNews]);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+    const appIds = content.map((c) => c.app);
+
+    // Email is an accumulating app — must still be present
+    expect(appIds).toContain("email");
+    // News must be present (generated version)
+    expect(appIds).toContain("news");
+  });
+
+  it("non-generated apps are unaffected when twitter is generated", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    const genTwitter = makeGenContent("openbrain", "twitter", 2);
+    setGeneratedContent(room, 1, "openbrain", [genTwitter]);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+    const appIds = content.map((c) => c.app);
+
+    // Slack is an accumulating app — must still be present
+    expect(appIds).toContain("slack");
+    // Twitter must be present (generated version)
+    expect(appIds).toContain("twitter");
+    // All twitter items must be generated
+    const twitterItems = content.filter((c) => c.app === "twitter").flatMap((c) => c.items);
+    for (const item of twitterItems) {
+      expect(item.id).toMatch(/^gen-/);
+    }
+  });
+});
+
+describe("emitContent — INV-4: content IDs are unique within a single emit payload", () => {
+  it("deduplicates content IDs across all app entries", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    // Create two AppContent entries for the same app — this simulates a malformed generated payload
+    // The dedup guard should keep only the first occurrence
+    const genItem1: ContentItem = {
+      id: "gen-dedup-test-001",
+      type: "headline",
+      round: 1,
+      body: "Dedup test item 1",
+      timestamp: "2027-01-01T00:00:00Z",
+      classification: "context",
+    };
+    const genItem2: ContentItem = {
+      id: "gen-dedup-test-001", // same ID — should be deduplicated
+      type: "headline",
+      round: 1,
+      body: "Dedup test item 2 (duplicate ID)",
+      timestamp: "2027-01-01T00:00:00Z",
+      classification: "context",
+    };
+    // Two AppContent entries for "news" with overlapping IDs
+    const genContent: AppContent[] = [
+      { faction: "openbrain", app: "news", items: [genItem1, genItem2] },
+    ];
+    setGeneratedContent(room, 1, "openbrain", genContent);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+    const allItems = content.flatMap((c) => c.items);
+    const ids = allItems.map((i) => i.id);
+    const uniqueIds = new Set(ids);
+
+    // All IDs must be unique
+    expect(ids.length).toBe(uniqueIds.size);
+  });
+});
+
+describe("emitContent — critical paths: per-faction generation independence", () => {
+  it("openbrain gets generated content, prometheus gets pre-authored when only openbrain generated", () => {
+    const obPlayer = makePlayer("p1", "openbrain", "ob_ceo");
+    const promPlayer = makePlayer("p2", "prometheus", "prom_ceo");
+    const room = makeRoom({ round: 1, players: { p1: obPlayer, p2: promPlayer } });
+
+    // Only set generated content for openbrain
+    const genNews = makeGenContent("openbrain", "news", 3);
+    setGeneratedContent(room, 1, "openbrain", [genNews]);
+    // prometheus has NO generated content set
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    // openbrain player (p1) should get generated news
+    const obContent = getEmittedContent(emitted, "p1");
+    const obNewsItems = obContent.filter((c) => c.app === "news").flatMap((c) => c.items);
+    expect(obNewsItems.every((i) => i.id.startsWith("gen-"))).toBe(true);
+
+    // prometheus player (p2) should get pre-authored content identical to direct getContentForPlayer
+    const promContent = getEmittedContent(emitted, "p2");
+    const promExpected = getContentForPlayer(1, "prometheus", "prom_ceo", room.state);
+    expect(promContent).toEqual(promExpected);
+  });
+});
+
+describe("emitContent — failure mode: empty generated array falls back to pre-authored", () => {
+  it("empty generated content array falls back to pre-authored for that faction", () => {
+    const player = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ round: 1, players: { p1: player } });
+
+    // Set an EMPTY generated content array
+    setGeneratedContent(room, 1, "openbrain", []);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const content = getEmittedContent(emitted, "p1");
+    const expected = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
+
+    // Should get pre-authored content, identical to current behavior
+    expect(content).toEqual(expected);
   });
 });

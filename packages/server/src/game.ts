@@ -3,6 +3,7 @@ import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessa
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
 import { getContentForPlayer } from "./content/loader.js";
 import { getBriefing } from "./content/briefings.js";
+import { getGeneratedContent } from "./generation/cache.js";
 import "./content/index.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
@@ -303,8 +304,33 @@ export function emitContent(io: Server, room: GameRoom) {
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
     try {
-      const content = getContentForPlayer(room.round, player.faction, player.role, room.state);
-      io.to(socketId).emit("game:content", { content });
+      // Pre-authored content (always available)
+      const preAuthored = getContentForPlayer(room.round, player.faction, player.role, room.state);
+
+      // Check for generated content for replaceable apps (news, twitter)
+      const generatedContent = getGeneratedContent(room, room.round, player.faction);
+      if (generatedContent && generatedContent.length > 0) {
+        // Replace pre-authored apps that have generated versions
+        const generatedApps = new Set(generatedContent.map((c) => c.app));
+        const merged = preAuthored.filter((c) => !generatedApps.has(c.app));
+        merged.push(...generatedContent);
+
+        // Dedup guard: generated IDs start with "gen-" so collisions with pre-authored are
+        // practically impossible, but we deduplicate by ID across all items to be safe.
+        const seenIds = new Set<string>();
+        const deduped = merged.map((appContent) => ({
+          ...appContent,
+          items: appContent.items.filter((item) => {
+            if (seenIds.has(item.id)) return false;
+            seenIds.add(item.id);
+            return true;
+          }),
+        }));
+
+        io.to(socketId).emit("game:content", { content: deduped });
+      } else {
+        io.to(socketId).emit("game:content", { content: preAuthored });
+      }
     } catch (err) {
       // Round content file may not exist yet (future rounds) — silently skip
       console.warn(`[content] No content for round ${room.round}:`, err);
