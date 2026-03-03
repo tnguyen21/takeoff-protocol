@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-a5fa7b5a0089
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-bb7610fdf6a7
 ├── docs
 │   ├── APP-AUDIT-COMMUNICATION.md
 │   ├── APP-AUDIT-DATA-ANALYTICS.md
@@ -10,7 +10,8 @@
 │   ├── DEV-TOOLS.md
 │   ├── GAME-LOGGING.md
 │   ├── GENERATIVE-CONTENT.md
-│   └── IMPLEMENTATION.md
+│   ├── IMPLEMENTATION.md
+│   └── SOLO-NPC-AUTOPLAY.md
 ├── packages
 │   ├── client
 │   │   ├── src
@@ -34,6 +35,8 @@
 │   │   │   ├── content
 │   │   │   ├── generation
 │   │   │   ├── activity.test.ts
+│   │   │   ├── devBots.test.ts
+│   │   │   ├── devBots.ts
 │   │   │   ├── events.test.ts
 │   │   │   ├── events.ts
 │   │   │   ├── game.test.ts
@@ -71,4 +74,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-19 directories, 53 files
+19 directories, 56 files

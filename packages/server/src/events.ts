@@ -594,19 +594,21 @@ export function registerGameEvents(io: Server, socket: Socket) {
   if (process.env.NODE_ENV !== "production") {
     socket.on(
       "dev:bootstrap",
-      (
+      async (
         {
           faction,
           role,
           round,
           phase,
           stateOverrides,
+          botMode,
         }: {
           faction: Faction;
           role: Role;
           round: number;
           phase: GamePhase;
           stateOverrides?: Record<string, number>;
+          botMode?: "all_roles" | "minimum_table";
         },
         callback: (res: { ok: boolean; code?: string; error?: string }) => void,
       ) => {
@@ -625,6 +627,12 @@ export function registerGameEvents(io: Server, socket: Socket) {
           connected: true,
         };
         room.players[socket.id] = player;
+
+        // Seed dev bots for unoccupied roles
+        if (botMode) {
+          const { seedBotsForRoom } = await import("./devBots.js");
+          seedBotsForRoom(room, socket.id, { mode: botMode });
+        }
 
         // Jump to the target round and phase
         room.round = round;
@@ -658,12 +666,16 @@ export function registerGameEvents(io: Server, socket: Socket) {
         if (phase === "decision") {
           emitContent(io, room);
           emitDecisions(io, room);
+          if (botMode) {
+            const { scheduleBotDecisionSubmissions } = await import("./devBots.js");
+            scheduleBotDecisionSubmissions(io, room, { mode: botMode });
+          }
         }
 
         // Fire any NPC triggers matching current state
         checkThresholds(io, room);
 
-        console.log(`[dev:bootstrap] room=${room.code} faction=${faction} role=${role} round=${round} phase=${phase}`);
+        console.log(`[dev:bootstrap] room=${room.code} faction=${faction} role=${role} round=${round} phase=${phase}${botMode ? ` botMode=${botMode}` : ""}`);
         callback({ ok: true, code: room.code });
       },
     );

@@ -251,6 +251,12 @@ export function advancePhase(io: Server, room: GameRoom) {
 
   if (room.phase === "decision") {
     emitDecisions(io, room);
+    // Dev bot autoplay — never bundled in production
+    if (process.env.NODE_ENV !== "production") {
+      void import("./devBots.js").then(({ scheduleBotDecisionSubmissions }) => {
+        scheduleBotDecisionSubmissions(io, room, { mode: "all_roles" });
+      });
+    }
   }
 
   if (room.phase === "resolution") {
