@@ -1,0 +1,6 @@
+bun run typecheck
+bun run test
+
+# keep TREE.md in sync
+bash scripts/gen-tree.sh
+git diff --quiet TREE.md 2>/dev/null || git add TREE.md
