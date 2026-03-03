@@ -833,6 +833,130 @@ Ship gate:
 - no game flow stalls
 - no client-side schema/runtime errors
 
+## 12.3 V1 Implementation Checklist (Tickets + Tests)
+
+Use this as the execution checklist in order.
+
+### Ticket 1: Shared Types for Generated Artifacts
+
+- [ ] Add `StoryBible` type in `packages/shared/src/types.ts`
+- [ ] Add `GeneratedRoundArtifacts` type in `packages/shared/src/types.ts`
+- [ ] Extend `GameRoom` with `storyBible`, `generatedRounds`, `generationStatus`
+- [ ] Update any compile errors from new optional fields
+
+Tests:
+- [ ] `bun run --filter @takeoff/shared typecheck` passes
+- [ ] Server typecheck passes with no runtime behavior change
+
+### Ticket 2: Room Initialization for New Fields
+
+- [ ] Initialize new generation fields in `packages/server/src/rooms.ts` `createRoom()`
+- [ ] Ensure reconnect/rejoin paths tolerate empty generation fields
+
+Tests:
+- [ ] Existing room/join/rejoin tests pass unchanged
+- [ ] Manual sanity: create room and start game with generation disabled
+
+### Ticket 3: Generation Provider Abstraction
+
+- [ ] Create `packages/server/src/generation/provider.ts`
+- [ ] Define provider interface with timeout support and structured JSON return
+- [ ] Add env-based provider selection and no-op mock provider for tests
+
+Tests:
+- [ ] Unit test provider timeout behavior
+- [ ] Unit test malformed JSON handling path
+
+### Ticket 4: Generation Context Builder
+
+- [ ] Create `packages/server/src/generation/context.ts`
+- [ ] Implement `buildGenerationContext(room, targetRound)`
+- [ ] Add story bible summarization helper when context exceeds threshold
+
+Tests:
+- [ ] Context includes `state`, `history`, `publications`, `firedThresholds`
+- [ ] Context excludes private player DM content
+
+### Ticket 5: Briefing Generation + Validation
+
+- [ ] Implement `generateBriefing()` in `packages/server/src/generation/briefing.ts`
+- [ ] Implement briefing validator in `packages/server/src/generation/validate.ts`
+- [ ] Implement retry-once path with validation feedback
+
+Tests:
+- [ ] Valid briefing accepted
+- [ ] Invalid briefing rejected then fallback selected
+- [ ] Provider failure/timeout falls back cleanly
+
+### Ticket 6: Round Generation Cache + Status
+
+- [ ] Implement cache helpers in `packages/server/src/generation/cache.ts`
+- [ ] Add per-round status transitions: `pending -> ready|failed`
+- [ ] Guarantee cache writes are atomic per artifact
+
+Tests:
+- [ ] Parallel generation cannot corrupt cache state
+- [ ] Partial success persists only valid artifacts
+
+### Ticket 7: Wire Briefing into Game Flow
+
+- [ ] In `packages/server/src/game.ts`, trigger next-round generation during resolution (non-blocking)
+- [ ] In `emitBriefing()`, prefer generated briefing when status is ready and validator passed
+- [ ] Fallback to existing pre-authored `getBriefing()` path
+
+Tests:
+- [ ] Phase transition timing unchanged
+- [ ] `game:briefing` always emitted (generated or fallback)
+
+### Ticket 8: Limited Content Generation (News + Twitter)
+
+- [ ] Implement `generateContent()` for `news` and `twitter` in `packages/server/src/generation/content.ts`
+- [ ] Add schema + budget validation for generated content
+- [ ] Add fog-safe validator checks (no explicit hidden numeric leaks)
+
+Tests:
+- [ ] Generated `news`/`twitter` emitted when ready
+- [ ] Failed faction generation falls back only for that faction/apps
+- [ ] Existing apps remain pre-authored and unchanged
+
+### Ticket 9: Wire Content Merge into Emit Path
+
+- [ ] Update `emitContent()` to merge generated and pre-authored artifacts by faction/app
+- [ ] Prevent duplicate content IDs within one payload
+- [ ] Preserve current accumulate/fresh behavior expectations where relevant
+
+Tests:
+- [ ] No empty content payload regressions in intel phase
+- [ ] Client parsing remains unchanged (no protocol changes)
+
+### Ticket 10: Observability + Kill Switches
+
+- [ ] Add `packages/server/src/generation/metrics.ts`
+- [ ] Emit structured logs for latency, retries, validation failures, fallback reasons
+- [ ] Add env flags:
+  - [ ] `GEN_ENABLED`
+  - [ ] `GEN_BRIEFINGS_ENABLED`
+  - [ ] `GEN_CONTENT_APPS`
+
+Tests:
+- [ ] Disabling `GEN_ENABLED` restores fully pre-authored behavior
+- [ ] Per-feature flags disable only targeted surfaces
+
+### Ticket 11: Integration Test Matrix (V1 Gate)
+
+- [ ] Add end-to-end server tests for:
+  - [ ] generation success path
+  - [ ] provider timeout path
+  - [ ] validation failure + retry success path
+  - [ ] validation failure + retry failure fallback path
+  - [ ] partial faction content generation path
+- [ ] Add smoke test for full round progression with generation enabled
+
+Ship criteria:
+- [ ] No phase stalls
+- [ ] No uncaught exceptions in generation path
+- [ ] Fallback path works for every artifact type in V1
+
 ---
 
 ## 13. Cost Estimation

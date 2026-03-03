@@ -299,6 +299,152 @@ Design guardrails to include from day one:
 - Stable identity semantics (`playerId` vs `socketId`)
 - Retention + privacy policy by environment
 
+## Logging Principles
+
+### Goals
+
+- Reconstruct a full session timeline for replay/debugging.
+- Answer product questions without guessing (engagement, decision behavior, threshold impact).
+- Keep instrumentation overhead low enough to stay invisible during live games.
+- Make schema evolution explicit and safe over time.
+
+### Non-goals (v1)
+
+- Building a real-time analytics backend.
+- Building a full replay UI.
+- Cross-game OLAP-grade querying in production.
+
+## Runtime Architecture
+
+### Components
+
+1. `GameLogger` (server): receives typed events and buffers JSONL writes.
+2. Event emitters (server handlers): all socket/game transitions emit domain events.
+3. Client activity collector: captures app focus/open/close and periodically reports to server.
+4. Offline analyzers (`scripts/`): parse JSONL and produce summaries/comparisons.
+
+### Data Flow
+
+```
+Socket/Game action
+  -> logger.log(event, data, context)
+  -> in-memory buffer
+  -> periodic or threshold flush to JSONL
+  -> post-game scripts consume JSONL
+```
+
+### Event Ordering + Idempotency
+
+- Ordering: preserve append order within a file; use `serverTime` for timeline sorting.
+- Idempotency: `eventId` allows dedupe if retries/re-emits happen.
+- Causality hints: include a lightweight `cause` in `data` for derived events (`state.delta` from decision lock, threshold fire, GM override).
+
+## Validation & Schema Evolution
+
+### Validation Strategy
+
+- Every event goes through an envelope validator before enqueue.
+- Event-specific payload validators enforce required fields by event name.
+- Invalid events are rejected and counted (with an internal error log), never written as malformed rows.
+
+### Schema Versioning Rules
+
+- `schemaVersion` increments only on breaking envelope/payload changes.
+- Backward-compatible additions (new optional fields/events) keep current version.
+- Analysis scripts must branch on `schemaVersion` for breaking transitions.
+
+### Canonical Naming Rules
+
+- Use dot namespaces: `<domain>.<action>` (`decision.team_vote`, `phase.changed`).
+- Use past-tense actions for facts that happened (`*.submitted`, `*.fired`, `*.changed`).
+- Avoid aliases/synonyms; one canonical name per semantic event.
+
+## Reliability & Failure Handling
+
+### Failure Modes
+
+1. Disk append fails (permissions/full disk/transient IO).
+2. Process exits with non-empty buffer.
+3. Event storm creates unbounded memory growth.
+4. Validator bug rejects too many events.
+
+### Mitigations
+
+- Buffered writes with max buffer size + interval-based flush.
+- Requeue on failed flush, with bounded retry and error telemetry.
+- Force flush on room close and process termination (`SIGINT`, `SIGTERM`).
+- Optional backpressure policy:
+  - `strict`: block emitters if buffer > threshold.
+  - `best_effort`: drop low-priority events only (never drop state/decision/phase events).
+
+### Priority Tiers
+
+- `critical`: phase/decision/state/threshold/game end.
+- `important`: activity reports, publish events, GM actions.
+- `verbose`: app focus chatter, high-frequency UX events.
+
+If dropping is required in emergencies, drop `verbose` first and emit `logger.drop_notice`.
+
+## Privacy, Retention, and Access
+
+### Data Classes
+
+- `metadata`: IDs, timestamps, event names, option IDs, lengths/counts.
+- `sensitive`: free text (messages, titles), player names, GM notes.
+
+### Environment Defaults
+
+- `dev`: message content allowed, retention 14 days.
+- `test`: message content optional, retention 30 days.
+- `prod`: metadata-only default, retention 7 days unless explicitly overridden.
+
+### Controls
+
+- `LOG_MESSAGE_CONTENT=false` by default.
+- Redact/hash sensitive fields when content logging is disabled.
+- Restrict raw log access to server operators/developers only.
+
+## Analysis Surface (v1 Scripts)
+
+### `scripts/analyze-game.ts`
+
+Outputs per-session summary:
+- Session metadata (duration, rounds reached, phase timings).
+- Decision stats (submission rates, lock choices, override incidence).
+- Activity stats (time per app, missed primary app, inactive players).
+- Communication stats (volume by faction/player, DM vs team).
+- State trajectory (`state.delta` timeline + round snapshots).
+- Trigger report (thresholds/NPC triggers fired and when).
+
+### `scripts/compare-games.ts`
+
+Outputs cross-session diff:
+- Decision distribution shifts by role/faction.
+- Engagement deltas (app usage and chat volume).
+- State progression deltas by round.
+- Trigger frequency differences.
+
+## Testing Strategy
+
+### Unit Tests
+
+- Envelope validator: accepts valid, rejects malformed.
+- Event payload validators per domain.
+- Buffer/flush behavior (interval + max-buffer flush).
+- Retry/requeue behavior on append failure.
+
+### Integration Tests
+
+- Simulated game run writes expected canonical events in expected order.
+- Reconnect path preserves stable `playerId`.
+- Shutdown path flushes pending events.
+- Content-off mode never writes raw message text.
+
+### Golden Fixtures
+
+- Store sanitized JSONL fixtures for 1-2 representative games.
+- Validate analyzer output against fixture expectations.
+
 ## Implementation Plan
 
 ### Phase 1: Core logger + server-side instrumentation
@@ -342,6 +488,86 @@ Suggested flags:
 3. Add redaction rules for free text fields before persistence (names/content if enabled)
 4. Document exactly which fields are considered sensitive and why
 
+## Detailed TODOs (File-by-File)
+
+### Server (`packages/server`)
+
+1. `src/logger/types.ts`
+- Add `GameEventEnvelope`, `EventContext`, `EventName` union/constants.
+- Add per-event payload interfaces for critical events first (phase/decision/state/activity/message).
+
+2. `src/logger/validation.ts`
+- Add envelope validator.
+- Add payload validators keyed by `event`.
+- Return structured validation errors for internal metrics.
+
+3. `src/logger/index.ts`
+- Implement `GameLogger` with:
+  - in-memory buffer
+  - interval + threshold flush
+  - retries/requeue
+  - close/shutdown hooks
+  - optional priority-aware dropping policy
+
+4. `src/rooms/createRoom.ts` (or equivalent)
+- Create logger per room/session with deterministic `sessionId`.
+- Attach logger to `GameRoom`.
+
+5. `src/events.ts`
+- Emit canonical events at each socket handler boundary:
+  - join/reconnect/disconnect
+  - messaging
+  - activity reports
+  - decisions and votes
+  - publish submissions
+
+6. `src/game.ts`
+- Emit:
+  - `phase.changed`, pause/resume/extend
+  - `state.delta` and periodic `state.snapshot`
+  - threshold and NPC trigger events
+  - `game.started` and `game.ended`
+
+7. `src/config.ts`
+- Add logging env flags:
+  - `LOG_ENABLED`
+  - `LOG_MESSAGE_CONTENT`
+  - `LOG_ENV`
+  - `LOG_RETENTION_DAYS`
+
+### Client (`packages/client`)
+
+1. `src/stores/ui.ts`
+- Track app open/close/focus transitions with timestamps.
+- Track cumulative per-app dwell time per phase.
+
+2. Socket activity emitter path
+- Send richer `activity:report` payload at phase boundary and/or heartbeat interval.
+- Include monotonic client timestamps if useful for ordering diagnostics.
+
+### Tooling (`scripts`)
+
+1. `analyze-game.ts`
+- Parse JSONL safely (ignore malformed lines with warnings).
+- Produce stable, human-readable summary.
+
+2. `compare-games.ts`
+- Normalize sessions by round count where possible.
+- Output key diffs plus confidence caveats for incomplete sessions.
+
+### Tests
+
+1. Server tests for logger and validators.
+2. End-to-end simulated game log emission test.
+3. Script tests against fixture logs.
+
+### Rollout
+
+1. Enable logging in dev first, run 3-5 test sessions.
+2. Review log quality and missing fields; patch instrumentation gaps.
+3. Enable in test/staging with retention policy active.
+4. Decide whether to add SQLite summary generation once log volume justifies it.
+
 ---
 
 ## Open Questions
@@ -351,5 +577,5 @@ Suggested flags:
 3. **Validation strategy** — zod/typebox/manual guards for event payloads?
 4. **Session IDs** — Should `sessionId` include room code + created timestamp or a UUID?
 5. **Replay fidelity** — How often do we need `state.snapshot` if we already log `state.delta`?
-3. **Real-time GM dashboard** — Should the GM see live analytics during the game (chat volume graph, app engagement heatmap)? Or is post-game analysis enough?
-4. **Replay viewer** — Worth building a tool to replay a game from the event log? Could be powerful for debugging content/balance but is a big investment.
+6. **Real-time GM dashboard** — Should the GM see live analytics during the game (chat volume graph, app engagement heatmap)? Or is post-game analysis enough?
+7. **Replay viewer** — Worth building a tool to replay a game from the event log? Could be powerful for debugging content/balance but is a big investment.
