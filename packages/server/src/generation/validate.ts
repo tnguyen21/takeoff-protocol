@@ -1,6 +1,8 @@
 import type { ContentItem, Faction, FogVariable, Role, StateVariables } from "@takeoff/shared";
 import { computeFogView } from "@takeoff/shared";
 
+// ── ValidationResult ──────────────────────────────────────────────────────────
+
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
@@ -150,4 +152,75 @@ export function validateFogSafety(
   }
 
   return { valid: true, errors: [], warnings };
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const ALL_FACTIONS: Faction[] = ["openbrain", "prometheus", "china", "external"];
+
+const COMMON_MIN_WORDS = 150;
+const COMMON_MAX_WORDS = 300;
+const VARIANT_MIN_WORDS = 40;
+const VARIANT_MAX_WORDS = 80;
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+// ── validateBriefing ──────────────────────────────────────────────────────────
+
+/**
+ * Validates a generated briefing object.
+ *
+ * Invariants:
+ * - common must be 150–300 words
+ * - factionVariants must have entries for all 4 factions
+ * - each faction variant must be 40–80 words
+ * - no empty strings anywhere
+ */
+export function validateBriefing(briefing: {
+  common: string;
+  factionVariants: Record<Faction, string>;
+}): ValidationResult {
+  const errors: string[] = [];
+
+  // ── common ────────────────────────────────────────────────────────────────
+  if (!briefing.common || briefing.common.trim() === "") {
+    errors.push("common text is empty");
+  } else {
+    const count = wordCount(briefing.common);
+    if (count < COMMON_MIN_WORDS) {
+      errors.push(`common text has ${count} words (minimum ${COMMON_MIN_WORDS})`);
+    }
+    if (count > COMMON_MAX_WORDS) {
+      errors.push(`common text has ${count} words (maximum ${COMMON_MAX_WORDS})`);
+    }
+  }
+
+  // ── factionVariants ───────────────────────────────────────────────────────
+  if (!briefing.factionVariants || typeof briefing.factionVariants !== "object") {
+    errors.push("factionVariants is missing");
+    return { valid: false, errors, warnings: [] };
+  }
+
+  for (const faction of ALL_FACTIONS) {
+    const variant = briefing.factionVariants[faction];
+    if (variant === undefined || variant === null) {
+      errors.push(`factionVariants missing entry for '${faction}'`);
+      continue;
+    }
+    if (variant.trim() === "") {
+      errors.push(`factionVariants['${faction}'] is empty`);
+      continue;
+    }
+    const count = wordCount(variant);
+    if (count < VARIANT_MIN_WORDS) {
+      errors.push(`factionVariants['${faction}'] has ${count} words (minimum ${VARIANT_MIN_WORDS})`);
+    }
+    if (count > VARIANT_MAX_WORDS) {
+      errors.push(`factionVariants['${faction}'] has ${count} words (maximum ${VARIANT_MAX_WORDS})`);
+    }
+  }
+
+  return { valid: errors.length === 0, errors, warnings: [] };
 }
