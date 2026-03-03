@@ -267,6 +267,9 @@ export interface GameRoom {
   timerOverrides?: Partial<Record<GamePhase, number>>; // GM-set durations in seconds, per phase
   firedThresholds?: Set<string>; // IDs of threshold events that have already fired (once-only)
   uiDegradationActive?: boolean;  // flagged by aiAutonomyLevel+alignmentConfidence threshold
+  storyBible?: StoryBible;
+  generatedRounds?: Partial<Record<number, GeneratedRoundArtifacts>>;
+  generationStatus?: Partial<Record<number, GenerationStatus>>;
 }
 
 export interface RoundHistory {
@@ -275,6 +278,52 @@ export interface RoundHistory {
   teamDecisions: Record<string, string>;
   stateBefore: StateVariables;
   stateAfter: StateVariables;
+}
+
+// ── Story Generation ──
+
+export interface StoryEvent {
+  round: number;
+  phase: "decision" | "threshold" | "publication" | "message";
+  summary: string;
+  stateImpact: string;
+  narrativeWeight: "major" | "minor";
+}
+
+export interface PlayerActionSummary {
+  round: number;
+  playerId: string;
+  faction: Faction;
+  role: Role;
+  action: string;
+  significance: string;
+}
+
+export interface RoundArc {
+  round: number;
+  title: string;
+  era: string;
+  narrativeBeat: string;
+  escalation: string;
+  keyTensions: string[];
+}
+
+export interface StoryBible {
+  scenario: string;
+  factions: { faction: Faction; identity: string; tension: string; characters: string[] }[];
+  voiceGuides: Record<string, string>;
+  roundArcs: RoundArc[];
+  events: StoryEvent[];
+  playerActions: PlayerActionSummary[];
+  activeThreads: string[];
+  toneShift: string;
+}
+
+export type GenerationStatus = "pending" | "ready" | "failed";
+
+export interface GeneratedRoundArtifacts {
+  briefing?: { common: string; factionVariants: Record<Faction, string> };
+  content?: Partial<Record<Faction, AppContent[]>>;
 }
 
 // ── Resolution ──
