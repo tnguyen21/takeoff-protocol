@@ -43,13 +43,13 @@ function buildBriefingUserPrompt(context: GenerationContext, validationErrors?: 
   if (context.storyBible) {
     parts.push(`## Story Bible\n${JSON.stringify(context.storyBible, null, 2)}`);
   } else {
-    parts.push(`## Story Bible\nNo story bible initialized yet — this is round ${context.round}. Generate a briefing grounded in the canonical round ${context.round} scenario.`);
+    parts.push(`## Story Bible\nNo story bible initialized yet — this is round ${context.targetRound}. Generate a briefing grounded in the canonical round ${context.targetRound} scenario.`);
   }
 
   // Layer 3: Round-specific instructions
-  const arc = ROUND_ARCS[context.round];
+  const arc = ROUND_ARCS[context.targetRound];
   if (arc) {
-    parts.push(`## Round ${context.round} Arc\nTitle: ${arc.title}\nEra: ${arc.era}\nNarrative Beat: ${arc.narrativeBeat}\nEscalation: ${arc.escalation}\nKey Tensions:\n${arc.keyTensions.map((t) => `- ${t}`).join("\n")}`);
+    parts.push(`## Round ${context.targetRound} Arc\nTitle: ${arc.title}\nEra: ${arc.era}\nNarrative Beat: ${arc.narrativeBeat}\nEscalation: ${arc.escalation}\nKey Tensions:\n${arc.keyTensions.map((t) => `- ${t}`).join("\n")}`);
   }
 
   // Last round decisions (from history)
@@ -67,6 +67,7 @@ function buildBriefingUserPrompt(context: GenerationContext, validationErrors?: 
   if (context.players.length > 0) {
     const byFaction: Partial<Record<Faction, string[]>> = {};
     for (const p of context.players) {
+      if (p.faction === null || p.role === null) continue;
       (byFaction[p.faction] ??= []).push(`${p.name} (${p.role})`);
     }
     const rosterLines = (Object.entries(byFaction) as [Faction, string[]][])
@@ -80,7 +81,7 @@ function buildBriefingUserPrompt(context: GenerationContext, validationErrors?: 
     parts.push(`## Validation Errors from Previous Attempt\nYour previous output failed validation. Fix these issues:\n${validationErrors.map((e) => `- ${e}`).join("\n")}\n\nEnsure common text is 150–300 words and each faction variant is 40–80 words.`);
   }
 
-  parts.push(`## Task\nGenerate the round ${context.round} briefing. Return structured JSON only.`);
+  parts.push(`## Task\nGenerate the round ${context.targetRound} briefing. Return structured JSON only.`);
 
   return parts.join("\n\n");
 }

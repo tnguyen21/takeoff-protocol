@@ -17,6 +17,7 @@ import { GenerationTimeoutError } from "./provider.js";
 import { validateBriefing } from "./validate.js";
 import { generateBriefingWithRetry } from "./briefing.js";
 import type { GenerationContext } from "./context.js";
+import { ROUND_ARCS } from "./prompts/arcs.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -66,12 +67,14 @@ const SHORT_COMMON_BRIEFING = {
 
 function makeContext(overrides: Partial<GenerationContext> = {}): GenerationContext {
   return {
-    round: 2,
+    targetRound: 2,
     storyBible: undefined,
-    state: { ...INITIAL_STATE },
+    currentState: { ...INITIAL_STATE },
     players: [],
     firedThresholds: [],
+    publications: [],
     history: [],
+    roundArc: ROUND_ARCS[2]!,
     ...overrides,
   };
 }
