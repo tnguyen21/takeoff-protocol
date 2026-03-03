@@ -19,11 +19,15 @@ import { ROUND5_DECISIONS } from "../content/decisions/round5.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * All context the generation functions need to produce reactive content.
+ * Built from GameRoom state by buildGenerationContext() before each generation call.
+ */
 export interface GenerationContext {
-  storyBible: StoryBible;
+  storyBible: StoryBible | undefined;
   currentState: StateVariables;
   history: RoundHistory[];
-  players: { faction: Faction; role: Role; name: string }[];
+  players: { faction: Faction | null; role: Role | null; name: string }[];
   firedThresholds: string[];
   publications: Publication[];
   targetRound: number;
