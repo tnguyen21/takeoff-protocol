@@ -11,7 +11,7 @@
 import { describe, it, expect } from "bun:test";
 import type { GameMessage, GameRoom } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
-import { getPlayerMessages } from "./rooms.js";
+import { createRoom, getPlayerMessages } from "./rooms.js";
 
 function makeRoom(messages: GameMessage[]): GameRoom {
   return {
@@ -197,5 +197,27 @@ describe("getPlayerMessages — mixed messages", () => {
     const result = getPlayerMessages(room, "openbrain", "player1");
 
     expect(result).toEqual([]);
+  });
+});
+
+// ── INV-1: createRoom initializes generation fields to empty defaults ──────────
+
+describe("createRoom — generation field initialization (INV-1)", () => {
+  it("initializes generatedRounds to an empty object", () => {
+    const room = createRoom("gm-socket-1");
+
+    expect(room.generatedRounds).toEqual({});
+  });
+
+  it("initializes generationStatus to an empty object", () => {
+    const room = createRoom("gm-socket-2");
+
+    expect(room.generationStatus).toEqual({});
+  });
+
+  it("leaves storyBible undefined until generation starts", () => {
+    const room = createRoom("gm-socket-3");
+
+    expect(room.storyBible).toBeUndefined();
   });
 });

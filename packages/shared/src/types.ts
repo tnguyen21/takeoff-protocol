@@ -267,9 +267,9 @@ export interface GameRoom {
   timerOverrides?: Partial<Record<GamePhase, number>>; // GM-set durations in seconds, per phase
   firedThresholds?: Set<string>; // IDs of threshold events that have already fired (once-only)
   uiDegradationActive?: boolean;  // flagged by aiAutonomyLevel+alignmentConfidence threshold
-  storyBible?: StoryBible;
-  generatedRounds?: Partial<Record<number, GeneratedRoundArtifacts>>;
-  generationStatus?: Partial<Record<number, GenerationStatus>>;
+  storyBible?: StoryBible; // initialized when generation starts; undefined until then
+  generatedRounds?: Partial<Record<number, GeneratedRoundArtifacts>>; // cached LLM artifacts by round
+  generationStatus?: Partial<Record<number, GenerationStatus>>; // per-round generation state
 }
 
 export interface RoundHistory {
@@ -389,6 +389,47 @@ export interface NpcTrigger {
   rounds?: [number, number];
   /** Resolved to socket IDs by the server. */
   target: NpcTriggerTarget;
+}
+
+// ── Generative Content ──
+
+export interface StoryEvent {
+  round: number;
+  phase: "decision" | "threshold" | "publication" | "message";
+  summary: string;
+  stateImpact: string;
+  narrativeWeight: "major" | "minor";
+}
+
+export interface RoundArc {
+  round: number;
+  title: string;
+  era: string;
+  narrativeBeat: string;
+  escalation: string;
+  keyTensions: string[];
+}
+
+export interface StoryBible {
+  scenario: string;
+  factions: { faction: Faction; identity: string; tensions: string[] }[];
+  voiceGuides: Record<string, string>;
+  roundArcs: RoundArc[];
+  events: StoryEvent[];
+  playerActions: { round: number; faction: Faction; role: Role; decision: string }[];
+  activeThreads: string[];
+  toneShift: string;
+}
+
+/**
+ * Cache bucket for one round's LLM-generated artifacts.
+ * Extended in Phase B (generation/context.ts) with briefing + content fields.
+ */
+export interface GeneratedRoundArtifacts {
+  briefing?: {
+    common: string;
+    factionVariants: Partial<Record<Faction, string>>;
+  };
 }
 
 // ── Ending Arcs ──

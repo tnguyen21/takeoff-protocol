@@ -32,6 +32,9 @@ export function createRoom(gmSocketId: string): GameRoom {
     history: [],
     publications: [],
     messages: [],
+    storyBible: undefined,
+    generatedRounds: {},
+    generationStatus: {},
   };
 
   rooms.set(code, room);
