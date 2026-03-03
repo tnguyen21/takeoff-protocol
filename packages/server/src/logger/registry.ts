@@ -1,7 +1,15 @@
+import type { EventContext } from "./types.js";
 import { GameLogger, NullLogger } from "./index.js";
 import type { GameLoggerOptions } from "./index.js";
 
-const loggers = new Map<string, GameLogger | NullLogger>();
+export interface LoggerLike {
+  log(event: string, data: unknown, ctx?: EventContext): void;
+  flush(): Promise<void>;
+  close(): Promise<void>;
+  readonly rejections: number;
+}
+
+const loggers = new Map<string, LoggerLike>();
 
 function isLoggingEnabled(): boolean {
   const val = process.env.LOG_ENABLED;
@@ -9,16 +17,26 @@ function isLoggingEnabled(): boolean {
   return val !== "false";
 }
 
-export function createLoggerForRoom(roomCode: string, options?: GameLoggerOptions): GameLogger | NullLogger {
-  const logger: GameLogger | NullLogger = isLoggingEnabled()
-    ? new GameLogger(roomCode, options)
+export function createLoggerForRoom(code: string, options?: GameLoggerOptions): LoggerLike {
+  const logger: LoggerLike = isLoggingEnabled()
+    ? new GameLogger(code, options)
     : new NullLogger();
-  loggers.set(roomCode, logger);
+  loggers.set(code, logger);
   return logger;
 }
 
-export function getLoggerForRoom(roomCode: string): GameLogger | NullLogger {
-  return loggers.get(roomCode) ?? new NullLogger();
+export function getLoggerForRoom(code: string): LoggerLike {
+  return loggers.get(code) ?? new NullLogger();
+}
+
+/** For testing only. Directly set a logger for a room. */
+export function _setLoggerForRoom(code: string, logger: LoggerLike): void {
+  loggers.set(code, logger);
+}
+
+/** For testing only. Clear all registered loggers. */
+export function _clearLoggers(): void {
+  loggers.clear();
 }
 
 export async function closeLoggerForRoom(roomCode: string): Promise<void> {

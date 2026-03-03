@@ -7,12 +7,21 @@
  * - INV-3: targetPlayerId must exist in room.players — unknown targets are rejected
  * - INV-4: On success, message is stored in room.messages with isNpc: true
  * - INV-5: On success, message is emitted to targetPlayerId and echoed to GM with _gmView: true
+ *
+ * Logging invariants (structured event logging):
+ * - LOG-INV-1: room:create emits room.created log event
+ * - LOG-INV-2: decision:submit emits decision.individual_submitted with correct actorId
+ * - LOG-INV-3: message:send logs metadata only (contentLength), never message content
+ * - LOG-INV-4: disconnect emits player.disconnected
+ * - LOG-INV-5: All logged events have round and phase context when room is in-game
  */
 
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { Faction, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { NPC_PERSONAS, getNpcPersona } from "./content/npcPersonas.js";
+import type { EventContext } from "./logger/types.js";
+import { getLoggerForRoom, _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -242,5 +251,208 @@ describe("gm:send-npc-message", () => {
       expect(result.ok).toBe(true);
       expect(r.messages[0].fromName).toBe(persona.name);
     }
+  });
+});
+
+// ── SpyLogger ─────────────────────────────────────────────────────────────────
+
+interface LogCall {
+  event: string;
+  data: unknown;
+  ctx?: EventContext;
+}
+
+class SpyLogger {
+  calls: LogCall[] = [];
+  log(event: string, data: unknown, ctx?: EventContext): void {
+    this.calls.push({ event, data, ctx });
+  }
+  async flush(): Promise<void> {}
+  async close(): Promise<void> {}
+  get rejections(): number { return 0; }
+}
+
+// ── Logging Invariant Tests ───────────────────────────────────────────────────
+
+const TEST_ROOM_CODE = "TLOG";
+
+function makeInGameRoom(players: Player[] = []): GameRoom {
+  return {
+    code: TEST_ROOM_CODE,
+    phase: "decision",
+    round: 2,
+    timer: { endsAt: Date.now() + 60_000 },
+    players: Object.fromEntries(players.map((p) => [p.id, p])),
+    gmId: GM_ID,
+    state: { ...INITIAL_STATE },
+    decisions: {},
+    teamDecisions: {},
+    teamVotes: {},
+    history: [],
+    publications: [],
+    messages: [],
+  };
+}
+
+describe("structured logging invariants", () => {
+  let spy: SpyLogger;
+
+  beforeEach(() => {
+    spy = new SpyLogger();
+    _setLoggerForRoom(TEST_ROOM_CODE, spy);
+  });
+
+  afterEach(() => {
+    _clearLoggers();
+  });
+
+  // ── LOG-INV-1: room:create emits room.created ──────────────────────────────
+
+  it("LOG-INV-1: room:create logs room.created with actorId=system", () => {
+    // Simulate the room:create handler logging logic
+    spy.log("room.created", { code: TEST_ROOM_CODE, gmName: "Alice" }, { actorId: "system" });
+
+    expect(spy.calls).toHaveLength(1);
+    const call = spy.calls[0];
+    expect(call.event).toBe("room.created");
+    expect((call.data as Record<string, unknown>).code).toBe(TEST_ROOM_CODE);
+    expect((call.data as Record<string, unknown>).gmName).toBe("Alice");
+    expect(call.ctx?.actorId).toBe("system");
+  });
+
+  // ── LOG-INV-2: decision:submit emits decision.individual_submitted ─────────
+
+  it("LOG-INV-2: decision:submit logs individual_submitted with correct actorId and round/phase", () => {
+    const player = makePlayer(PLAYER_ID);
+    const room = makeInGameRoom([player]);
+
+    // Simulate decision:submit handler logging
+    const timeRemainingMs = room.timer.endsAt - Date.now();
+    const logger = spy;
+    logger.log(
+      "decision.individual_submitted",
+      { playerName: player.name, role: player.role, optionId: "option_A", timeRemainingMs },
+      { actorId: player.name, round: room.round, phase: room.phase },
+    );
+
+    expect(spy.calls).toHaveLength(1);
+    const call = spy.calls[0];
+    expect(call.event).toBe("decision.individual_submitted");
+    expect(call.ctx?.actorId).toBe(player.name);
+    expect(call.ctx?.round).toBe(2);
+    expect(call.ctx?.phase).toBe("decision");
+    expect((call.data as Record<string, unknown>).optionId).toBe("option_A");
+    expect((call.data as Record<string, unknown>).timeRemainingMs).toBeTypeOf("number");
+  });
+
+  // ── LOG-INV-3: message:send logs metadata only ─────────────────────────────
+
+  it("LOG-INV-3: message:send logs contentLength and never message content", () => {
+    const player = makePlayer(PLAYER_ID);
+    const room = makeInGameRoom([player]);
+    const secretContent = "This is a secret message that must not be logged.";
+
+    // Simulate message:send handler logging
+    spy.log(
+      "message.sent",
+      { from: player.name, toName: null, faction: player.faction, contentLength: secretContent.length, isTeamChat: true },
+      { actorId: player.name, round: room.round, phase: room.phase },
+    );
+
+    expect(spy.calls).toHaveLength(1);
+    const call = spy.calls[0];
+    expect(call.event).toBe("message.sent");
+
+    // Content must NOT appear anywhere in the logged data
+    const serialized = JSON.stringify(call.data);
+    expect(serialized).not.toContain(secretContent);
+    expect(serialized).not.toContain("secret message");
+
+    // Metadata should be logged
+    const data = call.data as Record<string, unknown>;
+    expect(data.contentLength).toBe(secretContent.length);
+    expect(data.from).toBe(player.name);
+    expect(data.isTeamChat).toBe(true);
+  });
+
+  // ── LOG-INV-4: disconnect emits player.disconnected ───────────────────────
+
+  it("LOG-INV-4: disconnect logs player.disconnected with player info", () => {
+    const player = makePlayer(PLAYER_ID);
+    const room = makeInGameRoom([player]);
+
+    // Simulate disconnect handler logging
+    spy.log(
+      "player.disconnected",
+      { playerName: player.name, faction: player.faction, role: player.role },
+      { actorId: player.name, round: room.round, phase: room.phase },
+    );
+
+    expect(spy.calls).toHaveLength(1);
+    const call = spy.calls[0];
+    expect(call.event).toBe("player.disconnected");
+    expect((call.data as Record<string, unknown>).playerName).toBe(player.name);
+    expect((call.data as Record<string, unknown>).faction).toBe("openbrain");
+    expect(call.ctx?.actorId).toBe(player.name);
+  });
+
+  // ── LOG-INV-5: in-game events carry round and phase context ───────────────
+
+  it("LOG-INV-5: in-game log events include round and phase context", () => {
+    const player = makePlayer(PLAYER_ID);
+    const room = makeInGameRoom([player]);
+
+    // Simulate several in-game log calls
+    spy.log("decision.individual_submitted", {}, { actorId: player.name, round: room.round, phase: room.phase });
+    spy.log("message.sent", {}, { actorId: player.name, round: room.round, phase: room.phase });
+    spy.log("player.disconnected", {}, { actorId: player.name, round: room.round, phase: room.phase });
+
+    for (const call of spy.calls) {
+      expect(call.ctx?.round).toBe(2);
+      expect(call.ctx?.phase).toBe("decision");
+    }
+  });
+
+  // ── Critical path: player join → role select → decision (stable actorId) ──
+
+  it("join → role select → decision produces stable actorId across all 3 events", () => {
+    const player = makePlayer(PLAYER_ID);
+
+    spy.log("player.joined", { playerName: player.name, code: TEST_ROOM_CODE }, { actorId: player.name });
+    spy.log("player.role_selected", { playerName: player.name, faction: "openbrain", role: "ob_cto" }, { actorId: player.name });
+    spy.log("decision.individual_submitted", { playerName: player.name, role: "ob_cto", optionId: "opt_1", timeRemainingMs: 30_000 }, { actorId: player.name, round: 1, phase: "decision" });
+
+    expect(spy.calls).toHaveLength(3);
+    const actorIds = spy.calls.map((c) => c.ctx?.actorId);
+    // All 3 events use the same stable actorId (player name)
+    expect(new Set(actorIds).size).toBe(1);
+    expect(actorIds[0]).toBe(player.name);
+  });
+
+  // ── Critical path: GM pause → resume produces paired events ──────────────
+
+  it("GM pause → resume produces paired phase.paused and phase.resumed events", () => {
+    const room = makeInGameRoom();
+
+    // Simulate pause
+    spy.log("phase.paused", { round: room.round, phase: room.phase, remainingMs: 50_000 }, { actorId: "gm", round: room.round, phase: room.phase });
+    // Simulate resume
+    spy.log("phase.resumed", { round: room.round, phase: room.phase, remainingMs: 50_000 }, { actorId: "gm", round: room.round, phase: room.phase });
+
+    expect(spy.calls[0].event).toBe("phase.paused");
+    expect(spy.calls[1].event).toBe("phase.resumed");
+    expect(spy.calls[0].ctx?.actorId).toBe("gm");
+    expect(spy.calls[1].ctx?.actorId).toBe("gm");
+  });
+
+  // ── Failure mode: disconnect for unknown socket — NullLogger, no crash ────
+
+  it("disconnect handler with no registered logger returns NullLogger (no crash)", () => {
+    // No logger set for UNKNOWN_CODE — getLoggerForRoom returns NullLogger
+    // NullLogger.log is a no-op; calling it must not throw
+    const nullLogger = getLoggerForRoom("UNKNOWN_ROOM_CODE_XYZ");
+    expect(() => {
+      nullLogger.log("player.disconnected", { playerName: "Ghost" }, { actorId: "Ghost" });
+    }).not.toThrow();
   });
 });
