@@ -9,6 +9,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@hono/node-server": "^1.19.9",
     "@takeoff/shared": "workspace:*",
     "hono": "^4",

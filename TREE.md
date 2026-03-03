@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-4a3bb62ae72d
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-cf6d2c035f9a
 ├── docs
 │   ├── APP-AUDIT-COMMUNICATION.md
 │   ├── APP-AUDIT-DATA-ANALYTICS.md
@@ -32,6 +32,7 @@
 │   ├── server
 │   │   ├── src
 │   │   │   ├── content
+│   │   │   ├── generation
 │   │   │   ├── activity.test.ts
 │   │   │   ├── events.test.ts
 │   │   │   ├── events.ts
@@ -70,4 +71,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-18 directories, 53 files
+19 directories, 53 files
