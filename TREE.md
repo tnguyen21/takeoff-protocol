@@ -6,7 +6,6 @@
 │   ├── APP-AUDIT-MEDIA-CONTENT.md
 │   ├── APP-AUDIT-SECURITY-INTEL.md
 │   ├── BACKLOG.md
-│   ├── BALANCING-RUNBOOK.md
 │   ├── DESIGN.md
 │   ├── DEV-TOOLS.md
 │   └── IMPLEMENTATION.md
@@ -69,4 +68,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-18 directories, 52 files
+18 directories, 51 files
