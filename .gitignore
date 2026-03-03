@@ -7,5 +7,5 @@ dist
 .hive
 .hive.toml
 .hive-notes.jsonl
-.claude/settings.local.json
+.claude/
 .worktrees
