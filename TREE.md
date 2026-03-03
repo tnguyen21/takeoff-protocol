@@ -8,6 +8,8 @@
 │   ├── BACKLOG.md
 │   ├── DESIGN.md
 │   ├── DEV-TOOLS.md
+│   ├── GAME-LOGGING.md
+│   ├── GENERATIVE-CONTENT.md
 │   └── IMPLEMENTATION.md
 ├── packages
 │   ├── client
@@ -68,4 +70,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-18 directories, 51 files
+18 directories, 53 files

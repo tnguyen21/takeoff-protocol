@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions } from "./game.js";
+import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
@@ -161,6 +161,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     } else {
       room.timer.pausedAt = Date.now();
     }
+    syncPhaseTimer(io, room);
 
     io.to(code).emit("game:phase", {
       phase: room.phase,
@@ -256,6 +257,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     extendUses.set(key, uses + 1);
     room.timer.endsAt += 60_000;
+    syncPhaseTimer(io, room);
 
     io.to(code).emit("game:phase", {
       phase: room.phase,

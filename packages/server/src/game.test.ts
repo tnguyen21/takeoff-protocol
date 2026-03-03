@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial } from "./game.js";
+import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
 
@@ -44,6 +44,10 @@ function createMockIo() {
   };
 
   return { io: io as unknown as import("socket.io").Server, emitted };
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ── INV-3: buildNarrative mentions inaction for missing factions ──
@@ -765,5 +769,60 @@ describe("advancePhase — NPC triggers fire on phase transition", () => {
     expect(room.firedThresholds!.has("npc_r1_anon_ob_intel")).toBe(true);
     const npcMsgs = (emitted["p1:message:receive"] ?? []).filter(([, m]) => (m as GameMessage).isNpc);
     expect(npcMsgs.length).toBeGreaterThan(0);
+  });
+});
+
+// ── Timer regression tests ────────────────────────────────────────────────────
+
+describe("timer sync regressions", () => {
+  it("emits a fresh game:phase timer payload on phase transition", () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "TEST_TIMER_FRESH",
+      phase: "deliberation",
+      round: 1,
+      players: { p1: player1 },
+      timer: { endsAt: 1 }, // stale timer value that should be replaced
+    });
+
+    const { io, emitted } = createMockIo();
+    advancePhase(io, room); // deliberation -> decision
+
+    const phaseEvents = emitted[`${room.code}:game:phase`];
+    expect(phaseEvents).toBeDefined();
+    expect(phaseEvents!.length).toBeGreaterThan(0);
+
+    const [, payload] = phaseEvents![phaseEvents!.length - 1];
+    const data = payload as { phase: string; timer: { endsAt: number } };
+
+    expect(data.phase).toBe("decision");
+    expect(data.timer.endsAt).toBe(room.timer.endsAt);
+    expect(data.timer.endsAt).toBeGreaterThan(Date.now());
+
+    clearPhaseTimer(room);
+  });
+
+  it("extend-style timer mutation plus resync prevents early auto-advance", async () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "TEST_TIMER_EXTEND",
+      phase: "decision",
+      round: 1,
+      players: { p1: player1 },
+      timer: { endsAt: Date.now() + 40 },
+    });
+
+    const { io } = createMockIo();
+    syncPhaseTimer(io, room);
+
+    await wait(20);
+    room.timer.endsAt += 120; // gm:extend-style shift of deadline
+    syncPhaseTimer(io, room);
+
+    await wait(40);
+    // If old timeout were still active, this would have advanced already.
+    expect(room.phase).toBe("decision");
+
+    clearPhaseTimer(room);
   });
 });

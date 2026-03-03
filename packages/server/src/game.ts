@@ -33,16 +33,33 @@ function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
 }
 
 function setPhaseTimer(io: Server, room: GameRoom) {
-  // Clear any existing timer
-  const existing = phaseTimers.get(room.code);
-  if (existing) clearTimeout(existing);
-
   const duration = getPhaseDuration(room, room.phase);
   room.timer = { endsAt: Date.now() + duration };
 
+  syncPhaseTimer(io, room);
+}
+
+export function clearPhaseTimer(room: GameRoom) {
+  const existing = phaseTimers.get(room.code);
+  if (existing) {
+    clearTimeout(existing);
+    phaseTimers.delete(room.code);
+  }
+}
+
+/**
+ * Reconcile the underlying server timeout with the current room.timer values.
+ * Use this whenever timer values are adjusted in-place (pause/resume/extend).
+ */
+export function syncPhaseTimer(io: Server, room: GameRoom) {
+  clearPhaseTimer(room);
+  if (room.timer.pausedAt) return;
+  if (room.phase === "lobby" || room.phase === "ending") return;
+
+  const remaining = Math.max(0, room.timer.endsAt - Date.now());
   const timer = setTimeout(() => {
     advancePhase(io, room);
-  }, duration);
+  }, remaining);
 
   phaseTimers.set(room.code, timer);
 }
@@ -57,6 +74,7 @@ export function startGame(io: Server, room: GameRoom) {
   room.decisions = {};
   room.teamDecisions = {};
   room.teamVotes = {};
+  setPhaseTimer(io, room);
 
   // Emit phase change
   io.to(room.code).emit("game:phase", {
@@ -70,8 +88,6 @@ export function startGame(io: Server, room: GameRoom) {
 
   // Emit briefing text (faction-specific)
   emitBriefing(io, room);
-
-  setPhaseTimer(io, room);
 }
 
 /**
@@ -174,6 +190,7 @@ export function advancePhase(io: Server, room: GameRoom) {
 
       if (room.round >= TOTAL_ROUNDS) {
         room.phase = "ending";
+        clearPhaseTimer(room);
         io.to(room.code).emit("game:phase", {
           phase: room.phase,
           round: room.round,
@@ -200,6 +217,9 @@ export function advancePhase(io: Server, room: GameRoom) {
       room.teamVotes = {};
     }
   }
+
+  // Set timer before emitting phase so clients always get fresh endsAt.
+  setPhaseTimer(io, room);
 
   io.to(room.code).emit("game:phase", {
     phase: room.phase,
@@ -229,7 +249,6 @@ export function advancePhase(io: Server, room: GameRoom) {
     checkThresholds(io, room);
   }
 
-  setPhaseTimer(io, room);
 }
 
 export function emitDecisions(io: Server, room: GameRoom) {
