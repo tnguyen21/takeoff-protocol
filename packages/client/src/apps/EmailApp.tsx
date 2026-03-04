@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
+import { useNotificationsStore } from "../stores/notifications.js";
 import {
   filterEmailsByFolder,
   filterEmailsBySearch,
@@ -405,6 +406,11 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
   const [composeSent, setComposeSent] = useState(false);
+
+  // Dismiss email toasts when app is open
+  useEffect(() => {
+    useNotificationsStore.getState().dismissByApp("email");
+  }, [content.length]);
 
   // Reset selection when folder or search changes
   useEffect(() => {

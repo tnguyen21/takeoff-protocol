@@ -110,6 +110,9 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
       )
     : [];
 
+  // Total signal messages to this player (for notification clearing)
+  const signalMessageCount = messages.filter((m) => !m.isTeamChat && m.to === playerId).length;
+
   // Unread count per player/NPC (messages to me that aren't in the active convo)
   const unreadPerPlayer: Record<string, number> = {};
   for (const m of messages) {
@@ -127,7 +130,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   useEffect(() => {
     markRead("signal");
     useNotificationsStore.getState().dismissByApp("signal");
-  }, [markRead, dmMessages.length]);
+  }, [markRead, signalMessageCount]);
 
   // Update `now` every 5s so read-receipt statuses refresh
   useEffect(() => {
