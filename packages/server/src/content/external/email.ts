@@ -92,6 +92,48 @@ export const EXT_EMAIL: ContentItem[] = [
       timestamp: "2027-11-14T09:30:00Z",
       classification: "breadcrumb",
     },
+    // === FLAVOR — unconditional ambient R1 emails ===
+    {
+      id: "ext-r1-email-ambient-newsletter-1",
+      type: "message",
+      round: 1,
+      sender: "playbook@politico.com",
+      subject: "Politico Playbook — Tuesday, November 4, 2026",
+      body: "GOOD TUESDAY MORNING. Quick hits before the week gets busy:\n\n— Budget reconciliation: House Freedom Caucus threatens to pull support again over ag subsidies line item. Leadership's count has them needing three votes they don't have yet.\n\n— USTR: Talks with Taiwan semiconductor reps resuming Thursday behind closed doors. No agenda circulated to Hill staff.\n\n— AI oversight: NSF director to brief Senate Commerce staffers Wednesday on proposed AI research grant conditions. Expect fireworks.\n\n— Quote of the day (anonymous Hill staffer): 'Nobody up here has read a single line of any AI company's terms of service. Not one.'\n\nHave tips? Reply to this email. | Manage subscriptions | Politico LLC, 1000 Wilson Blvd, Arlington VA 22209",
+      timestamp: "7:02 AM",
+      classification: "flavor",
+    },
+    {
+      id: "ext-r1-email-ambient-calendar-1",
+      type: "message",
+      round: 1,
+      sender: "noreply@calendar.google.com",
+      subject: "Invitation: Senate Commerce — AI Oversight Briefing @ Thu Nov 6, 10:00 AM",
+      body: "You have been invited to the following event:\n\nSenate Commerce — AI Oversight Briefing (Closed, Staff Only)\nThursday, November 6, 10:00 AM – 11:30 AM EST\nLocation: SH-216, Hart Senate Office Building\n\nOrganizer: commerce-staff@commerce.senate.gov\nAttending: 12 confirmed\n\nNote from organizer: Please bring your Hill badge. No phones in the room for the classified portion (10:45–11:15). Briefing materials distributed on site, not in advance.",
+      timestamp: "2:13 PM",
+      classification: "flavor",
+    },
+    {
+      id: "ext-r1-email-ambient-admin-1",
+      type: "message",
+      round: 1,
+      sender: "travel@reimburse.gov",
+      subject: "Travel Reimbursement Request TR-2026-10-0041 — Approved",
+      body: "Your travel reimbursement request has been approved.\n\nRequest: TR-2026-10-0041\nTrip: Brussels, October 21–24, 2026 (EU AI governance meeting)\nApproved amount: $4,218.40\nPayment method: Direct deposit\nExpected deposit: November 12–14\n\nNote: Business class upgrade ($880) was not approved per updated travel policy. Economy fare reimbursed. Future requests above $3,500 require pre-authorization.\n\nQuestions: travel-reimbursement@gsa.gov",
+      timestamp: "9:58 AM",
+      classification: "flavor",
+    },
+    {
+      id: "ext-r1-email-ambient-personal-1",
+      type: "message",
+      round: 1,
+      sender: "david.ochoa.personal@gmail.com",
+      subject: "dinner next week?",
+      body: "Hey — I know you're probably deep in whatever is happening in AI land right now, given the news. But wanted to see if you're free for dinner next week? Tuesday or Thursday works for us. We tried that new place on 14th and it was very good.\n\nAlso — my brother is asking if you have a read on the AI governance stuff, says it's relevant to his startup but I told him to just subscribe to the newsletter like a normal person.\n\nLet me know!\n— David",
+      timestamp: "7:22 PM",
+      classification: "flavor",
+    },
+
     // === AMBIENT CONDITION-GATED EMAIL ITEMS ===
     {
       id: "ext-r1-email-ambient-dereg-1",
@@ -238,3 +280,35 @@ export const EXT_EMAIL_DIPLOMAT: ContentItem[] = [
 
 registerContent({ faction: "external", app: "email", accumulate: true, items: EXT_EMAIL });
 registerContent({ faction: "external", app: "email", role: "ext_diplomat", accumulate: true, items: EXT_EMAIL_DIPLOMAT });
+
+// === ROLE-SPECIFIC AMBIENT R1 EMAILS ===
+
+export const EXT_JOURNALIST_EMAIL_AMBIENT: ContentItem[] = [
+    {
+      id: "ext-r1-email-ambient-journalist-1",
+      type: "message",
+      round: 1,
+      sender: "noreply@substack.com",
+      subject: "New post from Slow Boring: 'The AI beat is the only beat now'",
+      body: "Matt Yglesias • Slow Boring\n\n'The AI Beat Is the Only Beat Now'\n\nEvery editor I talk to wants AI coverage. Every reader survey says AI is the top reader priority. And yet most AI coverage is still 'company announced product, here is product.' We need more beat reporters who understand the technology well enough to be skeptical of the announcements.\n\nThe opportunity cost of not having competent AI journalism is enormous. When the history of this period is written, the press is going to look bad.\n\nRead in app | Unsubscribe | Manage subscription — Substack, 535 Mission Street, San Francisco CA 94105",
+      timestamp: "8:30 AM",
+      classification: "flavor",
+    },
+];
+
+registerContent({ faction: "external", app: "email", role: "ext_journalist", accumulate: true, items: EXT_JOURNALIST_EMAIL_AMBIENT });
+
+export const EXT_NSA_EMAIL_AMBIENT: ContentItem[] = [
+    {
+      id: "ext-r1-email-ambient-nsa-1",
+      type: "message",
+      round: 1,
+      sender: "noreply@classified.nsa.gov",
+      subject: "NSA/CSS Daily Intelligence Digest — 04 NOV 2026 [TS//SI//NOFORN]",
+      body: "[TS//SI//NOFORN]\n\nYou have 7 unread items in your classified inbox.\n\nThis notification is unclassified. Contents are accessible only via JWICS terminal. Do not forward or print this notification.\n\nAccess at: jwics.nsa.gov/inbox\nLast login: 2026-11-03 17:42 EST from NSA/CSS Fort Meade",
+      timestamp: "5:00 AM",
+      classification: "flavor",
+    },
+];
+
+registerContent({ faction: "external", app: "email", role: "ext_nsa", accumulate: true, items: EXT_NSA_EMAIL_AMBIENT });

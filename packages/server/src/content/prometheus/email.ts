@@ -152,6 +152,48 @@ export const PROM_EMAIL: ContentItem[] = [
       timestamp: "2028-02-01T10:00:00Z",
       classification: "context",
     },
+    // === FLAVOR — unconditional ambient R1 emails ===
+    {
+      id: "prom-r1-email-ambient-arxiv-1",
+      type: "message",
+      round: 1,
+      sender: "no-reply@arxiv.org",
+      subject: "arXiv cs.LG weekly digest — Nov 3, 2026",
+      body: "Your weekly digest for cs.LG (Machine Learning), cs.AI (Artificial Intelligence)\n\n23 new submissions matching your alert keywords\n\nHighlights:\n• [2411.04182] Scaling Laws for Sparse Mixture-of-Experts at 10^26 FLOPs\n• [2411.04031] Chain-of-Thought Faithfulness in Multi-Step Reasoning Tasks\n• [2411.03798] Emergent Goal-Directed Behavior in Fine-Tuned Language Models: A Longitudinal Study\n• [2411.04299] Token Budget Estimation via Adaptive Sampling\n\nView full digest at arxiv.org/search/ — Manage alert preferences",
+      timestamp: "6:00 AM",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-email-ambient-conference-1",
+      type: "message",
+      round: 1,
+      sender: "registration@neurips.cc",
+      subject: "NeurIPS 2026 — Registration Confirmation",
+      body: "Thank you for registering for NeurIPS 2026!\n\nName: Sarah Wei\nRegistration type: Author (in-person)\nDates: December 9–15, 2026\nVenue: Vancouver Convention Centre, Vancouver, BC\n\nYour paper 'Eliciting Latent World Models via Structured Probing' (Poster Session 3, Tue Dec 12) is confirmed.\n\nHotel block expires November 21 — book at neurips.cc/hotel\n\nQuestions? Contact registration@neurips.cc",
+      timestamp: "9:17 AM",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-email-ambient-hr-1",
+      type: "message",
+      round: 1,
+      sender: "hr@prometheus.ai",
+      subject: "Reminder: Health Insurance Renewal — Action Required by Nov 15",
+      body: "Hi team,\n\nOpen enrollment for 2027 health, dental, and vision closes November 15. New this year:\n\n• Kaiser Permanente added as a network option (Bay Area and Seattle)\n• Dependent care FSA limit: $5,000 (unchanged)\n• Mental health: Headspace + Calm now covered under wellness benefit\n\nTo update your elections, log in at people.prometheus.ai/benefits. Questions? people@prometheus.ai\n\n— HR",
+      timestamp: "10:30 AM",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-email-ambient-personal-1",
+      type: "message",
+      round: 1,
+      sender: "priya.raghunathan@gmail.com",
+      subject: "Re: Thanksgiving plans?",
+      body: "Hey! I know you're probably slammed but just wanted to nail down Thanksgiving before flights get insane.\n\nWe're doing Mom's place again this year — she's very insistently making biryani instead of turkey again and I have decided to stop arguing about it. Flying in Wednesday night.\n\nAre you coming this year or will you be 'at a critical juncture in the training run' again? 😄\n\nLet me know! Miss you.\n\n— P",
+      timestamp: "12:48 PM",
+      classification: "flavor",
+    },
+
     // --- AMBIENT CONDITION-GATED ITEMS ---
     {
       id: "prom-r1-email-ambient-burnrate-1",
@@ -255,3 +297,20 @@ export const PROM_EMAIL: ContentItem[] = [
 ];
 
 registerContent({ faction: "prometheus", app: "email", accumulate: true, items: PROM_EMAIL });
+
+// === ROLE-SPECIFIC AMBIENT R1 EMAILS ===
+
+export const PROM_SCIENTIST_EMAIL_AMBIENT: ContentItem[] = [
+    {
+      id: "prom-r1-email-ambient-scientist-1",
+      type: "message",
+      round: 1,
+      sender: "editorial@nature.com",
+      subject: "Revision Decision — Nature Machine Intelligence Manuscript NATMI-2026-07841",
+      body: "Dear Dr. Wei,\n\nThank you for submitting your manuscript 'Mechanistic Interpretability of Multi-Head Attention in Large-Scale Transformers' to Nature Machine Intelligence.\n\nAfter consideration by our editorial team and two reviewers, we are pleased to invite a major revision. The reviewers found the core contribution compelling but have raised concerns about the scope of the evaluation suite and the claims in Section 4.3.\n\nReviewer comments are attached. We request a revised manuscript within 60 days.\n\nPlease do not hesitate to contact us if you have any questions.\n\nKind regards,\nNature Machine Intelligence Editorial",
+      timestamp: "7:44 AM",
+      classification: "flavor",
+    },
+];
+
+registerContent({ faction: "prometheus", app: "email", role: "prom_scientist", accumulate: true, items: PROM_SCIENTIST_EMAIL_AMBIENT });

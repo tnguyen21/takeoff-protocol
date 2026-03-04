@@ -279,6 +279,48 @@ export const OB_EMAIL: ContentItem[] = [
       condition: { variable: "economicDisruption", operator: "gt", value: 40 },
     },
 
+    // === FLAVOR — unconditional ambient R1 emails ===
+    {
+      id: "ob-r1-email-ambient-newsletter-1",
+      type: "message",
+      round: 1,
+      sender: "noreply@theinformation.com",
+      subject: "The Information Daily Brief — November 4, 2026",
+      body: "Good morning. Today's briefing:\n\n• Apple Intelligence rollout stalls — 200M devices still waiting for on-device model update\n• Stripe valuation reportedly revised down 12% in latest secondary market transactions\n• Databricks raises $2B Series I at flat valuation, CFO departure announced same day\n• Quote of the day: 'Infrastructure is the boring money.' — unnamed GP\n\nFull stories for subscribers at the link above.",
+      timestamp: "6:45 AM",
+      classification: "flavor",
+    },
+    {
+      id: "ob-r1-email-ambient-calendar-1",
+      type: "message",
+      round: 1,
+      sender: "kenji.nakamura@openbrain.ai",
+      subject: "Weekly 1:1 — Thu 3:30 PM",
+      body: "Hi — confirming our usual Thursday slot. I've got a few things to run by you on the infra side but nothing urgent. Bring coffee.\n\n— Kenji\n\n---\nWhen: Thursday, November 5 at 3:30 PM\nWhere: Conf room 4B / Google Meet",
+      timestamp: "9:08 AM",
+      classification: "flavor",
+    },
+    {
+      id: "ob-r1-email-ambient-hr-1",
+      type: "message",
+      round: 1,
+      sender: "benefits@openbrain.ai",
+      subject: "Action Required: Benefits Open Enrollment Closes Nov 14",
+      body: "Hi there,\n\nOpen enrollment for 2027 benefits closes in 10 days. If you don't make a selection, you'll be auto-enrolled in your existing plan.\n\nWhat's new this year:\n• New dental network includes UCSF and CPMC\n• FSA contribution limit raised to $3,200\n• Mental health sessions: 16 → 24 per year covered at 100%\n\nLog in at benefits.openbrain.ai to review and enroll.\n\n— HR",
+      timestamp: "10:02 AM",
+      classification: "flavor",
+    },
+    {
+      id: "ob-r1-email-ambient-shipping-1",
+      type: "message",
+      round: 1,
+      sender: "noreply@uniqlo.com",
+      subject: "Your Uniqlo order has shipped (#UQ-29471883)",
+      body: "Good news — your order is on its way!\n\nOrder #UQ-29471883\n• HEATTECH Ultra Warm Crew Neck T-Shirt (M, Off-White) × 2\n• Wool-Blend Ribbed Socks (Dark Grey) × 3\n\nEstimated delivery: November 6–8\nTracking: UPS 1Z99AA890123456784\n\nUniqlo Customer Service | 1-855-486-4756",
+      timestamp: "11:34 AM",
+      classification: "flavor",
+    },
+
     // Round 5 ambient — obMorale < 50
     {
       id: "ob-r5-email-ambient-morale-1",
@@ -294,3 +336,35 @@ export const OB_EMAIL: ContentItem[] = [
 ];
 
 registerContent({ faction: "openbrain", app: "email", accumulate: true, items: OB_EMAIL });
+
+// === ROLE-SPECIFIC AMBIENT R1 EMAILS ===
+
+export const OB_CTO_EMAIL_AMBIENT: ContentItem[] = [
+    {
+      id: "ob-r1-email-ambient-cto-1",
+      type: "message",
+      round: 1,
+      sender: "alerts@pagerduty.com",
+      subject: "[RESOLVED] P3 — training-cluster-05 disk I/O latency spike",
+      body: "Incident INC-88241 has been resolved.\n\nSeverity: P3\nService: GPU Training Cluster 05\nStarted: 2026-11-03 02:14 UTC\nResolved: 2026-11-03 02:47 UTC (33 min)\n\nSummary: Disk I/O latency on nodes tc05-a12 through tc05-a19 exceeded threshold (>450ms p99). Auto-scaling migrated workloads. Root cause: NVMe controller firmware bug — patch staged for maintenance window.\n\nAssigned to: infra-oncall@openbrain.ai\nPostmortem due: Nov 10",
+      timestamp: "3:51 AM",
+      classification: "flavor",
+    },
+];
+
+registerContent({ faction: "openbrain", app: "email", role: "ob_cto", accumulate: true, items: OB_CTO_EMAIL_AMBIENT });
+
+export const OB_SECURITY_EMAIL_AMBIENT: ContentItem[] = [
+    {
+      id: "ob-r1-email-ambient-security-1",
+      type: "message",
+      round: 1,
+      sender: "threatintel@crowdstrike.com",
+      subject: "CrowdStrike Adversary Intelligence Brief — Week of Nov 3, 2026",
+      body: "ADVERSARY WEEKLY BRIEF\n\nHighlights this week:\n\n• FANCY BEAR (APT28): Increased phishing activity targeting AI research institutions. Observed lure documents referencing model weight access and credential harvesting via fake SSO portals.\n\n• VOLT TYPHOON: Pre-positioning on US critical infrastructure continues. Telecoms and cloud providers primary targets.\n\n• LAZARUS GROUP: Cryptocurrency exchange targeting with new RAT variant. Unrelated to AI sector but watch for supply chain pivots.\n\nRecommended actions: Rotate API credentials for external-facing model endpoints. Review contractor access logs for last 30 days.\n\nFull report available in Falcon portal.",
+      timestamp: "8:02 AM",
+      classification: "flavor",
+    },
+];
+
+registerContent({ faction: "openbrain", app: "email", role: "ob_security", accumulate: true, items: OB_SECURITY_EMAIL_AMBIENT });
