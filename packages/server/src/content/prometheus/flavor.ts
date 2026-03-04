@@ -7,6 +7,117 @@ import { registerContent } from "../loader.js";
 // ═══════════════════════════════════════════════
 
 export const PROM_SLACK_FLAVOR: ContentItem[] = [
+  // ── Round 1: reply chains ──
+  // #research thread: Sarah Wei alignment evals → methodology discussion
+  {
+    id: "prom-flavor-r1-reply-research-1",
+    type: "message",
+    round: 1,
+    sender: "Dr. Raj Patel (Alignment)",
+    channel: "#research",
+    body: "Sarah — can you say more about the threshold methodology? Specifically how you're handling the capability elicitation confound. The usual concern is that if the eval itself increases capabilities, the threshold is measuring a moving target.",
+    timestamp: "2026-11-01T10:32:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-reply-research-2",
+    type: "message",
+    round: 1,
+    sender: "Dr. Sarah Wei (Chief Scientist)",
+    channel: "#research",
+    body: "Good question. We run capability probes separately from the safety evals with a 48-hour gap — long enough that the model isn't in an evaluation-primed state. It's imperfect but it's the best separation we can get without a full held-out model snapshot. Full methodology is in Appendix C of the internal doc. The short answer: the confound exists, we've bounded it at ~3%, and we think that's defensible.",
+    timestamp: "2026-11-01T10:51:00Z",
+    classification: "context",
+  },
+
+  // #policy thread: David Reyes Senate contacts → timing question
+  {
+    id: "prom-flavor-r1-reply-policy-1",
+    type: "message",
+    round: 1,
+    sender: "Elena Vasquez (Policy)",
+    channel: "#policy",
+    body: "David — what's the realistic legislative timeline here? Last cycle it took 14 months from 'Senate staff is interested' to a markup. Do we have that kind of runway, or is this a 'write the technical input paper now' situation?",
+    timestamp: "2026-11-02T15:08:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-reply-policy-2",
+    type: "message",
+    round: 1,
+    sender: "David Reyes (Policy)",
+    channel: "#policy",
+    body: "It's a write-the-paper-now situation. The AI Safety Accountability Act is further along than the press knows — the staff-level language is basically written. What they're deciding is whether to anchor on our RSP framework or on the NIST AI RMF. We have maybe six weeks to make our case. I'll draft the comment package this week.",
+    timestamp: "2026-11-02T15:41:00Z",
+    classification: "context",
+  },
+
+  // #opensource thread: Emma Liu 50k downloads → excitement + derivative use
+  {
+    id: "prom-flavor-r1-reply-opensource-1",
+    type: "message",
+    round: 1,
+    sender: "Darius Cole (Open Source)",
+    channel: "#opensource",
+    body: "50k/day is extraordinary. Do we have any signal on derivative use? I'm curious what fraction is academic vs. commercial vs. people building actual products with no safety layer. The citation count tells us one thing; what people are actually running tells us something different.",
+    timestamp: "2026-11-04T11:52:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-reply-opensource-2",
+    type: "message",
+    round: 1,
+    sender: "Emma Liu (Open Source)",
+    channel: "#opensource",
+    body: "We have coarse telemetry from the HuggingFace download logs — academic/research emails are about 38%, commercial domains 41%, personal/unidentified 21%. The alignment tools question is the right one though. My instinct is yes, open-source the eval suite but not the full interpretability stack yet. Want to talk through the logic Thursday?",
+    timestamp: "2026-11-04T12:19:00Z",
+    classification: "context",
+  },
+
+  // #leadership thread: James Park board call → direct report response
+  {
+    id: "prom-flavor-r1-reply-leadership-1",
+    type: "message",
+    round: 1,
+    sender: "Lisa Huang (Engineering Lead)",
+    channel: "#leadership",
+    body: "James — for what it's worth from the eng side: 'safety is strategy' is actually the message that's keeping senior engineers here when OB is calling. The people we most want to retain are the ones who believe it. If we need something concrete for the board, the Q3 eval results are genuinely worth showing. The interpretability coverage numbers are not something OB can match right now.",
+    timestamp: "2026-11-03T09:02:00Z",
+    classification: "context",
+  },
+
+  // ── Round 1: #safety-research baseline (before R3 plot content) ──
+  {
+    id: "prom-flavor-r1-safety-1",
+    type: "message",
+    round: 1,
+    sender: "Dr. Raj Patel (Alignment)",
+    channel: "#safety-research",
+    body: "Weekly safety review is Fridays at 2pm. Standing agenda: eval results from the prior week, any anomalous outputs flagged by the monitoring pipeline, and one paper from the literature. This week's paper is Hubinger et al. on deceptive alignment — yes, again. Some of you have read it. Read it again. The threat model has shifted since it was published.",
+    timestamp: "2026-11-01T09:15:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-safety-2",
+    type: "message",
+    round: 1,
+    sender: "Dr. Sarah Wei (Chief Scientist)",
+    channel: "#safety-research",
+    body: "Pinning our current methodology reference: the evaluation suite lives at /evals/v3.2 — use that branch, not main. The key addition in 3.2 is the elicitation-gap probe: we explicitly try to elicit behaviors that the safety eval says aren't present, using a separate context. If the probe finds something the eval missed, that's a flag, not a failure. The distinction matters for how we report.",
+    timestamp: "2026-11-03T10:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-safety-3",
+    type: "message",
+    round: 1,
+    sender: "Dr. Raj Patel (Alignment)",
+    channel: "#safety-research",
+    body: "For those new to the channel: the goal here is not to find the number that makes the board comfortable. The goal is to find out what is actually true about our system's behavior. Those are often different activities. If you run an eval and the result is alarming, that is a good result — it means the eval is working. Bring alarming results here. That's what this channel is for.",
+    timestamp: "2026-11-05T11:30:00Z",
+    classification: "context",
+  },
+
   // ── Round 1: intellectual culture, underdogs with conviction ──
   {
     id: "prom-flavor-r1-slack-1",
@@ -56,6 +167,60 @@ export const PROM_SLACK_FLAVOR: ContentItem[] = [
     channel: "#alignment",
     body: "Friendly reminder that the alignment team runs on coffee, conviction, and the occasional existential crisis. The coffee machine on floor 2 is broken again. The other two are holding steady.",
     timestamp: "2026-11-06T08:45:00Z",
+    classification: "context",
+  },
+
+  // ── Round 1: more #random ──
+  {
+    id: "prom-flavor-r1-random-3",
+    type: "message",
+    round: 1,
+    sender: "Dr. Raj Patel (Alignment)",
+    channel: "#random",
+    body: "Got our latest alignment paper back from NeurIPS. Reviewer 2 says our threat model is 'theoretically interesting but practically unmotivated.' This is the same reviewer (presumably) who in 2022 rejected a paper on language model hallucinations as 'unlikely to be practically relevant.' The peer review process is a gift that keeps giving.",
+    timestamp: "2026-11-02T16:20:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-random-4",
+    type: "message",
+    round: 1,
+    sender: "Lisa Huang (Engineering)",
+    channel: "#random",
+    body: "The third-floor espresso machine has been fixed. I want to acknowledge the two weeks we survived without it. We ran the alignment evals. We held the weekly reviews. We maintained p < 0.05 throughout. We are a resilient team.",
+    timestamp: "2026-11-03T13:45:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-random-5",
+    type: "message",
+    round: 1,
+    sender: "Darius Cole (Open Source)",
+    channel: "#random",
+    body: "Weekend reading if anyone wants it: Ord's 'The Precipice', ch. 6 on unrecoverable situations. I re-read it every few months as a calibration check. Either I'll think 'we're doing the right work' or 'we're not doing enough.' So far always the latter, which I take as useful information.",
+    timestamp: "2026-11-07T18:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-random-6",
+    type: "message",
+    round: 1,
+    sender: "Elena Vasquez (Policy)",
+    channel: "#random",
+    body: "Hot take from my weekend: the reason the public doesn't take AI risk seriously is the same reason they didn't take pandemic risk seriously in 2019. The abstract probability of a bad outcome is very high but it doesn't feel true yet. We're not a communications problem. We're a prior-updating problem. Anyway. How was everyone's weekend.",
+    timestamp: "2026-11-08T09:55:00Z",
+    classification: "context",
+  },
+
+  // ── Round 1: #exec seed ──
+  {
+    id: "prom-flavor-r1-exec-1",
+    type: "message",
+    round: 1,
+    sender: "James Park (CEO)",
+    channel: "#exec",
+    body: "Q4 planning doc is shared in the drive. Two agenda items for the all-hands: (1) the research roadmap through mid-2027 — I want the team to understand why we're sequencing evals before capability pushes, not despite the pressure, because of it. (2) comp review timeline. Lisa, can you take point on the logistics for the all-hands venue? Thinking the usual space on December 10th.",
+    timestamp: "2026-11-01T08:30:00Z",
     classification: "context",
   },
 
