@@ -84,8 +84,21 @@ For solo dev testing without needing multiple browser tabs or a second player.
 
 **URL format:**
 ```
-localhost:5173/?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&state=obCap:80,chinaCap:60,pubAware:50
+localhost:5173/?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&state=obCap:80,chinaCap:60,pubAware:50&botMode=all_roles
 ```
+
+**URL parameters:**
+
+| Param | Required | Values | Description |
+|-------|----------|--------|-------------|
+| `dev` | Yes | `1` | Enables dev bootstrap (no-op if missing) |
+| `faction` | Yes | `openbrain`, `prometheus`, `china`, `external` | Your faction |
+| `role` | Yes | e.g. `ob_cto`, `prom_ceo`, `china_director`, `ext_journalist` | Your role |
+| `round` | No | `1`–`5` (default `1`) | Starting round |
+| `phase` | No | `briefing`, `intel`, `deliberation`, `decision`, `resolution` (default `briefing`) | Starting phase |
+| `state` | No | `key:value,key:value` e.g. `obCapability:80,chinaCapability:60` | State variable overrides |
+| `botMode` | No | `all_roles`, `minimum_table` | Fill empty seats with NPC bots that auto-submit random decisions. `all_roles` fills every role, `minimum_table` fills only required (non-optional) roles. |
+| `gm` | No | `1` | Also open the GM Dashboard with phase controls, state sliders, NPC messaging, etc. |
 
 **What it does:**
 1. Auto-creates a room
@@ -93,8 +106,19 @@ localhost:5173/?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&state=ob
 3. Jumps to the specified round/phase
 4. Overrides state variables from the `state` query param
 5. Loads appropriate content and decisions for that round
+6. If `botMode` is set, seeds bot players for all unoccupied roles and auto-submits their decisions each round
 
-This lets you do: "I want to see what the OB CTO's W&B chart looks like when obCapability is 80 in round 3" — paste a URL, see it.
+**Examples:**
+
+Solo-test round 1 decisions as OB CTO with all bots:
+```
+localhost:5173/?dev=1&round=1&phase=decision&faction=openbrain&role=ob_cto&botMode=all_roles
+```
+
+Test round 4 intel with custom state, minimal bots:
+```
+localhost:5173/?dev=1&round=4&phase=intel&faction=china&role=china_director&state=chinaCapability:80,taiwanTension:70&botMode=minimum_table
+```
 
 **Implementation:** A `useDevMode` hook that reads URL params on mount and orchestrates the setup via the existing socket events. Needs a server-side `dev:bootstrap` event that combines create + join + role-select + jump.
 

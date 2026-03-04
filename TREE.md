@@ -11,7 +11,6 @@
 │   ├── GAME-LOGGING.md
 │   ├── GENERATIVE-CONTENT.md
 │   ├── IMPLEMENTATION.md
-│   ├── PLAYER-PREVIEW.md
 │   └── SOLO-NPC-AUTOPLAY.md
 ├── packages
 │   ├── client
@@ -152,4 +151,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 131 files
+22 directories, 130 files
