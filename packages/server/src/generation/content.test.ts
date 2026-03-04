@@ -466,11 +466,141 @@ describe("Failure modes: validation catches structural violations", () => {
     expect(Array.isArray(appContent.items)).toBe(true);
   });
 
-  it("throws for unsupported app ID", async () => {
+  it("throws for unsupported app ID (gamestate)", async () => {
     const provider = new MockProvider({ items: [] });
     await expect(
-      generateContent(provider, BASE_CONTEXT, "openbrain", ["slack" as "news"]),
+      generateContent(provider, BASE_CONTEXT, "openbrain", ["gamestate" as "news"]),
     ).rejects.toThrow("not supported");
+  });
+
+  it("throws for unsupported app ID (sheets)", async () => {
+    const provider = new MockProvider({ items: [] });
+    await expect(
+      generateContent(provider, BASE_CONTEXT, "openbrain", ["sheets" as "news"]),
+    ).rejects.toThrow("not supported");
+  });
+
+  it("throws for unsupported app ID (compute)", async () => {
+    const provider = new MockProvider({ items: [] });
+    await expect(
+      generateContent(provider, BASE_CONTEXT, "openbrain", ["compute" as "news"]),
+    ).rejects.toThrow("not supported");
+  });
+});
+
+// ── INV-1 (new apps): APP_TYPE_MAP covers all 6 new apps ─────────────────────
+
+describe("INV-1 (new apps): each new app produces items with the correct type after post-processing", () => {
+  const newAppCases: Array<{ app: Parameters<typeof generateContent>[3][0]; expectedType: ContentItem["type"] }> = [
+    { app: "slack", expectedType: "message" },
+    { app: "email", expectedType: "document" },
+    { app: "memo", expectedType: "memo" },
+    { app: "signal", expectedType: "message" },
+    { app: "intel", expectedType: "document" },
+    { app: "bloomberg", expectedType: "row" },
+  ];
+
+  for (const { app, expectedType } of newAppCases) {
+    it(`${app} → type="${expectedType}" (forceType corrects wrong provider output)`, async () => {
+      // Provider returns wrong type — forceType must correct it
+      const rawItems: ContentItem[] = [
+        makeItem({ id: "gen-item-1", type: "headline", classification: "context", round: 3 }),
+      ];
+      const provider = new MockProvider({ items: rawItems });
+      const result = await generateContent(provider, BASE_CONTEXT, "openbrain", [app]);
+      expect(result[0]!.items[0]!.type).toBe(expectedType);
+    });
+  }
+});
+
+describe("INV-2 (new apps): post-processing invariants hold for all new app types", () => {
+  it("ensureGenPrefix and forceRound work for slack items", async () => {
+    const rawItems: ContentItem[] = [
+      makeItem({ id: "bad-id", type: "message", classification: "context", round: 99 }),
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["slack"]);
+    const item = result[0]!.items[0]!;
+    expect(item.id.startsWith("gen-")).toBe(true);
+    expect(item.round).toBe(BASE_CONTEXT.targetRound);
+  });
+
+  it("condition field is stripped for email items", async () => {
+    const itemWithCondition = {
+      ...makeItem({ id: "gen-email-1", type: "document" as const, classification: "context" }),
+      condition: { variable: "obCapability" as const, operator: "gt" as const, value: 50 },
+    };
+    const provider = new MockProvider({ items: [itemWithCondition] });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["email"]);
+    expect("condition" in result[0]!.items[0]!).toBe(false);
+  });
+});
+
+describe("INV-3 (new apps): unsupported apps still throw", () => {
+  it("wandb throws not supported", async () => {
+    const provider = new MockProvider({ items: [] });
+    await expect(
+      generateContent(provider, BASE_CONTEXT, "openbrain", ["wandb" as "news"]),
+    ).rejects.toThrow("not supported");
+  });
+});
+
+describe("Critical paths: new app content structure", () => {
+  it("slack items preserve sender and channel when provider supplies them", async () => {
+    const slackItem: ContentItem = {
+      ...makeItem({ id: "gen-slack-1", type: "message", classification: "context", round: 3 }),
+      sender: "@alice",
+      channel: "#research",
+    };
+    const provider = new MockProvider({ items: [slackItem] });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["slack"]);
+    const item = result[0]!.items[0]!;
+    expect(item.sender).toBe("@alice");
+    expect(item.channel).toBe("#research");
+  });
+
+  it("email items preserve sender and subject when provider supplies them", async () => {
+    const emailItem: ContentItem = {
+      ...makeItem({ id: "gen-email-1", type: "document", classification: "context", round: 3 }),
+      sender: "ceo@openbrain.ai",
+      subject: "Q3 Safety Review",
+    };
+    const provider = new MockProvider({ items: [emailItem] });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["email"]);
+    const item = result[0]!.items[0]!;
+    expect(item.sender).toBe("ceo@openbrain.ai");
+    expect(item.subject).toBe("Q3 Safety Review");
+  });
+
+  it("intel items preserve subject when provider supplies it", async () => {
+    const intelItem: ContentItem = {
+      ...makeItem({ id: "gen-intel-1", type: "document", classification: "critical", round: 3 }),
+      subject: "ASSESSMENT: China AI Capability Gap",
+    };
+    const provider = new MockProvider({ items: [intelItem] });
+    const result = await generateContent(provider, BASE_CONTEXT, "external", ["intel"]);
+    const item = result[0]!.items[0]!;
+    expect(item.subject).toBe("ASSESSMENT: China AI Capability Gap");
+  });
+
+  it("slack items missing sender do not crash post-processing", async () => {
+    // Sender is LLM-provided, not post-processed — missing sender should not throw
+    const rawItems: ContentItem[] = [
+      makeItem({ id: "gen-slack-nosender", type: "message", classification: "context", round: 3 }),
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["slack"]);
+    expect(result[0]!.items[0]!.type).toBe("message");
+    expect(result[0]!.items[0]!.sender).toBeUndefined();
+  });
+
+  it("bloomberg items have row type after post-processing", async () => {
+    const rawItems: ContentItem[] = [
+      makeItem({ id: "gen-bb-1", type: "headline", classification: "context", round: 3 }),
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["bloomberg"]);
+    expect(result[0]!.items[0]!.type).toBe("row");
   });
 });
 

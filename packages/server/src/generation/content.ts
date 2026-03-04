@@ -9,6 +9,12 @@ import { validateContent } from "./validate.js";
 const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
   news: "headline",
   twitter: "tweet",
+  slack: "message",
+  email: "document",
+  memo: "memo",
+  signal: "message",
+  intel: "document",
+  bloomberg: "row",
 };
 
 // ── Schema Builder ────────────────────────────────────────────────────────────
@@ -17,7 +23,19 @@ const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
  * Build the Anthropic tool input_schema for generating ContentItem[] for one app.
  * Wrapped in an object so the provider's tool_use mode can return a structured response.
  */
+/** Per-type required fields beyond the base set (id, type, round, timestamp, classification). */
+const TYPE_REQUIRED_FIELDS: Record<ContentItemType, string[]> = {
+  message: ["sender", "body"],
+  document: ["subject", "body"],
+  memo: ["subject", "body"],
+  headline: ["body"],
+  tweet: ["body"],
+  row: ["body"],
+  chart: ["body"],
+};
+
 function buildContentSchema(type: ContentItemType): object {
+  const extraRequired = TYPE_REQUIRED_FIELDS[type] ?? ["body"];
   return {
     type: "object",
     properties: {
@@ -46,7 +64,7 @@ function buildContentSchema(type: ContentItemType): object {
               enum: ["critical", "context", "red-herring", "breadcrumb"],
             },
           },
-          required: ["id", "type", "round", "body", "timestamp", "classification"],
+          required: ["id", "type", "round", "timestamp", "classification", ...extraRequired],
         },
       },
     },
@@ -121,13 +139,24 @@ Individual decisions: ${JSON.stringify(last.decisions, null, 2)}`,
 Voice guide: ${FACTION_VOICES[faction]}`,
   );
 
+  // Per-app structural hints
+  const APP_STRUCTURAL_HINTS: Partial<Record<AppId, string>> = {
+    slack: `Each item MUST include "sender" (display name, e.g. "@alice") and "channel" (e.g. "#research", "#general").`,
+    email: `Each item MUST include "sender" (email address or display name) and "subject" (email subject line).`,
+    memo: `Each item MUST include "subject" (memo title/header, e.g. "RE: Safety Review Q3").`,
+    signal: `Each item MUST include "sender" (handle or name). Keep messages short and paranoid.`,
+    intel: `Each item MUST include "subject" (report title). Use ICD 203 format with classification headers.`,
+    bloomberg: `Use financial shorthand. Include ticker symbols, basis points, source attribution ("Sources say").`,
+  };
+
   // App voice guide and generation instructions
   const appVoice = APP_VOICES[app];
+  const structuralHint = APP_STRUCTURAL_HINTS[app];
   parts.push(
     `## TARGET APP: ${app.toUpperCase()}
 Voice guide: ${appVoice ?? "Standard format."}
 Content type: ${type}
-
+${structuralHint ? `\nStructural requirements: ${structuralHint}` : ""}
 Generate 5-10 items for the "${app}" app for faction ${faction} in round ${targetRound}.
 All items MUST have:
 - type="${type}"
@@ -204,7 +233,7 @@ export async function generateContent(
   for (const app of apps) {
     const type = APP_TYPE_MAP[app];
     if (!type) {
-      throw new Error(`generateContent: app "${app}" is not supported (only news and twitter for V1)`);
+      throw new Error(`generateContent: app "${app}" is not supported (gamestate, sheets, compute, wandb, and similar apps do not generate content)`);
     }
 
     const raw = await provider.generate<{ items: ContentItem[] }>({
