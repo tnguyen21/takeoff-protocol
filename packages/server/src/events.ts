@@ -3,7 +3,6 @@ import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, 
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
-import { getContentForPlayer } from "./content/loader.js";
 import { getLoggerForRoom } from "./logger/registry.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
@@ -285,15 +284,6 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     // Notify GM of remaining extend uses
     io.to(socket.id).emit("gm:extend-ack", { usesRemaining: 2 - (uses + 1) });
-  });
-
-  socket.on("gm:preview-content", ({ faction, role }: { faction: Faction; role: Role }, cb: ((res: { ok: boolean; content?: AppContent[] }) => void) | undefined) => {
-    const code = socket.data.roomCode;
-    if (!code) return cb?.({ ok: false });
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return cb?.({ ok: false });
-    const content = getContentForPlayer(room.round, faction, role, room.state);
-    cb?.({ ok: true, content });
   });
 
   socket.on(

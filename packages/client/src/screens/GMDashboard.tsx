@@ -3,7 +3,6 @@ import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
 import type { Faction, GamePhase, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
-import { PlayerPreview } from "../components/PlayerPreview.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -850,7 +849,6 @@ export function GMDashboard() {
   const { messages } = useMessagesStore();
   const feedRef = useRef<HTMLDivElement>(null);
   const [showEndings, setShowEndings] = useState(false);
-  const [previewPlayer, setPreviewPlayer] = useState<{ faction: Faction; role: Role; name: string } | null>(null);
 
   const isPaused = !!timer.pausedAt;
   const connectedCount = lobbyPlayers.filter((p) => p.connected).length;
@@ -1135,11 +1133,9 @@ export function GMDashboard() {
                       const primaryApps = roleConfig?.primaryApps ?? [];
                       const missedPrimary = primaryApps.length > 0 && !primaryApps.some((app) => playerOpened.includes(app));
 
-                      const isClickable = !!p.role && !!gmRawState;
                       return (
                         <div
                           key={p.id}
-                          onClick={isClickable ? () => setPreviewPlayer({ faction: faction.id as Faction, role: p.role as Role, name: p.name }) : undefined}
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -1148,10 +1144,7 @@ export function GMDashboard() {
                             borderRadius: "6px",
                             background: "rgba(255,255,255,0.03)",
                             border: "1px solid rgba(255,255,255,0.05)",
-                            cursor: isClickable ? "pointer" : "default",
                           }}
-                          onMouseEnter={isClickable ? (e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; } : undefined}
-                          onMouseLeave={isClickable ? (e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; } : undefined}
                         >
                           {/* Connection dot */}
                           <div
@@ -1191,6 +1184,28 @@ export function GMDashboard() {
                             >
                               {hasSubmitted ? "✓" : "…"}
                             </div>
+                          )}
+                          {/* Dev: open player view in new tab */}
+                          {import.meta.env.DEV && p.role && (
+                            <a
+                              href={`/?dev=1&round=${round}&phase=${phase}&faction=${faction.id}&role=${p.role}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Open ${roleConfig?.label ?? p.role} view in new tab`}
+                              style={{
+                                fontSize: "10px",
+                                color: "#6b7280",
+                                textDecoration: "none",
+                                flexShrink: 0,
+                                padding: "1px 4px",
+                                borderRadius: "3px",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e7eb"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+                            >
+                              view
+                            </a>
                           )}
                         </div>
                       );
@@ -1342,18 +1357,6 @@ export function GMDashboard() {
           </div>
         </div>
       </div>
-
-      {/* PlayerPreview modal */}
-      {previewPlayer && gmRawState && (
-        <PlayerPreview
-          faction={previewPlayer.faction}
-          role={previewPlayer.role}
-          playerName={previewPlayer.name}
-          round={round ?? 1}
-          gmRawState={gmRawState}
-          onClose={() => setPreviewPlayer(null)}
-        />
-      )}
     </div>
   );
 }
