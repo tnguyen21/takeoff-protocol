@@ -4,7 +4,7 @@ export type Faction = "openbrain" | "prometheus" | "china" | "external";
 
 export type OpenBrainRole = "ob_ceo" | "ob_cto" | "ob_safety" | "ob_security";
 export type PrometheusRole = "prom_ceo" | "prom_scientist" | "prom_policy" | "prom_opensource";
-export type ChinaRole = "china_director" | "china_intel" | "china_military";
+export type ChinaRole = "china_director" | "china_intel" | "china_military" | "china_scientist";
 export type ExternalRole = "ext_nsa" | "ext_journalist" | "ext_vc" | "ext_diplomat";
 export type Role = OpenBrainRole | PrometheusRole | ChinaRole | ExternalRole;
 

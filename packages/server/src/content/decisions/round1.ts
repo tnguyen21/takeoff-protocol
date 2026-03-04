@@ -461,6 +461,44 @@ export const ROUND1_DECISIONS: RoundDecisions = {
       ],
     },
     {
+      role: "china_scientist",
+      prompt: "Dr. Liu Yang has raised concerns about alignment evaluation coverage — your team covers 19 of 47 categories in the Prometheus framework. The gap is not a crisis yet, but it could become one. How do you allocate your research bandwidth?",
+      options: [
+        {
+          id: "china_sci_expand_evals",
+          label: "Expand alignment evaluation coverage",
+          description: "Dedicate 30% of research bandwidth to building out alignment evaluation infrastructure. This slows capability work but gives you confidence in what you are building.",
+          effects: [
+            { variable: "alignmentConfidence", delta: 4 },
+            { variable: "chinaCapability", delta: -2 },
+            { variable: "ccpPatience", delta: -3 },
+          ],
+        },
+        {
+          id: "china_sci_focus_capability",
+          label: "Focus entirely on closing the capability gap",
+          description: "Alignment evaluation can wait until you have caught up. The gap between DeepCent and the US labs is the only metric Beijing cares about right now.",
+          effects: [
+            { variable: "chinaCapability", delta: 4 },
+            { variable: "alignmentConfidence", delta: -3 },
+            { variable: "ccpPatience", delta: 2 },
+            { variable: "misalignmentSeverity", delta: 3 },
+          ],
+        },
+        {
+          id: "china_sci_parallel_evals",
+          label: "Run Prometheus-style safety evals alongside production work",
+          description: "Mirror the Prometheus evaluation framework without announcing it. Your team runs the evals in a sandboxed environment. If something shows up, you will know. If nothing shows up, you have not slowed down.",
+          effects: [
+            { variable: "alignmentConfidence", delta: 2 },
+            { variable: "chinaCapability", delta: 1 },
+            { variable: "ccpPatience", delta: -1 },
+            { variable: "promSafetyBreakthroughProgress", delta: 1 },
+          ],
+        },
+      ],
+    },
+    {
       role: "china_military",
       prompt: "The window for military leverage is real but narrow. How do you posture in the Taiwan Strait this quarter?",
       options: [

@@ -52,12 +52,13 @@ export const FACTIONS: FactionConfig[] = [
     id: "china",
     name: "China (DeepCent + CCP)",
     minPlayers: 2,
-    maxPlayers: 3,
+    maxPlayers: 4,
     apps: ["slack", "signal", "compute", "intel", "military", "wandb", "memo", "news", "twitter", "arxiv", "gamestate"],
     roles: [
       { id: "china_director", label: "DeepCent Director", description: "Brilliant engineer. Can do more with less. Has stolen weights and a massive CDZ. Playing a different game than US labs.", goals: ["Close the gap with US frontier models", "Leverage stolen weights and state resources effectively", "Decide when to go open-source vs. keep capabilities secret", "Ensure China — not the US — leads the AI era"], isLeader: true, optional: false, primaryApps: ["compute", "signal", "wandb"] },
       { id: "china_intel", label: "CCP Intelligence Chief", description: "Evaluate whether to steal Agent-3/4 weights — the prize that could leapfrog everything.", goals: ["Acquire US AI capabilities through espionage", "Assess the risk/reward of weight theft operations", "Maintain plausible deniability for China's progress", "Give China the decisive edge through intelligence superiority"], isLeader: false, optional: false, primaryApps: ["intel", "signal"] },
       { id: "china_military", label: "Military Strategist", description: "Taiwan is always on the table. Cyber is always active. Evaluates kinetic and non-kinetic options.", goals: ["Prepare for Taiwan contingency scenarios", "Use military posture to influence AI negotiations", "Ensure AI advantage translates to geopolitical dominance", "Be ready if the US tries to cut off China's chip supply"], isLeader: false, optional: true, primaryApps: ["military", "signal"] },
+      { id: "china_scientist", label: "DeepCent Chief Scientist", description: "Dr. Liu Yang. Runs DeepCent's alignment and capability research. Caught between scientific integrity and political pressure.", goals: ["Close alignment evaluation gaps before they become crises", "Balance capability progress with safety assurance", "Keep Beijing's trust while doing rigorous science", "Decide how much to mirror Western safety methodology"], isLeader: false, optional: true, primaryApps: ["wandb", "slack", "signal"] },
     ],
   },
   {
