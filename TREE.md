@@ -1,5 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-2bb558c55ec3
-├── docs
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-2bb558c55ec3├── docs
 │   ├── APP-AUDIT-COMMUNICATION.md
 │   ├── APP-AUDIT-DATA-ANALYTICS.md
 │   ├── APP-AUDIT-GAMESTATE.md
@@ -111,8 +110,7 @@
 │   │   │   ├── YZXS_2026-03-04T03-53-18-469Z.jsonl
 │   │   │   ├── Z33S_2026-03-04T04-56-33-866Z.jsonl
 │   │   │   ├── ZBJV_2026-03-04T05-02-15-143Z.jsonl
-│   │   │   └── ZMJ3_2026-03-04T06-51-23-577Z.jsonl│   │   ├── src
-│   │   │   ├── content
+│   │   │   └── ZMJ3_2026-03-04T06-51-23-577Z.jsonl│   │   ├── src│   │   │   ├── content
 │   │   │   ├── generation
 │   │   │   ├── logger
 │   │   │   ├── activity.test.ts
