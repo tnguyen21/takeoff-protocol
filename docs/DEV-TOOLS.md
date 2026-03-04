@@ -147,6 +147,49 @@ This is useful for balance work but lower priority than tools 1 and 2. It can be
 | 2. URL bootstrap | Medium (hook + server event) | High — solo testing workflow | **P1** |
 | 3. Decision simulator | Medium (new page) | Medium — balance work | **P2** |
 
+## Solo Playtesting Guide
+
+How to play a full game by yourself with bot opponents.
+
+### Quick start
+
+Open this URL in your browser (with `bun run dev` running):
+
+```
+http://localhost:5173/?dev=1&round=1&phase=briefing&faction=openbrain&role=ob_cto&botMode=all_roles
+```
+
+This creates a room, assigns you OpenBrain CTO, fills every other seat with bots, and drops you at round 1 briefing. Bots auto-submit random decisions each round, so the game progresses when you submit yours and the GM advances.
+
+### Adding the GM dashboard
+
+Append `&gm=1` to also open the GM dashboard (phase controls, state sliders, fog inspector):
+
+```
+http://localhost:5173/?dev=1&round=1&phase=briefing&faction=openbrain&role=ob_cto&botMode=all_roles&gm=1
+```
+
+Note: with `&gm=1` you see the GM dashboard, not the player desktop. To see both, open two tabs — one with `&gm=1` and one without (use different `faction`/`role` combos or the same).
+
+### Workflow tips
+
+- **Skip ahead**: Change `round=3&phase=decision` to jump directly to round 3 decisions.
+- **Test state thresholds**: Add `&state=obCapability:80,taiwanTension:70` to override starting state and trigger conditional content.
+- **Minimal bots**: Use `botMode=minimum_table` to fill only required (non-optional) roles instead of every seat.
+- **Try different factions**: Swap `faction=china&role=china_director` or `faction=prometheus&role=prom_ceo` etc.
+- **Advance phases from GM**: With `&gm=1`, use the phase controls to advance through briefing → intel → deliberation → decision → resolution.
+
+### Available factions and roles
+
+| Faction | Roles |
+|---------|-------|
+| `openbrain` | `ob_ceo`, `ob_cto`, `ob_policy`, `ob_security` |
+| `prometheus` | `prom_ceo`, `prom_researcher`, `prom_engineer`, `prom_ethics` |
+| `china` | `china_director`, `china_military`, `china_scientist`, `china_cyber` |
+| `external` | `ext_journalist`, `ext_senator`, `ext_activist`, `ext_vc` |
+
+---
+
 ## Architecture Notes
 
 - All state computation (`resolveDecisions`, `computeFogView`, `computeEndingArcs`) lives in `@takeoff/shared` — already importable from both client and server. This means tools 1c, 1d, and 3 need zero server changes.
