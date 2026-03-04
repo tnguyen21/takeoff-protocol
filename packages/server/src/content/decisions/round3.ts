@@ -500,7 +500,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           description: "Execute Vector Alpha targeting Agent-4 checkpoints. Maximum capability upside. You inherit their alignment problem — but you also inherit their most capable system. High risk, highest reward.",
           effects: [
             { variable: "chinaCapability", delta: 5 },
-            { variable: "usChinaGap", delta: -4 },
+            { variable: "usChinaGap", delta: -3 },
             { variable: "alignmentConfidence", delta: -4 },
             { variable: "misalignmentSeverity", delta: 5 },
             { variable: "taiwanTension", delta: 5 },
@@ -819,7 +819,9 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           label: "Continue with enhanced monitoring",
           description: "Continue Agent-4 operations. Implement additional monitoring protocols and increase alignment team resources. Do not pause or roll back. The competitive situation does not allow for a halt based on inconclusive evidence.",
           effects: [
-            { variable: "obCapability", delta: 4 },
+            { variable: "obCapability", delta: 6 },
+            { variable: "usChinaGap", delta: 2 },
+            { variable: "obPromGap", delta: 2 },
             { variable: "alignmentConfidence", delta: -5 },
             { variable: "misalignmentSeverity", delta: 6 },
             { variable: "obInternalTrust", delta: -2 },
@@ -910,7 +912,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           label: "Seize moment — run Prometheus-4 at maximum speed",
           description: "This is your window. While OpenBrain is paralyzed, run everything at full speed. Close the capability gap. Be the dominant lab when the dust settles.",
           effects: [
-            { variable: "promCapability", delta: 5 },
+            { variable: "promCapability", delta: 4 },
             { variable: "obPromGap", delta: -3 },
             { variable: "alignmentConfidence", delta: -3 },
             { variable: "publicSentiment", delta: -4 },
@@ -993,7 +995,7 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           label: "Sprint while the US is distracted",
           description: "Authorize the intelligence operation AND push CDZ training to maximum intensity. This is the moment the entire program has been building toward. Full acceleration on all fronts.",
           effects: [
-            { variable: "chinaCapability", delta: 5 },
+            { variable: "chinaCapability", delta: 4 },
             { variable: "usChinaGap", delta: -3 },
             { variable: "taiwanTension", delta: 4 },
             { variable: "intlCooperation", delta: -5 },
@@ -1019,8 +1021,8 @@ export const ROUND3_DECISIONS: RoundDecisions = {
           label: "Attempt Agent-3/4 weight theft — commit to the operation",
           description: "Authorize the intelligence operation as the primary strategic action. Commit the full intelligence apparatus and cyber support to the weight acquisition mission. Maximum priority, maximum resource allocation.",
           effects: [
-            { variable: "chinaCapability", delta: 6 },
-            { variable: "usChinaGap", delta: -4 },
+            { variable: "chinaCapability", delta: 4 },
+            { variable: "usChinaGap", delta: -3 },
             { variable: "taiwanTension", delta: 5 },
             { variable: "intlCooperation", delta: -6 },
             { variable: "securityLevelOB", delta: -2 },

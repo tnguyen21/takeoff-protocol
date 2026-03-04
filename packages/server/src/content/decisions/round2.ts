@@ -691,7 +691,9 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           label: "Run at full scale internally",
           description: "No external release. Run every instance on internal R&D. The 5x multiplier compounds — every week of internal use widens the gap.",
           effects: [
-            { variable: "obCapability", delta: 4 },
+            { variable: "obCapability", delta: 6 },
+            { variable: "usChinaGap", delta: 2 },
+            { variable: "obPromGap", delta: 2 },
             { variable: "economicDisruption", delta: 2 },
             { variable: "alignmentConfidence", delta: -3 },
             { variable: "obBurnRate", delta: 6 },
@@ -763,7 +765,6 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           effects: [
             { variable: "obCapability", delta: 3 },
             { variable: "securityLevelOB", delta: -1 },
-            { variable: "chinaCapability", delta: 2 },
             { variable: "obBurnRate", delta: 4 },
             { variable: "chinaWeightTheftProgress", delta: 7 },
             { variable: "whistleblowerPressure", delta: 5 },
@@ -878,7 +879,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           label: "Replicate Agent-2/3 architecture from acquired weights",
           description: "Use the stolen architecture as the foundation. Build on top of it. Close the gap systematically from the inside.",
           effects: [
-            { variable: "chinaCapability", delta: 4 },
+            { variable: "chinaCapability", delta: 3 },
             { variable: "usChinaGap", delta: -3 },
             { variable: "taiwanTension", delta: 3 },
             { variable: "cdzComputeUtilization", delta: 4 },
@@ -926,7 +927,7 @@ export const ROUND2_DECISIONS: RoundDecisions = {
           label: "Attempt Agent-3 weight theft — higher stakes target",
           description: "OB has hardened, but the prize is now Agent-3. The risk is significantly higher than it was. So is the reward.",
           effects: [
-            { variable: "chinaCapability", delta: 4 },
+            { variable: "chinaCapability", delta: 3 },
             { variable: "taiwanTension", delta: 5 },
             { variable: "securityLevelOB", delta: -1 },
             { variable: "intlCooperation", delta: -4 },

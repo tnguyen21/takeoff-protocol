@@ -36,8 +36,8 @@ function clampState(state: StateVariables): void {
   state.obCapability = clamp(state.obCapability, 0, 100);
   state.promCapability = clamp(state.promCapability, 0, 100);
   state.chinaCapability = clamp(state.chinaCapability, 0, 100);
-  state.usChinaGap = clamp(state.usChinaGap, -6, 12);
-  state.obPromGap = clamp(state.obPromGap, -6, 12);
+  state.usChinaGap = clamp(state.usChinaGap, -8, 16);
+  state.obPromGap = clamp(state.obPromGap, -8, 16);
   state.alignmentConfidence = clamp(state.alignmentConfidence, 0, 100);
   state.misalignmentSeverity = clamp(state.misalignmentSeverity, 0, 100);
   state.publicAwareness = clamp(state.publicAwareness, 0, 100);

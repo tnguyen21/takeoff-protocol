@@ -904,7 +904,9 @@ export const ROUND5_DECISIONS: RoundDecisions = {
           description:
             "Deploy to all customers. Public API. No government co-management. Publish technical details. Accelerate the transition. The world will figure out the governance as it goes — just like it did with every previous transformative technology.",
           effects: [
-            { variable: "obCapability", delta: 5 },
+            { variable: "obCapability", delta: 7 },
+            { variable: "usChinaGap", delta: 3 },
+            { variable: "obPromGap", delta: 2 },
             { variable: "economicDisruption", delta: 4 },
             { variable: "publicAwareness", delta: 4 },
             { variable: "alignmentConfidence", delta: -4 },
@@ -988,7 +990,7 @@ export const ROUND5_DECISIONS: RoundDecisions = {
             { variable: "alignmentConfidence", delta: 3 },
             { variable: "promCapability", delta: 5 },
             { variable: "intlCooperation", delta: 2 },
-            { variable: "obPromGap", delta: -6 },
+            { variable: "obPromGap", delta: -3 },
             { variable: "misalignmentSeverity", delta: -5 },
             { variable: "promSafetyBreakthroughProgress", delta: 4 },
             { variable: "promMorale", delta: 6 },

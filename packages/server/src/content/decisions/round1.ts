@@ -385,7 +385,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           label: "Maximize training runs",
           description: "Throw everything at frontier model training. Close the capability gap by sheer force.",
           effects: [
-            { variable: "chinaCapability", delta: 4 },
+            { variable: "chinaCapability", delta: 3 },
             { variable: "alignmentConfidence", delta: -3 },
             { variable: "taiwanTension", delta: 3 },
             { variable: "cdzComputeUtilization", delta: 3 },
@@ -479,7 +479,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           label: "Focus entirely on closing the capability gap",
           description: "Alignment evaluation can wait until you have caught up. The gap between DeepCent and the US labs is the only metric Beijing cares about right now.",
           effects: [
-            { variable: "chinaCapability", delta: 4 },
+            { variable: "chinaCapability", delta: 3 },
             { variable: "alignmentConfidence", delta: -3 },
             { variable: "ccpPatience", delta: 2 },
             { variable: "misalignmentSeverity", delta: 3 },
@@ -725,9 +725,10 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           label: "All-in on capabilities",
           description: "Agent-2 training starts now. Every engineer on capabilities. Safety research is paused.",
           effects: [
-            { variable: "obCapability", delta: 4 },
+            { variable: "obCapability", delta: 6 },
             { variable: "alignmentConfidence", delta: -4 },
             { variable: "obPromGap", delta: 2 },
+            { variable: "usChinaGap", delta: 2 },
             { variable: "obBurnRate", delta: 6 },
             { variable: "obBoardConfidence", delta: 5 },
             { variable: "obMorale", delta: -4 },
@@ -821,7 +822,7 @@ export const ROUND1_DECISIONS: RoundDecisions = {
           label: "Max CDZ buildout",
           description: "Double the cluster. Invest in infrastructure. Build the largest compute concentration in history.",
           effects: [
-            { variable: "chinaCapability", delta: 3 },
+            { variable: "chinaCapability", delta: 2 },
             { variable: "usChinaGap", delta: -2 },
             { variable: "taiwanTension", delta: 3 },
             { variable: "cdzComputeUtilization", delta: 4 },
