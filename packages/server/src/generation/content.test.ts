@@ -3,7 +3,7 @@ import type { AppContent, ContentItem, Faction, StateVariables } from "@takeoff/
 import type { GenerationContext } from "./context.js";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { MockProvider, GenerationParseError } from "./provider.js";
-import { validateContent, validateFogSafety } from "./validate.js";
+import { validateContent, validateFogSafety, contentBudget } from "./validate.js";
 import { generateContent, generateContentWithRetry } from "./content.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 
@@ -621,5 +621,144 @@ describe("Context: round arcs are defined and usable", () => {
     for (const item of result[0]!.items) {
       expect(item.round).toBe(2);
     }
+  });
+});
+
+// ── contentBudget: scaling by appCount ───────────────────────────────────────
+
+describe("contentBudget — scales budgets by appCount", () => {
+  it("returns baseline budgets when appCount is undefined (INV-1)", () => {
+    const b = contentBudget(undefined);
+    expect(b.minTotal).toBe(15);
+    expect(b.maxTotal).toBe(30);
+    expect(b.minCritical).toBe(3);
+    expect(b.maxCritical).toBe(5);
+    expect(b.minContext).toBe(5);
+    expect(b.maxContext).toBe(10);
+    expect(b.minRedHerring).toBe(1);
+    expect(b.maxRedHerring).toBe(2);
+  });
+
+  it("returns baseline budgets when appCount=2 (INV-1)", () => {
+    const b = contentBudget(2);
+    expect(b.minTotal).toBe(15);
+    expect(b.maxTotal).toBe(30);
+    expect(b.minCritical).toBe(3);
+    expect(b.maxCritical).toBe(5);
+    expect(b.minContext).toBe(5);
+    expect(b.maxContext).toBe(10);
+    expect(b.minRedHerring).toBe(1);
+    expect(b.maxRedHerring).toBe(2);
+  });
+
+  it("scales to 4x for appCount=8 (INV-2: scale=ceil(8/2)=4)", () => {
+    const b = contentBudget(8);
+    expect(b.minTotal).toBe(60);
+    expect(b.maxTotal).toBe(120);
+    expect(b.minCritical).toBe(12);
+    expect(b.maxCritical).toBe(20);
+    expect(b.minContext).toBe(20);
+    expect(b.maxContext).toBe(40);
+    expect(b.minRedHerring).toBe(4);
+    expect(b.maxRedHerring).toBe(8);
+  });
+
+  it("uses scale=2 for appCount=3 (ceil(3/2)=2)", () => {
+    const b = contentBudget(3);
+    expect(b.minTotal).toBe(30);
+    expect(b.maxTotal).toBe(60);
+    expect(b.minCritical).toBe(6);
+    expect(b.maxCritical).toBe(10);
+  });
+});
+
+// ── validateContent with appCount ─────────────────────────────────────────────
+
+/** Build a valid item set for N apps (appCount > 2). Scale = ceil(N/2). */
+function makeScaledItemSet(faction: Faction, appCount: number, round = 3): ContentItem[] {
+  const scale = Math.ceil(appCount / 2);
+  const items: ContentItem[] = [];
+  for (let i = 0; i < 3 * scale; i++)
+    items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round }));
+  for (let i = 0; i < 7 * scale; i++)
+    items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round }));
+  for (let i = 0; i < scale; i++)
+    items.push(makeItem({ id: `gen-rh${i}`, type: "headline", classification: "red-herring", round }));
+  for (let i = 0; i < 4; i++)
+    items.push(makeItem({ id: `gen-bc${i}`, type: "headline", classification: "breadcrumb", round }));
+  return items;
+}
+
+describe("validateContent with appCount (backward compat + scaling)", () => {
+  it("INV-1: appCount=2 passes with standard 15-item set", () => {
+    const items = makeValidItemSet("openbrain");
+    const result = validateContent(items, "openbrain", 3, 2);
+    expect(result.valid).toBe(true);
+  });
+
+  it("INV-1: appCount=undefined passes with standard 15-item set (backward compat)", () => {
+    const items = makeValidItemSet("openbrain");
+    const result = validateContent(items, "openbrain", 3, undefined);
+    expect(result.valid).toBe(true);
+  });
+
+  it("INV-2: appCount=8 accepts 50+ items that satisfy scaled budget", () => {
+    // 50 items across categories that fit 60-120 total... wait, 50 is too few for scaled min=60
+    // Make 64 items (scale=4: 12 critical, 28 context, 4 red-herring, 4 breadcrumb = 48, not enough)
+    // Use makeScaledItemSet for proper scaling
+    const items = makeScaledItemSet("openbrain", 8); // 12 crit + 28 ctx + 4 rh + 4 bc = 48 < 60 :(
+    // makeScaledItemSet gives 3*4=12 crit, 7*4=28 ctx, 1*4=4 rh, 4 bc = 48 items → below minTotal=60
+    // We need at least 60 total: add more context items
+    const extra = 12;
+    for (let i = 0; i < extra; i++)
+      items.push(makeItem({ id: `gen-extra${i}`, type: "headline", classification: "context", round: 3 }));
+    // Now: 12 crit, 40 ctx, 4 rh, 4 bc = 60 total ✓
+    const result = validateContent(items, "openbrain", 3, 8);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("INV-2: appCount=8 requires scaled minimum — 15 items is too few", () => {
+    const items = makeValidItemSet("openbrain"); // 15 items — valid for 2 apps, too few for 8
+    const result = validateContent(items, "openbrain", 3, 8);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("≥60"))).toBe(true);
+  });
+
+  it("INV-3: per-item structural validation is unchanged regardless of appCount", () => {
+    const items = makeScaledItemSet("openbrain", 8);
+    // Add padding to hit minimum
+    for (let i = 0; i < 15; i++)
+      items.push(makeItem({ id: `gen-pad${i}`, type: "headline", classification: "context", round: 3 }));
+    // Inject a structural violation: empty body
+    items[0]!.body = "";
+    const result = validateContent(items, "openbrain", 3, 8);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("empty body"))).toBe(true);
+  });
+
+  it("failure mode: 15 items for 8 apps → rejected as too few", () => {
+    // Exactly the failure mode described in the task
+    const items: ContentItem[] = [];
+    for (let i = 0; i < 15; i++)
+      items.push(makeItem({ id: `gen-f${i}`, type: "headline", classification: "context", round: 3 }));
+    const result = validateContent(items, "openbrain", 3, 8);
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it("critical path: 2-app generation with 20 items still passes (backward compat)", () => {
+    const items: ContentItem[] = [];
+    for (let i = 0; i < 4; i++)
+      items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round: 3 }));
+    for (let i = 0; i < 10; i++)
+      items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round: 3 }));
+    for (let i = 0; i < 2; i++)
+      items.push(makeItem({ id: `gen-rh${i}`, type: "headline", classification: "red-herring", round: 3 }));
+    for (let i = 0; i < 4; i++)
+      items.push(makeItem({ id: `gen-bc${i}`, type: "headline", classification: "breadcrumb", round: 3 }));
+    // 20 items: 4 crit, 10 context, 2 rh, 4 bc — valid for 2 apps
+    const result = validateContent(items, "openbrain", 3, 2);
+    expect(result.valid).toBe(true);
   });
 });

@@ -12,31 +12,65 @@ export interface ValidationResult {
 // ── Content Validation ────────────────────────────────────────────────────────
 
 /**
+ * Compute classification budget scaled by app count.
+ * For appCount <= 2 (or undefined), returns baseline budgets.
+ * For appCount > 2, scales by Math.ceil(appCount / 2).
+ * Breadcrumb is always 1-4 regardless of scale.
+ */
+export function contentBudget(appCount?: number): {
+  minTotal: number;
+  maxTotal: number;
+  minCritical: number;
+  maxCritical: number;
+  minContext: number;
+  maxContext: number;
+  minRedHerring: number;
+  maxRedHerring: number;
+} {
+  const scale = appCount !== undefined && appCount > 2 ? Math.ceil(appCount / 2) : 1;
+  return {
+    minTotal: 15 * scale,
+    maxTotal: 30 * scale,
+    minCritical: 3 * scale,
+    maxCritical: 5 * scale,
+    minContext: 5 * scale,
+    maxContext: 10 * scale,
+    minRedHerring: 1 * scale,
+    maxRedHerring: 2 * scale,
+  };
+}
+
+/**
  * Validate that a set of ContentItems for one faction meets the classification
  * budget and per-item structural requirements.
  *
- * Budget (per faction per round):
+ * Budget (per faction per round, for 2 apps — scales with appCount):
  *   - 3-5 critical
  *   - 5-10 context
  *   - 1-2 red-herring
  *   - Total: 15-30
  *
  * If targetRound is provided, every item must have round === targetRound.
+ * If appCount > 2, budgets scale by Math.ceil(appCount / 2).
  */
 export function validateContent(
   items: ContentItem[],
   faction: Faction,
   targetRound?: number,
+  appCount?: number,
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  const { minTotal, maxTotal, minCritical, maxCritical, minContext, maxContext, minRedHerring, maxRedHerring } =
+    contentBudget(appCount);
+
   // Total count
-  if (items.length < 15) {
-    errors.push(`${faction}: only ${items.length} total items, need ≥15`);
+  if (items.length < minTotal) {
+    errors.push(`${faction}: only ${items.length} total items, need ≥${minTotal}`);
   }
-  if (items.length > 30) {
-    errors.push(`${faction}: ${items.length} total items, max 30`);
+  if (items.length > maxTotal) {
+    errors.push(`${faction}: ${items.length} total items, max ${maxTotal}`);
   }
 
   // Classification budget
@@ -44,12 +78,13 @@ export function validateContent(
   const context = items.filter((i) => i.classification === "context").length;
   const redHerring = items.filter((i) => i.classification === "red-herring").length;
 
-  if (critical < 3) errors.push(`${faction}: only ${critical} critical items, need ≥3`);
-  if (critical > 5) errors.push(`${faction}: ${critical} critical items, max 5`);
-  if (context < 5) errors.push(`${faction}: only ${context} context items, need ≥5`);
-  if (context > 10) errors.push(`${faction}: ${context} context items, max 10`);
-  if (redHerring < 1) errors.push(`${faction}: only ${redHerring} red-herring items, need ≥1`);
-  if (redHerring > 2) errors.push(`${faction}: ${redHerring} red-herring items, max 2`);
+  if (critical < minCritical) errors.push(`${faction}: only ${critical} critical items, need ≥${minCritical}`);
+  if (critical > maxCritical) errors.push(`${faction}: ${critical} critical items, max ${maxCritical}`);
+  if (context < minContext) errors.push(`${faction}: only ${context} context items, need ≥${minContext}`);
+  if (context > maxContext) errors.push(`${faction}: ${context} context items, max ${maxContext}`);
+  if (redHerring < minRedHerring)
+    errors.push(`${faction}: only ${redHerring} red-herring items, need ≥${minRedHerring}`);
+  if (redHerring > maxRedHerring) errors.push(`${faction}: ${redHerring} red-herring items, max ${maxRedHerring}`);
 
   // Per-item invariants
   for (const item of items) {

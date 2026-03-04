@@ -2,7 +2,7 @@ import type { AppContent, AppId, ContentItem, ContentItemType, Faction } from "@
 import type { GenerationContext } from "./context.js";
 import type { GenerationProvider } from "./provider.js";
 import { APP_VOICES, CONTENT_SYSTEM_PROMPT, FACTION_VOICES } from "./prompts/index.js";
-import { validateContent } from "./validate.js";
+import { contentBudget, validateContent } from "./validate.js";
 
 // ── App → ContentItemType mapping ─────────────────────────────────────────────
 
@@ -80,6 +80,7 @@ function buildUserPrompt(
   app: AppId,
   type: ContentItemType,
   retryFeedback?: string,
+  appCount?: number,
 ): string {
   const { storyBible, roundArc, currentState, history, firedThresholds, publications, targetRound } = context;
   const parts: string[] = [];
@@ -152,23 +153,33 @@ Voice guide: ${FACTION_VOICES[faction]}`,
   // App voice guide and generation instructions
   const appVoice = APP_VOICES[app];
   const structuralHint = APP_STRUCTURAL_HINTS[app];
+  const budget = contentBudget(appCount);
+  const numApps = appCount ?? 2;
+  const perAppMin = Math.max(1, Math.round(budget.minTotal / numApps));
+  const perAppMax = Math.max(1, Math.round(budget.maxTotal / numApps));
+  const perAppCritical = Math.max(1, Math.round((budget.minCritical + budget.maxCritical) / 2 / numApps));
+  const perAppContext = Math.max(1, Math.round((budget.minContext + budget.maxContext) / 2 / numApps));
+  const perAppRedHerring = Math.max(0, Math.round((budget.minRedHerring + budget.maxRedHerring) / 2 / numApps));
   parts.push(
     `## TARGET APP: ${app.toUpperCase()}
 Voice guide: ${appVoice ?? "Standard format."}
 Content type: ${type}
 ${structuralHint ? `\nStructural requirements: ${structuralHint}` : ""}
-Generate 5-10 items for the "${app}" app for faction ${faction} in round ${targetRound}.
+Generate ${perAppMin}-${perAppMax} items for the "${app}" app for faction ${faction} in round ${targetRound}.
 All items MUST have:
 - type="${type}"
 - round=${targetRound}
 - id starting with "gen-" (e.g. "gen-r${targetRound}-${faction}-${app}-001")
 - A non-empty body field
 
-CONTENT BUDGET across all apps for this faction this round:
-- 3-5 items classified "critical"
-- 5-10 items classified "context"
-- 1-2 items classified "red-herring"
-- 1-2 items classified "breadcrumb"
+CONTENT BUDGET across all apps for this faction this round (faction totals):
+- ${budget.minCritical}-${budget.maxCritical} items classified "critical"
+- ${budget.minContext}-${budget.maxContext} items classified "context"
+- ${budget.minRedHerring}-${budget.maxRedHerring} items classified "red-herring"
+- 1-4 items classified "breadcrumb"
+
+Per-app target for this app (~1/${numApps} of total):
+- ~${perAppCritical} critical, ~${perAppContext} context, ~${perAppRedHerring} red-herring
 
 For this app, distribute your classifications so the faction's total budget is met.
 
@@ -238,7 +249,7 @@ export async function generateContent(
 
     const raw = await provider.generate<{ items: ContentItem[] }>({
       systemPrompt: CONTENT_SYSTEM_PROMPT,
-      userPrompt: buildUserPrompt(context, faction, app, type, retryFeedback),
+      userPrompt: buildUserPrompt(context, faction, app, type, retryFeedback, apps.length),
       schema: buildContentSchema(type),
     });
 
@@ -283,7 +294,7 @@ export async function generateContentWithRetry(
   }
 
   const allItems = result.flatMap((ac) => ac.items);
-  const validation = validateContent(allItems, faction, context.targetRound);
+  const validation = validateContent(allItems, faction, context.targetRound, apps.length);
   if (validation.valid) {
     return result;
   }
@@ -297,6 +308,6 @@ export async function generateContentWithRetry(
   }
 
   const allItems2 = result.flatMap((ac) => ac.items);
-  const validation2 = validateContent(allItems2, faction, context.targetRound);
+  const validation2 = validateContent(allItems2, faction, context.targetRound, apps.length);
   return validation2.valid ? result : null;
 }
