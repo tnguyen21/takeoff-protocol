@@ -78,6 +78,47 @@ export const PROM_NEWS: ContentItem[] = [
       classification: "flavor",
     },
 
+    {
+      id: "prom-r1-news-flavor-4",
+      type: "headline",
+      round: 1,
+      sender: "San Jose Mercury News",
+      subject: "Caltrain Electrification Complete — Full Electric Schedule Begins Monday",
+      body: "Caltrain officials confirmed Friday that the peninsula rail corridor's full electric service schedule takes effect Monday, replacing the last diesel trains on the San Francisco–San Jose route. Riders can expect more frequent departures during peak hours and reduced travel times of up to nine minutes between key stations. Weekend engineering windows will continue through December as crews complete final platform adjustments at Redwood City and Millbrae.",
+      timestamp: "2026-11-01T11:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-news-flavor-5",
+      type: "headline",
+      round: 1,
+      sender: "SF Chronicle",
+      subject: "Bay Area Home Prices Rise for Fifth Straight Month — Palo Alto Median Hits $3.8M",
+      body: "The median home price in Palo Alto reached $3.8 million in October, the fifth consecutive month of increases across the peninsula, according to figures released by the California Association of Realtors. Inventory remains historically tight, with a typical listing receiving four to six offers within a week of hitting the market. Analysts point to returning demand from tech-sector employees relocating from remote arrangements as a primary driver. The Santa Clara County average crossed $2.1 million for the first time.",
+      timestamp: "2026-11-04T08:30:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-news-flavor-6",
+      type: "headline",
+      round: 1,
+      sender: "Stanford Daily",
+      subject: "Stanford Names New Dean of Engineering — First Woman to Hold the Role",
+      body: "Stanford University announced Thursday the appointment of Dr. Patricia Osei as Dean of the School of Engineering, effective January 1. Osei, currently associate provost for research, will be the first woman to hold the deanship in the school's 130-year history. She has called for expanding undergraduate research access and strengthening ties between academic labs and the startup ecosystem. Outgoing Dean Thomas Bauer will remain on faculty in the materials science department.",
+      timestamp: "2026-11-05T16:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-news-flavor-7",
+      type: "headline",
+      round: 1,
+      sender: "Eater SF",
+      subject: "Beloved Menlo Park Ramen Shop 'Kawa' Announces Second Location in Downtown Palo Alto",
+      body: "Kawa Ramen, the Menlo Park spot that has maintained a near-constant line since opening in 2023, announced Wednesday it will open a second location on University Avenue in Palo Alto in early 2027. Owner and chef Hiroshi Yamamoto said the expansion comes after three years of turning away weekend crowds. The new space will seat 45, include a private dining room for six, and offer a small natural wine list in addition to the original's sake menu.",
+      timestamp: "2026-11-07T12:00:00Z",
+      classification: "flavor",
+    },
+
     // --- UNCONDITIONAL ROUND 1 ITEMS ---
     {
       id: "prom-r1-news-1",
