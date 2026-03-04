@@ -637,6 +637,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
           stateOverrides,
           botMode,
           gm,
+          code,
         }: {
           faction: Faction;
           role: Role;
@@ -645,9 +646,37 @@ export function registerGameEvents(io: Server, socket: Socket) {
           stateOverrides?: Record<string, number>;
           botMode?: "all_roles" | "minimum_table";
           gm?: boolean;
+          code?: string;
         },
         callback: (res: { ok: boolean; code?: string; error?: string }) => void,
       ) => {
+        // Join existing room if code is provided
+        if (code) {
+          const existing = getRoom(code);
+          if (existing) {
+            socket.join(existing.code);
+            socket.data.roomCode = existing.code;
+
+            const player: Player = {
+              id: socket.id,
+              name: "Dev",
+              faction,
+              role,
+              isLeader: ["ob_ceo", "prom_ceo", "china_director"].includes(role),
+              connected: true,
+            };
+            existing.players[socket.id] = player;
+
+            socket.emit("room:state", getLobbyState(existing));
+            socket.emit("game:phase", { phase: existing.phase, round: existing.round, timer: existing.timer });
+            replayPlayerState(socket, existing, player);
+
+            console.log(`[dev:bootstrap] joined existing room=${existing.code} as ${faction}/${role}`);
+            return callback({ ok: true, code: existing.code });
+          }
+          // Room not found — fall through to create a new one
+        }
+
         // Create room — use socket.id as GM if gm flag is set
         const room = createRoom(gm ? socket.id : "dev-gm");
         socket.join(room.code);

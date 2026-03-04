@@ -1188,7 +1188,7 @@ export function GMDashboard() {
                           {/* Dev: open player view in new tab */}
                           {import.meta.env.DEV && p.role && (
                             <a
-                              href={`/?dev=1&round=${round}&phase=${phase}&faction=${faction.id}&role=${p.role}`}
+                              href={`/?dev=1&code=${roomCode}&faction=${faction.id}&role=${p.role}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               title={`Open ${roleConfig?.label ?? p.role} view in new tab`}
