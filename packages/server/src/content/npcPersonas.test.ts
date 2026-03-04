@@ -138,7 +138,34 @@ describe("Faction-specific personas (INV-5)", () => {
 });
 
 describe("Persona count", () => {
-  it("has exactly 13 personas defined", () => {
-    expect(NPC_PERSONAS.length).toBe(13);
+  it("has at least 13 personas defined (grew after adding granular personal contacts)", () => {
+    expect(NPC_PERSONAS.length).toBeGreaterThanOrEqual(13);
+  });
+
+  it("includes __npc_personal__ as fallback", () => {
+    expect(NPC_IDS.has("__npc_personal__")).toBe(true);
+  });
+
+  it("includes all required granular personal personas", () => {
+    const required = [
+      "__npc_spouse__",
+      "__npc_mom__",
+      "__npc_dad__",
+      "__npc_brother__",
+      "__npc_sister__",
+      "__npc_amazon__",
+      "__npc_doordash__",
+      "__npc_linkedin__",
+      "__npc_discord__",
+      "__npc_school__",
+      "__npc_library__",
+      "__npc_gym__",
+      "__npc_recall__",
+      "__npc_hackernews__",
+      "__npc_comrades__",
+    ];
+    for (const id of required) {
+      expect(NPC_IDS.has(id)).toBe(true);
+    }
   });
 });

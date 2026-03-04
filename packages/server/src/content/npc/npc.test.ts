@@ -253,10 +253,18 @@ describe("INV-8: conditional trigger rounds field", () => {
 
 // ── INV-9: Personal trigger structure ───────────────────────────────────────
 
+import { NPC_IDS } from "../npcPersonas.js";
+
 describe("INV-9: personal trigger structure", () => {
-  it("all personal triggers use __npc_personal__ npcId", () => {
+  it("all personal trigger npcIds reference a valid persona in npcPersonas", () => {
     for (const t of PERSONAL_NPC_TRIGGERS) {
-      expect(t.npcId).toBe("__npc_personal__");
+      expect(NPC_IDS.has(t.npcId)).toBe(true);
+    }
+  });
+
+  it("no personal trigger still uses the catch-all __npc_personal__ npcId", () => {
+    for (const t of PERSONAL_NPC_TRIGGERS) {
+      expect(t.npcId).not.toBe("__npc_personal__");
     }
   });
 
