@@ -1,9 +1,29 @@
-import { describe, it, expect } from "bun:test";
-import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent } from "./game.js";
+import { describe, it, expect, afterEach } from "bun:test";
+import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
 import { setGeneratedContent } from "./generation/cache.js";
 import { getContentForPlayer } from "./content/loader.js";
+import { _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
+import type { EventContext } from "./logger/types.js";
+
+// ── SpyLogger for testing structured log calls ──
+
+interface SpyCall {
+  event: string;
+  data: unknown;
+  ctx?: EventContext;
+}
+
+class SpyLogger {
+  calls: SpyCall[] = [];
+  log(event: string, data: unknown, ctx?: EventContext): void {
+    this.calls.push({ event, data, ctx });
+  }
+  async flush(): Promise<void> {}
+  async close(): Promise<void> {}
+  get rejections(): number { return 0; }
+}
 
 // ── Helpers ──
 
@@ -1066,5 +1086,300 @@ describe("emitContent — failure mode: empty generated array falls back to pre-
 
     // Should get pre-authored content, identical to current behavior
     expect(content).toEqual(expected);
+  });
+});
+
+// ── Structured Logging Tests ───────────────────────────────────────────────────
+
+describe("INV-1: startGame logs game.started with correct player roster", () => {
+  afterEach(() => _clearLoggers());
+
+  it("logs game.started with playerCount and roster after startGame", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const p2 = makePlayer("p2", "prometheus", "prom_scientist");
+    const room = makeRoom({
+      code: "LOG1",
+      phase: "lobby",
+      players: { p1, p2 },
+    });
+    _setLoggerForRoom("LOG1", spy);
+
+    const { io } = createMockIo();
+    startGame(io, room);
+
+    const startedCall = spy.calls.find(c => c.event === "game.started");
+    expect(startedCall).toBeDefined();
+    const data = startedCall!.data as { playerCount: number; roster: unknown[] };
+    expect(data.playerCount).toBe(2);
+    expect(data.roster).toHaveLength(2);
+    expect(startedCall!.ctx).toMatchObject({ round: 1, phase: "briefing" });
+  });
+
+  it("roster entries include name, faction, and role", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ code: "LOG1ROSTER", phase: "lobby", players: { p1 } });
+    _setLoggerForRoom("LOG1ROSTER", spy);
+
+    const { io } = createMockIo();
+    startGame(io, room);
+
+    const startedCall = spy.calls.find(c => c.event === "game.started")!;
+    const data = startedCall.data as { roster: Array<{ name: string; faction: string; role: string }> };
+    expect(data.roster[0]).toMatchObject({ name: "Player p1", faction: "openbrain", role: "ob_ceo" });
+  });
+});
+
+describe("INV-2: advancePhase logs phase.changed at every transition", () => {
+  afterEach(() => _clearLoggers());
+
+  it("logs phase.changed with round, phase, prevPhase, duration for each transition", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG2",
+      phase: "briefing",
+      round: 1,
+      players: { p1 },
+    });
+    _setLoggerForRoom("LOG2", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room); // briefing → intel
+
+    const phaseCall = spy.calls.find(c => c.event === "phase.changed");
+    expect(phaseCall).toBeDefined();
+    const data = phaseCall!.data as { round: number; phase: string; prevPhase: string; duration: number };
+    expect(data.round).toBe(1);
+    expect(data.phase).toBe("intel");
+    expect(data.prevPhase).toBe("briefing");
+    expect(data.duration).toBeGreaterThan(0);
+    expect(phaseCall!.ctx).toMatchObject({ round: 1, phase: "intel", actorId: "system" });
+  });
+
+  it("full round cycle briefing→intel→deliberation→decision→resolution produces 5 phase.changed events", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG2CYCLE",
+      phase: "briefing",
+      round: 1,
+      players: { p1 },
+    });
+    _setLoggerForRoom("LOG2CYCLE", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room); // briefing → intel
+    advancePhase(io, room); // intel → deliberation
+    advancePhase(io, room); // deliberation → decision
+    advancePhase(io, room); // decision → resolution
+    advancePhase(io, room); // resolution → briefing (round 2)
+
+    const phaseChanges = spy.calls.filter(c => c.event === "phase.changed");
+    expect(phaseChanges.length).toBe(5);
+
+    const phases = phaseChanges.map(c => (c.data as { phase: string }).phase);
+    expect(phases).toEqual(["intel", "deliberation", "decision", "resolution", "briefing"]);
+
+    clearPhaseTimer(room);
+  });
+
+  it("logs decision.inaction for players who did not submit", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const p2 = makePlayer("p2", "prometheus", "prom_scientist");
+    const room = makeRoom({
+      code: "LOG2INACT",
+      phase: "decision",
+      round: 1,
+      players: { p1, p2 },
+      decisions: { p1: "some_option" }, // p2 did not submit
+    });
+    _setLoggerForRoom("LOG2INACT", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    const inactionCalls = spy.calls.filter(c => c.event === "decision.inaction");
+    expect(inactionCalls.length).toBe(1);
+    const data = inactionCalls[0].data as { playerId: string; role: string };
+    expect(data.playerId).toBe("Player p2");
+    expect(data.role).toBe("prom_scientist");
+    expect(inactionCalls[0].ctx?.actorId).toBe("Player p2");
+  });
+});
+
+describe("INV-3: emitResolution logs state.snapshot and state.delta", () => {
+  afterEach(() => _clearLoggers());
+
+  it("logs state.snapshot before and state.snapshot+state.delta after resolution", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG3",
+      phase: "decision",
+      round: 1,
+      players: { p1 },
+      decisions: {},
+      teamDecisions: {},
+    });
+    _setLoggerForRoom("LOG3", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room); // decision → resolution (triggers emitResolution)
+
+    const snapshots = spy.calls.filter(c => c.event === "state.snapshot");
+    const deltas = spy.calls.filter(c => c.event === "state.delta");
+
+    expect(snapshots.length).toBeGreaterThanOrEqual(2); // before + after
+    expect(deltas.length).toBeGreaterThanOrEqual(1);
+
+    // First snapshot has stateBefore
+    const beforeSnap = snapshots.find(c => (c.data as Record<string, unknown>).stateBefore !== undefined);
+    expect(beforeSnap).toBeDefined();
+
+    // Last snapshot has stateAfter
+    const afterSnap = snapshots.find(c => (c.data as Record<string, unknown>).stateAfter !== undefined);
+    expect(afterSnap).toBeDefined();
+
+    // delta has changes array
+    const delta = deltas[0].data as { round: number; changes: unknown[] };
+    expect(delta.round).toBe(1);
+    expect(Array.isArray(delta.changes)).toBe(true);
+  });
+
+  it("state.delta captures correct before/after values when a threshold fires during resolution", () => {
+    const spy = new SpyLogger();
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    // china_weight_theft fires when chinaWeightTheftProgress >= 100, adds +25 to chinaCapability
+    const room = makeRoom({
+      code: "LOG3DELTA",
+      phase: "decision",
+      round: 1,
+      players: { p1: ob },
+      decisions: {},
+      teamDecisions: {},
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100, chinaCapability: 50 },
+    });
+    _setLoggerForRoom("LOG3DELTA", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    const deltas = spy.calls.filter(c => c.event === "state.delta");
+    expect(deltas.length).toBeGreaterThan(0);
+
+    const delta = deltas[0].data as { changes: Array<{ variable: string; before: number; after: number }> };
+    const chinaCapChange = delta.changes.find(ch => ch.variable === "chinaCapability");
+    expect(chinaCapChange).toBeDefined();
+    expect(chinaCapChange!.before).toBe(50);
+    expect(chinaCapChange!.after).toBe(75); // 50 + 25 from threshold
+  });
+});
+
+describe("INV-4: checkThresholds logs threshold.fired for each fired threshold", () => {
+  afterEach(() => _clearLoggers());
+
+  it("logs threshold.fired with thresholdId, triggerVariable, triggerValue when china_weight_theft fires", () => {
+    const spy = new SpyLogger();
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG4",
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100 },
+    });
+    _setLoggerForRoom("LOG4", spy);
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    const fired = spy.calls.filter(c => c.event === "threshold.fired");
+    expect(fired.length).toBeGreaterThanOrEqual(1);
+
+    const wt = fired.find(c => (c.data as { thresholdId: string }).thresholdId === "china_weight_theft");
+    expect(wt).toBeDefined();
+    const data = wt!.data as { thresholdId: string; triggerVariable: string; triggerValue: number };
+    expect(data.triggerVariable).toBe("chinaWeightTheftProgress");
+    expect(data.triggerValue).toBe(100);
+    expect(wt!.ctx?.actorId).toBe("system");
+  });
+
+  it("logs npc_trigger.fired for schedule-based NPC trigger", () => {
+    const spy = new SpyLogger();
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG4NPC",
+      round: 1,
+      phase: "intel",
+      players: { p1: ob },
+    });
+    _setLoggerForRoom("LOG4NPC", spy);
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    const npcFired = spy.calls.filter(c => c.event === "npc_trigger.fired");
+    expect(npcFired.length).toBeGreaterThan(0);
+
+    const r1Trigger = npcFired.find(c =>
+      (c.data as { triggerId: string }).triggerId === "npc_r1_anon_ob_intel",
+    );
+    expect(r1Trigger).toBeDefined();
+    const data = r1Trigger!.data as { triggerId: string; npcId: string; wasCondition: boolean };
+    expect(data.npcId).toBe("__npc_anon__");
+    expect(data.wasCondition).toBe(false);
+    expect(r1Trigger!.ctx?.actorId).toBe("system");
+  });
+});
+
+describe("INV-5: all logged events have valid round and phase context", () => {
+  afterEach(() => _clearLoggers());
+
+  it("phase.changed events always carry round and phase in ctx", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG5",
+      phase: "briefing",
+      round: 2,
+      players: { p1 },
+    });
+    _setLoggerForRoom("LOG5", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    const phaseChanges = spy.calls.filter(c => c.event === "phase.changed");
+    for (const call of phaseChanges) {
+      expect(call.ctx?.round).toBeDefined();
+      expect(call.ctx?.phase).toBeDefined();
+    }
+    clearPhaseTimer(room);
+  });
+});
+
+describe("Failure mode: NullLogger when no logger registered (LOG_ENABLED=false equivalent)", () => {
+  afterEach(() => _clearLoggers());
+
+  it("checkThresholds does not throw when no logger is registered for the room", () => {
+    // Do NOT call _setLoggerForRoom — getLoggerForRoom will return NullLogger
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "NOLOGGER",
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100 },
+    });
+
+    const { io } = createMockIo();
+    expect(() => checkThresholds(io, room)).not.toThrow();
+  });
+
+  it("startGame does not throw when no logger is registered", () => {
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({ code: "NOLOGGER2", phase: "lobby", players: { p1 } });
+
+    const { io } = createMockIo();
+    expect(() => startGame(io, room)).not.toThrow();
   });
 });

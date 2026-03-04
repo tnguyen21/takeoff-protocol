@@ -92,6 +92,13 @@ export function startGame(io: Server, room: GameRoom) {
 
   // Emit briefing text (faction-specific)
   emitBriefing(io, room);
+
+  const logger = getLoggerForRoom(room.code);
+  logger.log(EVENT_NAMES.GAME_STARTED, {
+    code: room.code,
+    playerCount: Object.keys(room.players).length,
+    roster: Object.values(room.players).map(p => ({ name: p.name, faction: p.faction, role: p.role })),
+  }, { round: 1, phase: "briefing" });
 }
 
 /**
@@ -168,6 +175,7 @@ export function advancePhase(io: Server, room: GameRoom) {
     // Notify players who did not submit when decision phase expires
     if (prevPhase === "decision" && room.phase === "resolution") {
       const now = Date.now();
+      const inactionLogger = getLoggerForRoom(room.code);
       for (const [socketId, player] of Object.entries(room.players)) {
         if (!player.faction || !player.role) continue;
         if (!(socketId in room.decisions)) {
@@ -177,6 +185,11 @@ export function advancePhase(io: Server, room: GameRoom) {
             from: "system",
             timestamp: now,
           });
+          inactionLogger.log(EVENT_NAMES.DECISION_INACTION, {
+            playerId: player.name,
+            role: player.role,
+            round: room.round,
+          }, { round: room.round, phase: "resolution", actorId: player.name });
         }
       }
     }
@@ -210,8 +223,14 @@ export function advancePhase(io: Server, room: GameRoom) {
           players: room.players,
         });
 
-        // Log game ended and close logger
+        // Log phase change and game ended, then close logger
         const logger = getLoggerForRoom(room.code);
+        logger.log(EVENT_NAMES.PHASE_CHANGED, {
+          round: room.round,
+          phase: room.phase,
+          prevPhase,
+          duration: 0,
+        }, { round: room.round, phase: room.phase, actorId: "system" });
         logger.log(EVENT_NAMES.GAME_ENDED, {
           code: room.code,
           finalState: room.state,
@@ -239,6 +258,14 @@ export function advancePhase(io: Server, room: GameRoom) {
     round: room.round,
     timer: room.timer,
   });
+
+  const phaseLogger = getLoggerForRoom(room.code);
+  phaseLogger.log(EVENT_NAMES.PHASE_CHANGED, {
+    round: room.round,
+    phase: room.phase,
+    prevPhase,
+    duration: getPhaseDuration(room, room.phase),
+  }, { round: room.round, phase: room.phase, actorId: "system" });
 
   emitStateViews(io, room);
 
@@ -423,6 +450,7 @@ function applyActivityPenalties(room: GameRoom): void {
   if (!room.playerActivity) return;
   // Tutorial round: no penalties
   if (room.round === 0) return;
+  const penaltyLogger = getLoggerForRoom(room.code);
   for (const [playerId, player] of Object.entries(room.players)) {
     if (!player.role) continue;
     const penalty = PRIMARY_APP_PENALTIES[player.role];
@@ -431,6 +459,13 @@ function applyActivityPenalties(room: GameRoom): void {
     if (!opened.includes(penalty.app)) {
       const current = room.state[penalty.variable];
       (room.state[penalty.variable] as number) = current + penalty.delta;
+      penaltyLogger.log(EVENT_NAMES.ACTIVITY_PENALTY, {
+        playerId: player.name,
+        role: player.role,
+        primaryApp: penalty.app,
+        variable: penalty.variable,
+        delta: penalty.delta,
+      }, { round: room.round, phase: room.phase, actorId: player.name });
     }
   }
 }
@@ -506,6 +541,7 @@ export function checkThresholds(io: Server, room: GameRoom): void {
   const fired = room.firedThresholds;
   const s = room.state;
   const now = Date.now();
+  const threshLogger = getLoggerForRoom(room.code);
 
   // Helper: get socket IDs for players of a specific faction
   const factionSockets = (faction: Faction): string[] =>
@@ -551,6 +587,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] china_weight_theft fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "china_weight_theft",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "chinaWeightTheftProgress",
+      triggerValue: s.chinaWeightTheftProgress,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T2: Whistleblower Auto-Leak ─────────────────────────────────────────────
@@ -585,6 +628,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] whistleblower_autoleak fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "whistleblower_autoleak",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "whistleblowerPressure",
+      triggerValue: s.whistleblowerPressure,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T3: OB Board Revolt ─────────────────────────────────────────────────────
@@ -609,6 +659,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] ob_board_revolt fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "ob_board_revolt",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "obBoardConfidence",
+      triggerValue: s.obBoardConfidence,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T4: CCP Military Mandate ────────────────────────────────────────────────
@@ -630,6 +687,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] ccp_military_mandate fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "ccp_military_mandate",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "ccpPatience",
+      triggerValue: s.ccpPatience,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T5: Prometheus Alignment Breakthrough ───────────────────────────────────
@@ -662,6 +726,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] prom_alignment_breakthrough fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "prom_alignment_breakthrough",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "promSafetyBreakthroughProgress",
+      triggerValue: s.promSafetyBreakthroughProgress,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T6: Regulatory Emergency Powers ─────────────────────────────────────────
@@ -683,6 +754,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] regulatory_emergency_powers fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "regulatory_emergency_powers",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "regulatoryPressure",
+      triggerValue: s.regulatoryPressure,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T7: Point of No Return (Doom Clock) ─────────────────────────────────────
@@ -698,6 +776,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] point_of_no_return fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "point_of_no_return",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "doomClockDistance",
+      triggerValue: s.doomClockDistance,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── T8: AI Autonomy / UX Degradation ────────────────────────────────────────
@@ -724,6 +809,13 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       });
     }
     console.log(`[threshold] ui_degradation fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
+      thresholdId: "ui_degradation",
+      round: room.round,
+      phase: room.phase,
+      triggerVariable: "aiAutonomyLevel",
+      triggerValue: s.aiAutonomyLevel,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
   // ── NPC Triggers ─────────────────────────────────────────────────────────────
@@ -788,6 +880,14 @@ export function checkThresholds(io: Server, room: GameRoom): void {
 
     fired.add(trigger.id);
     console.log(`[npc-trigger] ${trigger.id} fired (room ${room.code})`);
+    threshLogger.log(EVENT_NAMES.NPC_TRIGGER_FIRED, {
+      triggerId: trigger.id,
+      npcId: trigger.npcId,
+      targetFaction: trigger.target.faction,
+      round: room.round,
+      phase: room.phase,
+      wasCondition: !!trigger.condition,
+    }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 }
 
@@ -825,6 +925,11 @@ export function buildNarrative(
 function emitResolution(io: Server, room: GameRoom) {
   const roundDecisions = ROUND_DECISIONS[room.round - 1];
   const stateBefore = { ...room.state };
+  const resLogger = getLoggerForRoom(room.code);
+  resLogger.log(EVENT_NAMES.STATE_SNAPSHOT, {
+    round: room.round,
+    stateBefore,
+  }, { round: room.round, phase: room.phase, actorId: "system" });
 
   // Collect all chosen DecisionOption objects
   const chosenOptions: DecisionOption[] = [];
@@ -871,6 +976,18 @@ function emitResolution(io: Server, room: GameRoom) {
 
   // Trigger async generation for next round — fire-and-forget, never blocks resolution
   void triggerGeneration(room, room.round + 1);
+
+  // Log state delta (decisions + penalties + thresholds) and final snapshot
+  resLogger.log(EVENT_NAMES.STATE_DELTA, {
+    round: room.round,
+    changes: (Object.keys(room.state) as (keyof StateVariables)[])
+      .filter(k => room.state[k] !== stateBefore[k])
+      .map(k => ({ variable: k as string, before: stateBefore[k], after: room.state[k] })),
+  }, { round: room.round, phase: room.phase, actorId: "system" });
+  resLogger.log(EVENT_NAMES.STATE_SNAPSHOT, {
+    round: room.round,
+    stateAfter: { ...room.state },
+  }, { round: room.round, phase: room.phase, actorId: "system" });
 
   // Emit updated state views now that state changed
   emitStateViews(io, room);
