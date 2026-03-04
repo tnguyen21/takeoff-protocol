@@ -5,7 +5,7 @@ import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getContentForPlayer } from "./content/loader.js";
 import { getBriefing } from "./content/briefings.js";
-import { getGeneratedBriefing, getGeneratedContent } from "./generation/cache.js";
+import { getGeneratedBriefing, getGeneratedContent, getGeneratedNpcTriggers } from "./generation/cache.js";
 import { triggerGeneration } from "./generation/orchestrator.js";
 import "./content/index.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
@@ -832,8 +832,10 @@ export function checkThresholds(io: Server, room: GameRoom): void {
     });
 
   const npcTriggers = getNpcTriggersForRound(room.round);
+  const generatedNpcTriggers = getGeneratedNpcTriggers(room, room.round) ?? [];
+  const allTriggers = [...npcTriggers, ...generatedNpcTriggers];
 
-  for (const trigger of npcTriggers) {
+  for (const trigger of allTriggers) {
     if (fired.has(trigger.id)) continue;
 
     let conditionMet = false;

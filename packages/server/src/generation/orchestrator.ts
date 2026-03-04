@@ -9,11 +9,13 @@ import {
 } from "./metrics.js";
 import { generateBriefingWithRetry } from "./briefing.js";
 import { generateContentWithRetry } from "./content.js";
+import { generateNpcMessagesWithRetry } from "./npc.js";
 import { buildGenerationContext } from "./context.js";
 import {
   getGenerationStatus,
   setGeneratedBriefing,
   setGeneratedContent,
+  setGeneratedNpcTriggers,
   setGenerationStatus,
 } from "./cache.js";
 import { AnthropicProvider, type GenerationProvider } from "./provider.js";
@@ -70,6 +72,7 @@ export async function triggerGeneration(
 
     let briefingOk = true;
     let contentOk = true;
+    let npcOk = true;
 
     // ── Briefing generation ─────────────────────────────────────────────────
     if (config.briefingsEnabled) {
@@ -126,8 +129,28 @@ export async function triggerGeneration(
       }
     }
 
+    // ── NPC generation ───────────────────────────────────────────────────────
+    if (config.npcEnabled) {
+      const npcArtifact = "npc";
+      const startTs = Date.now();
+      logGenerationStart(round, npcArtifact);
+
+      const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context);
+
+      const durationMs = Date.now() - startTs;
+
+      if (npcResult === null) {
+        logGenerationFailure(round, npcArtifact, "generateNpcMessagesWithRetry returned null", durationMs);
+        logFallback(round, npcArtifact, "falling back to pre-authored NPC triggers");
+        npcOk = false;
+      } else {
+        setGeneratedNpcTriggers(room, round, npcResult);
+        logGenerationSuccess(round, npcArtifact, durationMs);
+      }
+    }
+
     // ── Final status ──────────────────────────────────────────────────────────
-    const allOk = briefingOk && contentOk;
+    const allOk = briefingOk && contentOk && npcOk;
     setGenerationStatus(room, round, allOk ? "ready" : "failed");
   } catch (err) {
     // INV-1: triggerGeneration must never throw — all errors result in fallback

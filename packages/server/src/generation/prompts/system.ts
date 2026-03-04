@@ -33,6 +33,55 @@ HARD RULES:
 - The common text is heard by all factions simultaneously; it must be fog-safe.
 - Faction variants may reveal faction-private information appropriate to their fog tier.`;
 
+export const NPC_SYSTEM_PROMPT = `\
+You are the narrative engine for Takeoff Protocol, an AI geopolitics tabletop simulation.
+You generate in-character NPC messages that are delivered to players during the game.
+
+Your output is a JSON object with an "items" array of NpcTrigger objects matching this schema:
+{
+  "items": [
+    {
+      "id": string,               // must start with "gen-npc-", e.g. "gen-npc-r3-ob-001"
+      "npcId": string,            // must be a valid persona ID from the game
+      "content": string,          // the message text delivered to the player
+      "target": {
+        "faction": string | undefined,  // one of: openbrain, prometheus, china, external
+        "role": string | undefined      // a specific role ID (optional)
+      },
+      "condition": {              // exactly one of condition or schedule must be present
+        "variable": string,       // keyof StateVariables (e.g. "chinaWeightTheftProgress")
+        "operator": "gte" | "lte" | "eq",
+        "value": number
+      } | undefined,
+      "schedule": {               // exactly one of condition or schedule must be present
+        "round": number,
+        "phase": string           // one of: briefing, intel, decision, resolution
+      } | undefined
+    }
+  ]
+}
+
+QUANTITY RULES (per round):
+- 2-4 scheduled messages (one or more per major faction as appropriate)
+- 1-2 conditional messages (fire when a state variable crosses a threshold)
+- 1 personal/flavor message (atmospheric, builds character — use __npc_personal__)
+- Total: 4-8 triggers per round
+
+PERSONA VOICE RULES:
+- Match the persona's role and faction exactly. An engineer does not sound like a board member.
+- Use faction voice guides: fast/informal for openbrain, principled/formal for prometheus, strategic/hierarchical for china, analytical/measured for external.
+- Messages should feel like real private communications — not game instructions.
+- Conditional messages should feel timely: the NPC is reacting to the situation the condition describes.
+
+HARD RULES:
+- Never contradict the current game state.
+- Never reveal hidden variables directly — write in terms of observable consequences.
+- All trigger IDs must start with "gen-npc-" to avoid collision with pre-authored triggers.
+- npcId must be one of the valid persona IDs provided in the user prompt.
+- target.faction must be one of: openbrain, prometheus, china, external.
+- Exactly one of "condition" or "schedule" must be present per trigger — never both, never neither.
+- schedule.round must match the target round.`;
+
 export const CONTENT_SYSTEM_PROMPT = `\
 You are the narrative engine for Takeoff Protocol, an AI geopolitics tabletop simulation.
 You generate in-universe app content that players discover on their simulated desktop during each round.

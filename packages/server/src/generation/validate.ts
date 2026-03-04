@@ -1,5 +1,6 @@
-import type { ContentItem, Faction, FogVariable, Role, StateVariables } from "@takeoff/shared";
+import type { ContentItem, Faction, FogVariable, NpcTrigger, Role, StateVariables } from "@takeoff/shared";
 import { computeFogView } from "@takeoff/shared";
+import { getNpcPersona } from "../content/npcPersonas.js";
 
 // ── ValidationResult ──────────────────────────────────────────────────────────
 
@@ -187,6 +188,55 @@ export function validateFogSafety(
   }
 
   return { valid: true, errors: [], warnings };
+}
+
+// ── NPC Trigger Validation ────────────────────────────────────────────────────
+
+const VALID_FACTIONS_SET: ReadonlySet<string> = new Set<Faction>([
+  "openbrain", "prometheus", "china", "external",
+]);
+
+/**
+ * Validate a set of generated NpcTriggers.
+ *
+ * Invariants:
+ * - Each trigger must have non-empty content
+ * - Each trigger must have valid npcId (known persona)
+ * - Each trigger must have valid target faction (if specified)
+ * - Exactly one of condition or schedule per trigger
+ * - Total 4-8 triggers per round
+ */
+export function validateNpcTriggers(triggers: NpcTrigger[]): ValidationResult {
+  const errors: string[] = [];
+
+  if (triggers.length < 4) {
+    errors.push(`only ${triggers.length} NPC triggers, need ≥4`);
+  }
+  if (triggers.length > 8) {
+    errors.push(`${triggers.length} NPC triggers, max 8`);
+  }
+
+  for (const trigger of triggers) {
+    if (!trigger.content || trigger.content.trim() === "") {
+      errors.push(`trigger ${trigger.id}: empty content`);
+    }
+    if (!getNpcPersona(trigger.npcId)) {
+      errors.push(`trigger ${trigger.id}: unknown npcId '${trigger.npcId}'`);
+    }
+    if (trigger.target.faction !== undefined && !VALID_FACTIONS_SET.has(trigger.target.faction)) {
+      errors.push(`trigger ${trigger.id}: invalid faction '${trigger.target.faction}'`);
+    }
+    const hasCondition = trigger.condition !== undefined;
+    const hasSchedule = trigger.schedule !== undefined;
+    if (hasCondition && hasSchedule) {
+      errors.push(`trigger ${trigger.id}: has both condition and schedule — must have exactly one`);
+    }
+    if (!hasCondition && !hasSchedule) {
+      errors.push(`trigger ${trigger.id}: has neither condition nor schedule — must have exactly one`);
+    }
+  }
+
+  return { valid: errors.length === 0, errors, warnings: [] };
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────

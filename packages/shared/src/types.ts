@@ -329,6 +329,7 @@ export interface GeneratedRoundArtifacts {
     factionVariants: Record<Faction, string>;
   };
   content?: Partial<Record<Faction, AppContent[]>>;
+  npcTriggers?: NpcTrigger[];
 }
 
 // ── Resolution ──

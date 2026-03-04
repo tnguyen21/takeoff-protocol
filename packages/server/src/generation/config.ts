@@ -6,6 +6,7 @@ export interface GenerationConfig {
   enabled: boolean;           // GEN_ENABLED, default false
   briefingsEnabled: boolean;  // GEN_BRIEFINGS_ENABLED, default false
   contentApps: AppId[];       // GEN_CONTENT_APPS, comma-separated, default []
+  npcEnabled: boolean;        // GEN_NPC_ENABLED, default false
   providerType: "anthropic" | "mock"; // GEN_PROVIDER, default "anthropic"
   briefingModel: string;      // GEN_BRIEFING_MODEL, default "claude-sonnet-4-5-20250514"
   contentModel: string;       // GEN_CONTENT_MODEL, default "claude-haiku-4-5-20251001"
@@ -33,6 +34,7 @@ export function getGenerationConfig(): GenerationConfig {
   const enabled = env.GEN_ENABLED === "true" || env.GEN_ENABLED === "1";
   const briefingsEnabled =
     env.GEN_BRIEFINGS_ENABLED === "true" || env.GEN_BRIEFINGS_ENABLED === "1";
+  const npcEnabled = env.GEN_NPC_ENABLED === "true" || env.GEN_NPC_ENABLED === "1";
 
   const rawApps = env.GEN_CONTENT_APPS ?? "";
   const contentApps: AppId[] = rawApps
@@ -60,6 +62,7 @@ export function getGenerationConfig(): GenerationConfig {
     enabled,
     briefingsEnabled,
     contentApps,
+    npcEnabled,
     providerType,
     briefingModel,
     contentModel,
