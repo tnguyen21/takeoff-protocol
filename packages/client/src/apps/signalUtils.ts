@@ -136,3 +136,66 @@ export function buildNpcContacts(messages: GameMessage[], currentPlayerId: strin
  * Use isNpcId() for dynamic checks (covers any __npc_ prefix).
  */
 export const NPC_IDS = new Set<string>(Object.keys(NPC_METADATA));
+
+// ── Content Contacts (seeded signal items grouped by sender) ────────────────
+
+export interface ContentMessage {
+  id: string;
+  body: string;
+  timestamp: string;
+  sender?: string;
+}
+
+export interface ContentContact {
+  id: string;
+  name: string;
+  subtitle: string;
+  avatarColor: string;
+  messages: ContentMessage[];
+}
+
+export function isContentContactId(id: string): boolean {
+  return id.startsWith("__content_");
+}
+
+const CONTENT_COLORS = [
+  "bg-emerald-800",
+  "bg-violet-800",
+  "bg-cyan-800",
+  "bg-rose-800",
+  "bg-amber-800",
+  "bg-teal-800",
+  "bg-indigo-800",
+  "bg-pink-800",
+];
+
+/**
+ * Groups seeded signal content items by sender into contacts.
+ * Each unique sender becomes a contact entry in the sidebar.
+ */
+export function buildContentContacts(
+  items: readonly { id: string; type: string; sender?: string; body: string; timestamp: string }[]
+): ContentContact[] {
+  const messageItems = items.filter((i) => i.type === "message" && i.sender);
+  const grouped = new Map<string, typeof messageItems>();
+  for (const item of messageItems) {
+    const key = item.sender!;
+    const group = grouped.get(key) ?? [];
+    group.push(item);
+    grouped.set(key, group);
+  }
+
+  let colorIdx = 0;
+  return Array.from(grouped.entries()).map(([sender, msgs]) => ({
+    id: `__content_${sender.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}__`,
+    name: sender,
+    subtitle: "· encrypted",
+    avatarColor: CONTENT_COLORS[colorIdx++ % CONTENT_COLORS.length],
+    messages: msgs.map((m) => ({
+      id: m.id,
+      body: m.body,
+      timestamp: m.timestamp,
+      sender: m.sender,
+    })),
+  }));
+}

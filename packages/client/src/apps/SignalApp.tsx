@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppProps } from "./types.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { useNotificationsStore } from "../stores/notifications.js";
@@ -9,7 +9,9 @@ import {
   getReadReceiptStatus,
   hasDisappearingTimer,
   buildNpcContacts,
+  buildContentContacts,
   isNpcId,
+  isContentContactId,
 } from "./signalUtils.js";
 
 function formatTime(ts: number): string {
@@ -87,6 +89,9 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Per-contact read tracking: maps contact ID → message count at last view
+  const readCountsRef = useRef<Record<string, number>>({});
+
   const { messages, markRead } = useMessagesStore();
   const { playerId, lobbyPlayers } = useGameStore();
 
@@ -99,6 +104,12 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
 
   // NPC contacts derived from live store messages
   const npcContacts = playerId ? buildNpcContacts(messages, playerId) : [];
+
+  // Content contacts from seeded signal items (grouped by sender)
+  const contentContacts = useMemo(
+    () => buildContentContacts(content),
+    [content]
+  );
 
   // DM conversation: messages where (from === me && to === selected) or (from === selected && to === me)
   const dmMessages = selectedPlayerId
@@ -113,12 +124,46 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   // Total signal messages to this player (for notification clearing)
   const signalMessageCount = messages.filter((m) => !m.isTeamChat && m.to === playerId).length;
 
-  // Unread count per player/NPC (messages to me that aren't in the active convo)
+  // Track read state when a contact is selected
+  useEffect(() => {
+    if (!selectedPlayerId) return;
+
+    const cc = contentContacts.find((c) => c.id === selectedPlayerId);
+    if (cc) {
+      readCountsRef.current[selectedPlayerId] = cc.messages.length;
+      return;
+    }
+
+    const npc = npcContacts.find((c) => c.id === selectedPlayerId);
+    if (npc) {
+      readCountsRef.current[selectedPlayerId] = npc.messages.length;
+      return;
+    }
+
+    // Real player — count messages from them to me
+    const count = messages.filter(
+      (m) => !m.isTeamChat && m.to === playerId && m.from === selectedPlayerId
+    ).length;
+    readCountsRef.current[selectedPlayerId] = count;
+  }, [selectedPlayerId, messages, playerId, npcContacts, contentContacts]);
+
+  // Unread counts for NPC + real player contacts (subtracting read counts)
   const unreadPerPlayer: Record<string, number> = {};
   for (const m of messages) {
-    if (!m.isTeamChat && m.to === playerId && m.from !== selectedPlayerId) {
+    if (!m.isTeamChat && m.to === playerId) {
       unreadPerPlayer[m.from] = (unreadPerPlayer[m.from] ?? 0) + 1;
     }
+  }
+  for (const id of Object.keys(unreadPerPlayer)) {
+    const read = readCountsRef.current[id] ?? 0;
+    unreadPerPlayer[id] = Math.max(0, unreadPerPlayer[id] - read);
+  }
+
+  // Unread counts for content contacts
+  const unreadPerContent: Record<string, number> = {};
+  for (const cc of contentContacts) {
+    const read = readCountsRef.current[cc.id] ?? 0;
+    unreadPerContent[cc.id] = Math.max(0, cc.messages.length - read);
   }
 
   // Auto-scroll
@@ -140,9 +185,8 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
 
   // Typing indicator: fires every ~20-30s for active real-player conversations
   const isNpcSelected = selectedPlayerId ? isNpcId(selectedPlayerId) : false;
-  const INTEL_CONTACT_ID = "__intel__";
-  const isIntelSelected = selectedPlayerId === INTEL_CONTACT_ID;
-  const isRealDmActive = !!selectedPlayerId && !isNpcSelected && !isIntelSelected;
+  const isContentSelected = selectedPlayerId ? isContentContactId(selectedPlayerId) : false;
+  const isRealDmActive = !!selectedPlayerId && !isNpcSelected && !isContentSelected;
 
   useEffect(() => {
     if (!isRealDmActive) {
@@ -194,8 +238,10 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
 
   const selectedPlayer = otherPlayers.find((p) => p.id === selectedPlayerId);
 
-  // Intel content: pre-scripted messages shown in a special "Intel Feed" contact
-  const intelMessages = content.filter((i) => i.type === "message");
+  // Content contact selected — look up from content contacts
+  const selectedContent = isContentSelected
+    ? contentContacts.find((c) => c.id === selectedPlayerId)
+    : null;
 
   // NPC contact selected — look up from live contacts
   const selectedNpc = isNpcSelected
@@ -210,28 +256,38 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
           <div className="bg-[#2a2a2a] rounded px-2 py-1.5 text-neutral-500 text-xs">Contacts</div>
         </div>
         <div className="overflow-y-auto flex-1">
-          {/* Intel Feed contact */}
-          {intelMessages.length > 0 && (
-            <div
-              onClick={() => setSelectedPlayerId(INTEL_CONTACT_ID)}
-              className={`flex items-start gap-3 px-3 py-3 cursor-pointer border-b border-white/5 hover:bg-white/5 ${isIntelSelected ? "bg-white/10" : ""}`}
-            >
-              <div className="w-9 h-9 rounded-full bg-amber-700 flex items-center justify-center text-xs font-bold shrink-0">
-                📡
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-baseline">
-                  <span className="font-semibold text-xs truncate text-amber-300">Intel Feed</span>
-                  <div className="w-4 h-4 rounded-full bg-amber-600 flex items-center justify-center text-[10px] font-bold shrink-0 ml-1">
-                    {intelMessages.length}
-                  </div>
+          {/* Content contacts (seeded signal items grouped by sender) */}
+          {contentContacts.map((cc) => {
+            const isActive = cc.id === selectedPlayerId;
+            const lastMsg = cc.messages.at(-1);
+            const unread = unreadPerContent[cc.id] ?? 0;
+            return (
+              <div
+                key={cc.id}
+                onClick={() => setSelectedPlayerId(cc.id)}
+                className={`flex items-start gap-3 px-3 py-3 cursor-pointer border-b border-white/5 hover:bg-white/5 ${isActive ? "bg-white/10" : ""}`}
+              >
+                <div
+                  className={`w-9 h-9 rounded-full ${cc.avatarColor} flex items-center justify-center text-xs font-bold shrink-0`}
+                >
+                  {initials(cc.name)}
                 </div>
-                <p className="text-neutral-400 text-xs truncate mt-0.5">
-                  {intelMessages[intelMessages.length - 1]?.body.slice(0, 40)}
-                </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-semibold text-xs truncate">{cc.name}</span>
+                  </div>
+                  <p className="text-neutral-400 text-xs truncate mt-0.5">
+                    {lastMsg ? lastMsg.body.slice(0, 40) : cc.subtitle}
+                  </p>
+                </div>
+                {unread > 0 && (
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {unread}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })}
 
           {/* NPC contacts — server-driven, appear above real player contacts */}
           {npcContacts.map((npc) => {
@@ -271,7 +327,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
             );
           })}
 
-          {otherPlayers.length === 0 && intelMessages.length === 0 && npcContacts.length === 0 && (
+          {otherPlayers.length === 0 && contentContacts.length === 0 && npcContacts.length === 0 && (
             <div className="text-neutral-600 text-xs text-center px-3 pt-8">
               No contacts from other factions yet.
             </div>
@@ -322,24 +378,37 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
 
       {/* Chat pane */}
       <div className="flex flex-col flex-1 min-w-0">
-        {/* Intel Feed view */}
-        {isIntelSelected ? (
+        {selectedContent ? (
+          /* Content contact view — seeded signal messages */
           <>
             <div className="h-10 border-b border-white/10 flex items-center px-4 shrink-0">
-              <span className="text-amber-300 mr-2">📡</span>
-              <span className="font-semibold text-sm text-amber-300">Intel Feed</span>
-              <span className="text-neutral-500 text-xs ml-2">· encrypted intercepts</span>
+              <div
+                className={`w-7 h-7 rounded-full ${selectedContent.avatarColor} flex items-center justify-center text-xs font-bold mr-2`}
+              >
+                {initials(selectedContent.name)}
+              </div>
+              <span className="font-semibold text-sm">{selectedContent.name}</span>
+              <span className="text-neutral-500 text-xs ml-2">{selectedContent.subtitle}</span>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-              {intelMessages.map((m) => (
+
+            <EncryptedBanner />
+
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+              {selectedContent.messages.map((m) => (
                 <div key={m.id} className="flex justify-start">
-                  <div className="max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-amber-900/30 text-amber-100 border border-amber-800/40 rounded-bl-sm">
-                    {m.sender && <p className="text-amber-400 font-semibold text-[10px] mb-1">{m.sender}</p>}
+                  <div className="max-w-[70%] rounded-2xl px-3 py-2 text-xs leading-relaxed bg-[#2a2a2a] text-neutral-200 rounded-bl-sm">
                     <p>{m.body}</p>
-                    <p className="text-amber-700 text-[10px] mt-1">{m.timestamp}</p>
+                    <p className="text-neutral-500 text-[10px] mt-1">{m.timestamp}</p>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* No compose input for content contacts — read only */}
+            <div className="px-4 py-2 border-t border-white/10 flex gap-2 shrink-0">
+              <div className="flex-1 bg-[#2a2a2a] rounded-full px-3 py-1.5 text-xs text-neutral-600 border border-white/10 select-none">
+                Cannot reply to this contact
+              </div>
             </div>
           </>
         ) : selectedNpc ? (
