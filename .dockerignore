@@ -1,0 +1,9 @@
+node_modules
+packages/*/node_modules
+packages/server/logs
+packages/server/dist
+packages/client/dist
+.git
+.hive
+.claude
+*.md

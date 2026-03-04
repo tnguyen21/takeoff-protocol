@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Server as SocketIOServer } from "socket.io";
 import { registerGameEvents } from "./events.js";
 import { rooms } from "./rooms.js";
@@ -9,15 +10,28 @@ const app = new Hono();
 
 app.get("/api/health", (c) => c.json({ status: "ok", rooms: rooms.size }));
 
+if (process.env.NODE_ENV === "production") {
+  // Serve built client assets
+  app.use("/*", serveStatic({ root: "./client-dist" }));
+  // SPA fallback: serve index.html for non-asset routes
+  app.get("*", serveStatic({ root: "./client-dist", path: "index.html" }));
+}
+
 const port = parseInt(process.env.PORT || "3001");
 
 const server = serve({ fetch: app.fetch, port });
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const io = new SocketIOServer(server as any, {
-  cors: {
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-    methods: ["GET", "POST"],
-  },
+  ...(isProduction
+    ? {}
+    : {
+        cors: {
+          origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+          methods: ["GET", "POST"],
+        },
+      }),
 });
 
 io.on("connection", (socket) => {

@@ -1,0 +1,24 @@
+app = "takeoff-protocol"
+primary_region = "sjc"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  LOG_DIR = "/data/logs"
+  PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[mounts]
+  source = "game_logs"
+  destination = "/data/logs"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

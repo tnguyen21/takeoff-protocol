@@ -40,7 +40,7 @@ export function createRoom(gmSocketId: string): GameRoom {
   };
 
   rooms.set(code, room);
-  createLoggerForRoom(code);
+  createLoggerForRoom(code, { logDir: process.env.LOG_DIR || "logs" });
   return room;
 }
 
