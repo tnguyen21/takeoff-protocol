@@ -7,6 +7,125 @@ import { registerContent } from "../loader.js";
 // ═══════════════════════════════════════════════
 
 export const CHINA_SLACK_FLAVOR: ContentItem[] = [
+  // ── Round 1: reply chains ──
+  // Reply chain: Director Zhao's CDZ Phase 2 announcement (#general)
+  {
+    id: "china-flavor-r1-general-reply-1",
+    type: "message",
+    round: 1,
+    sender: "Wei Chen",
+    channel: "#general",
+    body: "Understood, Director. To clarify the December 1 date — does that include Block B ramp-up, or is Block A reaching full utilization first?",
+    timestamp: "2026-11-01T09:42:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-general-reply-2",
+    type: "message",
+    round: 1,
+    sender: "Director Zhao Wei",
+    channel: "#general",
+    body: "Block A first. Block B follows by December 15 pending thermal calibration. Full cluster online December 15-20. Plan accordingly.",
+    timestamp: "2026-11-01T10:05:00Z",
+    classification: "context",
+  },
+
+  // Reply chain: Dr. Liu Yang's architecture review (#research)
+  {
+    id: "china-flavor-r1-research-reply-1",
+    type: "message",
+    round: 1,
+    sender: "Wei Chen",
+    channel: "#research",
+    body: "On the data curation gap — is this primarily about domain coverage or quality filtering methodology? I've been reading some of the public technical reports and there seem to be meaningful differences in how aggressive the deduplication passes are.",
+    timestamp: "2026-11-02T11:15:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-research-reply-2",
+    type: "message",
+    round: 1,
+    sender: "Dr. Liu Yang",
+    channel: "#research",
+    body: "Quality filtering primarily. Their deduplication strategy is more aggressive at the 13B scale — removing more data than we do but ending up with better signal. Counterintuitive but it shows in the loss curves. I'll share the full breakdown at Monday's working group.",
+    timestamp: "2026-11-02T11:50:00Z",
+    classification: "context",
+  },
+
+  // Reply chain: Ministry Liaison's power allocation (#operations)
+  {
+    id: "china-flavor-r1-operations-reply-1",
+    type: "message",
+    round: 1,
+    sender: "CDZ Operations (Night Shift)",
+    channel: "#operations",
+    body: "Confirmed on power allocation. Block A switching to full training load December 1 at 00:00. Full cooling system pre-check scheduled November 30 — will confirm readiness by 23:00.",
+    timestamp: "2026-11-03T15:20:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-operations-reply-2",
+    type: "message",
+    round: 1,
+    sender: "CDZ Operations (Day Shift)",
+    channel: "#operations",
+    body: "Day shift acknowledges. One question: what's the protocol if Hall 3 thermal sensors trigger a false positive during rollover? Last time we had a 40-minute diagnostic hold waiting on authorization to override. Requesting written pre-authorization this time.",
+    timestamp: "2026-11-03T15:45:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-operations-reply-3",
+    type: "message",
+    round: 1,
+    sender: "Ministry Liaison",
+    channel: "#operations",
+    body: "Director Zhao has pre-authorized the Day Shift supervisor to override Hall 3 thermal hold with a 15-minute delay, not 40. Document any override in the shift log with timestamp and justification. If temperature rises more than 2°C above threshold, it is not a false positive.",
+    timestamp: "2026-11-03T16:30:00Z",
+    classification: "context",
+  },
+
+  // ── Round 1: #random — CDZ casual channel ──
+  {
+    id: "china-flavor-r1-random-1",
+    type: "message",
+    round: 1,
+    sender: "Wei Chen",
+    channel: "#random",
+    body: "Mystery solved: I found where all the Red Bull has been going. There's a stash behind the spare cooling units in Hall 3. 47 cans. I'm not naming names, but the office nearest Hall 3 has been suspiciously energetic at 2am.",
+    timestamp: "2026-11-02T23:15:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-random-2",
+    type: "message",
+    round: 1,
+    sender: "CDZ Operations (Night Shift)",
+    channel: "#random",
+    body: "That explains the ¥4,000 cooling bill. I'm forwarding the invoice to Hall 3.",
+    timestamp: "2026-11-02T23:31:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-random-3",
+    type: "message",
+    round: 1,
+    sender: "Research Team Admin",
+    channel: "#random",
+    body: "Hot pot this Saturday, 7pm. Yang Guofu near the east gate. Director Zhao is covering the lamb and the mushrooms. 14 spots available — reply here to claim one, first come first served.",
+    timestamp: "2026-11-04T17:45:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-random-4",
+    type: "message",
+    round: 1,
+    sender: "Wei Chen",
+    channel: "#random",
+    body: "I'm in. Also: I finally tested whether our current model could solve the core problem from my PhD thesis. It could. 40 seconds. I have entered the acceptance stage of grief. Bring extra soup base on Saturday, I have feelings to process.",
+    timestamp: "2026-11-04T18:12:00Z",
+    classification: "context",
+  },
+
   // ── Round 1: team building, CDZ pride ──
   {
     id: "china-flavor-r1-slack-1",
