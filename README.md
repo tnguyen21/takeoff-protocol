@@ -22,6 +22,12 @@ Or start both together:
 bun run dev
 ```
 
+And with reactive content:
+
+```
+GEN_ENABLED=true GEN_BRIEFINGS_ENABLED=true GEN_CONTENT_APPS=news,twitter ANTHROPIC_API_KEY=sk-... bun run dev
+```
+
 Open `http://localhost:5173` in your browser.
 
 ## Project Structure
