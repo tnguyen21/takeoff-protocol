@@ -71,6 +71,24 @@ export const OB_SIGNAL: ContentItem[] = [
 
 export const OB_SIGNAL_CEO: ContentItem[] = [
     {
+      id: "ob1-signal-ceo-1",
+      type: "message",
+      round: 1,
+      sender: "David Huang (Board)",
+      body: "Marcus — wanted to give you a heads up before the formal letter goes out tomorrow. The board is going to ask for a deployment timeline at the December meeting. Sarah and I are aligned that we should push for Q2 — we think the window is real and the competitive pressure justifies it. Tom is nervous about the safety optics given the incomplete alignment evals. He's not a no, but he's not a yes either. Thought you should know before it lands in your inbox so you have time to work him. —D",
+      timestamp: "2026-11-03T08:30:00Z",
+      classification: "critical",
+    },
+    {
+      id: "ob1-signal-ceo-2",
+      type: "message",
+      round: 1,
+      sender: "James Park (Apex Capital)",
+      body: "Hey Marcus, congrats on Agent-1. Hearing interesting things from people who've seen the benchmarks. We should grab coffee when you're next in SF — I have some thoughts on the regulatory landscape that might be useful, and there are a few names in DC I can connect you with before this gets complicated. No agenda, just useful. —J",
+      timestamp: "2026-11-03T09:15:00Z",
+      classification: "context",
+    },
+    {
       id: "ob4-signal-ceo-2",
       type: "message",
       round: 4,

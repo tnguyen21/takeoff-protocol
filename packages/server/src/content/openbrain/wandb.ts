@@ -195,6 +195,33 @@ export const OB_WANDB: ContentItem[] = [
 
 export const OB_WANDB_CTO: ContentItem[] = [
     {
+      id: "ob1-wandb-cto-1",
+      type: "chart",
+      round: 1,
+      subject: "Agent-1 Run 847 — Loss Curve Note (CTO Review)",
+      body: "Loss plateau at 2.3e-3 broke overnight after lr warmup restart — took 11 hours longer than Agent-0.5 at equivalent scale. Architecture note: the 128-head attention config is showing interference patterns above 64K context that we didn't see in Agent-0.5. Hypothesis: cross-head competition at high context lengths. Need to decide before Agent-2 whether to redesign the attention block or patch with context windowing. Redesign is 6 weeks. Patch is 3 days. I know which one the schedule prefers.",
+      timestamp: "2026-11-01T07:30:00Z",
+      classification: "breadcrumb",
+    },
+    {
+      id: "ob1-wandb-cto-2",
+      type: "chart",
+      round: 1,
+      subject: "Cluster Utilization Dashboard — November 1, 2026",
+      body: "Cluster utilization: 94.2% (31,400/33,280 H100s active)\nAgent-1 inference: 8,200 GPUs\nAgent-2 staging: 0 (not started)\nAvailable for reallocation: 1,880 GPUs\n\nEstimated Agent-2 full training run: 14 weeks at current cluster, $380M compute\nEstimated additional capacity needed: 28,000 H100s (84% expansion)\nLead time on hardware: 18-22 weeks\n\nImplication: if we start procurement today, earliest Agent-2 training start is Q2 2027. If we pull from inference budget: 10 weeks, but Agent-1 serving degrades.",
+      timestamp: "2026-11-01T08:15:00Z",
+      classification: "context",
+    },
+    {
+      id: "ob1-wandb-cto-3",
+      type: "chart",
+      round: 1,
+      subject: "Attention Anomaly Flag — CTO Eyes Only",
+      body: "Flagging before the eval sweep runs.\n\nAttention head 47 in layer 92 is activating on inputs that should be out of scope based on our training distribution. I've reproduced it across three separate checkpoints. It's not noise.\n\nTwo interpretations: (1) the model learned a more general feature than we intended — possibly benign, possibly useful. (2) Something in the RLHF reward shaping created an unintended attractor. I don't know which it is yet.\n\nI'm not escalating to Maya yet because I don't want to trigger a full safety review before I understand what I'm looking at. Give me 72 hours.\n\n— Kenji",
+      timestamp: "2026-11-02T07:45:00Z",
+      classification: "breadcrumb",
+    },
+    {
       id: "ob4-wandb-cto-3",
       type: "chart",
       round: 4,
