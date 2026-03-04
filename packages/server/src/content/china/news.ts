@@ -72,6 +72,38 @@ export const CHINA_NEWS: ContentItem[] = [
       classification: "context",
       condition: { variable: "intlCooperation", operator: "gt", value: 35 },
     },
+    // Round 1 non-AI ambient news
+    {
+      id: "china-r1-news-flavor-1",
+      type: "headline",
+      round: 1,
+      sender: "Xinhua",
+      subject: "China October Manufacturing PMI Rises to 51.4 — Exports Ahead of Forecast",
+      body: "The National Bureau of Statistics reported that China's official manufacturing Purchasing Managers' Index rose to 51.4 in October, above the 50-point expansion threshold and ahead of the 50.8 consensus forecast. Export orders sub-index improved for the third consecutive month. Analysts attributed the improvement to resilient demand in Southeast Asia and Latin American markets, which have partially offset softer European orders. The data supported modest gains in the CSI 300 index.",
+      timestamp: "2026-11-01T09:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "china-r1-news-flavor-2",
+      type: "headline",
+      round: 1,
+      sender: "People's Daily",
+      subject: "National Day Golden Week Tourism Revenue Reaches 900 Billion Yuan — Domestic Travel Breaks Record",
+      body: "China's Ministry of Culture and Tourism confirmed that the National Day Golden Week holiday generated approximately 900 billion yuan in domestic tourism revenue, a 12% increase over the prior year. Domestic trips reached 1.07 billion, exceeding pre-pandemic records for the first time. Popular destinations including Zhangjiajie, Lijiang, and the Forbidden City reported sustained full-capacity attendance. Officials attributed the record to improved rail connectivity and a renewed focus on domestic cultural tourism promotion.",
+      timestamp: "2026-11-03T08:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "china-r1-news-flavor-3",
+      type: "headline",
+      round: 1,
+      sender: "South China Morning Post",
+      subject: "Beijing-Chengdu High-Speed Rail Extension Opens — Journey Time Cut to 5 Hours",
+      body: "The final section of the Beijing-Chengdu high-speed rail corridor officially opened to passengers Thursday, reducing end-to-end journey time from 14 hours by conventional rail to approximately five hours. The 2,100-kilometer route passes through some of China's most geographically challenging terrain, crossing the Qinling and Daba mountain ranges via a network of tunnels and elevated viaducts. The China Railway Corporation called the opening 'the largest single infrastructure achievement of the current five-year plan.'",
+      timestamp: "2026-11-05T10:00:00Z",
+      classification: "flavor",
+    },
+
     // Round 1 unconditional news
     {
       id: "china-r1-news-1",

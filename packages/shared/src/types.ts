@@ -163,7 +163,8 @@ export type ContentClassification =
   | "critical"
   | "context"
   | "red-herring"
-  | "breadcrumb";
+  | "breadcrumb"
+  | "flavor";
 
 export interface ContentCondition {
   variable: keyof StateVariables;

@@ -12,6 +12,38 @@ export const EXT_NEWS: ContentItem[] = [
       timestamp: "2026-01-01T09:00:00Z",
       classification: "context",
     },
+    // --- NON-AI AMBIENT ROUND 1 ITEMS ---
+    {
+      id: "ext-r1-news-flavor-1",
+      type: "headline",
+      round: 1,
+      sender: "Reuters",
+      subject: "Oil Slides to $71 as OPEC+ Output Increase Surprises Markets",
+      body: "Brent crude fell to $71.20 per barrel Thursday after OPEC+ announced a surprise increase in output targets for December, reversing a months-long production restraint. The decision, which analysts attributed to internal pressure from Gulf members seeking greater market share, sent energy stocks lower. Natural gas futures also declined on the news. US shale producers indicated they would respond by accelerating well completions in the Permian Basin.",
+      timestamp: "2026-11-01T14:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "ext-r1-news-flavor-2",
+      type: "headline",
+      round: 1,
+      sender: "Financial Times",
+      subject: "Germany Officially Enters Recession — GDP Contracts 0.4% in Q3",
+      body: "Germany's federal statistics office confirmed Thursday that the country's economy contracted 0.4% in the third quarter, marking the second consecutive quarterly decline and formally meeting the technical definition of recession. Industrial output and export volumes were the primary drags. The European Central Bank declined to comment on specific country data. German Chancellor's office called the figures 'concerning but not unexpected' and pointed to structural reform proposals currently before the Bundestag.",
+      timestamp: "2026-11-03T08:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "ext-r1-news-flavor-3",
+      type: "headline",
+      round: 1,
+      sender: "Bloomberg",
+      subject: "India Surpasses Japan as World's Fourth-Largest Economy — IMF Confirms",
+      body: "India has overtaken Japan to become the world's fourth-largest economy by nominal GDP, the IMF confirmed in its updated World Economic Outlook. India's economy is now estimated at $4.27 trillion, ahead of Japan's $4.21 trillion. The milestone, anticipated for several years, reflects India's sustained growth above 6% against Japan's relative stagnation. Prime Minister Modi's office issued a brief statement calling the milestone 'a tribute to every Indian worker and entrepreneur.' Analysts project India will reach third place within four years.",
+      timestamp: "2026-11-06T09:00:00Z",
+      classification: "flavor",
+    },
+
     {
       id: "ext-news-1",
       type: "headline",

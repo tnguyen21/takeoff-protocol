@@ -19,7 +19,7 @@ export interface EmailItem {
   folder?: "inbox" | "sent" | "drafts" | "archive" | "spam";
   attachment?: boolean;
   body?: string;
-  classification?: "critical" | "red-herring" | "breadcrumb" | "context";
+  classification?: "critical" | "red-herring" | "breadcrumb" | "context" | "flavor";
 }
 
 /**

@@ -8,6 +8,62 @@ import { registerContent } from "../loader.js";
  * Future: add per-faction "algorithmic bubble" modules (see docs/BACKLOG.md).
  */
 export const SHARED_TWITTER: ContentItem[] = [
+    // ── Round 1 — non-AI ambient (flavor) ──
+    {
+      id: "tw-r1-flavor-sports-1",
+      type: "tweet",
+      round: 1,
+      sender: "@heatcheck_hank",
+      body: "The Lakers are cooked. I said it. That rotation makes no sense and nobody on the coaching staff seems to notice. Sell me on a counter-argument, I'm begging you.",
+      timestamp: "2026-11-03T21:30:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "tw-r1-flavor-food-1",
+      type: "tweet",
+      round: 1,
+      sender: "@annebakes",
+      body: "Made brown butter chocolate chip cookies for the first time. Threw out every other cookie recipe I own. This is the only cookie now. There are no other cookies.",
+      timestamp: "2026-11-03T17:45:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "tw-r1-flavor-weather-1",
+      type: "tweet",
+      round: 1,
+      sender: "@sflocal_kai",
+      body: "SF weather report: 55°F and foggy in the Mission. 74°F and sunny in the Sunset. Two entirely different seasons happening six blocks apart. I will never understand this city.",
+      timestamp: "2026-11-04T12:15:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "tw-r1-flavor-popcult-1",
+      type: "tweet",
+      round: 1,
+      sender: "@television_takes",
+      body: "Controversial opinion: the second season of a show is almost always better than the first because they finally figured out what the show is actually about. Fight me.",
+      timestamp: "2026-11-04T22:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "tw-r1-flavor-mundane-1",
+      type: "tweet",
+      round: 1,
+      sender: "@gregorymayhew",
+      body: "The most underrated life skill is knowing exactly how early to leave so you're not early but also definitely not late. I have been developing this skill for 36 years and I still get it wrong.",
+      timestamp: "2026-11-05T09:30:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "tw-r1-flavor-pet-1",
+      type: "tweet",
+      round: 1,
+      sender: "@justinandkoda",
+      body: "My dog has learned to bring me his leash when he wants a walk. Not drop it at my feet. Bring it. Place it in my hand. He's looking at me right now with the leash in his mouth. I genuinely have no choice.",
+      timestamp: "2026-11-05T15:00:00Z",
+      classification: "flavor",
+    },
+
     // ── Round 1 — unconditional ──
     {
       id: "tw-r1-ambient-unconditional-1",

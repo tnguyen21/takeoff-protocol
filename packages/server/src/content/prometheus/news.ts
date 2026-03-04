@@ -46,6 +46,38 @@ export const PROM_NEWS: ContentItem[] = [
       timestamp: "2028-02-01T11:00:00Z",
       classification: "context",
     },
+    // --- NON-AI AMBIENT ROUND 1 ITEMS ---
+    {
+      id: "prom-r1-news-flavor-1",
+      type: "headline",
+      round: 1,
+      sender: "Nature",
+      subject: "Antarctic Ice Sheet Melt Accelerating — 40% Faster Than 2020 Models Predicted",
+      body: "A study published Thursday in Nature reports that Antarctic ice sheet melt is proceeding approximately 40% faster than the most pessimistic models from 2020 had projected. Researchers attribute the discrepancy to underestimated ocean warming at depth. The finding has implications for sea-level-rise projections through 2100 and calls into question existing coastal infrastructure planning timelines. The authors urge immediate revision of adaptation frameworks.",
+      timestamp: "2026-11-03T10:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-news-flavor-2",
+      type: "headline",
+      round: 1,
+      sender: "Chronicle of Higher Education",
+      subject: "STEM Graduate Enrollment Drops for Second Consecutive Year — International Student Visa Delays Cited",
+      body: "Graduate enrollment in STEM programs at US universities declined 7% in the fall 2026 semester, the second consecutive annual drop, according to data released by the Council of Graduate Schools. Program directors attribute the decline primarily to lengthening visa processing times for international applicants, who historically make up more than half of doctoral enrollment in engineering, computer science, and physical sciences. University presidents have sent a joint letter to the State Department requesting expedited processing for graduate-level admits.",
+      timestamp: "2026-11-05T09:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-news-flavor-3",
+      type: "headline",
+      round: 1,
+      sender: "STAT News",
+      subject: "CDC: Flu Season Starting Early — Hospitals Begin Activating Surge Protocols",
+      body: "The CDC issued an early-season influenza advisory this week after surveillance data showed above-threshold activity in nine states by the first week of November, two to three weeks earlier than the historical median. Several hospital systems in the Southwest activated surge capacity protocols. This year's vaccine is reported to be a good match against circulating strains. Public health officials urged early vaccination, noting that pharmacy supply is currently sufficient in most regions.",
+      timestamp: "2026-11-06T08:00:00Z",
+      classification: "flavor",
+    },
+
     // --- UNCONDITIONAL ROUND 1 ITEMS ---
     {
       id: "prom-r1-news-1",

@@ -91,6 +91,38 @@ export const OB_NEWS: ContentItem[] = [
       timestamp: "2028-02-01T09:00:00Z",
       classification: "context",
     },
+    // --- NON-AI AMBIENT ROUND 1 ITEMS ---
+    {
+      id: "ob-r1-news-flavor-1",
+      type: "headline",
+      round: 1,
+      sender: "San Francisco Chronicle",
+      subject: "Bay Area Home Prices Tick Up Again — Median Reaches $1.47M in October",
+      body: "Bay Area home prices climbed for the fourth consecutive month in October, with the median sale price hitting $1.47 million across the nine-county region, up 6.2% year-over-year. San Mateo County saw the steepest gains. Inventory remains historically tight, with active listings down 18% from the prior year. Real estate agents describe bidding wars returning to neighborhoods that had cooled as recently as last spring.",
+      timestamp: "2026-11-04T10:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "ob-r1-news-flavor-2",
+      type: "headline",
+      round: 1,
+      sender: "Bloomberg",
+      subject: "Apple Q4 Earnings Beat Estimates — Services Revenue Hits Record $25.4 Billion",
+      body: "Apple reported fourth-quarter earnings Thursday that beat analyst expectations on the top and bottom line. Services revenue reached $25.4 billion, a record, driven by the App Store, Apple TV+, and iCloud subscriptions. iPhone sales came in slightly below consensus but CEO Tim Cook cited supply recovery heading into the holiday quarter. Shares rose 3.1% in after-hours trading. The company declined to provide quarterly guidance.",
+      timestamp: "2026-11-06T18:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "ob-r1-news-flavor-3",
+      type: "headline",
+      round: 1,
+      sender: "Wired",
+      subject: "The Coder Who Accidentally Taught Himself Guitar With a $12 App",
+      body: "When Portland-based software engineer Marcus Tully downloaded a guitar learning app to fill an hour of downtime, he expected nothing to come of it. Two years later, Tully is performing at open mics and credits the app's adaptive feedback for keeping him engaged past the frustrating early weeks. 'I'd quit three times with traditional lessons,' he told Wired. 'This thing just wouldn't let me give up.' The story has become a minor viral moment, racking up 400,000 shares since Wednesday.",
+      timestamp: "2026-11-07T09:00:00Z",
+      classification: "flavor",
+    },
+
     // --- UNCONDITIONAL ROUND 1 ITEMS ---
     {
       id: "ob-r1-news-1",
