@@ -16,13 +16,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-// Brand colors for apps
-const BRAND_COLORS: Record<string, string> = {
-  slack: "#E01E5A",
-  signal: "#3A76F0", 
-  twitter: "#FFFFFF",
-  wandb: "#FFCC33",
-};
+// All icons use a uniform muted style — no brand colors
+const BRAND_COLORS: Record<string, string> = {};
 
 // SVG icon components
 function SlackIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
