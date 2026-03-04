@@ -91,6 +91,27 @@ export const OB_NEWS: ContentItem[] = [
       timestamp: "2028-02-01T09:00:00Z",
       classification: "context",
     },
+    // --- UNCONDITIONAL ROUND 1 ITEMS ---
+    {
+      id: "ob-r1-news-1",
+      type: "headline",
+      round: 1,
+      sender: "Wired",
+      subject: "The Race to AGI: Inside the Labs Pushing the Boundaries",
+      body: "Wired spent three months getting rare access to the world's frontier AI labs, and the picture that emerges is of a field moving faster than its practitioners can fully comprehend. OpenBrain, the San Francisco lab widely regarded as the capability leader, has grown its headcount 340% in two years and is reportedly training a model at a scale that would have been considered implausible eighteen months ago. 'I've stopped making predictions about what's possible in two years,' one senior researcher told us. 'Everything I predicted was wrong — in the wrong direction.' The question the field hasn't answered is not whether they'll reach the goal. It's what happens when they do.",
+      timestamp: "2026-11-04T09:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "ob-r1-news-2",
+      type: "headline",
+      round: 1,
+      sender: "Bloomberg",
+      subject: "AI Lab Valuations Soar as Investors Bet on Artificial General Intelligence",
+      body: "OpenBrain's latest secondary market transactions imply a $180 billion valuation — a figure that would make it one of the most valuable private companies in history, built on technology that doesn't yet have a clear revenue model at scale. Investors are explicit about what they're buying: not current products, but a stake in the outcome of the race to build artificial general intelligence. 'This is not a normal tech investment,' one managing partner told Bloomberg. 'We're betting on who controls the most transformative technology since electricity.' Prometheus, the closest competitor, is valued at roughly a fifth of OpenBrain's implied price.",
+      timestamp: "2026-11-09T08:00:00Z",
+      classification: "context",
+    },
     // --- AMBIENT CONDITION-GATED ITEMS ---
 
     // Round 1 ambient — publicAwareness > 50

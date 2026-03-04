@@ -72,6 +72,37 @@ export const CHINA_NEWS: ContentItem[] = [
       classification: "context",
       condition: { variable: "intlCooperation", operator: "gt", value: 35 },
     },
+    // Round 1 unconditional news
+    {
+      id: "china-r1-news-1",
+      type: "headline",
+      round: 1,
+      sender: "Caixin Global",
+      subject: "China's AI Ambitions Draw Attention as State Funding Reaches Record Levels",
+      body: "Beijing's allocation of strategic infrastructure investment to advanced computing projects has reached historic levels, according to budget documents reviewed by Caixin. Power grid expansions across multiple technology development zones are proceeding ahead of schedule, with transmission capacity upgrades completed or underway in Chengdu, Zhengzhou, and Wuhan. Analysts say the pace and scale of infrastructure commitment signals a transition from planning to execution phase. Ministry of Science and Technology declined to comment on specific project timelines.",
+      timestamp: "2026-11-02T08:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "china-r1-news-2",
+      type: "headline",
+      round: 1,
+      sender: "MIT Technology Review",
+      subject: "The Open-Source Model the West Is Sleeping On",
+      body: "While the AI discourse in the United States remains fixated on the closed, safety-restricted models coming out of OpenBrain and Prometheus, a quietly different story is unfolding in the global developer community. Alibaba's Qwen family has accumulated millions of downloads across academic and commercial users in 40-plus countries — and the architectural choices that make Qwen competitive are now public. 'The assumption that China is playing catch-up fundamentally misreads what's happening,' said one independent AI researcher. 'They're running a different race.' US labs have spent aggressively on compute and proprietary weights. China has seeded an open-source ecosystem that doesn't require anyone to trust a single lab.",
+      timestamp: "2026-11-06T10:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "china-r1-news-3",
+      type: "headline",
+      round: 1,
+      sender: "Financial Times",
+      subject: "The Talent War at the Heart of the AI Race",
+      body: "US and Chinese AI labs are competing intensely for a small pool of elite researchers — and the results are reshaping where breakthroughs happen. Signing bonuses at American frontier labs have reached eight figures for senior researchers. China's response has included expanded visa programs, government-backed salary top-ups, and increasingly direct appeals to researchers of Chinese heritage at Western institutions. 'The assumption that talent will always flow to San Francisco is becoming harder to sustain,' one senior academic recruiter told the FT. Several recent hires at DeepCent were previously employed by US labs.",
+      timestamp: "2026-11-08T09:00:00Z",
+      classification: "context",
+    },
     // Round 1 ambient news
     {
       id: "china-r1-news-ambient-1",

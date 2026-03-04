@@ -46,6 +46,37 @@ export const PROM_NEWS: ContentItem[] = [
       timestamp: "2028-02-01T11:00:00Z",
       classification: "context",
     },
+    // --- UNCONDITIONAL ROUND 1 ITEMS ---
+    {
+      id: "prom-r1-news-1",
+      type: "headline",
+      round: 1,
+      sender: "Science",
+      subject: "Safety-First Lab Publishes Comprehensive Alignment Evaluation Framework",
+      body: "Prometheus AI has released a detailed technical framework for evaluating alignment in large language models, drawing broad attention from the AI safety research community. The publication describes a suite of behavioral tests, interpretability probes, and red-teaming protocols intended to detect misaligned goals before deployment. Independent researchers called the methodology 'the most rigorous publicly available framework to date.' OpenBrain declined to comment on whether it uses comparable evaluation standards.",
+      timestamp: "2026-11-03T09:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom-r1-news-2",
+      type: "headline",
+      round: 1,
+      sender: "The Atlantic",
+      subject: "The Race to Build AGI Has a Safety Problem No One Wants to Talk About",
+      body: "Dr. Ifeoma Eze's new essay argues that AI safety work is being systematically deprioritized across the industry — not through malice, but through incentive structures that reward deployment speed above all else. 'Labs that publish safety research get credit for the optics. Labs that delay deployment based on it get punished by investors,' she writes. Eze, who is not affiliated with any AI lab, points to the consistent pattern of safety teams being understaffed relative to capabilities teams. 'The bottleneck is not knowledge. It is will.'",
+      timestamp: "2026-11-07T08:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom-r1-news-3",
+      type: "headline",
+      round: 1,
+      sender: "The Verge",
+      subject: "Why OpenBrain Is Everywhere and Prometheus Is Quiet",
+      body: "OpenBrain's communications team has become one of the most active in tech: podcast appearances, congressional testimony, press access, and a seemingly endless stream of capability demonstrations. Prometheus, by contrast, rarely speaks publicly. Their last significant media appearance was a Nature paper six months ago. The contrast has not gone unnoticed inside either lab. 'You can do safety work or you can perform safety work,' one Prometheus researcher said, asking not to be named. 'We're trying to do it.' Critics say the strategy is a mistake — that in a field where narrative matters, silence cedes ground.",
+      timestamp: "2026-11-10T10:00:00Z",
+      classification: "context",
+    },
     // --- AMBIENT CONDITION-GATED ITEMS ---
     {
       id: "prom-r1-news-ambient-regulatory-1",
