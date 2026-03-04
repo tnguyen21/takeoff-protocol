@@ -25,6 +25,9 @@ export function useDevMode(): void {
     const faction = params.get("faction") as Faction | null;
     const role = params.get("role") as Role | null;
 
+    const botMode = params.get("botMode") as "all_roles" | "minimum_table" | null;
+    const gm = params.get("gm") === "1";
+
     if (!faction || !role) {
       console.warn("[useDevMode] Missing faction or role param — skipping bootstrap");
       return;
@@ -48,7 +51,7 @@ export function useDevMode(): void {
     const doBootstrap = () => {
       socket.emit(
         "dev:bootstrap",
-        { faction, role, round, phase, stateOverrides },
+        { faction, role, round, phase, stateOverrides, ...(botMode && { botMode }), gm },
         (res: { ok: boolean; code?: string; error?: string }) => {
           if (res.ok && res.code) {
             useGameStore.setState({
@@ -56,7 +59,7 @@ export function useDevMode(): void {
               selectedFaction: faction,
               selectedRole: role,
               playerId: socket.id ?? null,
-              isGM: false,
+              isGM: gm,
             });
             console.log(`[useDevMode] Bootstrapped: room=${res.code} faction=${faction} role=${role} round=${round} phase=${phase}`);
           } else {

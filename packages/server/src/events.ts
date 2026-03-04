@@ -636,6 +636,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
           phase,
           stateOverrides,
           botMode,
+          gm,
         }: {
           faction: Faction;
           role: Role;
@@ -643,11 +644,12 @@ export function registerGameEvents(io: Server, socket: Socket) {
           phase: GamePhase;
           stateOverrides?: Record<string, number>;
           botMode?: "all_roles" | "minimum_table";
+          gm?: boolean;
         },
         callback: (res: { ok: boolean; code?: string; error?: string }) => void,
       ) => {
-        // Create room with a dummy GM id (no real GM for solo dev testing)
-        const room = createRoom("dev-gm");
+        // Create room — use socket.id as GM if gm flag is set
+        const room = createRoom(gm ? socket.id : "dev-gm");
         socket.join(room.code);
         socket.data.roomCode = room.code;
 
@@ -683,6 +685,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
             }
           }
         }
+
+        // Emit lobby state so GM dashboard sees all players (including bots)
+        socket.emit("room:state", getLobbyState(room));
 
         // Emit phase
         socket.emit("game:phase", { phase: room.phase, round: room.round, timer: { endsAt: 0 } });

@@ -1185,6 +1185,28 @@ export function GMDashboard() {
                               {hasSubmitted ? "✓" : "…"}
                             </div>
                           )}
+                          {/* Dev: open player view in new tab */}
+                          {import.meta.env.DEV && p.role && (
+                            <a
+                              href={`/?dev=1&round=${round}&phase=${phase}&faction=${faction.id}&role=${p.role}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Open ${roleConfig?.label ?? p.role} view in new tab`}
+                              style={{
+                                fontSize: "10px",
+                                color: "#6b7280",
+                                textDecoration: "none",
+                                flexShrink: 0,
+                                padding: "1px 4px",
+                                borderRadius: "3px",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e7eb"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+                            >
+                              view
+                            </a>
+                          )}
                         </div>
                       );
                     })}
