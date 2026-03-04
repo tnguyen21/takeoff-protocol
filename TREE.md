@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-bb7610fdf6a7
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-cb104eb01670
 ├── docs
 │   ├── APP-AUDIT-COMMUNICATION.md
 │   ├── APP-AUDIT-DATA-ANALYTICS.md
@@ -31,9 +31,11 @@
 │   │   ├── tsconfig.json
 │   │   └── vite.config.ts
 │   ├── server
+│   │   ├── logs
 │   │   ├── src
 │   │   │   ├── content
 │   │   │   ├── generation
+│   │   │   ├── logger
 │   │   │   ├── activity.test.ts
 │   │   │   ├── devBots.test.ts
 │   │   │   ├── devBots.ts
@@ -74,4 +76,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-19 directories, 56 files
+21 directories, 56 files

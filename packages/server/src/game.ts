@@ -5,7 +5,8 @@ import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getContentForPlayer } from "./content/loader.js";
 import { getBriefing } from "./content/briefings.js";
-import { getGeneratedContent } from "./generation/cache.js";
+import { getGeneratedBriefing, getGeneratedContent } from "./generation/cache.js";
+import { triggerGeneration } from "./generation/orchestrator.js";
 import "./content/index.js";
 import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
 import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
@@ -298,7 +299,8 @@ export function emitStateViews(io: Server, room: GameRoom) {
 
 export function emitBriefing(io: Server, room: GameRoom) {
   try {
-    const briefing = getBriefing(room.round);
+    const generated = getGeneratedBriefing(room, room.round);
+    const briefing = generated ?? getBriefing(room.round);
     const { common, factionVariants } = briefing;
 
     for (const [socketId, player] of Object.entries(room.players)) {
@@ -866,6 +868,9 @@ function emitResolution(io: Server, room: GameRoom) {
 
   // Fire any threshold events that have been crossed
   checkThresholds(io, room);
+
+  // Trigger async generation for next round — fire-and-forget, never blocks resolution
+  void triggerGeneration(room, room.round + 1);
 
   // Emit updated state views now that state changed
   emitStateViews(io, room);

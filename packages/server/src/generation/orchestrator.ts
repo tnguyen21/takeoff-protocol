@@ -42,6 +42,11 @@ export async function triggerGeneration(
   round: number,
   provider?: GenerationProvider,
 ): Promise<void> {
+  // ── Round bounds (generation only for rounds 2-5) ─────────────────────────
+  if (round <= 1 || round > 5) {
+    return;
+  }
+
   // ── Kill switch ───────────────────────────────────────────────────────────
   const config = getGenerationConfig();
   if (!config.enabled) {
@@ -56,71 +61,77 @@ export async function triggerGeneration(
 
   setGenerationStatus(room, round, "pending");
 
-  // ── Provider ──────────────────────────────────────────────────────────────
-  const resolvedProvider: GenerationProvider =
-    provider ?? new AnthropicProvider();
+  try {
+    // ── Provider ────────────────────────────────────────────────────────────
+    const resolvedProvider: GenerationProvider =
+      provider ?? new AnthropicProvider();
 
-  const context = buildGenerationContext(room, round);
+    const context = buildGenerationContext(room, round);
 
-  let briefingOk = true;
-  let contentOk = true;
+    let briefingOk = true;
+    let contentOk = true;
 
-  // ── Briefing generation ───────────────────────────────────────────────────
-  if (config.briefingsEnabled) {
-    const briefingArtifact = "briefing";
-    const startTs = Date.now();
-    logGenerationStart(round, briefingArtifact);
-
-    const briefingResult = await generateBriefingWithRetry(resolvedProvider, context);
-
-    const durationMs = Date.now() - startTs;
-
-    if (briefingResult === null) {
-      logGenerationFailure(round, briefingArtifact, "generateBriefingWithRetry returned null", durationMs);
-      logFallback(round, briefingArtifact, "falling back to pre-authored briefing");
-      briefingOk = false;
-    } else {
-      const validation = validateBriefing(briefingResult);
-      if (!validation.valid) {
-        // Should not happen — generateBriefingWithRetry only returns on valid — but guard anyway
-        logValidationFailure(round, briefingArtifact, validation.errors);
-        logFallback(round, briefingArtifact, "validation failed after retry — falling back");
-        briefingOk = false;
-      } else {
-        setGeneratedBriefing(room, round, briefingResult);
-        logGenerationSuccess(round, briefingArtifact, durationMs);
-      }
-    }
-  }
-
-  // ── Content generation ────────────────────────────────────────────────────
-  if (config.contentApps.length > 0) {
-    for (const faction of ALL_FACTIONS) {
-      const contentArtifact = `content:${faction}`;
+    // ── Briefing generation ─────────────────────────────────────────────────
+    if (config.briefingsEnabled) {
+      const briefingArtifact = "briefing";
       const startTs = Date.now();
-      logGenerationStart(round, contentArtifact);
+      logGenerationStart(round, briefingArtifact);
 
-      const contentResult = await generateContentWithRetry(
-        resolvedProvider,
-        context,
-        faction,
-        config.contentApps,
-      );
+      const briefingResult = await generateBriefingWithRetry(resolvedProvider, context);
 
       const durationMs = Date.now() - startTs;
 
-      if (contentResult === null) {
-        logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
-        logFallback(round, contentArtifact, "falling back to pre-authored content");
-        contentOk = false;
+      if (briefingResult === null) {
+        logGenerationFailure(round, briefingArtifact, "generateBriefingWithRetry returned null", durationMs);
+        logFallback(round, briefingArtifact, "falling back to pre-authored briefing");
+        briefingOk = false;
       } else {
-        setGeneratedContent(room, round, faction, contentResult);
-        logGenerationSuccess(round, contentArtifact, durationMs);
+        const validation = validateBriefing(briefingResult);
+        if (!validation.valid) {
+          // Should not happen — generateBriefingWithRetry only returns on valid — but guard anyway
+          logValidationFailure(round, briefingArtifact, validation.errors);
+          logFallback(round, briefingArtifact, "validation failed after retry — falling back");
+          briefingOk = false;
+        } else {
+          setGeneratedBriefing(room, round, briefingResult);
+          logGenerationSuccess(round, briefingArtifact, durationMs);
+        }
       }
     }
-  }
 
-  // ── Final status ──────────────────────────────────────────────────────────
-  const allOk = briefingOk && contentOk;
-  setGenerationStatus(room, round, allOk ? "ready" : "failed");
+    // ── Content generation ──────────────────────────────────────────────────
+    if (config.contentApps.length > 0) {
+      for (const faction of ALL_FACTIONS) {
+        const contentArtifact = `content:${faction}`;
+        const startTs = Date.now();
+        logGenerationStart(round, contentArtifact);
+
+        const contentResult = await generateContentWithRetry(
+          resolvedProvider,
+          context,
+          faction,
+          config.contentApps,
+        );
+
+        const durationMs = Date.now() - startTs;
+
+        if (contentResult === null) {
+          logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
+          logFallback(round, contentArtifact, "falling back to pre-authored content");
+          contentOk = false;
+        } else {
+          setGeneratedContent(room, round, faction, contentResult);
+          logGenerationSuccess(round, contentArtifact, durationMs);
+        }
+      }
+    }
+
+    // ── Final status ──────────────────────────────────────────────────────────
+    const allOk = briefingOk && contentOk;
+    setGenerationStatus(room, round, allOk ? "ready" : "failed");
+  } catch (err) {
+    // INV-1: triggerGeneration must never throw — all errors result in fallback
+    console.error(`[generation] Unexpected error for round ${round} in room ${room.code}:`, err);
+    setGenerationStatus(room, round, "failed");
+  }
 }
