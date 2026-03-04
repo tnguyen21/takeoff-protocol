@@ -25,7 +25,7 @@ export const PROM_NEWS: ContentItem[] = [
       id: "prom-r5-news-1",
       type: "headline",
       round: 5,
-      body: "ANALYSIS: 'Why Prometheus May Be The Lab That Saves Us' — The Atlantic Profile of Dr. Sarah Chen",
+      body: "ANALYSIS: 'Why Prometheus May Be The Lab That Saves Us' — The Atlantic Profile of James Park",
       timestamp: "2028-02-01T06:00:00Z",
       classification: "context",
       condition: { variable: "publicSentiment", operator: "gt", value: 20 },

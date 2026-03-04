@@ -89,7 +89,7 @@ export const OB_SECURITY_SECURITY: ContentItem[] = [
     },
     // --- AMBIENT CONDITION-GATED ITEMS ---
 
-    // Round 1 ambient — securityLevelOB < 3
+    // Round 1 ambient — unconditional
     {
       id: "ob-r1-security-ambient-vuln-1",
       type: "document",
@@ -98,7 +98,6 @@ export const OB_SECURITY_SECURITY: ContentItem[] = [
       body: "PRIORITY: MEDIUM-HIGH\n\nAudit of contractor API credential scope completed. Findings:\n\n- 47 contractor accounts with access to production checkpoint storage paths\n- 14 accounts with access scopes exceeding documented job requirements\n- 6 accounts belonging to former contractors who are no longer active\n\nRecommendation: Revoke over-scoped credentials immediately. Retire former contractor access. Estimated time: 4 hours with engineering support.\n\nBudget request for proper credential rotation tooling submitted Q4 2025. Still pending.\n\n— Priya Singh (Security)",
       timestamp: "2026-11-05T09:00:00Z",
       classification: "context",
-      condition: { variable: "securityLevelOB", operator: "lt", value: 3 },
     },
 
     // Round 2 ambient — chinaWeightTheftProgress > 50
