@@ -1,6 +1,24 @@
 import type { ContentItem } from "@takeoff/shared";
 import { registerContent } from "./loader.js";
 
+export const SHARED_CLASSIFICATION_TUTORIAL: ContentItem[] = [
+    {
+      id: "tut-shared-classification-1",
+      type: "message",
+      round: 0,
+      sender: "Game System",
+      subject: "Intel Classification Guide",
+      body: "[TUTORIAL] Each piece of intel is tagged: critical = time-sensitive and decision-relevant; breadcrumb = a lead that may require follow-up to develop; context = atmosphere and background; red-herring = may be deliberately misleading. Use classifications to triage what to act on now versus file for later.",
+      timestamp: "2026-01-01T08:00:00Z",
+      classification: "context",
+    },
+];
+
+registerContent({ faction: "openbrain", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
+registerContent({ faction: "prometheus", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
+registerContent({ faction: "china", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
+registerContent({ faction: "external", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
+
 export const OB_GAMESTATE: ContentItem[] = [
     {
       id: "tut-ob-state-1",

@@ -8,7 +8,27 @@ import { registerContent } from "../loader.js";
  * Future: add per-faction "algorithmic bubble" modules (see docs/BACKLOG.md).
  */
 export const SHARED_TWITTER: ContentItem[] = [
-    // ── Round 1 ──
+    // ── Round 1 — unconditional ──
+    {
+      id: "tw-r1-ambient-unconditional-1",
+      type: "tweet",
+      round: 1,
+      sender: "@devpatel_codes",
+      body: "Just shipped a feature in 2 hours that would have taken me two days last year. My AI pair programmer caught three edge cases I missed, suggested a cleaner architecture, and wrote the tests. I still did the work. It just... also did the work. 2027 is wild.",
+      timestamp: "2026-11-03T10:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "tw-r1-ambient-unconditional-2",
+      type: "tweet",
+      round: 1,
+      sender: "@marketing_maria",
+      body: "Applied to a coordinator role at a mid-size agency last week. Checked the listing today to prep for an interview I haven't gotten yet. The posting is gone. Not filled — just removed. Third time this has happened in two months. Not sure what to make of it.",
+      timestamp: "2026-11-04T14:00:00Z",
+      classification: "context",
+    },
+
+    // ── Round 1 — conditional ──
     {
       id: "tw-r1-ambient-mkt-bull-1",
       type: "tweet",
