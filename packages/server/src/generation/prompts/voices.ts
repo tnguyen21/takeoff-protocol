@@ -18,11 +18,11 @@ export const APP_VOICES: Partial<Record<AppId, string>> = {
   slack: "Informal, conversational. Short messages. Lowercase ok. Emoji sparingly. Channel-appropriate tone (#research is technical, #general is casual, #alignment is earnest).",
   news: "Reuters/AP wire style. Terse. Lead with the news. Attribution. No editorializing. ALL CAPS for BREAKING/URGENT prefixes.",
   twitter: "Hot takes, ratio bait, doom posting, hype posting. 280 chars. Hashtags. Quote tweets. The full spectrum of AI Twitter.",
-  bloomberg: "Financial shorthand. Ticker symbols. Basis points. 'Sources say.' Neutral but urgent.",
+  bloomberg: "Financial shorthand. Ticker symbols. Basis points. 'Sources say.' Neutral but urgent. Format: { body: 'TICKER — financial data and analysis' }.",
   email: "Corporate formal. Subject lines matter. CC lists imply politics. Board emails are terse and loaded.",
-  memo: "Internal document. Headers, bullet points. Classification markings for sensitive ones.",
-  signal: "Encrypted DM energy. Short, urgent, paranoid. Disappearing message vibes.",
-  intel: "ICD 203 format. Classification headers. Confidence levels (HIGH/MODERATE/LOW). Analytic tradecraft.",
+  memo: "Internal document. Headers, bullet points. Classification markings for sensitive ones. Format: { subject: 'MEMO: Topic', body: 'content with headers' }.",
+  signal: "Encrypted DM energy. Short, urgent, paranoid. Disappearing message vibes. Format: { sender: 'Contact Name', body: 'short encrypted message' }.",
+  intel: "ICD 203 format. Classification headers. Confidence levels (HIGH/MODERATE/LOW). Analytic tradecraft. Format: { subject: 'CLASSIFICATION — Title', body: 'assessment body' }.",
 };
 
 /**

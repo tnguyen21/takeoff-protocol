@@ -1,6 +1,8 @@
 import { describe, it, expect } from "bun:test";
 import { FACTION_VOICES, APP_VOICES } from "./voices.js";
 import { ROUND_ARCS } from "./arcs.js";
+import { CONTENT_SYSTEM_PROMPT } from "./system.js";
+import { APP_TYPE_MAP } from "../content.js";
 import type { Faction } from "@takeoff/shared";
 
 // INV-1: FACTION_VOICES has entries for all 4 factions
@@ -29,6 +31,30 @@ describe("APP_VOICES", () => {
       expect(APP_VOICES[app]).toBeDefined();
       expect(typeof APP_VOICES[app]).toBe("string");
       expect((APP_VOICES[app] as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("INV-1: every app in APP_TYPE_MAP has a corresponding entry in APP_VOICES", () => {
+    for (const app of Object.keys(APP_TYPE_MAP)) {
+      expect(APP_VOICES[app as keyof typeof APP_VOICES]).toBeDefined();
+      expect(typeof APP_VOICES[app as keyof typeof APP_VOICES]).toBe("string");
+    }
+  });
+
+  it("INV-3: no APP_VOICES entry is empty string", () => {
+    for (const [app, voice] of Object.entries(APP_VOICES)) {
+      expect(voice, `APP_VOICES["${app}"] must not be empty`).not.toBe("");
+    }
+  });
+});
+
+// INV-2 (CONTENT_SYSTEM_PROMPT): format reference for all 8 app types
+describe("CONTENT_SYSTEM_PROMPT", () => {
+  const REQUIRED_APP_TYPES = ["news", "twitter", "slack", "email", "memo", "signal", "intel", "bloomberg"];
+
+  it('INV-2: contains format reference for all 8 app types', () => {
+    for (const app of REQUIRED_APP_TYPES) {
+      expect(CONTENT_SYSTEM_PROMPT).toContain(`"${app}"`);
     }
   });
 });

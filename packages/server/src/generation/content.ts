@@ -6,7 +6,7 @@ import { validateContent } from "./validate.js";
 
 // ── App → ContentItemType mapping ─────────────────────────────────────────────
 
-const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
+export const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
   news: "headline",
   twitter: "tweet",
   slack: "message",

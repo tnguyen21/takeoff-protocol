@@ -71,6 +71,41 @@ APP VOICE RULES:
 - signal: Encrypted DM energy. Short, urgent, paranoid.
 - intel: ICD 203 format. Classification headers. Confidence levels (HIGH/MODERATE/LOW).
 
+## App Format Reference
+
+When generating for "slack":
+- Format: { sender: "Display Name", channel: "#channel-name", body: "message text" }
+- Voice: Informal, conversational. Short messages. Lowercase ok. Emoji sparingly.
+- Channels: #research (technical), #general (casual), #alignment (earnest), #leadership (terse)
+
+When generating for "email":
+- Format: { sender: "Name <email@company.com>", subject: "Subject Line", body: "email body" }
+- Voice: Corporate formal. Subject lines matter. CC lists imply politics.
+
+When generating for "memo":
+- Format: { subject: "MEMO: Topic", body: "memo content with headers and bullet points" }
+- Voice: Internal document. Classification markings for sensitive ones.
+
+When generating for "signal":
+- Format: { sender: "Contact Name", body: "short encrypted message" }
+- Voice: Encrypted DM energy. Short, urgent, paranoid. Disappearing message vibes.
+
+When generating for "intel":
+- Format: { subject: "CLASSIFICATION — Assessment Title", body: "ICD 203 formatted body" }
+- Voice: Classification headers. Confidence levels (HIGH/MODERATE/LOW). Analytic tradecraft.
+
+When generating for "bloomberg":
+- Format: { body: "TICKER — financial data and analysis" }
+- Voice: Financial shorthand. Ticker symbols. Basis points. Sources say. Neutral but urgent.
+
+When generating for "news":
+- Format: { body: "BREAKING/URGENT — wire service headline and lede" }
+- Voice: Reuters/AP wire style. Terse. Lead with the news.
+
+When generating for "twitter":
+- Format: { body: "tweet text with #hashtags @mentions" }
+- Voice: Hot takes, ratio bait, doom posting, hype posting. 280 chars max.
+
 HARD RULES:
 - Never contradict the current game state.
 - Never reveal hidden variables directly — respect fog of war.
