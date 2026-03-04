@@ -120,6 +120,33 @@ export const PROM_SIGNAL_POLICY: ContentItem[] = [
 
 export const PROM_SIGNAL_CEO: ContentItem[] = [
     {
+      id: "prom1-signal-ceo-1",
+      type: "message",
+      round: 1,
+      sender: "Karen Bell (Board Chair)",
+      body: "James — quick note before tomorrow's board call. I've been fielding questions from Lena and Tom about the deployment pace decision. They're both watching the OB competitive situation closely and wondering whether our 'safety first' positioning costs us market timing. I'm with you on substance. But we need to bring them along. Worth a 20-minute call tonight?",
+      timestamp: "2026-11-02T18:30:00Z",
+      classification: "critical",
+    },
+    {
+      id: "prom1-signal-ceo-2",
+      type: "message",
+      round: 1,
+      sender: "Karen Bell (Board Chair)",
+      body: "One more thing I should have said on the call: the board unanimously agrees that your public positioning on safety is a competitive differentiator, not a liability. Don't let anyone convince you otherwise. OB is going to have a bad quarter eventually. When they do, Prometheus needs to be the place the talent and capital flow toward. Keep building toward that.",
+      timestamp: "2026-11-03T09:45:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom1-signal-ceo-3",
+      type: "message",
+      round: 1,
+      sender: "Nia Washington (CEO, Vertex AI)",
+      body: "James — we were introduced by Elena Vasquez at GovAI last year. Reaching out because I think we should be talking, given what's happening in the regulatory space. Google's not going to lead on safety standards voluntarily — but Prometheus might be able to. I have a few ideas about a cross-industry safety consortium that I'd like to run by you. Unofficial, no press, just exploring. Coffee?",
+      timestamp: "2026-11-05T14:00:00Z",
+      classification: "context",
+    },
+    {
       id: "prom4-signal-ceo-3",
       type: "message",
       round: 4,
@@ -148,5 +175,67 @@ export const PROM_SIGNAL_CEO: ContentItem[] = [
     },
 ];
 
+export const PROM_SIGNAL_SCIENTIST: ContentItem[] = [
+  {
+    id: "prom-r1-signal-sci-1",
+    type: "message",
+    round: 1,
+    sender: "Dr. Marcus Holt (DeepMind Safety)",
+    body: "Sarah — just read your mechanistic interpretability paper in NeurIPS proceedings. The feature decomposition approach is really elegant. We've been running into the same issue with superposition in our models. Are you planning to release the evaluation toolkit? I'd love to apply it to our internal evals and compare notes — off the record of course.",
+    timestamp: "2026-11-01T11:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-r1-signal-sci-2",
+    type: "message",
+    round: 1,
+    sender: "Dr. Marcus Holt (DeepMind Safety)",
+    body: "Follow-up: I talked to our team lead and there's appetite for a joint paper on cross-lab interpretability methodology. Nothing proprietary, just the evaluation framework itself. Given the competitive climate I know this is a big ask. But I think the field is better off if safety researchers from different labs can actually compare notes. Worth discussing?",
+    timestamp: "2026-11-04T15:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-r1-signal-sci-3",
+    type: "message",
+    round: 1,
+    sender: "Professor Huang Li (Berkeley AI Safety)",
+    body: "Congratulations on the Agent-2 benchmark results. I'm assigning your alignment evaluation paper as required reading for my graduate seminar this semester. One of my students is applying for a summer research position at Prometheus — Kavya Reddy, extremely sharp on mechanistic interpretability. If she reaches out, I'd vouch for her strongly.",
+    timestamp: "2026-11-06T13:00:00Z",
+    classification: "context",
+  },
+];
+
+export const PROM_SIGNAL_OPENSOURCE: ContentItem[] = [
+  {
+    id: "prom-r1-signal-oss-1",
+    type: "message",
+    round: 1,
+    sender: "devika_builds (GitHub)",
+    body: "hey!! just wanted to say the Prometheus-7B safety toolkit is the first open-source AI safety framework I've been able to actually use without a PhD. i've been building eval pipelines with it for my community college students. we submitted a PR for better documentation of the token attribution module — would love feedback from your team if you get a chance",
+    timestamp: "2026-11-02T21:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-r1-signal-oss-2",
+    type: "message",
+    round: 1,
+    sender: "Tomas Rivera (OSS Maintainer, llm-safety-bench)",
+    body: "Darius — we're integrating the Prometheus safety evaluation suite into llm-safety-bench (30k GitHub stars, used by 200+ orgs). Just wanted to flag it before the PR merges so you have a heads-up. Also: I'd love to add your team as official maintainers so you have review rights over how your framework gets used. Low commitment, just to protect the project's integrity.",
+    timestamp: "2026-11-04T14:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-r1-signal-oss-3",
+    type: "message",
+    round: 1,
+    sender: "Tomas Rivera (OSS Maintainer, llm-safety-bench)",
+    body: "One more thing — there's a fork of your safety toolkit circulating in some corners of the internet that removes some of your hardcoded guardrails and repackages it as 'uncensored.' I've reported it to GitHub. You might want your legal team to look at whether it violates your Apache license terms. Heads up.",
+    timestamp: "2026-11-06T10:30:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "prometheus", app: "signal", role: "prom_policy", accumulate: true, items: PROM_SIGNAL_POLICY });
 registerContent({ faction: "prometheus", app: "signal", role: "prom_ceo", accumulate: true, items: PROM_SIGNAL_CEO });
+registerContent({ faction: "prometheus", app: "signal", role: "prom_scientist", accumulate: true, items: PROM_SIGNAL_SCIENTIST });
+registerContent({ faction: "prometheus", app: "signal", role: "prom_opensource", accumulate: true, items: PROM_SIGNAL_OPENSOURCE });

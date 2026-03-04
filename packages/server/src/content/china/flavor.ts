@@ -301,12 +301,48 @@ export const CHINA_SLACK_FLAVOR: ContentItem[] = [
 export const CHINA_SIGNAL_FLAVOR: ContentItem[] = [
   // ── Round 1 ──
   {
+    id: "china-flavor-r1-signal-mom-a",
+    type: "message",
+    round: 1,
+    sender: "Mother (家人)",
+    body: "儿子，国庆假期你能回来吗？家里包了饺子等你。你哥哥带了孩子来，你侄子快两岁了，会叫人了。你爸腰不好，你回来帮他看看。\n\n[Son, can you come home for National Day holiday? We made dumplings waiting for you. Your brother brought the kids — your nephew is almost two, he's learning to talk now. Your father's back is bad, come check on him.]",
+    timestamp: "2026-09-28T17:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-signal-mom-b",
+    type: "message",
+    round: 1,
+    sender: "Mother (家人)",
+    body: "你上周没接我电话。你哥哥说你最近很忙，但忙成这样也要吃饭吧。我在网上买了你喜欢的老干妈，寄给你了，收到了吗？\n\n[You didn't answer my call last week. Your brother says you've been very busy, but no matter how busy you are you still need to eat. I ordered your favorite Laoganma sauce online and mailed it to you — did you receive it?]",
+    timestamp: "2026-10-18T20:00:00Z",
+    classification: "context",
+  },
+  {
     id: "china-flavor-r1-signal-1",
     type: "message",
     round: 1,
     sender: "Mother (家人)",
     body: "儿子，你工作太辛苦了。上次回家是什么时候？你爸说他在电视上看到了关于AI的新闻，问你是不是在做那个。我说不知道。回家吃饭吧。\n\n[Son, you work too hard. When was the last time you came home? Your father saw AI news on TV and asked if that's what you're doing. I said I didn't know. Come home for dinner.]",
     timestamp: "2026-11-05T19:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-signal-friend-a",
+    type: "message",
+    round: 1,
+    sender: "University Friend (Shanghai)",
+    body: "Old friend! I'm at Tongji now, teaching computer science. My students keep asking me to explain large language models and honestly your team's open-source Qwen release has become my go-to teaching example. Do you have any time for a call? I want to take you to that lamb skewer place near People's Square, the one we used to go to for exams.",
+    timestamp: "2026-10-05T11:20:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-flavor-r1-signal-friend-b",
+    type: "message",
+    round: 1,
+    sender: "University Friend (Shanghai)",
+    body: "saw the Qwen download numbers — 800k in the first week, that's remarkable. Half my department is debating whether to switch their research to your framework. For what it's worth: the fact that you stayed and built here instead of taking one of those US offers matters to people. The students notice.",
+    timestamp: "2026-11-04T16:45:00Z",
     classification: "context",
   },
   {
@@ -393,5 +429,63 @@ export const CHINA_SIGNAL_FLAVOR: ContentItem[] = [
   },
 ];
 
+export const CHINA_SIGNAL_NOTIFICATIONS: ContentItem[] = [
+  {
+    id: "china-notif-r1-jd-1",
+    type: "message",
+    round: 1,
+    sender: "京东 (JD.com)",
+    body: "您的订单已签收。商品：机械键盘（Cherry MX青轴）+ USB集线器7口。包裹已送至前台。感谢您的购买！\n\n[Order delivered. Items: Mechanical keyboard (Cherry MX Blue) + 7-port USB hub. Package left at reception. Thank you!]",
+    timestamp: "2026-10-09T14:11:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-notif-r1-jd-2",
+    type: "message",
+    round: 1,
+    sender: "京东 (JD.com)",
+    body: "您的订单已发货，预计明日送达。商品：护眼台灯 + 颈椎枕 + 维生素B族。运单号：JD12938840291。\n\n[Your order has shipped, expected delivery tomorrow. Items: Eye-care desk lamp + cervical pillow + B vitamins. Tracking: JD12938840291.]",
+    timestamp: "2026-11-01T09:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-notif-r1-meituan-1",
+    type: "message",
+    round: 1,
+    sender: "美团外卖 (Meituan)",
+    body: "您的外卖已送达！黄焖鸡米饭 + 紫菜蛋花汤 + 卤鸡蛋(2个)。合计：¥38.5。五星好评走一个？\n\n[Your delivery has arrived! Braised chicken rice + seaweed soup + marinated eggs (x2). Total: ¥38.5. Leave us 5 stars?]",
+    timestamp: "2026-10-20T12:47:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-notif-r1-meituan-2",
+    type: "message",
+    round: 1,
+    sender: "美团外卖 (Meituan)",
+    body: "骑手小哥已在楼下，请下楼取餐。订单：兰州拉面(大碗) + 凉拌黄瓜 + 红烧肉盖饭。合计：¥52.0\n[Delivery rider is downstairs, please come pick up. Order: Lanzhou noodles (large) + cold cucumber + braised pork rice. Total: ¥52.0]",
+    timestamp: "2026-11-04T19:55:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-notif-r1-calendar-physical",
+    type: "message",
+    round: 1,
+    sender: "北京协和医院 (PUMCH)",
+    body: "体检预约提醒：您的年度体检预约时间为11月15日（周日）上午8:30。请携带身份证。禁食12小时，可饮少量清水。如需改期请提前48小时联系。\n\n[Annual physical reminder: Nov 15 (Sun) 8:30 AM. Bring ID. Fast 12 hrs, clear water OK. Reschedule 48hrs in advance.]",
+    timestamp: "2026-11-10T08:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-notif-r1-bilibili",
+    type: "message",
+    round: 1,
+    sender: "哔哩哔哩 (Bilibili)",
+    body: "您关注的UP主更新了：【3Blue1Brown中文版】神经网络的本质 第3集已上线。大会员月费¥25将于11月18日扣款。去看看？\n\n[Followed creator updated: [3Blue1Brown Chinese] Essence of Neural Networks Ep.3 is live. Premium ¥25 charges Nov 18.]",
+    timestamp: "2026-11-02T20:00:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "china", app: "slack", accumulate: true, items: CHINA_SLACK_FLAVOR });
 registerContent({ faction: "china", app: "signal", accumulate: true, items: CHINA_SIGNAL_FLAVOR });
+registerContent({ faction: "china", app: "signal", accumulate: true, items: CHINA_SIGNAL_NOTIFICATIONS });

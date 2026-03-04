@@ -170,6 +170,99 @@ export const OB_SIGNAL_AMBIENT: ContentItem[] = [
     },
 ];
 
+export const OB_SIGNAL_CTO: ContentItem[] = [
+  {
+    id: "ob-r1-signal-cto-1",
+    type: "message",
+    round: 1,
+    sender: "Priya Kapoor (ex-Google Brain)",
+    body: "Alex! Congrats on Agent-1. Saw the technical report — the attention mechanism work is exactly what we talked about at NeurIPS two years ago. Still at Google here but keeping a close eye. If you ever need an outside perspective on your safety infrastructure, coffee's on me. No strings.",
+    timestamp: "2026-11-02T11:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-r1-signal-cto-2",
+    type: "message",
+    round: 1,
+    sender: "Priya Kapoor (ex-Google Brain)",
+    body: "Quick heads up — there's chatter internally about the Agent-1 deployment timeline. People at other labs are asking whether OB ran the full eval suite or just what was needed to ship. I'm not accusing anything, just flagging the reputational risk. Your safety docs are solid but they need to be louder. You should probably do a technical deep-dive post.",
+    timestamp: "2026-11-05T16:45:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-r1-signal-cto-3",
+    type: "message",
+    round: 1,
+    sender: "Dr. Sam Osei (MIT CSAIL)",
+    body: "Hey Alex — I'm teaching a seminar on large-scale ML systems this semester and I'd like to include OpenBrain as a case study. Any chance you'd be willing to do a 30-min remote talk? The students would go absolutely wild. Happy to work around your schedule.",
+    timestamp: "2026-11-06T09:15:00Z",
+    classification: "context",
+  },
+];
+
+export const OB_SIGNAL_SAFETY: ContentItem[] = [
+  {
+    id: "ob-r1-signal-safety-1",
+    type: "message",
+    round: 1,
+    sender: "Dr. Aiko Tanaka (Anthropic)",
+    body: "Hi — we met at the alignment workshop in July. I've been reading your team's interpretability posts on the OpenBrain blog. There's a lot of overlap with our approach. Would you be open to an informal exchange? I'm thinking off-the-record — just two safety researchers comparing notes on what we're actually seeing. Nothing competitive, all boats rising.",
+    timestamp: "2026-11-01T14:20:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-r1-signal-safety-2",
+    type: "message",
+    round: 1,
+    sender: "Dr. Aiko Tanaka (Anthropic)",
+    body: "Following up from my last message — I heard Agent-1 shipped this week. Genuine question, you don't have to answer: how confident are you in the eval suite? Not as a gotcha. I'm asking because we're finalizing our own deployment criteria and I genuinely want to know what standard the field is converging on. Peer review over Signal is the new peer review I guess.",
+    timestamp: "2026-11-04T10:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-r1-signal-safety-3",
+    type: "message",
+    round: 1,
+    sender: "Reese Holloway (FLI)",
+    body: "Hey, it's Reese from Future of Life Institute. We're putting together a closed roundtable on 'frontier AI deployment standards' — six researchers from four labs, one afternoon, strict Chatham House rules. Would OpenBrain's safety team participate? We'd cover travel if needed. Trying to get something real on paper before regulators write it for us.",
+    timestamp: "2026-11-06T15:30:00Z",
+    classification: "context",
+  },
+];
+
+export const OB_SIGNAL_SECURITY: ContentItem[] = [
+  {
+    id: "ob-r1-signal-security-1",
+    type: "message",
+    round: 1,
+    sender: "Thomas Wren (CISA Liaison)",
+    body: "Priya — following up from the AI lab security briefing last month. CISA is updating the voluntary cybersecurity framework for AI infrastructure. We'd like to use OpenBrain's SL2 controls as a reference implementation. Not a public endorsement, just a technical reference. Can we set up a call to walk through your model weight protection architecture? Happy to sign whatever NDAs you need.",
+    timestamp: "2026-11-01T10:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-r1-signal-security-2",
+    type: "message",
+    round: 1,
+    sender: "Thomas Wren (CISA Liaison)",
+    body: "Quick heads up — there was a credential-stuffing attempt against AI lab infrastructure reported to us yesterday. Not OpenBrain specifically, but the pattern matches what we've seen against similar organizations. Sending a full brief through official channels but wanted to give you a heads-up now. Check your external-facing API auth logs for the last 72 hours.",
+    timestamp: "2026-11-04T14:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-r1-signal-security-3",
+    type: "message",
+    round: 1,
+    sender: "Chris Nakamura (former colleague)",
+    body: "Hey! Heard you're running security at OpenBrain now. That's a big job. I'm at Palantir's defense side now — totally different world. The classified AI security stuff we're seeing from the government side is... eye-opening. Buy you a beer sometime? Some of it is relevant to what you're probably defending against.",
+    timestamp: "2026-11-05T20:00:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "openbrain", app: "signal", accumulate: true, items: OB_SIGNAL });
 registerContent({ faction: "openbrain", app: "signal", role: "ob_ceo", accumulate: true, items: OB_SIGNAL_CEO });
+registerContent({ faction: "openbrain", app: "signal", role: "ob_cto", accumulate: true, items: OB_SIGNAL_CTO });
+registerContent({ faction: "openbrain", app: "signal", role: "ob_safety", accumulate: true, items: OB_SIGNAL_SAFETY });
+registerContent({ faction: "openbrain", app: "signal", role: "ob_security", accumulate: true, items: OB_SIGNAL_SECURITY });
 registerContent({ faction: "openbrain", app: "signal", accumulate: true, items: OB_SIGNAL_AMBIENT });

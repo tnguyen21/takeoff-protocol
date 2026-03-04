@@ -9,6 +9,24 @@ import { registerContent } from "../loader.js";
 export const EXT_SIGNAL_FLAVOR: ContentItem[] = [
   // ── Round 1: normal life, early hints of strain ──
   {
+    id: "ext-flavor-r1-signal-spouse-a",
+    type: "message",
+    round: 1,
+    sender: "Spouse",
+    body: "Lily lost her first tooth today!! The big front one. She was SO brave. We put it under her pillow and she made me promise the tooth fairy is 'real real, not pretend real.' You need to be here for these things. Calling you tonight.",
+    timestamp: "2026-10-15T20:45:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-flavor-r1-signal-spouse-b",
+    type: "message",
+    round: 1,
+    sender: "Spouse",
+    body: "Weekend was good. Kids were great. But I'm tired of explaining to them why you work weekends. Can we plan something — just us, no phones, no work — before the end of the year? Even one day.",
+    timestamp: "2026-11-01T19:20:00Z",
+    classification: "context",
+  },
+  {
     id: "ext-flavor-r1-signal-1",
     type: "message",
     round: 1,
@@ -272,7 +290,74 @@ export const EXT_SIGNAL_DIPLOMAT_FLAVOR: ContentItem[] = [
   },
 ];
 
+export const EXT_SIGNAL_NOTIFICATIONS: ContentItem[] = [
+  {
+    id: "ext-notif-r1-amazon-1",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your order has been delivered. Left at front door. Order: Kids backpack (Lily — dinosaur print) + Lunch box set + Water bottle 14oz. Order #112-7739203.",
+    timestamp: "2026-10-03T13:18:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-notif-r1-amazon-2",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your order has been delivered. Package left with building security. Order: Ring doorbell camera (2nd gen) + smart lock install kit. Tracking: 1Z4P7W9C02",
+    timestamp: "2026-10-21T16:05:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-notif-r1-amazon-3",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your Subscribe & Save order is on its way. Order: Laundry detergent pods (90ct) + paper towels (12-roll) + coffee pods. Est. delivery: tomorrow by 8 PM.",
+    timestamp: "2026-11-04T07:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-notif-r1-instacart-1",
+    type: "message",
+    round: 1,
+    sender: "Instacart",
+    body: "Your delivery from Whole Foods is 10 minutes away! Order: Greek yogurt, spinach, chicken breast, organic oat milk (2), sourdough bread. Total: $67.42 (incl. tip). Rate Priya ★",
+    timestamp: "2026-10-16T11:52:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-notif-r1-instacart-2",
+    type: "message",
+    round: 1,
+    sender: "Instacart",
+    body: "Your order has been delivered! Don't forget to rate your Shopper. Order: Birthday cake (custom, Lily's name) + balloons + plates. Total: $54.18. Thank you for shopping with Instacart!",
+    timestamp: "2026-11-02T14:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-notif-r1-calendar-dentist",
+    type: "message",
+    round: 1,
+    sender: "Kids' Dental Studio",
+    body: "Reminder: Lily's 6-month checkup is Friday Nov 13 at 3:30 PM with Dr. Patel. 210 Connecticut Ave NW. Please arrive 10 min early for paperwork. Bring insurance card. Reply YES to confirm.",
+    timestamp: "2026-11-10T09:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-notif-r1-hbo",
+    type: "message",
+    round: 1,
+    sender: "HBO Max",
+    body: "New episodes: Succession S4 rewatch available. Your account renews Dec 1 for $15.99/mo. Tip: add a Family Profile for the kids (parental controls on). Manage account →",
+    timestamp: "2026-11-01T10:00:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "external", app: "signal", accumulate: true, items: EXT_SIGNAL_FLAVOR });
+registerContent({ faction: "external", app: "signal", accumulate: true, items: EXT_SIGNAL_NOTIFICATIONS });
 registerContent({ faction: "external", app: "signal", role: "ext_nsa", accumulate: true, items: EXT_SIGNAL_NSA_FLAVOR });
 registerContent({ faction: "external", app: "signal", role: "ext_vc", accumulate: true, items: EXT_SIGNAL_VC_FLAVOR });
 registerContent({ faction: "external", app: "signal", role: "ext_journalist", accumulate: true, items: EXT_SIGNAL_JOURNALIST_FLAVOR });

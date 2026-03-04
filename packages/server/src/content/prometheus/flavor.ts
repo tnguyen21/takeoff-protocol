@@ -377,12 +377,48 @@ export const PROM_SLACK_FLAVOR: ContentItem[] = [
 export const PROM_SIGNAL_FLAVOR: ContentItem[] = [
   // ── Round 1 ──
   {
+    id: "prom-flavor-r1-signal-friend-a",
+    type: "message",
+    round: 1,
+    sender: "Friend (former OB employee)",
+    body: "hey, been meaning to reach out. i quit OB last week. probably not surprising given everything. just wanted to say — what you're building at Prometheus is the right call. stay the course.",
+    timestamp: "2026-08-15T23:10:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-signal-friend-b",
+    type: "message",
+    round: 1,
+    sender: "Friend (former OB employee)",
+    body: "couple months out now. deprogramming is... slow. i keep catching myself thinking about shipping velocity first and asking about alignment second. the culture gets in you. anyway i read your interpretability preprint. the part on activation steering was really good. you should get that into a top venue.",
+    timestamp: "2026-10-02T14:30:00Z",
+    classification: "context",
+  },
+  {
     id: "prom-flavor-r1-signal-1",
     type: "message",
     round: 1,
     sender: "Friend (former OB employee)",
     body: "Hey. I left OpenBrain three months ago and I still think about the stuff I saw. You made the right call going to Prometheus. Don't let anyone make you feel like second place.",
     timestamp: "2026-11-03T20:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-signal-advisor-a",
+    type: "message",
+    round: 1,
+    sender: "Grad School Advisor",
+    body: "Congratulations on the Prometheus role — I heard through the grapevine and wanted to say I'm proud. You turned down places that would have paid three times as much to do work that matters. That's a hard choice and not everyone makes it. Let me know when you're settled in.",
+    timestamp: "2026-09-10T11:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-flavor-r1-signal-advisor-b",
+    type: "message",
+    round: 1,
+    sender: "Grad School Advisor",
+    body: "Quick note — I'm assigning your steering vector paper as required reading this semester. Three of my current students have already asked if they can do their theses in the Prometheus framework. You're building something that resonates. How are you finding the actual work?",
+    timestamp: "2026-10-28T16:45:00Z",
     classification: "context",
   },
   {
@@ -470,5 +506,72 @@ export const PROM_SIGNAL_FLAVOR: ContentItem[] = [
   },
 ];
 
+export const PROM_SIGNAL_NOTIFICATIONS: ContentItem[] = [
+  {
+    id: "prom-notif-r1-amazon-1",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your order has been delivered. Left at front door. Order: Whiteboards markers (12pk, assorted) + Moleskine notebooks (3pk). Order #113-6284910.",
+    timestamp: "2026-10-07T15:22:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-notif-r1-amazon-2",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your order has been delivered. Package left with neighbor (Unit 4B). Order: Ergonomic keyboard + wrist rest + HDMI cable (6ft). Tracking: 1Z9K2R5B01",
+    timestamp: "2026-10-25T11:34:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-notif-r1-amazon-3",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Delivery update: your order is arriving today. Order: The Precipice (Toby Ord) — paperback + Superintelligence (Bostrom) — used copy. Est. delivery: 4–7 PM.",
+    timestamp: "2026-11-03T08:50:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-notif-r1-uber-eats-1",
+    type: "message",
+    round: 1,
+    sender: "Uber Eats",
+    body: "Order delivered! Shalimar Restaurant — Chicken tikka masala + garlic naan + mango lassi. Total: $29.85. Rate your experience ★",
+    timestamp: "2026-10-18T20:14:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-notif-r1-uber-eats-2",
+    type: "message",
+    round: 1,
+    sender: "Uber Eats",
+    body: "Your order from Coupa Café is on its way! ETA 8 min. Order: Cortado (2) + avocado toast + yogurt parfait. Total: $24.60",
+    timestamp: "2026-11-05T08:41:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-notif-r1-calendar-dentist",
+    type: "message",
+    round: 1,
+    sender: "Aria Dental",
+    body: "Reminder: your bi-annual cleaning appointment is Mon Nov 9 at 10:00 AM with Dr. Kim. 825 El Camino Real, Palo Alto. Reply CONFIRM or call to reschedule.",
+    timestamp: "2026-11-06T09:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "prom-notif-r1-spotify",
+    type: "message",
+    round: 1,
+    sender: "Spotify",
+    body: "New releases from artists you follow: Radiohead — Live Bootlegs Vol. 3, Floating Points — new EP. Your Family Plan renews Nov 20 for $16.99. Manage →",
+    timestamp: "2026-11-01T10:00:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "prometheus", app: "slack", accumulate: true, items: PROM_SLACK_FLAVOR });
 registerContent({ faction: "prometheus", app: "signal", accumulate: true, items: PROM_SIGNAL_FLAVOR });
+registerContent({ faction: "prometheus", app: "signal", accumulate: true, items: PROM_SIGNAL_NOTIFICATIONS });

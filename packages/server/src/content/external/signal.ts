@@ -205,7 +205,67 @@ export const EXT_SIGNAL_JOURNALIST: ContentItem[] = [
     },
 ];
 
+export const EXT_SIGNAL_NSA_R1: ContentItem[] = [
+  {
+    id: "ext-r1-signal-nsa-2",
+    type: "message",
+    round: 1,
+    sender: "Dir. Hayes (FBI Counterintelligence)",
+    body: "Following up on the SCI briefing — our CI team has flagged three separate indicators of foreign interest in US frontier AI lab infrastructure. All three pointing at the same origin. The labs haven't been formally notified yet. I'm telling you first because this needs to be handled carefully: if we move too fast, we tip our hand; too slow and the window closes. I'd like your read on timing.",
+    timestamp: "2026-11-04T16:00:00Z",
+    classification: "critical",
+  },
+  {
+    id: "ext-r1-signal-nsa-3",
+    type: "message",
+    round: 1,
+    sender: "Dir. Hayes (FBI Counterintelligence)",
+    body: "Quick update: one of the three CI indicators resolved — it was a false positive from a VPN misconfiguration. The other two are real. I've briefed NSC staff but not the principals yet. If this is going to become a full CI investigation involving private companies, we need a legal framework that doesn't exist. Pentagon's lawyers are working on it but it's going to take weeks we probably don't have.",
+    timestamp: "2026-11-06T11:30:00Z",
+    classification: "critical",
+  },
+];
+
+export const EXT_SIGNAL_VC_R1: ContentItem[] = [
+  {
+    id: "ext-r1-signal-vc-2",
+    type: "message",
+    round: 1,
+    sender: "Amanda Chen (Founder, SynthCore AI)",
+    body: "Hey — I know it's only been six months since you led our seed. I wanted to give you a heads-up before our board call: we're pivoting from infrastructure tooling to safety evaluation software. I know that sounds like a pivot-to-trend but it's not — after playing with Agent-1 for two weeks I genuinely believe this is both the right thing to do and a real market. Wanted you to hear it from me first.",
+    timestamp: "2026-11-02T14:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "ext-r1-signal-vc-3",
+    type: "message",
+    round: 1,
+    sender: "Amanda Chen (Founder, SynthCore AI)",
+    body: "Board call was great, thank you. One more thing: we just got a term sheet from a Chinese strategic investor I didn't solicit. It came through a Luxembourg entity but the UBOs trace back to a state-affiliated fund. I'm going to pass, obviously. But I thought you should know this is happening in the ecosystem. They're shopping for AI investment at the seed stage.",
+    timestamp: "2026-11-05T10:45:00Z",
+    classification: "context",
+  },
+];
+
 export const EXT_SIGNAL_DIPLOMAT: ContentItem[] = [
+    {
+      id: "ext-r1-diplomat-signal-1",
+      type: "message",
+      round: 1,
+      sender: "Ambassador Laila Ndiaye (Senegal, UN AI Committee)",
+      body: "Welcome to the table, colleague. I wanted to reach out before the formal session. The Global South perspective on AI governance is being drowned out by the US-China framing. Most of our member states have no frontier AI capacity but will bear disproportionate consequences — economic disruption, information operations, strategic dependencies. We need allies who understand this. I hope you'll be one.",
+      timestamp: "2026-11-03T14:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "ext-r1-diplomat-signal-2",
+      type: "message",
+      round: 1,
+      sender: "Ambassador Laila Ndiaye (Senegal, UN AI Committee)",
+      body: "One concrete ask: there's a procedural vote next week on whether to include 'AI developmental equity' as a formal pillar of any governance framework. The US delegation has been quietly lobbying against it — they want governance focused purely on 'safety' (which they define). Seven votes are uncertain. Yours could be decisive. I'm not telling you how to vote. I'm making sure you know it matters.",
+      timestamp: "2026-11-05T16:30:00Z",
+      classification: "context",
+    },
     {
       id: "ext-r3-diplomat-signal-1",
       type: "message",
@@ -239,3 +299,5 @@ export const EXT_SIGNAL_DIPLOMAT: ContentItem[] = [
 registerContent({ faction: "external", app: "signal", accumulate: true, items: EXT_SIGNAL });
 registerContent({ faction: "external", app: "signal", role: "ext_journalist", accumulate: true, items: EXT_SIGNAL_JOURNALIST });
 registerContent({ faction: "external", app: "signal", role: "ext_diplomat", accumulate: true, items: EXT_SIGNAL_DIPLOMAT });
+registerContent({ faction: "external", app: "signal", role: "ext_nsa", accumulate: true, items: EXT_SIGNAL_NSA_R1 });
+registerContent({ faction: "external", app: "signal", role: "ext_vc", accumulate: true, items: EXT_SIGNAL_VC_R1 });

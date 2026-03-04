@@ -416,12 +416,48 @@ export const OB_SLACK_FLAVOR: ContentItem[] = [
 export const OB_SIGNAL_FLAVOR: ContentItem[] = [
   // ── Round 1: normal life still exists ──
   {
+    id: "ob-flavor-r1-signal-mom-a",
+    type: "message",
+    round: 1,
+    sender: "Mom",
+    body: "Hi sweetheart, just wanted to check in! Any chance you'll be home for Thanksgiving? Your aunt Carol is coming and she keeps asking about you. Dad says hi. He's been telling his bowling friends you're going to 'change the world' — I told him to stop but honestly you might be?",
+    timestamp: "2026-10-20T18:30:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-flavor-r1-signal-mom-b",
+    type: "message",
+    round: 1,
+    sender: "Mom",
+    body: "Your cousin Emily is pregnant! Due in April. Family dinner Sunday, wish you could make it. Also your father tried to set up his new iPad and now nothing works. Can you call him this week? Love you.",
+    timestamp: "2026-11-01T14:15:00Z",
+    classification: "context",
+  },
+  {
     id: "ob-flavor-r1-signal-1",
     type: "message",
     round: 1,
     sender: "Mom",
     body: "Happy Thanksgiving sweetie! Will you make it home this year? Dad says hi. He still doesn't understand what you do but he tells everyone at church his kid works in AI 😊",
     timestamp: "2026-11-04T11:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-flavor-r1-signal-dan-a",
+    type: "message",
+    round: 1,
+    sender: "College Roommate (Dan)",
+    body: "yo it's been forever! Sarah and I finally closed on the house in Austin. Two kids now, third on the way, somehow I'm still alive. How's the AI stuff going? Still saving the world or did you switch to crypto like everyone else",
+    timestamp: "2026-10-12T21:45:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-flavor-r1-signal-dan-b",
+    type: "message",
+    round: 1,
+    sender: "College Roommate (Dan)",
+    body: "wait did you guys just launch something? My wife showed me an article about OpenBrain and I said 'I know the guy who fixed the router in our dorm for three years.' she was not impressed. seriously though that's huge man",
+    timestamp: "2026-11-04T22:10:00Z",
     classification: "context",
   },
   {
@@ -530,5 +566,82 @@ export const OB_SIGNAL_FLAVOR: ContentItem[] = [
   },
 ];
 
+export const OB_SIGNAL_NOTIFICATIONS: ContentItem[] = [
+  // ── Round 1: delivery/service notifications ──
+  {
+    id: "ob-notif-r1-amazon-1",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your order has been delivered. Package left at front door. Order: Blue Light Glasses 2-pack + Standing Desk Mat. Tap to rate your delivery.",
+    timestamp: "2026-10-08T14:23:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-amazon-2",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your order has been delivered. Package left with building concierge. Order: Noise Canceling Headphones (replacement ear cushions) + USB-C Hub 7-port. Tracking: 1Z8R4E7A03",
+    timestamp: "2026-10-22T16:47:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-amazon-3",
+    type: "message",
+    round: 1,
+    sender: "Amazon",
+    body: "Your Subscribe & Save order has shipped. Estimated delivery: Thursday. Items: Melatonin 10mg (90ct), Protein bars variety pack. Free shipping applied.",
+    timestamp: "2026-11-02T09:15:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-doordash-1",
+    type: "message",
+    round: 1,
+    sender: "DoorDash",
+    body: "Your order from Chipotle is on its way! Dasher: Marco. ETA 12 min. Order: Burrito Bowl (chicken, extra guac) + chips. Total: $18.47",
+    timestamp: "2026-10-14T12:38:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-doordash-2",
+    type: "message",
+    round: 1,
+    sender: "DoorDash",
+    body: "Your order from Sushi Hon has been delivered. Don't forget to rate your experience! Order: Salmon sashimi (8pc) + miso soup + edamame. Total: $34.12",
+    timestamp: "2026-11-03T19:52:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-calendar-dentist",
+    type: "message",
+    round: 1,
+    sender: "ZocDoc",
+    body: "Appointment reminder: Dr. Chen, DDS — teeth cleaning & X-rays, Thursday Nov 12 at 2:30 PM. Pacific Dental Group, 450 Sutter St. Confirm or reschedule: tap here.",
+    timestamp: "2026-11-09T09:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-calendar-car",
+    type: "message",
+    round: 1,
+    sender: "Toyota Service",
+    body: "SERVICE DUE: Your 2023 Camry (lic. ending 4471) is due for an oil change and tire rotation (est. 15,000 mi / 12 months). Schedule online or call (415) 555-0182.",
+    timestamp: "2026-10-30T10:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "ob-notif-r1-netflix",
+    type: "message",
+    round: 1,
+    sender: "Netflix",
+    body: "New episodes available: The Crown Season 7 (3 new eps), Succession rewatch rec based on your history. Your monthly charge of $22.99 processes Nov 14. Manage account →",
+    timestamp: "2026-11-01T08:00:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "openbrain", app: "slack", accumulate: true, items: OB_SLACK_FLAVOR });
 registerContent({ faction: "openbrain", app: "signal", accumulate: true, items: OB_SIGNAL_FLAVOR });
+registerContent({ faction: "openbrain", app: "signal", accumulate: true, items: OB_SIGNAL_NOTIFICATIONS });

@@ -1283,3 +1283,80 @@ describe("accumulation: email history persists", () => {
     expect(rounds).toContain(1);
   });
 });
+
+// ── Signal depth invariants (added for R1 ambient depth task) ──
+
+describe("INV-signal-3: every role has at least 3 distinct Signal contacts in R1", () => {
+  const allRoles: [string, string][] = [
+    ["openbrain", "ob_ceo"], ["openbrain", "ob_cto"], ["openbrain", "ob_safety"], ["openbrain", "ob_security"],
+    ["prometheus", "prom_ceo"], ["prometheus", "prom_scientist"], ["prometheus", "prom_policy"], ["prometheus", "prom_opensource"],
+    ["china", "china_director"], ["china", "china_scientist"], ["china", "china_intel"], ["china", "china_military"],
+    ["external", "ext_nsa"], ["external", "ext_journalist"], ["external", "ext_vc"], ["external", "ext_diplomat"],
+  ];
+
+  const permissiveState: StateVariables = {
+    ...INITIAL_STATE,
+    publicAwareness: 99, regulatoryPressure: 99, intlCooperation: 99,
+    openSourceMomentum: 99, marketIndex: 1, whistleblowerPressure: 99, chinaCapability: 99,
+  };
+
+  for (const [faction, role] of allRoles) {
+    it(`${faction}/${role} has at least 3 distinct Signal contacts in R1`, () => {
+      const content = getContentForPlayer(1, faction as Faction, role as Role, permissiveState);
+      const signalItems = content.filter(a => a.app === "signal").flatMap(a => a.items);
+      const senders = new Set(signalItems.map(i => i.sender).filter(Boolean));
+      expect(senders.size).toBeGreaterThanOrEqual(3);
+    });
+  }
+});
+
+describe("INV-signal-4: at least 2 contacts per faction have multi-message chains in R1", () => {
+  const factionSampleRoles: [string, string][] = [
+    ["openbrain", "ob_ceo"],
+    ["prometheus", "prom_ceo"],
+    ["china", "china_director"],
+    ["external", "ext_nsa"],
+  ];
+
+  const permissiveState: StateVariables = {
+    ...INITIAL_STATE,
+    publicAwareness: 99, regulatoryPressure: 99, intlCooperation: 99,
+    openSourceMomentum: 99, marketIndex: 1, whistleblowerPressure: 99, chinaCapability: 99,
+  };
+
+  for (const [faction, role] of factionSampleRoles) {
+    it(`${faction} has at least 2 contacts with 2+ messages from same sender in R1`, () => {
+      const content = getContentForPlayer(1, faction as Faction, role as Role, permissiveState);
+      const signalItems = content.filter(a => a.app === "signal").flatMap(a => a.items);
+      const senderCounts: Record<string, number> = {};
+      for (const item of signalItems) {
+        if (item.sender) senderCounts[item.sender] = (senderCounts[item.sender] || 0) + 1;
+      }
+      const multiMsgContacts = Object.values(senderCounts).filter(count => count >= 2);
+      expect(multiMsgContacts.length).toBeGreaterThanOrEqual(2);
+    });
+  }
+});
+
+describe("INV-signal-unique-ids: all new Signal items have unique IDs", () => {
+  it("no duplicate IDs across all signal content for any role in R1", () => {
+    const allRoles: [string, string][] = [
+      ["openbrain", "ob_ceo"], ["openbrain", "ob_cto"], ["openbrain", "ob_safety"], ["openbrain", "ob_security"],
+      ["prometheus", "prom_ceo"], ["prometheus", "prom_scientist"], ["prometheus", "prom_policy"], ["prometheus", "prom_opensource"],
+      ["china", "china_director"], ["china", "china_scientist"], ["china", "china_intel"], ["china", "china_military"],
+      ["external", "ext_nsa"], ["external", "ext_journalist"], ["external", "ext_vc"], ["external", "ext_diplomat"],
+    ];
+
+    const allIds: string[] = [];
+    for (const [faction, role] of allRoles) {
+      const content = getContentForPlayer(1, faction as Faction, role as Role, INITIAL_STATE);
+      const signalItems = content.filter(a => a.app === "signal").flatMap(a => a.items);
+      // Check each role's own signal items have no duplication within that set
+      const idSet = new Set<string>();
+      for (const item of signalItems) {
+        expect(idSet.has(item.id)).toBe(false); // no dups within same player's view
+        idSet.add(item.id);
+      }
+    }
+  });
+});

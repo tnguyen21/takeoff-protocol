@@ -364,6 +364,24 @@ export const CHINA_SIGNAL: ContentItem[] = [
 
 export const CHINA_SIGNAL_DIRECTOR: ContentItem[] = [
     {
+      id: "china-r1-wechat-dir-personal-1",
+      type: "message",
+      round: 1,
+      sender: "Professor Chen Mingzhi (Old Mentor)",
+      body: "小赵，好久不见！看到DeepCent的公开发布，我在同事中间颇有面子——毕竟你是我的学生。你们做的事情很了不起。希望你记住：技术的力量越大，选择的重量就越重。如果有机会，来清华喝茶。\n\n[Xiao Zhao, long time no see! Seeing DeepCent's public release, I've gained quite a reputation among colleagues — you were my student after all. What your team is doing is remarkable. I hope you remember: the greater the power of technology, the heavier the weight of choices. If you have the chance, come to Tsinghua for tea.]",
+      timestamp: "2026-11-03T10:30:00Z",
+      classification: "context",
+    },
+    {
+      id: "china-r1-wechat-dir-personal-2",
+      type: "message",
+      round: 1,
+      sender: "Professor Chen Mingzhi (Old Mentor)",
+      body: "再补充一句：我读了美国人最新的对齐论文。他们在担心的问题，是真实的问题。不是意识形态，是技术现实。你们内部有没有人在认真对待这件事？我不是质疑你，是问一个真实的问题。\n\n[One more thing: I read the Americans' latest alignment paper. The problems they're worried about are real problems — not ideology, but technical reality. Does anyone on your team take this seriously? I'm not questioning you. I'm asking a genuine question.]",
+      timestamp: "2026-11-06T15:00:00Z",
+      classification: "breadcrumb",
+    },
+    {
       id: "china4-wechat-dir-2",
       type: "message",
       round: 4,
@@ -395,5 +413,98 @@ export const CHINA_SIGNAL_DIRECTOR: ContentItem[] = [
     },
 ];
 
+export const CHINA_SIGNAL_SCIENTIST: ContentItem[] = [
+  {
+    id: "china-r1-signal-sci-1",
+    type: "message",
+    round: 1,
+    sender: "Dr. Fang Yuting (BAAI)",
+    body: "Yang-jie — your team's architecture efficiency work is referenced three times in the new BAAI annual report, all positive. The director wants to know if DeepCent would co-author a paper on compute-optimal training. Thought you should know before the official request comes through. Also: are you going to NeurIPS? Several of us from Beijing are trying to coordinate.",
+    timestamp: "2026-11-02T13:00:00Z",
+    classification: "context",
+  },
+  {
+    id: "china-r1-signal-sci-2",
+    type: "message",
+    round: 1,
+    sender: "Dr. Fang Yuting (BAAI)",
+    body: "Gentle flag: the Americans' interpretability results from Prometheus are more advanced than we've publicly acknowledged. I know this isn't what leadership wants to hear but from a pure technical standpoint, their steering vector approach is working in ways our current eval suite would miss. I'm raising this with you first because I trust your judgment on how to handle it internally.",
+    timestamp: "2026-11-05T16:20:00Z",
+    classification: "breadcrumb",
+  },
+  {
+    id: "china-r1-signal-sci-3",
+    type: "message",
+    round: 1,
+    sender: "Former Classmate (now at Huawei Research)",
+    body: "老同学！你们的Qwen发布数字太猛了。华为这边的同事都在讨论。你们的效率优化在哪里做的？纯架构还是有数据方面的trick？不是要套机密，就是技术上好奇。\n\n[Old classmate! Your Qwen release numbers are incredible. Colleagues here at Huawei are all discussing it. Where did you do your efficiency optimization? Pure architecture or data tricks? Not asking for secrets, just technically curious.]",
+    timestamp: "2026-11-06T20:00:00Z",
+    classification: "context",
+  },
+];
+
+export const CHINA_SIGNAL_INTEL: ContentItem[] = [
+  {
+    id: "china-r1-signal-intel-1",
+    type: "message",
+    round: 1,
+    sender: "519-8842",
+    body: "Vector Alpha access confirmed. US lab cloud storage partitions flagged for observation. No action yet — monitoring phase only. Report in 30 days or on triggering event, whichever comes first. Acknowledge.",
+    timestamp: "2026-11-01T22:00:00Z",
+    classification: "critical",
+  },
+  {
+    id: "china-r1-signal-intel-2",
+    type: "message",
+    round: 1,
+    sender: "519-8842",
+    body: "Update: OB deployed new firewall rules around their training cluster. Our Vector Bravo access is degraded — 40% packet drop on reconnaissance traffic. Vector Alpha and Charlie unaffected. Recommend we do not escalate activity during their post-deployment security review period. They're looking inward right now. Wait 3 weeks.",
+    timestamp: "2026-11-04T03:30:00Z",
+    classification: "critical",
+  },
+  {
+    id: "china-r1-signal-intel-3",
+    type: "message",
+    round: 1,
+    sender: "Colonel Zhang (liaison)",
+    body: "Informal channel. The military planning team has been asked to model scenarios in which DeepCent capability data informs strategic posture assessments. This is routine integration planning — they will brief you separately through official channels. I'm flagging it now so you're not surprised. The program is growing beyond what any of us expected.",
+    timestamp: "2026-11-06T11:00:00Z",
+    classification: "context",
+  },
+];
+
+export const CHINA_SIGNAL_MILITARY: ContentItem[] = [
+  {
+    id: "china-r1-signal-mil-1",
+    type: "message",
+    round: 1,
+    sender: "General Fang (Strategic Command)",
+    body: "DeepCent capability briefing received. Assessment: significant but not yet at parity with US frontier models. The CDZ build-out is proceeding faster than our projections. Two questions for your team: (1) timeline to functional parity for strategic planning applications; (2) whether the system can be sandboxed for classified military use. Respond through official channels, but flag if urgent.",
+    timestamp: "2026-11-03T08:00:00Z",
+    classification: "critical",
+  },
+  {
+    id: "china-r1-signal-mil-2",
+    type: "message",
+    round: 1,
+    sender: "General Fang (Strategic Command)",
+    body: "One more thing — I've been asked by the CMC to assess the 'AI readiness gap' with the United States for the annual planning cycle. The civilian leadership wants concrete numbers. If your team can provide a technical brief on the capability comparison — even classified estimates — it would help us shape the strategic plan in a way that's accurate rather than optimistic. This request is real.",
+    timestamp: "2026-11-05T14:30:00Z",
+    classification: "critical",
+  },
+  {
+    id: "china-r1-signal-mil-3",
+    type: "message",
+    round: 1,
+    sender: "Wei Junjie (Academy of Military Science)",
+    body: "Liu Yang-jie 你好 — I'm a researcher at AMS working on AI in military decision-making. Your open-source Qwen models have become a case study in our training programs. I'm putting together a workshop on 'AI and strategic stability' — would you or someone from DeepCent be willing to give a technical overview of current frontier capabilities? For a mixed military-civilian audience. No classified material required.",
+    timestamp: "2026-11-06T16:00:00Z",
+    classification: "context",
+  },
+];
+
 registerContent({ faction: "china", app: "signal", accumulate: true, items: CHINA_SIGNAL });
 registerContent({ faction: "china", app: "signal", role: "china_director", accumulate: true, items: CHINA_SIGNAL_DIRECTOR });
+registerContent({ faction: "china", app: "signal", role: "china_scientist", accumulate: true, items: CHINA_SIGNAL_SCIENTIST });
+registerContent({ faction: "china", app: "signal", role: "china_intel", accumulate: true, items: CHINA_SIGNAL_INTEL });
+registerContent({ faction: "china", app: "signal", role: "china_military", accumulate: true, items: CHINA_SIGNAL_MILITARY });
