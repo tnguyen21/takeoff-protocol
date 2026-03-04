@@ -161,6 +161,13 @@ describe("INV-5: round1 covers required state variables", () => {
   it("has at least 4 triggers", () => {
     expect(ROUND1_NPC_TRIGGERS.length).toBeGreaterThanOrEqual(4);
   });
+
+  it("at least 2 round1 triggers target china faction", () => {
+    const chinaTargeted = ROUND1_NPC_TRIGGERS.filter(
+      (t) => t.target.faction === "china" || t.target.role === "china_director"
+    );
+    expect(chinaTargeted.length).toBeGreaterThanOrEqual(2);
+  });
 });
 
 // ── INV-6: Round-2 variable coverage ────────────────────────────────────────

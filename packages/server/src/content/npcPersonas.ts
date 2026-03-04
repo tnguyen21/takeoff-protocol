@@ -8,14 +8,14 @@ export const NPC_PERSONAS: NpcPersona[] = [
     name: "Anonymous Source",
     subtitle: "encrypted channel",
     avatarColor: "bg-red-700",
-    factions: ["openbrain", "prometheus", "external"],
+    factions: ["openbrain", "prometheus", "china", "external"],
   },
   {
     id: "__npc_insider__",
     name: "Policy Insider",
     subtitle: "DC source",
     avatarColor: "bg-purple-700",
-    factions: ["openbrain", "prometheus", "external"],
+    factions: ["openbrain", "prometheus", "china", "external"],
   },
 
   // ── OpenBrain ──────────────────────────────────────────────────────────────

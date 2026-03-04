@@ -86,18 +86,20 @@ describe("getNpcPersona (INV-3)", () => {
 });
 
 describe("Cross-faction personas (INV-4)", () => {
-  it("INV-4: Anonymous Source is visible to openbrain, prometheus, and external", () => {
+  it("INV-4: Anonymous Source is visible to openbrain, prometheus, external, and china", () => {
     const persona = getNpcPersona("__npc_anon__")!;
     expect(persona.factions).toContain("openbrain");
     expect(persona.factions).toContain("prometheus");
     expect(persona.factions).toContain("external");
+    expect(persona.factions).toContain("china");
   });
 
-  it("INV-4: Policy Insider is visible to openbrain, prometheus, and external", () => {
+  it("INV-4: Policy Insider is visible to openbrain, prometheus, external, and china", () => {
     const persona = getNpcPersona("__npc_insider__")!;
     expect(persona.factions).toContain("openbrain");
     expect(persona.factions).toContain("prometheus");
     expect(persona.factions).toContain("external");
+    expect(persona.factions).toContain("china");
   });
 });
 

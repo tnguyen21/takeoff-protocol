@@ -100,4 +100,24 @@ export const ROUND1_NPC_TRIGGERS: NpcTrigger[] = [
     schedule: { round: 1, phase: "deliberation" },
     target: { faction: "external" },
   },
+
+  // ── China faction triggers ──
+
+  {
+    id: "npc_r1_china_liaison_pressure",
+    npcId: "__npc_china_liaison__",
+    content:
+      "Standing Committee has requested a preliminary assessment of the weight acquisition timeline. They want a number by Friday. Not a range — a number.",
+    schedule: { round: 1, phase: "intel" },
+    target: { faction: "china", role: "china_director" },
+  },
+
+  {
+    id: "npc_r1_china_liaison_impatience",
+    npcId: "__npc_china_liaison__",
+    content:
+      "Vice-Minister Li called the operations center directly last night. He did not go through your office. That should tell you something about the Commission's current level of confidence in the timeline.",
+    condition: { variable: "ccpPatience", operator: "lte", value: 35 },
+    target: { faction: "china" },
+  },
 ];
