@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import type { ContentItem } from "@takeoff/shared";
+import type { ContentItem, GameMessage } from "@takeoff/shared";
 import { assignChannelToMessage, getChannelMessages, computeUnreadCounts, SLACK_CHANNELS } from "./slackUtils.js";
 
 function makeItem(overrides: Partial<ContentItem> & { id: string }): ContentItem {
@@ -138,5 +138,65 @@ describe("computeUnreadCounts (INV-2)", () => {
     expect(counts["#safety"]).toBe(0);
     expect(counts["#ops"]).toBe(0);
     expect(counts["#random"]).toBe(0);
+  });
+});
+
+// ── computeUnreadCounts with team messages ───────────────────────────────────
+
+function makeTeamMessage(id: string, channel: string | undefined): GameMessage {
+  return {
+    id,
+    from: "player-1",
+    fromName: "Alice",
+    to: null,
+    faction: "openbrain",
+    content: "test",
+    timestamp: Date.now(),
+    isTeamChat: true,
+    channel,
+  };
+}
+
+describe("computeUnreadCounts with teamMessages", () => {
+  it("counts team messages in unseen channels", () => {
+    const teamMessages = [
+      makeTeamMessage("t1", "#research"),
+      makeTeamMessage("t2", "#research"),
+      makeTeamMessage("t3", "#safety"),
+    ];
+    const counts = computeUnreadCounts([], new Set(), "#general", teamMessages);
+    expect(counts["#research"]).toBe(2);
+    expect(counts["#safety"]).toBe(1);
+    expect(counts["#general"]).toBe(0); // active channel
+  });
+
+  it("team message without channel defaults to #general", () => {
+    const teamMessages = [makeTeamMessage("t1", undefined)];
+    // #general is not active, #research is active
+    const counts = computeUnreadCounts([], new Set(), "#research", teamMessages);
+    expect(counts["#general"]).toBe(1);
+  });
+
+  it("team messages in seen channels have 0 unread", () => {
+    const teamMessages = [
+      makeTeamMessage("t1", "#research"),
+      makeTeamMessage("t2", "#research"),
+    ];
+    const counts = computeUnreadCounts([], new Set(["#research"]), "#general", teamMessages);
+    expect(counts["#research"]).toBe(0);
+  });
+
+  it("combines content items and team messages for unread count", () => {
+    const contentItems: ContentItem[] = [makeItem({ id: "c1", channel: "#research" })];
+    const teamMessages = [makeTeamMessage("t1", "#research")];
+    const counts = computeUnreadCounts(contentItems, new Set(), "#general", teamMessages);
+    expect(counts["#research"]).toBe(2); // 1 content + 1 team
+  });
+
+  it("backward compatible: no teamMessages parameter gives same result as empty array", () => {
+    const contentItems: ContentItem[] = [makeItem({ id: "c1", channel: "#research" })];
+    const withEmpty = computeUnreadCounts(contentItems, new Set(), "#general", []);
+    const withoutParam = computeUnreadCounts(contentItems, new Set(), "#general");
+    expect(withoutParam).toEqual(withEmpty);
   });
 });

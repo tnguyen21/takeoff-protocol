@@ -47,11 +47,13 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
 
   // Messages for the active channel
   const channelIntelMessages = getChannelMessages(intelMessages, activeChannel);
-  // Team chat always in #general
-  const channelTeamMessages = activeChannel === "#general" ? teamMessages : [];
+  // Filter team messages by channel (missing channel defaults to '#general')
+  const channelTeamMessages = teamMessages.filter(
+    (m) => (m.channel ?? "#general") === activeChannel
+  );
 
-  // Unread counts per channel
-  const unreadCounts = computeUnreadCounts(intelMessages, seenChannels, activeChannel);
+  // Unread counts per channel (intel + player messages)
+  const unreadCounts = computeUnreadCounts(intelMessages, seenChannels, activeChannel, teamMessages);
 
   // Handle channel click
   const handleChannelClick = useCallback((ch: string) => {
@@ -78,7 +80,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     const text = input.trim();
     if (!text) return;
     soundManager.play("message-send");
-    socket.emit("message:send", { to: null, content: text });
+    socket.emit("message:send", { to: null, content: text, channel: activeChannel });
     setInput("");
     inputRef.current?.focus();
   }, [input]);

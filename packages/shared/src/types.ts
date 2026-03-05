@@ -213,6 +213,7 @@ export interface GameMessage {
   timestamp: number;
   isTeamChat: boolean;
   isNpc?: boolean;
+  channel?: string;    // Slack channel name, e.g. '#research'. Defaults to '#general'. Only set for team chat.
 }
 
 // ── NPC Configuration ──

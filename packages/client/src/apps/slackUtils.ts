@@ -4,7 +4,7 @@
  * Exported for unit testing without a DOM environment.
  */
 
-import type { ContentItem } from "@takeoff/shared";
+import type { ContentItem, GameMessage } from "@takeoff/shared";
 
 export const SLACK_CHANNELS = ["#general", "#research", "#alignment", "#safety", "#announcements", "#ops", "#random"] as const;
 export type SlackChannel = (typeof SLACK_CHANNELS)[number];
@@ -50,15 +50,17 @@ export function getChannelMessages(items: ContentItem[], channel: string): Conte
  * Computes per-channel unread counts.
  * A channel has unread messages if it has not been seen (is not in seenChannels)
  * and is not the current activeChannel.
- * The count is the number of messages assigned to that channel.
+ * The count includes both scripted content items and live player team messages.
  */
-export function computeUnreadCounts(items: ContentItem[], seenChannels: Set<string>, activeChannel: string): Record<string, number> {
+export function computeUnreadCounts(items: ContentItem[], seenChannels: Set<string>, activeChannel: string, teamMessages: GameMessage[] = []): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const ch of SLACK_CHANNELS) {
     if (ch === activeChannel || seenChannels.has(ch)) {
       counts[ch] = 0;
     } else {
-      counts[ch] = getChannelMessages(items, ch).length;
+      const contentCount = getChannelMessages(items, ch).length;
+      const teamCount = teamMessages.filter((m) => (m.channel ?? "#general") === ch).length;
+      counts[ch] = contentCount + teamCount;
     }
   }
   return counts;

@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import type { Faction, GameRoom, Player } from "@takeoff/shared";
+import type { Faction, GameMessage, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { seedBotsForRoom } from "./devBots.js";
 import { getLobbyState } from "./rooms.js";
@@ -594,6 +594,150 @@ describe("tweet:send", () => {
     expect(ok).toBe(true);
     const bEvents = (emitted[TWEET_PLAYER_B] ?? []).filter((e) => e.event === "tweet:receive");
     expect(bEvents).toHaveLength(1);
+  });
+});
+
+// ── message:send channel invariants ───────────────────────────────────────────
+
+/**
+ * Invariants for channel support in message:send:
+ * INV-1: Message sent with channel '#research' is received by faction members with channel='#research'
+ * INV-2: Message sent without channel field defaults to '#general'
+ * INV-3: DM messages ignore channel field (no channel stored)
+ * INV-4: Messages persist in room.messages with channel field for reconnect replay
+ */
+
+interface MessagePayload {
+  id: string;
+  from: string;
+  fromName: string;
+  to: string | null;
+  faction: string;
+  content: string;
+  timestamp: number;
+  isTeamChat: boolean;
+  channel?: string;
+}
+
+function invokeMessageSendHandler(
+  io: import("socket.io").Server,
+  socketId: string,
+  room: GameRoom | undefined,
+  { to, content, channel }: { to: string | null; content: string; channel?: string },
+): boolean {
+  if (!room) return false;
+  const sender = room.players[socketId];
+  if (!sender || !sender.faction) return false;
+
+  const message: MessagePayload = {
+    id: crypto.randomUUID(),
+    from: sender.id,
+    fromName: sender.name,
+    to,
+    faction: sender.faction,
+    content,
+    timestamp: Date.now(),
+    isTeamChat: to === null,
+    ...(to === null ? { channel: channel ?? "#general" } : {}),
+  };
+
+  room.messages.push(message as unknown as GameMessage);
+
+  const ioTyped = io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } };
+  if (to === null) {
+    for (const [pid, p] of Object.entries(room.players)) {
+      if (p.faction === sender.faction) {
+        ioTyped.to(pid).emit("message:receive", message);
+      }
+    }
+  } else {
+    ioTyped.to(to).emit("message:receive", message);
+    ioTyped.to(socketId).emit("message:receive", message);
+  }
+
+  if (room.gmId) {
+    ioTyped.to(room.gmId).emit("message:receive", { ...message, _gmView: true });
+  }
+
+  return true;
+}
+
+const MSG_GM_ID = "gm-msg-1";
+const MSG_PLAYER_A = "player-msg-a";
+const MSG_PLAYER_B = "player-msg-b";
+const MSG_PLAYER_OTHER_FACTION = "player-msg-other";
+
+describe("message:send channel invariants", () => {
+  let room: GameRoom;
+  let emitted: Record<string, EmittedEvent[]>;
+  let io: import("socket.io").Server;
+
+  beforeEach(() => {
+    const mock = createMockIo();
+    io = mock.io;
+    emitted = mock.emitted;
+    room = makeRoom(MSG_GM_ID, [
+      makePlayer(MSG_PLAYER_A),
+      makePlayer(MSG_PLAYER_B),
+    ]);
+    // Give player B the same faction so team chat works
+    room.players[MSG_PLAYER_B]!.faction = "openbrain";
+    // Other faction player
+    const otherPlayer = makePlayer(MSG_PLAYER_OTHER_FACTION);
+    otherPlayer.faction = "prometheus";
+    otherPlayer.role = "prom_ceo";
+    room.players[MSG_PLAYER_OTHER_FACTION] = otherPlayer;
+  });
+
+  it("INV-1: message with channel=#research is received with channel='#research'", () => {
+    const ok = invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "Research update", channel: "#research" });
+    expect(ok).toBe(true);
+
+    const aEvents = (emitted[MSG_PLAYER_A] ?? []).filter((e) => e.event === "message:receive");
+    expect(aEvents).toHaveLength(1);
+    expect((aEvents[0].data as MessagePayload).channel).toBe("#research");
+
+    const bEvents = (emitted[MSG_PLAYER_B] ?? []).filter((e) => e.event === "message:receive");
+    expect(bEvents).toHaveLength(1);
+    expect((bEvents[0].data as MessagePayload).channel).toBe("#research");
+  });
+
+  it("INV-1: message with channel=#research is NOT sent to other-faction players", () => {
+    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "Research update", channel: "#research" });
+    const otherEvents = (emitted[MSG_PLAYER_OTHER_FACTION] ?? []).filter((e) => e.event === "message:receive");
+    expect(otherEvents).toHaveLength(0);
+  });
+
+  it("INV-2: message without channel defaults to #general", () => {
+    const ok = invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "Hello team" });
+    expect(ok).toBe(true);
+
+    const msg = room.messages[0] as unknown as MessagePayload;
+    expect(msg.channel).toBe("#general");
+
+    const aEvents = (emitted[MSG_PLAYER_A] ?? []).filter((e) => e.event === "message:receive");
+    expect((aEvents[0].data as MessagePayload).channel).toBe("#general");
+  });
+
+  it("INV-3: DM messages do not have a channel field", () => {
+    const ok = invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: MSG_PLAYER_B, content: "Private", channel: "#research" });
+    expect(ok).toBe(true);
+
+    const msg = room.messages[0] as unknown as MessagePayload;
+    expect(msg.isTeamChat).toBe(false);
+    expect(msg.channel).toBeUndefined();
+  });
+
+  it("INV-4: messages persist in room.messages with channel for reconnect replay", () => {
+    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "msg1", channel: "#safety" });
+    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "msg2" });
+    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: MSG_PLAYER_B, content: "dm" });
+
+    expect(room.messages).toHaveLength(3);
+    const [m1, m2, m3] = room.messages as unknown as MessagePayload[];
+    expect(m1.channel).toBe("#safety");
+    expect(m2.channel).toBe("#general");
+    expect(m3.channel).toBeUndefined(); // DM has no channel
   });
 });
 

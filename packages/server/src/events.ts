@@ -436,7 +436,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
   // ── Messaging ──
 
-  socket.on("message:send", ({ to, content }: { to: string | null; content: string }) => {
+  socket.on("message:send", ({ to, content, channel }: { to: string | null; content: string; channel?: string }) => {
     const code = socket.data.roomCode;
     if (!code) return;
     const room = getRoom(code);
@@ -457,6 +457,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
       content,
       timestamp: Date.now(),
       isTeamChat: to === null,
+      // Only set channel for team chat messages; DMs ignore channel
+      ...(to === null ? { channel: channel ?? "#general" } : {}),
     };
 
     // Store message in room for reconnect replay and reveal_dm
