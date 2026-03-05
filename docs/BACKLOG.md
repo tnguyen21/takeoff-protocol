@@ -18,3 +18,5 @@ This creates natural information asymmetry: the same event (e.g. an alignment sc
 **Implementation:** Register shared pool for all factions, plus per-faction bubble modules. Loader merges both into the player's twitter feed.
 
 ## ADD GENERATION TO LOGGING
+
+## IMPROVE JOURNALIST ROLE
