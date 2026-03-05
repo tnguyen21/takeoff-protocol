@@ -257,6 +257,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
         </div>
         <div className="overflow-y-auto flex-1">
           {/* Content contacts (seeded signal items grouped by sender) */}
+          {/* Kept in insertion order — seeded story content is already chronologically ordered */}
           {contentContacts.map((cc) => {
             const isActive = cc.id === selectedPlayerId;
             const lastMsg = cc.messages.at(-1);
@@ -289,8 +290,10 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
             );
           })}
 
-          {/* NPC contacts — server-driven, appear above real player contacts */}
-          {npcContacts.map((npc) => {
+          {/* NPC contacts — sorted by most recent message timestamp descending */}
+          {[...npcContacts]
+            .sort((a, b) => (b.messages.at(-1)?.timestamp ?? 0) - (a.messages.at(-1)?.timestamp ?? 0))
+            .map((npc) => {
             const isActive = npc.id === selectedPlayerId;
             const lastMsg = npc.messages.at(-1);
             const unread = unreadPerPlayer[npc.id] ?? 0;
@@ -333,8 +336,18 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
             </div>
           )}
 
-          {/* Real player contacts */}
-          {otherPlayers.map((p) => {
+          {/* Real player contacts — sorted by most recent message timestamp descending */}
+          {[...otherPlayers]
+            .sort((a, b) => {
+              const lastA = messages
+                .filter((m) => !m.isTeamChat && ((m.from === playerId && m.to === a.id) || (m.from === a.id && m.to === playerId)))
+                .at(-1)?.timestamp ?? 0;
+              const lastB = messages
+                .filter((m) => !m.isTeamChat && ((m.from === playerId && m.to === b.id) || (m.from === b.id && m.to === playerId)))
+                .at(-1)?.timestamp ?? 0;
+              return lastB - lastA;
+            })
+            .map((p) => {
             const unread = unreadPerPlayer[p.id] ?? 0;
             const isActive = p.id === selectedPlayerId;
             // Preview: last message in convo
