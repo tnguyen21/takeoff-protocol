@@ -10,6 +10,8 @@ import {
 } from "./emailUtils.js";
 import type { EmailFolder, EmailItem } from "./emailUtils.js";
 
+type EmailWithIndex = EmailItem & { _originalIdx: number };
+
 // ── Avatar color helper ───────────────────────────────────────────────────────
 
 function avatarColor(name: string): string {
@@ -422,9 +424,10 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   }, [activeFolder, searchQuery]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
-  // Mark emails as read based on local state
+  // Mark emails as read based on local state, preserving original index for read tracking
   const emailsWithReadState = allEmails.map((email, idx) => ({
     ...email,
+    _originalIdx: idx,
     read: email.read || readEmails[idx],
   }));
   const folderEmails = filterEmailsByFolder(emailsWithReadState, activeFolder);
@@ -443,7 +446,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
       ));
 
   // The index of the selected email in the allEmails array (for leakSent tracking)
-  const globalIndex = selectedEmail ? allEmails.indexOf(selectedEmail) : -1;
+  const globalIndex = selectedEmail ? (selectedEmail as EmailWithIndex)._originalIdx ?? -1 : -1;
 
   function handleLeak() {
     if (!selectedEmail || globalIndex < 0 || leakSent[globalIndex]) return;
@@ -590,7 +593,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
                   setSelected(i);
                   setComposeOpen(false);
                   // Mark email as read when clicked
-                  const globalIdx = allEmails.indexOf(e);
+                  const globalIdx = (e as EmailWithIndex)._originalIdx;
                   if (globalIdx >= 0 && !readEmails[globalIdx]) {
                     setReadEmails((prev) => ({ ...prev, [globalIdx]: true }));
                   }
