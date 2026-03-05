@@ -28,6 +28,43 @@ const ROUND_DECISIONS = [
   ROUND5_DECISIONS,  // index 4 = round 5
 ];
 
+/**
+ * Build a map of role_id → first name from all players in the room.
+ * Used to resolve {role_id} placeholders in content text.
+ */
+export function buildNameMap(room: GameRoom): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const player of Object.values(room.players)) {
+    if (player.role && player.name) {
+      map.set(player.role, player.name.split(/\s/)[0]); // first name only
+    }
+  }
+  return map;
+}
+
+/**
+ * Replace {role_id} placeholders in text with actual player names.
+ * Unmatched placeholders pass through unchanged.
+ */
+export function personalizeText(text: string, nameMap: Map<string, string>): string {
+  return text.replace(/\{(\w+)\}/g, (match, role) => nameMap.get(role) ?? match);
+}
+
+/**
+ * Personalize all content items in an AppContent array.
+ * Only body and subject fields are modified — sender fields identify NPC characters and are left intact.
+ */
+export function personalizeContent(content: AppContent[], nameMap: Map<string, string>): AppContent[] {
+  return content.map(appContent => ({
+    ...appContent,
+    items: appContent.items.map(item => ({
+      ...item,
+      body: personalizeText(item.body, nameMap),
+      subject: item.subject ? personalizeText(item.subject, nameMap) : item.subject,
+    })),
+  }));
+}
+
 function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
   // GM overrides take precedence; fall back to round-specific or default durations
   const override = room.timerOverrides?.[phase];
@@ -329,15 +366,17 @@ export function emitBriefing(io: Server, room: GameRoom) {
     const generated = getGeneratedBriefing(room, room.round);
     const briefing = generated ?? getBriefing(room.round);
     const { common, factionVariants } = briefing;
+    const nameMap = buildNameMap(room);
 
     for (const [socketId, player] of Object.entries(room.players)) {
       if (!player.faction) continue;
       const variant = factionVariants?.[player.faction];
-      const text = variant ? `${common}\n\n${variant}` : common;
+      const combined = variant ? `${common}\n\n${variant}` : common;
+      const text = personalizeText(combined, nameMap);
       io.to(socketId).emit("game:briefing", { text });
     }
 
-    // GM gets the common briefing
+    // GM gets the common briefing (unmodified — no player name context needed)
     if (room.gmId) {
       io.to(room.gmId).emit("game:briefing", { text: common });
     }
@@ -347,6 +386,7 @@ export function emitBriefing(io: Server, room: GameRoom) {
 }
 
 export function emitContent(io: Server, room: GameRoom) {
+  const nameMap = buildNameMap(room);
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
     try {
@@ -355,6 +395,7 @@ export function emitContent(io: Server, room: GameRoom) {
 
       // Check for generated content for replaceable apps (news, twitter)
       const generatedContent = getGeneratedContent(room, room.round, player.faction);
+      let finalContent: AppContent[];
       if (generatedContent && generatedContent.length > 0) {
         // Replace pre-authored apps that have generated versions
         const generatedApps = new Set(generatedContent.map((c) => c.app));
@@ -364,7 +405,7 @@ export function emitContent(io: Server, room: GameRoom) {
         // Dedup guard: generated IDs start with "gen-" so collisions with pre-authored are
         // practically impossible, but we deduplicate by ID across all items to be safe.
         const seenIds = new Set<string>();
-        const deduped = merged.map((appContent) => ({
+        finalContent = merged.map((appContent) => ({
           ...appContent,
           items: appContent.items.filter((item) => {
             if (seenIds.has(item.id)) return false;
@@ -372,11 +413,12 @@ export function emitContent(io: Server, room: GameRoom) {
             return true;
           }),
         }));
-
-        io.to(socketId).emit("game:content", { content: deduped });
       } else {
-        io.to(socketId).emit("game:content", { content: preAuthored });
+        finalContent = preAuthored;
       }
+
+      const personalized = personalizeContent(finalContent, nameMap);
+      io.to(socketId).emit("game:content", { content: personalized });
     } catch (err) {
       // Round content file may not exist yet (future rounds) — silently skip
       console.warn(`[content] No content for round ${room.round}:`, err);
@@ -1097,7 +1139,9 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
     // Current round content (intel phase onwards — content persists)
     try {
       const content = getContentForPlayer(room.round, player.faction, player.role, room.state);
-      socket.emit("game:content", { content });
+      const nameMap = buildNameMap(room);
+      const personalized = personalizeContent(content, nameMap);
+      socket.emit("game:content", { content: personalized });
     } catch {
       // No content for this round yet
     }

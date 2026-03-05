@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "bun:test";
-import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame } from "./game.js";
+import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame, buildNameMap, personalizeText, personalizeContent } from "./game.js";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
 import { setGeneratedContent } from "./generation/cache.js";
@@ -1381,5 +1381,142 @@ describe("Failure mode: NullLogger when no logger registered (LOG_ENABLED=false 
 
     const { io } = createMockIo();
     expect(() => startGame(io, room)).not.toThrow();
+  });
+});
+
+// ── Content personalization ──
+
+function makeContentItem(overrides: Partial<ContentItem> = {}): ContentItem {
+  return {
+    id: "test-item",
+    type: "message",
+    round: 1,
+    body: "Hello world",
+    timestamp: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function makeAppContent(items: ContentItem[], overrides: Partial<AppContent> = {}): AppContent {
+  return {
+    faction: "openbrain",
+    app: "slack" as AppId,
+    items,
+    ...overrides,
+  };
+}
+
+describe("buildNameMap", () => {
+  it("maps role_id to first name for each player with role and name", () => {
+    const room = makeRoom({
+      players: {
+        s1: { id: "s1", name: "Alice Smith", faction: "openbrain", role: "ob_ceo", isLeader: true, connected: true },
+        s2: { id: "s2", name: "Bob Jones", faction: "prometheus", role: "prom_scientist", isLeader: false, connected: true },
+      },
+    });
+    const nameMap = buildNameMap(room);
+    expect(nameMap.get("ob_ceo")).toBe("Alice");
+    expect(nameMap.get("prom_scientist")).toBe("Bob");
+  });
+
+  it("excludes players with no role", () => {
+    const room = makeRoom({
+      players: {
+        s1: { id: "s1", name: "Alice Smith", faction: "openbrain", role: null, isLeader: false, connected: true },
+      },
+    });
+    const nameMap = buildNameMap(room);
+    expect(nameMap.size).toBe(0);
+  });
+
+  it("excludes players with no name", () => {
+    const room = makeRoom({
+      players: {
+        s1: { id: "s1", name: "", faction: "openbrain", role: "ob_ceo", isLeader: false, connected: true },
+      },
+    });
+    const nameMap = buildNameMap(room);
+    expect(nameMap.size).toBe(0);
+  });
+
+  it("uses only the first name when player has a full name", () => {
+    const room = makeRoom({
+      players: {
+        s1: { id: "s1", name: "Jean-Claude Van Damme", faction: "china", role: "china_director", isLeader: true, connected: true },
+      },
+    });
+    const nameMap = buildNameMap(room);
+    expect(nameMap.get("china_director")).toBe("Jean-Claude");
+  });
+});
+
+describe("personalizeText", () => {
+  it("INV-1: resolves {ob_ceo} to the OB CEO player first name", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"]]);
+    expect(personalizeText("Hello {ob_ceo}, welcome.", nameMap)).toBe("Hello Alice, welcome.");
+  });
+
+  it("INV-2: resolves {prom_scientist} to the Prometheus scientist first name", () => {
+    const nameMap = new Map([["prom_scientist", "Bob"]]);
+    expect(personalizeText("Report from {prom_scientist}.", nameMap)).toBe("Report from Bob.");
+  });
+
+  it("INV-3: cross-faction: OB text with {prom_ceo} resolves correctly", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"], ["prom_ceo", "Carlos"]]);
+    expect(personalizeText("OB CEO {ob_ceo} and Prom CEO {prom_ceo} met.", nameMap)).toBe("OB CEO Alice and Prom CEO Carlos met.");
+  });
+
+  it("INV-4: unmatched placeholder passes through unchanged", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"]]);
+    expect(personalizeText("Hello {nonexistent_role}!", nameMap)).toBe("Hello {nonexistent_role}!");
+  });
+
+  it("resolves multiple placeholders in one body string", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"], ["prom_scientist", "Bob"]]);
+    expect(personalizeText("{ob_ceo} and {prom_scientist} are both here.", nameMap)).toBe("Alice and Bob are both here.");
+  });
+
+  it("leaves all placeholders unchanged when name map is empty", () => {
+    const nameMap = new Map<string, string>();
+    expect(personalizeText("Dear {ob_ceo}, meet {prom_ceo}.", nameMap)).toBe("Dear {ob_ceo}, meet {prom_ceo}.");
+  });
+});
+
+describe("personalizeContent", () => {
+  it("INV-1/INV-2: personalizes body with player name", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"]]);
+    const items = [makeContentItem({ body: "Hello {ob_ceo}" })];
+    const [result] = personalizeContent([makeAppContent(items)], nameMap);
+    expect(result.items[0].body).toBe("Hello Alice");
+  });
+
+  it("INV-5: sender field is never modified", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"]]);
+    const items = [makeContentItem({ body: "body", sender: "{ob_ceo} NPC", senderRole: "ob_ceo" })];
+    const [result] = personalizeContent([makeAppContent(items)], nameMap);
+    expect(result.items[0].sender).toBe("{ob_ceo} NPC");
+  });
+
+  it("INV-6: subject fields are personalized", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"]]);
+    const items = [makeContentItem({ body: "body", subject: "RE: {ob_ceo}" })];
+    const [result] = personalizeContent([makeAppContent(items)], nameMap);
+    expect(result.items[0].subject).toBe("RE: Alice");
+  });
+
+  it("INV-7: items without subject field do not break", () => {
+    const nameMap = new Map([["ob_ceo", "Alice"]]);
+    const items = [makeContentItem({ body: "Hello {ob_ceo}", subject: undefined })];
+    const [result] = personalizeContent([makeAppContent(items)], nameMap);
+    expect(result.items[0].subject).toBeUndefined();
+    expect(result.items[0].body).toBe("Hello Alice");
+  });
+
+  it("empty name map leaves all placeholders unchanged", () => {
+    const nameMap = new Map<string, string>();
+    const items = [makeContentItem({ body: "{ob_ceo} message", subject: "From {ob_ceo}" })];
+    const [result] = personalizeContent([makeAppContent(items)], nameMap);
+    expect(result.items[0].body).toBe("{ob_ceo} message");
+    expect(result.items[0].subject).toBe("From {ob_ceo}");
   });
 });
