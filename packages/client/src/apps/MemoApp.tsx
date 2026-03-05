@@ -134,7 +134,7 @@ function Breadcrumb({ crumbs }: { crumbs: string[] }) {
     <div className="flex items-center flex-wrap gap-1 text-xs text-neutral-400 mb-4">
       {crumbs.map((crumb, i) => (
         <React.Fragment key={i}>
-          <span className="hover:text-neutral-700 cursor-pointer hover:underline">{crumb}</span>
+          <span className="text-neutral-400">{crumb}</span>
           {i < crumbs.length - 1 && <span className="text-neutral-300">/</span>}
         </React.Fragment>
       ))}
