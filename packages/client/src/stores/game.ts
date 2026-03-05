@@ -461,7 +461,15 @@ socket.on("game:state", (data: { view: StateView; isFull?: boolean }) => {
 });
 
 socket.on("game:content", (data: { content: AppContent[] }) => {
-  useGameStore.setState({ content: data.content });
+  const now = Date.now();
+  const stamped = data.content.map((appContent) => ({
+    ...appContent,
+    items: appContent.items.map((item, i) => ({
+      ...item,
+      _receivedAt: now + i, // slight offset preserves original order within a batch
+    })),
+  }));
+  useGameStore.setState({ content: stamped });
 });
 
 // Published content notification (server emits game:publish with article/research/leak metadata)

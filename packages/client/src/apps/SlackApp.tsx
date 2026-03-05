@@ -22,12 +22,6 @@ function formatTime(ts: number | string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function toEpoch(ts: number | string): number {
-  if (typeof ts === "number") return ts;
-  const d = new Date(ts);
-  return isNaN(d.getTime()) ? 0 : d.getTime();
-}
-
 
 export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   const [input, setInput] = useState("");
@@ -103,34 +97,22 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     [sendMessage]
   );
 
-  // Merge intel + player messages into a single sorted list
-  type UnifiedMsg =
-    | { kind: "intel"; id: string; sender: string; timestamp: string; body: string; channel?: string; sortKey: number }
-    | { kind: "player"; id: string; from: string; fromName: string; content: string; timestamp: number; sortKey: number };
+  // Unified sorted message list — intel items sort by _receivedAt (real arrival time),
+  // team messages sort by their real epoch timestamp. Both live in the same time domain.
+  type UnifiedMessage =
+    | { kind: "intel"; msg: (typeof channelIntelMessages)[number] }
+    | { kind: "team"; msg: (typeof channelTeamMessages)[number] };
 
-  const unifiedMessages: UnifiedMsg[] = [
-    ...channelIntelMessages.map((m) => ({
-      kind: "intel" as const,
-      id: m.id,
-      sender: m.sender ?? "System",
-      timestamp: m.timestamp,
-      body: m.body,
-      channel: m.channel,
-      sortKey: toEpoch(m.timestamp),
-    })),
-    ...channelTeamMessages.map((m) => ({
-      kind: "player" as const,
-      id: m.id,
-      from: m.from,
-      fromName: m.fromName,
-      content: m.content,
-      timestamp: m.timestamp,
-      sortKey: m.timestamp,
-    })),
-  ].sort((a, b) => a.sortKey - b.sortKey);
+  const unifiedMessages: UnifiedMessage[] = [
+    ...channelIntelMessages.map((msg) => ({ kind: "intel" as const, msg })),
+    ...channelTeamMessages.map((msg) => ({ kind: "team" as const, msg })),
+  ].sort((a, b) => {
+    const keyA = a.kind === "intel" ? ((a.msg as any)._receivedAt ?? 0) : a.msg.timestamp;
+    const keyB = b.kind === "intel" ? ((b.msg as any)._receivedAt ?? 0) : b.msg.timestamp;
+    return keyA - keyB;
+  });
 
   const hasAnyMessages = unifiedMessages.length > 0;
-
 
   return (
     <div className="flex h-full bg-[#1a1d21] text-white text-sm font-sans">
@@ -195,33 +177,37 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             </div>
           )}
 
-          {unifiedMessages.map((m) =>
-            m.kind === "intel" ? (
-              <div key={m.id} className="relative flex gap-3 group">
+          {/* Unified message stream — intel and team messages sorted by real arrival time */}
+          {unifiedMessages.map(({ kind, msg }) =>
+            kind === "intel" ? (
+              <div key={msg.id} className="relative flex gap-3 group">
                 <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
-                  {initials(m.sender)}
+                  {initials(msg.sender ?? "?")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <span className="font-semibold text-xs text-blue-300">{m.sender}</span>
-                    <span className="text-neutral-500 text-xs">{formatTime(m.timestamp)}</span>
+                    <span className="font-semibold text-xs text-blue-300">{msg.sender ?? "System"}</span>
+                    <span className="text-neutral-500 text-xs">{msg.timestamp}</span>
+                    {msg.channel && assignChannelToMessage(msg) !== "#general" && (
+                      <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(msg)}</span>
+                    )}
                   </div>
-                  <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
+                  <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{msg.body}</p>
                 </div>
               </div>
             ) : (
-              <div key={m.id} className="relative flex gap-3 group">
+              <div key={msg.id} className="relative flex gap-3 group">
                 <div className="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-xs font-bold shrink-0 text-white">
-                  {initials(m.fromName)}
+                  {initials(msg.fromName)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <span className={`font-semibold text-xs ${m.from === playerId ? "text-yellow-300" : "text-white"}`}>
-                      {m.fromName}
+                    <span className={`font-semibold text-xs ${msg.from === playerId ? "text-yellow-300" : "text-white"}`}>
+                      {msg.fromName}
                     </span>
-                    <span className="text-neutral-500 text-xs">{formatTime(m.timestamp)}</span>
+                    <span className="text-neutral-500 text-xs">{formatTime(msg.timestamp)}</span>
                   </div>
-                  <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.content}</p>
+                  <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{msg.content}</p>
                 </div>
               </div>
             )
