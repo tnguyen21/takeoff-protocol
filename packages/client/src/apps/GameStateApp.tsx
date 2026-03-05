@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import type { AppProps } from "./types.js";
 import type { Accuracy } from "@takeoff/shared";
 import { LineChart, Line } from "recharts";
 import { useGameStore } from "../stores/game.js";
 import type { StateView } from "@takeoff/shared";
-import { getBarColor, getDoomColor, getDoomLabel, groupStatusColor, computeDelta } from "./gameStateUtils.js";
+import { getBarColor, groupStatusColor, computeDelta } from "./gameStateUtils.js";
 import type { Group, StateRow } from "./gameStateUtils.js";
 
 // ── Group config ──────────────────────────────────────────────────────────────
@@ -114,132 +114,6 @@ const SPARKLINE_STROKE: Record<Accuracy, string> = {
   estimate: "#eab308",
   hidden:   "#555",
 };
-
-// Compute SVG arc path. Angles are in degrees clockwise from top (12 o'clock).
-function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
-  const rad = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-function arcPath(cx: number, cy: number, r: number, startAngle: number, endAngle: number): string {
-  const start = polarToCartesian(cx, cy, r, startAngle);
-  const end   = polarToCartesian(cx, cy, r, endAngle);
-  const spanDeg = ((endAngle - startAngle) % 360 + 360) % 360;
-  const largeArc = spanDeg > 180 ? 1 : 0;
-  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
-}
-
-// ── Doom Clock Gauge ──────────────────────────────────────────────────────────
-
-function DoomClockGauge({ value, accuracy }: { value: number; accuracy: Accuracy }) {
-  const isHidden = accuracy === "hidden";
-
-  // Arc geometry: 270° gauge from 135° to 135°+270°=405° (≡45°), top-centered
-  // Track: full 270° arc. Fill: (5 - value)/5 fraction of arc from start.
-  const TRACK_START = 135;
-  const TRACK_SPAN  = 270;
-  const cx = 64, cy = 70, r = 48, strokeW = 8;
-
-  // Fill angle spans from start, growing as doom approaches (value decreases)
-  const fillFraction = isHidden ? 0 : (5 - Math.max(0, Math.min(5, value))) / 5;
-  const fillSpan = fillFraction * TRACK_SPAN;
-  const fillEnd  = TRACK_START + fillSpan;
-
-  const color = isHidden ? "#374151" : getDoomColor(value);
-  const label = isHidden ? "CLASSIFIED" : getDoomLabel(value);
-
-  // Needle: points from center to the "current value" position on the arc
-  const needleAngle = isHidden ? TRACK_START : TRACK_START + fillSpan;
-  const needleTip = polarToCartesian(cx, cy, r - strokeW / 2 - 4, needleAngle);
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative" style={{ width: 128, height: 104 }}>
-        <svg width={128} height={104} className="overflow-visible">
-          {/* Track background */}
-          <path
-            d={arcPath(cx, cy, r, TRACK_START, TRACK_START + TRACK_SPAN)}
-            fill="none"
-            stroke="#1f2937"
-            strokeWidth={strokeW}
-            strokeLinecap="round"
-          />
-          {/* Filled danger portion */}
-          {fillSpan > 1 && (
-            <path
-              d={arcPath(cx, cy, r, TRACK_START, fillEnd)}
-              fill="none"
-              stroke={color}
-              strokeWidth={strokeW}
-              strokeLinecap="round"
-              style={value === 0 && !isHidden ? { animation: "doomPulse 1s ease-in-out infinite" } : undefined}
-            />
-          )}
-          {/* Tick marks at value positions */}
-          {[5, 4, 3, 2, 1, 0].map((v) => {
-            const fraction = (5 - v) / 5;
-            const ang = TRACK_START + fraction * TRACK_SPAN;
-            const outer = polarToCartesian(cx, cy, r + strokeW / 2 + 2, ang);
-            const inner = polarToCartesian(cx, cy, r - strokeW / 2 - 2, ang);
-            return (
-              <line
-                key={v}
-                x1={inner.x.toFixed(2)} y1={inner.y.toFixed(2)}
-                x2={outer.x.toFixed(2)} y2={outer.y.toFixed(2)}
-                stroke={v === 0 ? "#ef4444" : "#374151"}
-                strokeWidth={v === 0 ? 2 : 1}
-              />
-            );
-          })}
-          {/* Needle */}
-          {!isHidden && (
-            <>
-              <line
-                x1={cx} y1={cy}
-                x2={needleTip.x.toFixed(2)} y2={needleTip.y.toFixed(2)}
-                stroke={color}
-                strokeWidth={2}
-                strokeLinecap="round"
-              />
-              <circle cx={cx} cy={cy} r={4} fill={color} />
-            </>
-          )}
-          {/* Center value text */}
-          <text
-            x={cx} y={cy + 20}
-            textAnchor="middle"
-            fill={isHidden ? "#6b7280" : color}
-            fontSize={isHidden ? 8 : 22}
-            fontFamily="monospace"
-            fontWeight="bold"
-          >
-            {isHidden ? "???" : value.toFixed(1)}
-          </text>
-        </svg>
-        {/* Classified overlay */}
-        {isHidden && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="absolute inset-0 rounded" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.3) 4px, rgba(0,0,0,0.3) 8px)" }} />
-            <span className="relative z-10 font-mono font-bold text-[9px] text-neutral-500 tracking-widest">CLASSIFIED</span>
-          </div>
-        )}
-      </div>
-      {/* Status label */}
-      <span
-        className="font-mono font-bold text-[10px] tracking-widest"
-        style={{ color: isHidden ? "#6b7280" : color }}
-      >
-        {label}
-      </span>
-      <style>{`
-        @keyframes doomPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-      `}</style>
-    </div>
-  );
-}
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 
@@ -365,11 +239,9 @@ interface GroupPanelProps {
   prevView: StateView | null;
   rounds: number[];
   stateHistory: Record<number, StateView>;
-  defaultOpen?: boolean;
 }
 
-function GroupPanel({ group, rows, stateView, prevView, rounds, stateHistory, defaultOpen = true }: GroupPanelProps) {
-  const [open, setOpen] = useState(defaultOpen);
+function GroupPanel({ group, rows, stateView, prevView, rounds, stateHistory }: GroupPanelProps) {
   const config = GROUP_CONFIG[group];
   const fogMap = (stateView ?? STATIC_FALLBACK) as Record<string, { value: number; accuracy: Accuracy }>;
   const statusColor = groupStatusColor(rows, fogMap);
@@ -379,10 +251,9 @@ function GroupPanel({ group, rows, stateView, prevView, rounds, stateHistory, de
   return (
     <div className="border border-white/8 rounded overflow-hidden">
       {/* Header */}
-      <button
-        className="w-full flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-left"
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.03]"
         style={{ borderTop: `2px solid ${config.accent}` }}
-        onClick={() => setOpen((v) => !v)}
       >
         <span
           className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -394,29 +265,26 @@ function GroupPanel({ group, rows, stateView, prevView, rounds, stateHistory, de
         <span className="text-neutral-600 text-[11px]">
           {rows.length} vars
         </span>
-        <span className="text-neutral-500 text-[10px] ml-1">{open ? "▲" : "▼"}</span>
-      </button>
+      </div>
 
       {/* Rows */}
-      {open && (
-        <div className="px-3 py-2 space-y-0.5">
-          {rows.map((rowDef) => {
-            const sparkData = rounds.map((r) => {
-              const hv = stateHistory[r]?.[rowDef.key];
-              return { v: hv?.accuracy !== "hidden" ? hv?.value ?? null : null };
-            });
-            return (
-              <StateRowItem
-                key={rowDef.key}
-                rowDef={rowDef}
-                stateView={stateView}
-                prevView={prevView}
-                sparkData={sparkData}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div className="px-3 py-2 space-y-0.5">
+        {rows.map((rowDef) => {
+          const sparkData = rounds.map((r) => {
+            const hv = stateHistory[r]?.[rowDef.key];
+            return { v: hv?.accuracy !== "hidden" ? hv?.value ?? null : null };
+          });
+          return (
+            <StateRowItem
+              key={rowDef.key}
+              rowDef={rowDef}
+              stateView={stateView}
+              prevView={prevView}
+              sparkData={sparkData}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -494,15 +362,7 @@ export const GameStateApp = React.memo(function GameStateApp({ content: _ }: App
   const prevRound = rounds.length >= 2 ? rounds[rounds.length - 2] : null;
   const prevView  = prevRound !== null ? stateHistory[prevRound] : null;
 
-  // Doom Clock data
-  const doomFogVar    = stateView ? stateView.doomClockDistance : STATIC_FALLBACK.doomClockDistance;
-  const doomSparkData = rounds.map((r) => {
-    const hv = stateHistory[r]?.doomClockDistance;
-    return { v: hv?.accuracy !== "hidden" ? hv?.value ?? null : null };
-  });
-  const doomDelta = computeDelta(doomFogVar, prevView?.doomClockDistance);
-
-  // Hero metrics (excluding doom clock)
+  // Hero metrics
   const heroRows = HERO_KEYS.map((key) => STATE_ROW_DEFS.find((r) => r.key === key)).filter(Boolean) as StateRow[];
 
   // Group rows
@@ -524,45 +384,32 @@ export const GameStateApp = React.memo(function GameStateApp({ content: _ }: App
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {/* ── Doom Clock + Hero Cards ── */}
-        <div className="flex gap-3">
-          {/* Doom Clock hero card */}
-          <div className="border border-white/10 rounded p-3 flex flex-col items-center gap-1 shrink-0" style={{ borderTop: "2px solid #ef4444", minWidth: 148 }}>
-            <span className="font-mono font-bold text-[10px] tracking-widest text-red-400">DOOM CLOCK</span>
-            <DoomClockGauge value={doomFogVar.value} accuracy={doomFogVar.accuracy} />
-            <div className="flex items-center gap-1">
-              <DeltaIndicator delta={doomDelta} higherIsBetter={true} />
-              <div className="opacity-70"><Sparkline data={doomSparkData} accuracy={doomFogVar.accuracy} /></div>
-            </div>
-          </div>
-
-          {/* Hero metric cards */}
-          <div className="flex-1 grid grid-cols-2 gap-2 min-w-0">
-            {heroRows.map((rowDef) => {
-              const fogVar = stateView ? stateView[rowDef.key] : STATIC_FALLBACK[rowDef.key];
-              const sparkData = rounds.map((r) => {
-                const hv = stateHistory[r]?.[rowDef.key];
-                return { v: hv?.accuracy !== "hidden" ? hv?.value ?? null : null };
-              });
-              const delta = computeDelta(fogVar, prevView?.[rowDef.key]);
-              return (
-                <HeroCard
-                  key={rowDef.key}
-                  label={rowDef.label}
-                  value={fogVar.value}
-                  unit={rowDef.unit}
-                  accuracy={fogVar.accuracy}
-                  delta={delta}
-                  higherIsBetter={rowDef.higherIsBetter}
-                  sparkData={sparkData}
-                  dangerAbove={rowDef.dangerAbove}
-                  dangerBelow={rowDef.dangerBelow}
-                  min={rowDef.min}
-                  max={rowDef.max}
-                />
-              );
-            })}
-          </div>
+        {/* ── Hero Cards ── */}
+        <div className="grid grid-cols-2 gap-2">
+          {heroRows.map((rowDef) => {
+            const fogVar = stateView ? stateView[rowDef.key] : STATIC_FALLBACK[rowDef.key];
+            const sparkData = rounds.map((r) => {
+              const hv = stateHistory[r]?.[rowDef.key];
+              return { v: hv?.accuracy !== "hidden" ? hv?.value ?? null : null };
+            });
+            const delta = computeDelta(fogVar, prevView?.[rowDef.key]);
+            return (
+              <HeroCard
+                key={rowDef.key}
+                label={rowDef.label}
+                value={fogVar.value}
+                unit={rowDef.unit}
+                accuracy={fogVar.accuracy}
+                delta={delta}
+                higherIsBetter={rowDef.higherIsBetter}
+                sparkData={sparkData}
+                dangerAbove={rowDef.dangerAbove}
+                dangerBelow={rowDef.dangerBelow}
+                min={rowDef.min}
+                max={rowDef.max}
+              />
+            );
+          })}
         </div>
 
         {/* ── Delta legend row ── */}
@@ -584,7 +431,6 @@ export const GameStateApp = React.memo(function GameStateApp({ content: _ }: App
               prevView={prevView}
               rounds={rounds}
               stateHistory={stateHistory}
-              defaultOpen={group === "aiRace" || group === "safety"}
             />
           ))}
         </div>
