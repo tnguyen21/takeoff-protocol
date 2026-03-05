@@ -71,7 +71,7 @@ export const OB_SLACK_FLAVOR: ContentItem[] = [
 
   // ── Round 1: reply chains ──
 
-  // #research thread — Alex's 50.2% speedup announcement
+  // #research thread — {ob_cto}'s 50.2% speedup announcement
   {
     id: "ob-flavor-r1-slack-reply-research-1",
     type: "message",
@@ -103,7 +103,7 @@ export const OB_SLACK_FLAVOR: ContentItem[] = [
     classification: "context",
   },
 
-  // #alignment thread — Maya's safety concern
+  // #alignment thread — {ob_safety}'s safety concern
   {
     id: "ob-flavor-r1-slack-reply-align-1",
     type: "message",
