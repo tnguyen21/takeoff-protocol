@@ -888,9 +888,10 @@ describe("emitContent — INV-1: no generated content → identical to current b
     // Pre-authored round 1 openbrain content must be present
     expect(content.length).toBeGreaterThan(0);
 
-    // Result must match what getContentForPlayer returns directly
+    // Result must match personalized getContentForPlayer output
     const expected = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
-    expect(content).toEqual(expected);
+    const nameMap = buildNameMap(room);
+    expect(content).toEqual(personalizeContent(expected, nameMap));
   });
 
   it("skips players without faction/role", () => {
@@ -1063,10 +1064,11 @@ describe("emitContent — critical paths: per-faction generation independence", 
     const obNewsItems = obContent.filter((c) => c.app === "news").flatMap((c) => c.items);
     expect(obNewsItems.every((i) => i.id.startsWith("gen-"))).toBe(true);
 
-    // prometheus player (p2) should get pre-authored content identical to direct getContentForPlayer
+    // prometheus player (p2) should get personalized pre-authored content
     const promContent = getEmittedContent(emitted, "p2");
     const promExpected = getContentForPlayer(1, "prometheus", "prom_ceo", room.state);
-    expect(promContent).toEqual(promExpected);
+    const nameMap = buildNameMap(room);
+    expect(promContent).toEqual(personalizeContent(promExpected, nameMap));
   });
 });
 
@@ -1084,8 +1086,9 @@ describe("emitContent — failure mode: empty generated array falls back to pre-
     const content = getEmittedContent(emitted, "p1");
     const expected = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
 
-    // Should get pre-authored content, identical to current behavior
-    expect(content).toEqual(expected);
+    // Should get personalized pre-authored content
+    const nameMap = buildNameMap(room);
+    expect(content).toEqual(personalizeContent(expected, nameMap));
   });
 });
 

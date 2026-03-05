@@ -57,11 +57,13 @@ export function personalizeText(text: string, nameMap: Map<string, string>): str
 export function personalizeContent(content: AppContent[], nameMap: Map<string, string>): AppContent[] {
   return content.map(appContent => ({
     ...appContent,
-    items: appContent.items.map(item => ({
-      ...item,
-      body: personalizeText(item.body, nameMap),
-      subject: item.subject ? personalizeText(item.subject, nameMap) : item.subject,
-    })),
+    items: appContent.items.map(item => {
+      const personalized = { ...item, body: personalizeText(item.body, nameMap) };
+      if (item.subject !== undefined) {
+        personalized.subject = personalizeText(item.subject, nameMap);
+      }
+      return personalized;
+    }),
   }));
 }
 
@@ -393,17 +395,39 @@ export function emitContent(io: Server, room: GameRoom) {
       // Pre-authored content (always available)
       const preAuthored = getContentForPlayer(room.round, player.faction, player.role, room.state);
 
-      // Check for generated content for replaceable apps (news, twitter)
+      // Merge generated content with pre-authored content
       const generatedContent = getGeneratedContent(room, room.round, player.faction);
       let finalContent: AppContent[];
       if (generatedContent && generatedContent.length > 0) {
-        // Replace pre-authored apps that have generated versions
-        const generatedApps = new Set(generatedContent.map((c) => c.app));
-        const merged = preAuthored.filter((c) => !generatedApps.has(c.app));
-        merged.push(...generatedContent);
+        // Accumulating apps (slack, email, memo, signal, etc.) keep pre-authored history
+        // and append generated items. Fresh apps (news, twitter) get replaced entirely.
+        const ACCUMULATING: Set<string> = new Set([
+          "slack", "email", "memo", "security", "intel", "military", "arxiv", "signal", "briefing",
+        ]);
+        const generatedByApp = new Map(generatedContent.map((c) => [c.app, c]));
+        const merged: AppContent[] = [];
 
-        // Dedup guard: generated IDs start with "gen-" so collisions with pre-authored are
-        // practically impossible, but we deduplicate by ID across all items to be safe.
+        for (const preApp of preAuthored) {
+          const genApp = generatedByApp.get(preApp.app);
+          if (!genApp) {
+            // No generated version — keep pre-authored as-is
+            merged.push(preApp);
+          } else if (ACCUMULATING.has(preApp.app)) {
+            // Accumulating app: append generated items to pre-authored history
+            merged.push({ ...preApp, items: [...preApp.items, ...genApp.items] });
+            generatedByApp.delete(preApp.app);
+          } else {
+            // Fresh app: replace entirely with generated version
+            merged.push(genApp);
+            generatedByApp.delete(preApp.app);
+          }
+        }
+        // Add any generated apps that had no pre-authored counterpart
+        for (const genApp of generatedByApp.values()) {
+          merged.push(genApp);
+        }
+
+        // Dedup guard by ID
         const seenIds = new Set<string>();
         finalContent = merged.map((appContent) => ({
           ...appContent,
