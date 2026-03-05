@@ -22,6 +22,25 @@ export const CHINA_MEMO: ContentItem[] = [
       classification: "context",
     },
 
+    {
+      id: "china-memo-r1-cdz-phase2",
+      type: "memo",
+      round: 1,
+      subject: "CDZ Compute Buildout — Phase 2 Status",
+      body: "INTERNAL — OPERATIONS & LEADERSHIP\n\nCentralized Development Zone — Tianwan Site Update\n\nPhase 1 status: Fully operational since September 2026. Current sustained utilization: 71%. Chip count: 94,000 H100-equivalent units, supplemented by 12,000 domestically-produced Ascend 910B. This already makes CDZ the largest single-site AI cluster in the world — but Phase 2 will triple it.\n\nPhase 2 construction update:\n- Foundation and structural steel: 87% complete\n- Power distribution systems: 68% complete (Tianwan reactor output allocated: 1.2 GW to Phase 2 alone)\n- Cooling infrastructure: Largest single engineering challenge. We are running liquid cooling loops off the reactor's secondary cooling system. First-of-kind implementation globally. Thermal ceiling for the combined facility is approximately 2.8 GW before we hit hard limits. We are designing for 2.1 GW sustained.\n- Target operational date: March 2027 (per Commission directive). Engineering estimate: May 2027. We have flagged this discrepancy.\n\nCompute allocation plan (Phase 2 online):\n- 55% frontier model training (D-F series, Agent-class pursuit)\n- 30% open-source ecosystem models (Qwen series, Coder, VL)\n- 15% government/military applications (classified allocation)\n\nAt full Phase 2 capacity, CDZ will have more raw compute than the combined capacity of OpenBrain, Prometheus, and the Orbital facility. This does not close the efficiency gap, but volume matters.\n\n— CDZ Infrastructure Division",
+      timestamp: "2026-11-09T07:30:00Z",
+      classification: "context",
+    },
+    {
+      id: "china-memo-r1-oss-strategy",
+      type: "memo",
+      round: 1,
+      subject: "Open-Source Ecosystem Strategy — Q1 2027 Plan",
+      body: "INTERNAL — STRATEGY DIVISION\n\nRE: Open-source release schedule and strategic rationale\n\nI want to put in writing something we discuss verbally but rarely document: open-sourcing our models is not idealism. It is one of the most strategically aggressive things we can do.\n\nThe logic:\n\n1. COMMODITIZE THE MODEL LAYER. If Qwen-14B matches GPT-4 on 80% of real-world tasks, then the model itself has no commercial value. OpenBrain's business model collapses. They cannot charge $20/month for access to something developers can run locally. Open-source turns their revenue into a cost center.\n\n2. UNDERMINE US EXPORT CONTROLS. Every open-source release makes future controls unenforceable. You cannot sanction a GitHub repository. By establishing Qwen as the baseline that every third-party application is built on, we make the US model ecosystem a legacy layer.\n\n3. BUILD AN ECOSYSTEM WE CONTROL. Chinese AI companies building on Qwen create a dependency that compounds. They hire engineers who know Qwen architecture. They tune on Qwen base models. They adopt our fine-tuning infrastructure. This is the OS layer strategy — what Microsoft did with Windows, what Google did with Android.\n\n4. BENCHMARKS ARE ALREADY COMPETITIVE. Qwen-14B scores within 3% of GPT-4 on MMLU, outperforms on Chinese-language tasks, and matches on most coding benchmarks. We are releasing models that are not second-tier. The international developer community knows this. Downloads confirm it.\n\nQ1 2027 releases: Qwen-15B (January), Qwen-15B-Coder (February), Qwen-VL-7B (March). Each release is timed to maximum disruption of US lab announcement cycles.\n\nThis is warfare conducted at the infrastructure layer. We intend to win it.\n\n— Dr. Chen Jiawei, Ecosystem Strategy Lead",
+      timestamp: "2026-11-12T14:00:00Z",
+      classification: "context",
+    },
+
     // ── Round 2 ──
     {
       id: "china-memo-r2-1",
