@@ -30,7 +30,6 @@ afterEach(() => {
   for (const key of [
     "GEN_ENABLED",
     "GEN_BRIEFINGS_ENABLED",
-    "GEN_CONTENT_APPS",
     "GEN_PROVIDER",
     "GEN_BRIEFING_MODEL",
     "GEN_CONTENT_MODEL",
@@ -108,87 +107,9 @@ describe("INV-2: GEN_ENABLED 'true' or '1' enables generation", () => {
   });
 });
 
-// ── INV-3: GEN_CONTENT_APPS parsing ───────────────────────────────────────────
+// ── INV-3: Default model values are sensible Claude model IDs ─────────────────
 
-describe("INV-3: GEN_CONTENT_APPS parses comma-separated app IDs", () => {
-  it("parses 'news,twitter' into ['news', 'twitter']", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: "news,twitter" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual(["news", "twitter"]);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("handles whitespace around app names", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: " news , twitter " });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual(["news", "twitter"]);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("filters out unknown app IDs", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: "news,unknownapp,twitter" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual(["news", "twitter"]);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("parses a single app ID", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: "news" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual(["news"]);
-    } finally {
-      cleanup();
-    }
-  });
-});
-
-// ── INV-4: GEN_CONTENT_APPS empty or unset → [] ───────────────────────────────
-
-describe("INV-4: GEN_CONTENT_APPS empty or unset returns []", () => {
-  it("returns empty array when GEN_CONTENT_APPS is unset", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: undefined });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual([]);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("returns empty array when GEN_CONTENT_APPS is empty string", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: "" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual([]);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("returns empty array when GEN_CONTENT_APPS is only whitespace", () => {
-    const cleanup = withEnv({ GEN_CONTENT_APPS: "   " });
-    try {
-      const config = getGenerationConfig();
-      expect(config.contentApps).toEqual([]);
-    } finally {
-      cleanup();
-    }
-  });
-});
-
-// ── INV-5: Default model values are sensible Claude model IDs ─────────────────
-
-describe("INV-5: default model values are sensible Claude model IDs", () => {
+describe("INV-3: default model values are sensible Claude model IDs", () => {
   it("briefingModel default contains 'claude' and 'sonnet'", () => {
     const config = getGenerationConfig();
     expect(config.briefingModel).toContain("claude");

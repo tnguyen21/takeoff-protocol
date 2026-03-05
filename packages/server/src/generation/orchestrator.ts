@@ -33,7 +33,6 @@ const ALL_FACTIONS: Faction[] = ["openbrain", "prometheus", "china", "external"]
  * - Idempotent: if generation is already pending/ready/failed, this is a no-op.
  * - Respects config kill switches: if GEN_ENABLED is false, returns immediately.
  * - Briefing is skipped if GEN_BRIEFINGS_ENABLED is false.
- * - Content is skipped if GEN_CONTENT_APPS is empty.
  *
  * @param room    The game room (mutated in-place via cache helpers).
  * @param round   The round number to generate for.
@@ -57,9 +56,7 @@ export async function triggerGeneration(
 
   // When room toggle is on, enable everything; otherwise use env config
   const briefingsEnabled = roomEnabled === true ? true : config.briefingsEnabled;
-  const contentApps: AppId[] = roomEnabled === true
-    ? (Object.keys(APP_TYPE_MAP) as AppId[])
-    : config.contentApps;
+  const contentApps: AppId[] = Object.keys(APP_TYPE_MAP) as AppId[];
   const npcEnabled = roomEnabled === true ? true : config.npcEnabled;
 
   // ── Idempotency check ─────────────────────────────────────────────────────
