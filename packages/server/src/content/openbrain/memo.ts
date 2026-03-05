@@ -1,7 +1,34 @@
 import type { ContentItem } from "@takeoff/shared";
 import { registerContent } from "../loader.js";
 
-export const OB_MEMO_SAFETY: ContentItem[] = [
+export const OB_MEMO: ContentItem[] = [
+    {
+      id: "ob-memo-r1-roadmap",
+      type: "memo",
+      round: 1,
+      subject: "Q1 2027 Roadmap & Priorities",
+      body: "ALL HANDS — OpenBrain Q1 2027 Roadmap\n\nAgent-1 is live. This is what we're doing next.\n\nDEPLOYMENT TIMELINE:\n- Dec 2026: Agent-1 GA to enterprise waitlist (targeting 200 design partners)\n- Jan 2027: Public API launch, pricing TBD pending utilization data\n- Feb 2027: Agent-1 Pro tier with expanded context and tool access\n- Mar 2027: Agent-2 training run begins (H100 cluster reservation locked)\n\nCOMPUTE ALLOCATION:\nWe've secured 12,000 H100s through end of Q2. Allocation split: 60% Agent-2 training, 25% inference infra for Agent-1 serving, 15% research/safety/evals. The training cluster is time-constrained — we cannot slip the Agent-2 start date.\n\nKEY MILESTONES:\n- Agent-1 at 1M daily active users by March 31\n- Agent-2 training run complete by April 15\n- 10 enterprise design partners in production by end of January\n\nThis is our moment. Prometheus is 3-4 months behind on capabilities. China is farther. We ship now.\n\n— Marcus Chen, CEO",
+      timestamp: "2026-11-10T09:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "ob-memo-r1-board-prep",
+      type: "memo",
+      round: 1,
+      subject: "Board Prep — Q4 2026 Results & Competitive Position",
+      body: "CONFIDENTIAL — BOARD USE ONLY\n\nPrepared for December 2026 Board Meeting\n\nQ4 2026 FINANCIALS:\nRevenue: $47M ARR (up from $12M in Q3 — Agent-1 effect)\nBurn: $180M/quarter (compute-heavy; expected)\nRunway: 14 months at current burn\nCompute spend: $130M in Q4, projecting $160M Q1\n\nKEY METRICS:\nAgent-1 design partners: 84 (target was 50)\nAverage session length: 47 minutes (strong engagement signal)\nEnterprise pilot NPS: 71\nHeadcount: 312 (from 180 at start of year)\n\nCOMPETITIVE POSITION:\nPrometheus remains our primary concern. Best intelligence suggests their next frontier model is Q1-Q2 2027. Their safety-first positioning is playing well in Washington but is creating internal friction — we're hearing from their recruits.\n\nChina state lab capabilities are advancing faster than public benchmarks suggest. Government sources flag this as a national security concern, which creates both regulatory risk and potential partnership opportunity.\n\nASK:\nWe are requesting board approval for a $400M Series C to extend runway to 30 months and accelerate the Agent-2 training run. Lead investor conversations are in progress.\n\n— Marcus Chen, CEO / Kevin Park, CFO",
+      timestamp: "2026-11-20T14:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "ob-memo-r1-compute-policy",
+      type: "memo",
+      round: 1,
+      subject: "Compute Allocation Policy — Internal",
+      body: "INTERNAL — Engineering & Research\n\nThis memo formalizes how we allocate GPU time across teams. Effective December 1, 2026.\n\nALLOCATION TIERS:\nTier 1 — Capability Training (CEO approval): Large-scale training runs. Non-preemptible. Agent-2 baseline run is Tier 1 starting January 2027.\n\nTier 2 — Inference Infrastructure (CTO approval): Production serving. Non-preemptible. SLA-bound.\n\nTier 3 — Research & Evals (VP approval): Standard research work. Preemptible by Tier 1/2. 72-hour max job length.\n\nTier 4 — Safety & Alignment (Safety Council approval): Same as Tier 3. Preemptible.\n\nNOTE ON TIERS 3/4:\nSafety and alignment compute requests compete directly with capability research for Tier 3/4 allocation. Both teams have raised concerns about preemption frequency. The short answer is: until we close the Series C and expand capacity, this tension is real and not going away. Capability work has revenue dependencies that safety evals currently do not.\n\nREQUEST PROCESS:\nAll requests submitted through the GPU scheduler. Tier 3/4 requests over 500 GPU-hours require VP sign-off. Requests over 2,000 GPU-hours require CTO sign-off. Safety team requests that require Tier 1/2 guarantee must go to the Safety Council for escalation to the CEO.\n\n— Kevin Park, COO",
+      timestamp: "2026-11-25T11:00:00Z",
+      classification: "context",
+    },
     {
       id: "ob-memo-safety-1",
       type: "memo",
@@ -123,4 +150,4 @@ export const OB_MEMO_SAFETY: ContentItem[] = [
     },
 ];
 
-registerContent({ faction: "openbrain", app: "memo", role: "ob_safety", accumulate: true, items: OB_MEMO_SAFETY });
+registerContent({ faction: "openbrain", app: "memo", accumulate: true, items: OB_MEMO });

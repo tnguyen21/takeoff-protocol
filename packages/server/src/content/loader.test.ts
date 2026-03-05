@@ -87,15 +87,19 @@ describe("INV-1: faction isolation", () => {
 // ── Invariant 2: role-specific content ──
 
 describe("INV-2: role-specific items only reach matching role", () => {
-  it("ob_safety sees the safety memo, ob_ceo does not", () => {
+  it("all OB roles see memo content (memos are company-wide)", () => {
     const safetyContent = getContentForPlayer(1, "openbrain", "ob_safety", INITIAL_STATE);
     const ceoContent = getContentForPlayer(1, "openbrain", "ob_ceo", INITIAL_STATE);
+    const ctoContent = getContentForPlayer(1, "openbrain", "ob_cto", INITIAL_STATE);
+    const secContent = getContentForPlayer(1, "openbrain", "ob_security", INITIAL_STATE);
 
-    const safetyHasMemo = safetyContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-memo-safety-1"));
-    const ceoHasMemo = ceoContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-memo-safety-1"));
+    const hasMemo = (content: ReturnType<typeof getContentForPlayer>) =>
+      content.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-memo-safety-1"));
 
-    expect(safetyHasMemo).toBe(true);
-    expect(ceoHasMemo).toBe(false);
+    expect(hasMemo(safetyContent)).toBe(true);
+    expect(hasMemo(ceoContent)).toBe(true);
+    expect(hasMemo(ctoContent)).toBe(true);
+    expect(hasMemo(secContent)).toBe(true);
   });
 
   it("china_intel sees the intel briefing, china_director does not", () => {
@@ -250,15 +254,15 @@ describe("round2 INV-1: faction isolation", () => {
 // ── Round 2 role-specific content ──
 
 describe("round2 INV-2: role-specific items only reach matching role", () => {
-  it("ob_safety sees the safety memo, ob_ceo does not", () => {
+  it("all OB roles see memo content in round 2 (memos are company-wide)", () => {
     const safetyContent = getContentForPlayer(2, "openbrain", "ob_safety", INITIAL_STATE);
     const ceoContent = getContentForPlayer(2, "openbrain", "ob_ceo", INITIAL_STATE);
 
-    const safetyHasMemo = safetyContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob2-memo-safety-1"));
-    const ceoHasMemo = ceoContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob2-memo-safety-1"));
+    const hasMemo = (content: ReturnType<typeof getContentForPlayer>) =>
+      content.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob2-memo-safety-1"));
 
-    expect(safetyHasMemo).toBe(true);
-    expect(ceoHasMemo).toBe(false);
+    expect(hasMemo(safetyContent)).toBe(true);
+    expect(hasMemo(ceoContent)).toBe(true);
   });
 
   it("china_intel sees the intel briefing, china_director does not", () => {
@@ -442,15 +446,15 @@ describe("round3: faction isolation (INV-1)", () => {
 });
 
 describe("round3: role-specific critical items (INV-2)", () => {
-  it("ob_safety sees the misalignment memo, ob_cto does not", () => {
+  it("all OB roles see the misalignment memo in round 3 (memos are company-wide)", () => {
     const safetyContent = getContentForPlayer(3, "openbrain", "ob_safety", INITIAL_STATE);
     const ctoContent = getContentForPlayer(3, "openbrain", "ob_cto", INITIAL_STATE);
 
-    const safetyHasMemo = safetyContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-r3-memo-safety-1"));
-    const ctoHasMemo = ctoContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-r3-memo-safety-1"));
+    const hasMemo = (content: ReturnType<typeof getContentForPlayer>) =>
+      content.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob-r3-memo-safety-1"));
 
-    expect(safetyHasMemo).toBe(true);
-    expect(ctoHasMemo).toBe(false);
+    expect(hasMemo(safetyContent)).toBe(true);
+    expect(hasMemo(ctoContent)).toBe(true);
   });
 
   it("ob_security sees bioweapons eval, ob_ceo does not", () => {
@@ -957,15 +961,19 @@ describe("round4: faction isolation (INV-1)", () => {
 });
 
 describe("round4: role-specific items only reach matching role (INV-2)", () => {
-  it("ob_safety sees the safety memo, ob_cto does not", () => {
+  it("all OB roles see memo content (memos are company-wide)", () => {
     const safetyContent = getContentForPlayer(4, "openbrain", "ob_safety", INITIAL_STATE);
     const ctoContent = getContentForPlayer(4, "openbrain", "ob_cto", INITIAL_STATE);
+    const ceoContent = getContentForPlayer(4, "openbrain", "ob_ceo", INITIAL_STATE);
+    const secContent = getContentForPlayer(4, "openbrain", "ob_security", INITIAL_STATE);
 
-    const safetyHasMemo = safetyContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob4-memo-safety-1"));
-    const ctoHasMemo = ctoContent.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob4-memo-safety-1"));
+    const hasMemo = (content: ReturnType<typeof getContentForPlayer>) =>
+      content.some((ac) => ac.app === "memo" && ac.items.some((i) => i.id === "ob4-memo-safety-1"));
 
-    expect(safetyHasMemo).toBe(true);
-    expect(ctoHasMemo).toBe(false);
+    expect(hasMemo(safetyContent)).toBe(true);
+    expect(hasMemo(ctoContent)).toBe(true);
+    expect(hasMemo(ceoContent)).toBe(true);
+    expect(hasMemo(secContent)).toBe(true);
   });
 
   it("ob_security sees security document, ob_ceo does not", () => {
