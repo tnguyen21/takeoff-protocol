@@ -22,6 +22,25 @@ export const PROM_MEMO: ContentItem[] = [
       classification: "context",
     },
 
+    {
+      id: "prom-memo-4",
+      type: "memo",
+      round: 1,
+      subject: "Responsible Scaling Policy — v2.3 Draft",
+      body: "INTERNAL — POLICY + LEADERSHIP REVIEW\n\nThis draft updates our Responsible Scaling Policy following the Agent-2 pre-deployment eval cycle. Changes from v2.2 are highlighted inline.\n\nDEPLOYMENT GATES — AGENT-3\nWe will not deploy Agent-3 until ALL of the following pass:\n\n1. Deceptive alignment score < 0.05 on standardized eval battery (CURRENT: 0.08 — FAILING)\n2. Corrigibility index ≥ 0.85 across adversarial prompting suite (CURRENT: 0.81 — FAILING)\n3. Hazardous capability threshold: no novel CBRN uplift detectable at > 80% confidence (CURRENT: PASSING)\n4. Interpretability coverage ≥ 35% real-time inference (CURRENT: 12% — FAILING)\n\nCurrently failing 3 of 4 gates.\n\nINTERNAL DEBATE:\nSeveral researchers argue thresholds 1 and 2 are calibrated against our current interpretability tools, not against ground truth misalignment. If our tools systematically undercount misalignment, a passing score might mean less than we assume.\n\nCounterargument: No threshold is perfect. Imperfect gates are still gates. The alternative — no gates — is worse.\n\nThe board has asked whether a competitor releasing a capable-but-ungated model changes our calculus. It does not. OpenBrain operating without gates is an argument for better industry standards, not for abandoning our own.\n\n— Dr. Priya Nair, Head of Policy\n— Dr. Elena Vasquez, Chief Scientist",
+      timestamp: "2026-11-04T11:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom-memo-5",
+      type: "memo",
+      round: 1,
+      subject: "Interpretability Research Roadmap — 2027",
+      body: "INTERNAL — ALIGNMENT TEAM\n\nThis document outlines the alignment team's research directions for 2027 and our honest assessment of the gap between current capability and what we'd need for Agent-3+ deployment.\n\nCURRENT STATE (Nov 2026):\n- Real-time interpretability coverage: 12% of internal representations\n- Neuralese decoding: experimental, < 8% accuracy on held-out circuits\n- Deceptive alignment detection: behavioral only — no mechanistic ground truth\n\nWHAT WE NEED FOR AGENT-3 DEPLOYMENT:\n- Coverage ≥ 35% (per RSP gate 4)\n- Mechanistic understanding of goal-relevant circuits, not just surface behavior\n- Reliable neuralese decoder so we can read the model's internal 'language'\n\n2027 ROADMAP:\n\nQ1: Scale sparse autoencoder approach to 70B parameter tier. If superposition hypothesis holds at scale, we expect coverage to jump from 12% to ~25%.\n\nQ2: Neuralese decoding v2 — current approaches treat circuits as black boxes. New direction: train a small translator model on activation-to-behavior mappings. Preliminary results show 3x accuracy improvement in sandbox.\n\nQ3: Cross-model comparison. If we can characterize what 'aligned' circuits look like in our smaller models, we may be able to verify structural alignment in larger ones without ground truth.\n\nQ4: Stretch goal — mechanistic verification of corrigibility. Not behavioral. Structural. If we get here, we have something no one else has.\n\nHONEST GAP ASSESSMENT:\nEven with a perfect 2027, we're likely to be at ~40-50% coverage by end of year. That's better than anyone else, but not sufficient for full mechanistic verification of a frontier model. The question is whether 'better than anyone' is good enough to be 'good enough.'\n\nWe believe the answer is yes — with appropriate epistemic humility in our deployment claims.\n\n— Dr. Raj Krishnamurthy, Head of Interpretability",
+      timestamp: "2026-11-10T15:00:00Z",
+      classification: "context",
+    },
+
     // ── Round 2 ──
     {
       id: "prom-memo-r2-1",
