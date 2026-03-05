@@ -20,28 +20,13 @@ function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-// Message hover toolbar — emoji react, thread reply, bookmark (visual-only)
-function MessageToolbar() {
-  return (
-    <div className="absolute -top-5 right-2 flex items-center gap-0.5 bg-[#1a1d21] border border-white/10 rounded px-1 py-0.5 shadow-lg z-10">
-      <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Add reaction">
-        😊
-      </button>
-      <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Bookmark">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M2 2a2 2 0 012-2h8a2 2 0 012 2v13.5a.5.5 0 01-.777.416L8 13.101l-5.223 2.815A.5.5 0 012 15.5V2z" />
-        </svg>
-      </button>
-    </div>
-  );
-}
 
 export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   const [input, setInput] = useState("");
   const [activeChannel, setActiveChannel] = useState("#general");
   // Channels the user has visited (starts with only #general seen)
   const [seenChannels, setSeenChannels] = useState<Set<string>>(() => new Set(["#general"]));
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -202,8 +187,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             <div
               key={m.id}
               className="relative flex gap-3 group"
-              onMouseEnter={() => setHoveredMessageId(m.id)}
-              onMouseLeave={() => setHoveredMessageId(null)}
             >
               <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
                 {initials(m.sender ?? "?")}
@@ -218,7 +201,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
                 </div>
                 <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
               </div>
-              {hoveredMessageId === m.id && <MessageToolbar />}
             </div>
           ))}
 
@@ -227,8 +209,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             <div
               key={m.id}
               className="relative flex gap-3 group"
-              onMouseEnter={() => setHoveredMessageId(m.id)}
-              onMouseLeave={() => setHoveredMessageId(null)}
             >
               <div className="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-xs font-bold shrink-0 text-white">
                 {initials(m.fromName)}
@@ -242,7 +222,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
                 </div>
                 <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.content}</p>
               </div>
-              {hoveredMessageId === m.id && <MessageToolbar />}
             </div>
           ))}
           <div ref={messagesEndRef} />
