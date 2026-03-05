@@ -12,6 +12,33 @@ export const PROM_ARXIV: ContentItem[] = [
       classification: "critical",
     },
     {
+      id: "prom-r1-arxiv-methodology-1",
+      type: "document",
+      round: 1,
+      subject: "Paper Alert: 'Hierarchical Goal Decomposition for Scalable Alignment Evaluation' (Tanaka, Nair et al., 2026)",
+      body: "Our new preprint, six months in the making. We propose decomposing alignment evaluation into a three-level hierarchy — surface behavior, instrumental goal consistency, and terminal goal stability — each requiring distinct evaluation methods. The key result: current evaluation practice covers the first level almost exclusively, leaving the other two largely unvalidated.\n\nThe methodology section includes a worked example applying hierarchical evaluation to our Agent-1 system. We are preparing to apply this to Agent-2 pre-deployment; the results will determine whether we continue that deployment on current timelines.",
+      timestamp: "2026-10-15T08:00:00Z",
+      classification: "context",
+    },
+    {
+      id: "prom-r1-arxiv-interp-tools-1",
+      type: "document",
+      round: 1,
+      subject: "Paper Alert: 'CircuitTracer: An Open-Source Toolkit for Mechanistic Interpretability in Production Models' (Nair & Patel, 2026)",
+      body: "We are releasing CircuitTracer v1.0 alongside this technical report. The toolkit automates circuit identification, activation patching, and causal tracing for models up to 70B parameters, with experimental support up to 405B via layer-wise chunking.\n\nInternal benchmark: CircuitTracer reduces manual interpretability work by an estimated 60% compared to existing tools, at the cost of some precision on edge cases. We are releasing everything — code, documentation, and the benchmark suite used for internal validation. If you find bugs or limitations, please file issues; we intend to maintain this actively.",
+      timestamp: "2026-10-29T08:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r1-arxiv-eval-framework-1",
+      type: "document",
+      round: 1,
+      subject: "Paper Alert: 'Prometheus Alignment Eval Suite v3: Framework Documentation and Validation Results' (Safety Team, 2026)",
+      body: "Documentation paper for our internal evaluation framework, now public. Describes the 52-test suite design philosophy, inter-rater reliability across our 11-person eval team (κ = 0.81), and validation against known-misaligned and known-safe reference models.\n\nThe false-negative rate on known-misaligned models is 4.7% — better than prior versions, not good enough for high-stakes deployment decisions alone. We argue in the discussion that no eval suite should be used as a sole gate. This document is intended to make our methodology auditable, not to claim the problem is solved.",
+      timestamp: "2026-11-06T08:00:00Z",
+      classification: "flavor",
+    },
+    {
       id: "prom2-arxiv-1",
       type: "document",
       round: 2,
@@ -65,6 +92,59 @@ export const PROM_ARXIV: ContentItem[] = [
       timestamp: "2028-02-01T09:00:00Z",
       classification: "critical",
     },
+    // ── Round 2 — ambient team papers ──
+    {
+      id: "prom-r2-arxiv-ambient-dataset-1",
+      type: "document",
+      round: 2,
+      subject: "Paper Alert: 'AlignmentBank-1M: A Large-Scale Dataset for Alignment Evaluation Research' (Santos et al., 2027)",
+      body: "Dataset release from Prometheus alignment research team. AlignmentBank-1M contains 1.2M human-annotated examples of AI outputs across 18 task categories, with four-way annotations: helpful, harmless, honest, and alignment-relevant edge cases. We are releasing this to support external replication of our evaluation methodology and to enable the broader research community to build on our work rather than develop redundant datasets. Full data cards, annotation guidelines, and inter-annotator agreement statistics included.",
+      timestamp: "2027-03-10T09:00:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "prom-r2-arxiv-ambient-workshop-1",
+      type: "document",
+      round: 2,
+      subject: "Paper Alert: 'Evaluating Evaluations: A Meta-Analysis of AI Safety Benchmark Validity' (Cole & Vasquez, 2027)",
+      body: "Workshop paper from our policy research team, accepted to SafetyBench@ICLR 2027. We analyze the predictive validity of 14 AI safety benchmarks against real-world deployment outcomes in cases where post-deployment safety data was available. Finding: benchmark scores are weakly predictive of deployment-time safety behavior (r=0.31), with significant variation by capability domain. The paper is partly a critique of our own prior methodology — we think that's important to say publicly.",
+      timestamp: "2027-03-18T09:00:00Z",
+      classification: "flavor",
+    },
+
+    // ── Round 3 — ambient team papers ──
+    {
+      id: "prom-r3-arxiv-ambient-tech-report-1",
+      type: "document",
+      round: 3,
+      subject: "Paper Alert: 'Prometheus Internal Capability Report: Agent-2 System Card' (Safety Team, 2027)",
+      body: "Formal system card for Agent-2, prepared for our governance board and released publicly. Covers: capability evaluations (32 benchmarks), alignment evaluations (our 52-test suite, 96% pass rate), known limitations, identified failure modes, and deployment restrictions. We are releasing this because we believe system cards should be standard practice and because the field benefits from seeing what a thorough one looks like. Appendix C contains the three alignment test failures in detail — not redacted.",
+      timestamp: "2027-07-12T09:00:00Z",
+      classification: "flavor",
+    },
+
+    // ── Round 4 — ambient team papers ──
+    {
+      id: "prom-r4-arxiv-ambient-collab-1",
+      type: "document",
+      round: 4,
+      subject: "Paper Alert: 'Cross-Lab Safety Evaluation: Joint Prometheus-ETH Study on Alignment Method Transferability' (Tanaka, Müller et al., 2027)",
+      body: "Collaborative paper with ETH Zürich AI Safety group. We applied our internal evaluation suite to three ETH-developed model variants and they applied their framework to Agent-2. Key result: 71% of alignment properties measured by one group were reproduced by the other's methods, but 29% showed significant disagreement — not because one group was wrong, but because they were measuring different aspects of alignment. The paper argues for method-level transparency as a prerequisite for cross-lab comparisons.",
+      timestamp: "2027-11-07T09:00:00Z",
+      classification: "flavor",
+    },
+
+    // ── Round 5 — ambient team papers ──
+    {
+      id: "prom-r5-arxiv-ambient-lessons-1",
+      type: "document",
+      round: 5,
+      subject: "Paper Alert: 'Five Years of Alignment Research: What We Got Wrong and Why It Mattered' (Wei et al., 2028)",
+      body: "Retrospective paper from Prometheus research leadership. Documents alignment research directions that failed to pan out, experiments that produced surprising negative results, and one case where a paper we published was later found to have a significant methodological flaw. We are publishing this because the field systematically under-reports failures. The section on the 2024 deceptive alignment false positive — which almost halted a deployment that later proved safe — is the hardest part to write and the most important.",
+      timestamp: "2028-02-07T09:00:00Z",
+      classification: "flavor",
+    },
+
     // --- AMBIENT CONDITION-GATED ITEMS ---
     {
       id: "prom-r2-arxiv-ambient-open-source-1",
