@@ -3,7 +3,7 @@ import type { GameMessage } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { useUIStore } from "./ui.js";
-import { useGameStore } from "./game.js";
+import { useGameStore, nextSeq } from "./game.js";
 import { soundManager } from "../sounds/index.js";
 
 interface MessagesStore {
@@ -25,7 +25,8 @@ export const useMessagesStore = create<MessagesStore>((set) => ({
 
 // Replay all messages on reconnect — replace the whole list (no duplicates)
 socket.on("message:history", ({ messages }: { messages: GameMessage[] }) => {
-  useMessagesStore.setState({ messages, unreadCounts: {} });
+  const stamped = messages.map((m) => ({ ...m, _seq: nextSeq() }));
+  useMessagesStore.setState({ messages: stamped, unreadCounts: {} });
 });
 
 socket.on("message:receive", (message: GameMessage) => {
@@ -38,7 +39,7 @@ socket.on("message:receive", (message: GameMessage) => {
       return s; // No change
     }
     return {
-      messages: [...s.messages, message],
+      messages: [...s.messages, { ...message, _seq: nextSeq() }],
       unreadCounts: isOwnMessage
         ? s.unreadCounts
         : {

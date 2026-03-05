@@ -107,9 +107,9 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     ...channelIntelMessages.map((msg) => ({ kind: "intel" as const, msg })),
     ...channelTeamMessages.map((msg) => ({ kind: "team" as const, msg })),
   ].sort((a, b) => {
-    const keyA = a.kind === "intel" ? ((a.msg as any)._receivedAt ?? 0) : a.msg.timestamp;
-    const keyB = b.kind === "intel" ? ((b.msg as any)._receivedAt ?? 0) : b.msg.timestamp;
-    return keyA - keyB;
+    const seqA = (a.msg as any)._seq ?? 0;
+    const seqB = (b.msg as any)._seq ?? 0;
+    return seqA - seqB;
   });
 
   const hasAnyMessages = unifiedMessages.length > 0;
@@ -187,7 +187,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-xs text-blue-300">{msg.sender ?? "System"}</span>
-                    <span className="text-neutral-500 text-xs">{msg.timestamp}</span>
+                    <span className="text-neutral-500 text-xs">{formatTime(msg.timestamp)}</span>
                     {msg.channel && assignChannelToMessage(msg) !== "#general" && (
                       <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(msg)}</span>
                     )}

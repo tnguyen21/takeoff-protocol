@@ -460,14 +460,23 @@ socket.on("game:state", (data: { view: StateView; isFull?: boolean }) => {
   }));
 });
 
+// Global monotonic counter for ordering content + player messages
+let _globalSeq = 0;
+export function nextSeq(): number { return ++_globalSeq; }
+
+// Preserve _seq for content items across game:content re-deliveries
+const _contentSeqMap = new Map<string, number>();
+
 socket.on("game:content", (data: { content: AppContent[] }) => {
-  const now = Date.now();
   const stamped = data.content.map((appContent) => ({
     ...appContent,
-    items: appContent.items.map((item, i) => ({
-      ...item,
-      _receivedAt: now + i, // slight offset preserves original order within a batch
-    })),
+    items: appContent.items.map((item) => {
+      const existing = _contentSeqMap.get(item.id);
+      if (existing !== undefined) return { ...item, _seq: existing };
+      const seq = nextSeq();
+      _contentSeqMap.set(item.id, seq);
+      return { ...item, _seq: seq };
+    }),
   }));
   useGameStore.setState({ content: stamped });
 });
