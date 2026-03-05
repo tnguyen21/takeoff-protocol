@@ -616,6 +616,38 @@ export function registerGameEvents(io: Server, socket: Socket) {
     },
   );
 
+  // ── Tweet Broadcasting ──
+
+  socket.on("tweet:send", ({ text }: { text: string }) => {
+    const code = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoom(code);
+    if (!room) return;
+    const player = room.players[socket.id];
+    if (!player) return;
+
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.length > 280) return;
+
+    const tweet = {
+      id: `tweet_${Date.now()}_${socket.id.slice(-4)}`,
+      playerName: player.name,
+      playerRole: player.role,
+      playerFaction: player.faction,
+      text: trimmed,
+      timestamp: Date.now(),
+    };
+
+    // Broadcast to ALL players in the room (including sender for confirmation)
+    for (const pid of Object.keys(room.players)) {
+      io.to(pid).emit("tweet:receive", tweet);
+    }
+    // GM sees it too
+    if (room.gmId) {
+      io.to(room.gmId).emit("tweet:receive", tweet);
+    }
+  });
+
   // ── Activity Tracking ──
 
   socket.on("activity:report", ({ opened }: { opened: string[] }) => {

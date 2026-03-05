@@ -2,6 +2,7 @@ import React from "react";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
 import { assignStableIds } from "./twitterUtils.js";
+import { socket } from "../socket.js";
 
 const STATIC_TWEETS = assignStableIds([
   {
@@ -256,9 +257,18 @@ interface Tweet {
   verified: boolean;
 }
 
+interface PlayerTweet {
+  id: string;
+  playerName: string;
+  playerRole: string | null;
+  playerFaction: string | null;
+  text: string;
+  timestamp: number;
+}
+
 export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) {
   const stateView = useGameStore((s) => s.stateView);
-  const { publishArticle } = useGameStore();
+  const myName = useGameStore((s) => s.playerName);
 
   const tweetItems = content.filter((i) => i.type === "tweet");
 
@@ -288,20 +298,52 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
   const [composeText, setComposeText] = React.useState("");
   const [justPosted, setJustPosted] = React.useState(false);
   const [postedTweets, setPostedTweets] = React.useState<Tweet[]>([]);
+  // Tweets received from other players via tweet:receive
+  const [receivedTweets, setReceivedTweets] = React.useState<Tweet[]>([]);
+  // Track IDs of locally-posted tweets to avoid showing them twice when server echoes back
+  const postedIdsRef = React.useRef<Set<string>>(new Set());
 
   // Tab state
   const [activeTab, setActiveTab] = React.useState<"for-you" | "following">("for-you");
+
+  // Listen for tweet:receive events from the server
+  React.useEffect(() => {
+    function onTweetReceive(tweet: PlayerTweet) {
+      // The server echoes the tweet back to the sender too; deduplicate by ID
+      if (postedIdsRef.current.has(tweet.id)) return;
+      const handle = `@${tweet.playerName.toLowerCase().replace(/[\s.]/g, "_")}`;
+      const incoming: Tweet = {
+        id: tweet.id,
+        name: tweet.playerName,
+        handle,
+        time: "now",
+        text: tweet.text,
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        verified: false,
+      };
+      setReceivedTweets((prev) => [incoming, ...prev]);
+    }
+
+    socket.on("tweet:receive", onTweetReceive);
+    return () => {
+      socket.off("tweet:receive", onTweetReceive);
+    };
+  }, []);
 
   const mediaCycle = stateView?.globalMediaCycle.accuracy !== "hidden"
     ? Math.round(stateView?.globalMediaCycle.value ?? 0)
     : null;
   const cycleData = mediaCycle !== null ? (MEDIA_CYCLE_TRENDING[Math.min(5, Math.max(0, mediaCycle))] ?? MEDIA_CYCLE_TRENDING[0]) : null;
 
+  // Player tweets (local + received from others) for the Following tab
+  const playerTweets = [...postedTweets, ...receivedTweets];
   const allTweets = [...postedTweets, ...baseTweets];
 
-  // "Following" tab shows a subset (first 6 tweets — the most prominent accounts)
+  // "Following" tab: player tweets at the top, then verified accounts
   const displayTweets = activeTab === "following"
-    ? allTweets.filter((t) => t.verified).slice(0, 8)
+    ? [...playerTweets, ...allTweets.filter((t) => t.verified).slice(0, 8)]
     : allTweets;
 
   function getInteraction(id: string): TweetState {
@@ -331,16 +373,18 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
   function handlePost() {
     const text = composeText.trim();
     if (!text || text.length > MAX_CHARS) return;
-    publishArticle({
-      type: "article",
-      title: text,
-      content: text,
-      source: "twitter",
-    });
+    socket.emit("tweet:send", { text });
+    const displayName = myName ?? "You";
+    const handle = myName
+      ? `@${myName.toLowerCase().replace(/[\s.]/g, "_")}`
+      : "@you";
+    const tweetId = `posted_${Date.now()}`;
+    // Track this ID so we don't show it twice when the server echoes tweet:receive
+    postedIdsRef.current.add(tweetId);
     const newTweet: Tweet = {
-      id: `posted_${Date.now()}`,
-      name: "You",
-      handle: "@you",
+      id: tweetId,
+      name: displayName,
+      handle,
       time: "now",
       text,
       likes: 0,

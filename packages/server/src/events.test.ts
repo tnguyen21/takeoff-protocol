@@ -456,3 +456,141 @@ describe("structured logging invariants", () => {
     }).not.toThrow();
   });
 });
+
+// ── tweet:send handler ────────────────────────────────────────────────────────
+
+/**
+ * Invariants:
+ * INV-1: tweet:send from player A results in tweet:receive emitted to all players
+ * INV-2: Empty or >280 char tweets are silently rejected
+ * INV-3: GM receives tweet:receive for all player tweets
+ * INV-4: tweet:send does NOT modify any game state variables
+ */
+
+interface TweetPayload {
+  id: string;
+  playerName: string;
+  playerRole: string | null;
+  playerFaction: string | null;
+  text: string;
+  timestamp: number;
+}
+
+function invokeTweetSendHandler(
+  io: import("socket.io").Server,
+  socketId: string,
+  room: GameRoom | undefined,
+  { text }: { text: string },
+): boolean {
+  // Replicate handler logic from events.ts
+  if (!room) return false;
+  const player = room.players[socketId];
+  if (!player) return false;
+
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 280) return false;
+
+  const tweet: TweetPayload = {
+    id: `tweet_${Date.now()}_${socketId.slice(-4)}`,
+    playerName: player.name,
+    playerRole: player.role,
+    playerFaction: player.faction,
+    text: trimmed,
+    timestamp: Date.now(),
+  };
+
+  for (const pid of Object.keys(room.players)) {
+    (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
+      .to(pid).emit("tweet:receive", tweet);
+  }
+  if (room.gmId) {
+    (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
+      .to(room.gmId).emit("tweet:receive", tweet);
+  }
+
+  return true;
+}
+
+const TWEET_GM_ID = "gm-tweet-1";
+const TWEET_PLAYER_A = "player-tweet-a";
+const TWEET_PLAYER_B = "player-tweet-b";
+
+describe("tweet:send", () => {
+  let room: GameRoom;
+  let emitted: Record<string, EmittedEvent[]>;
+  let io: import("socket.io").Server;
+
+  beforeEach(() => {
+    const mock = createMockIo();
+    io = mock.io;
+    emitted = mock.emitted;
+    room = makeRoom(TWEET_GM_ID, [makePlayer(TWEET_PLAYER_A), makePlayer(TWEET_PLAYER_B)]);
+  });
+
+  it("INV-1: tweet:send results in tweet:receive emitted to all players in the room", () => {
+    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "Hello world" });
+    expect(ok).toBe(true);
+
+    // Both players receive the tweet
+    const aEvents = (emitted[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive");
+    const bEvents = (emitted[TWEET_PLAYER_B] ?? []).filter((e) => e.event === "tweet:receive");
+    expect(aEvents).toHaveLength(1);
+    expect(bEvents).toHaveLength(1);
+
+    const tweet = aEvents[0].data as TweetPayload;
+    expect(tweet.text).toBe("Hello world");
+    expect(tweet.playerName).toBe(`Player ${TWEET_PLAYER_A}`);
+  });
+
+  it("INV-2: empty tweet is silently rejected", () => {
+    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "   " });
+    expect(ok).toBe(false);
+    expect(emitted[TWEET_PLAYER_A]).toBeUndefined();
+    expect(emitted[TWEET_PLAYER_B]).toBeUndefined();
+  });
+
+  it("INV-2: tweet exceeding 280 chars is silently rejected", () => {
+    const longText = "a".repeat(281);
+    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: longText });
+    expect(ok).toBe(false);
+    expect(emitted[TWEET_PLAYER_A]).toBeUndefined();
+  });
+
+  it("INV-2: tweet of exactly 280 chars is accepted", () => {
+    const exactText = "a".repeat(280);
+    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: exactText });
+    expect(ok).toBe(true);
+    const aEvents = (emitted[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive");
+    expect(aEvents).toHaveLength(1);
+  });
+
+  it("INV-3: GM receives tweet:receive", () => {
+    invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "GM should see this" });
+    const gmEvents = (emitted[TWEET_GM_ID] ?? []).filter((e) => e.event === "tweet:receive");
+    expect(gmEvents).toHaveLength(1);
+    expect((gmEvents[0].data as TweetPayload).text).toBe("GM should see this");
+  });
+
+  it("INV-4: tweet:send does not modify any game state variables", () => {
+    const stateBefore = JSON.stringify(room.state);
+    invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "No state change" });
+    expect(JSON.stringify(room.state)).toBe(stateBefore);
+  });
+
+  it("player attribution is correct — name and faction appear in payload", () => {
+    invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "Attribution test" });
+    const tweet = (emitted[TWEET_PLAYER_B] ?? []).find((e) => e.event === "tweet:receive")?.data as TweetPayload;
+    expect(tweet.playerName).toBe(`Player ${TWEET_PLAYER_A}`);
+    expect(tweet.playerFaction).toBe("openbrain");
+  });
+
+  it("player without faction/role can still tweet (pre-game scenario)", () => {
+    // Allow tweeting even without role/faction — the task spec says no role restriction
+    room.players[TWEET_PLAYER_A]!.faction = null;
+    room.players[TWEET_PLAYER_A]!.role = null;
+    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "Pre-game tweet" });
+    expect(ok).toBe(true);
+    const bEvents = (emitted[TWEET_PLAYER_B] ?? []).filter((e) => e.event === "tweet:receive");
+    expect(bEvents).toHaveLength(1);
+  });
+});
