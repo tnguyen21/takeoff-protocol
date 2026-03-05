@@ -177,6 +177,7 @@ export interface ContentItem {
   type: ContentItemType;
   round: number;
   sender?: string;
+  senderRole?: Role;
   channel?: string;
   subject?: string;
   body: string;
