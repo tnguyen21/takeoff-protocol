@@ -3,6 +3,7 @@ import type { GameMessage } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { useUIStore } from "./ui.js";
+import { useGameStore } from "./game.js";
 import { soundManager } from "../sounds/index.js";
 
 interface MessagesStore {
@@ -29,6 +30,8 @@ socket.on("message:history", ({ messages }: { messages: GameMessage[] }) => {
 
 socket.on("message:receive", (message: GameMessage) => {
   const appId = message.isTeamChat ? "slack" : "signal";
+  const isOwnMessage = message.from === useGameStore.getState().playerId;
+
   useMessagesStore.setState((s) => {
     // Skip if we already have this message (deduplication)
     if (s.messages.some((m) => m.id === message.id)) {
@@ -36,12 +39,16 @@ socket.on("message:receive", (message: GameMessage) => {
     }
     return {
       messages: [...s.messages, message],
-      unreadCounts: {
-        ...s.unreadCounts,
-        [appId]: (s.unreadCounts[appId] ?? 0) + 1,
-      },
+      unreadCounts: isOwnMessage
+        ? s.unreadCounts
+        : {
+            ...s.unreadCounts,
+            [appId]: (s.unreadCounts[appId] ?? 0) + 1,
+          },
     };
   });
+
+  if (isOwnMessage) return; // No sound or toast for own messages
 
   soundManager.play("slack-knock");
 
