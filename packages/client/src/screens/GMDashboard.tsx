@@ -613,85 +613,6 @@ function DevJumpPanel({ currentRound, currentPhase }: { currentRound: number; cu
   );
 }
 
-// ── Generation Toggle ─────────────────────────────────────────────────────────
-
-function GenerationToggle({
-  enabled,
-  onToggle,
-  phase,
-}: {
-  enabled: boolean | null;
-  onToggle: (enabled: boolean) => void;
-  phase: GamePhase | null;
-}) {
-  if (phase !== "lobby" && phase !== null) return null;
-
-  const isOn = enabled === true;
-
-  return (
-    <div style={{
-      background: "#111827",
-      borderRadius: "8px",
-      padding: "16px",
-      border: "1px solid #1e293b",
-    }}>
-      <div style={{
-        color: "#6b7280",
-        fontSize: "10px",
-        fontWeight: 600,
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-        marginBottom: "12px",
-      }}>
-        AI Generation
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <button
-          onClick={() => onToggle(!isOn)}
-          style={{
-            width: "44px",
-            height: "24px",
-            borderRadius: "12px",
-            border: "none",
-            background: isOn ? "#06b6d4" : "#374151",
-            cursor: "pointer",
-            position: "relative",
-            transition: "background 0.2s",
-            flexShrink: 0,
-          }}
-        >
-          <div style={{
-            width: "18px",
-            height: "18px",
-            borderRadius: "50%",
-            background: "#fff",
-            position: "absolute",
-            top: "3px",
-            left: isOn ? "23px" : "3px",
-            transition: "left 0.2s",
-          }} />
-        </button>
-
-        <span style={{ color: isOn ? "#06b6d4" : "#6b7280", fontSize: "13px" }}>
-          {isOn ? "On" : "Off"}
-        </span>
-      </div>
-
-      <div style={{
-        color: "#6b7280",
-        fontSize: "11px",
-        marginTop: "8px",
-        lineHeight: "1.4",
-      }}>
-        {isOn
-          ? "Briefings, content, and NPC messages will be AI-generated based on game state"
-          : "Using pre-authored content only"}
-      </div>
-    </div>
-  );
-}
-
 // ── Timer Settings Panel ──────────────────────────────────────────────────────
 
 const TIMER_PHASES: { phase: GamePhase; label: string }[] = [
@@ -917,13 +838,11 @@ export function GMDashboard() {
     gmExtendUsesRemaining,
     gmPlayerActivity,
     gmTimerOverrides,
-    gmGenerationEnabled,
     gmAdvance,
     gmPause,
     gmExtend,
     gmSetState,
     gmSetTimers,
-    gmSetGeneration,
     endTutorial,
   } = useGameStore();
 
@@ -1176,9 +1095,6 @@ export function GMDashboard() {
 
           {/* Timer Settings */}
           <TimerSettingsPanel gmTimerOverrides={gmTimerOverrides} gmSetTimers={gmSetTimers} />
-
-          {/* AI Generation Toggle */}
-          <GenerationToggle enabled={gmGenerationEnabled} onToggle={gmSetGeneration} phase={phase} />
 
           {/* Dev-only jump panel */}
           {import.meta.env.DEV && (

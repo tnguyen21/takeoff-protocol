@@ -102,6 +102,8 @@ export function Lobby() {
     selectRole,
     startGame,
     startTutorial,
+    gmGenerationEnabled,
+    gmSetGeneration,
   } = useGameStore();
 
   const [joinCode, setJoinCode] = useState("");
@@ -364,6 +366,47 @@ export function Lobby() {
             </div>
           )}
         </div>
+
+        {/* AI Generation toggle */}
+        {isGM && (
+          <div className="border border-neutral-800 rounded-xl p-5 bg-neutral-900/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-semibold mb-1">AI Generation</h3>
+                <p className="text-neutral-500 text-sm">
+                  {gmGenerationEnabled
+                    ? "Briefings, content, and NPC messages will be AI-generated based on game state"
+                    : "Using pre-authored content only"}
+                </p>
+              </div>
+              <button
+                onClick={() => gmSetGeneration(!gmGenerationEnabled)}
+                className="flex-shrink-0"
+                style={{
+                  width: "44px",
+                  height: "24px",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: gmGenerationEnabled ? "#06b6d4" : "#374151",
+                  cursor: "pointer",
+                  position: "relative",
+                  transition: "background 0.2s",
+                }}
+              >
+                <div style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  background: "#fff",
+                  position: "absolute",
+                  top: "3px",
+                  left: gmGenerationEnabled ? "23px" : "3px",
+                  transition: "left 0.2s",
+                }} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* GM start game panel */}
         {isGM && (
