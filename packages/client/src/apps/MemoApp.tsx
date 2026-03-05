@@ -206,7 +206,7 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
 
   // Server-provided pages from content
   const serverPages: Page[] = memoItems.map((item) => ({
-    title: item.subject ?? item.id,
+    title: item.subject ?? "Untitled Document",
     body: item.body,
     sender: item.sender,
     timestamp: item.timestamp,

@@ -595,6 +595,31 @@ describe("Critical paths: new app content structure", () => {
     expect(result[0]!.items[0]!.sender).toBeUndefined();
   });
 
+  it("memo items preserve subject when provider supplies it", async () => {
+    const memoItem: ContentItem = {
+      ...makeItem({ id: "gen-memo-1", type: "memo", classification: "context", round: 3 }),
+      subject: "RE: Safety Review Q3",
+      sender: "director@openbrain.ai",
+    };
+    const provider = new MockProvider({ items: [memoItem] });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["memo"]);
+    const item = result[0]!.items[0]!;
+    expect(item.subject).toBe("RE: Safety Review Q3");
+    expect(item.sender).toBe("director@openbrain.ai");
+  });
+
+  it("memo items without subject do not crash post-processing (subject remains undefined)", async () => {
+    // MemoApp falls back to "Untitled Document" for missing subject — post-processing must not throw
+    const rawItems: ContentItem[] = [
+      makeItem({ id: "gen-memo-nosubject", type: "memo", classification: "context", round: 3 }),
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["memo"]);
+    const item = result[0]!.items[0]!;
+    expect(item.type).toBe("memo");
+    expect(item.subject).toBeUndefined();
+  });
+
   it("bloomberg items have row type after post-processing", async () => {
     const rawItems: ContentItem[] = [
       makeItem({ id: "gen-bb-1", type: "headline", classification: "context", round: 3 }),
