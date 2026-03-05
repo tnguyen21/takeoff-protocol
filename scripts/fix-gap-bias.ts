@@ -28,7 +28,8 @@ const upgrades: { optionId: string; variable: string; from: number; to: number }
 const additions: { optionId: string; variable: string; delta: number }[] = [];
 
 for (const { round, decisions } of allRoundsData) {
-  const allDecisions = [...decisions.individual, ...(decisions.collective || [])];
+  const teamDecisions = (decisions as any).team ?? (decisions as any).collective ?? [];
+  const allDecisions = [...decisions.individual, ...teamDecisions];
   for (const d of allDecisions) {
     const role = (d as any).role;
 

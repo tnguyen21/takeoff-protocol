@@ -85,7 +85,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     socket.emit("message:send", { to: null, content: text, channel: activeChannel });
     setInput("");
     inputRef.current?.focus();
-  }, [input]);
+  }, [activeChannel, input]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

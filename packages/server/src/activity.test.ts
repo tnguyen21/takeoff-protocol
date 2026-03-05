@@ -10,33 +10,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import type { GameRoom, Player, StateVariables } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
-
-// ── Replicate PRIMARY_APP_PENALTIES inline for test assertions ──
-
-const PRIMARY_APP_PENALTIES: Record<string, { app: string; variable: keyof StateVariables; delta: number }> = {
-  ob_cto:         { app: "wandb",     variable: "obCapability",       delta: -3 },
-  ob_safety:      { app: "slack",     variable: "alignmentConfidence", delta: -3 },
-  ob_ceo:         { app: "email",     variable: "obInternalTrust",     delta: -3 },
-  prom_scientist: { app: "wandb",     variable: "promCapability",      delta: -3 },
-  china_director: { app: "compute",   variable: "chinaCapability",     delta: -3 },
-  ext_journalist: { app: "signal",    variable: "publicAwareness",     delta: -3 },
-  ext_nsa:        { app: "briefing",  variable: "intlCooperation",     delta: -3 },
-  ext_vc:         { app: "bloomberg", variable: "economicDisruption",  delta: 2  },
-};
-
-// Inline the penalty function (mirrors game.ts logic) so we can unit test it
-function applyActivityPenalties(room: Pick<GameRoom, "players" | "state" | "playerActivity">): void {
-  if (!room.playerActivity) return;
-  for (const [playerId, player] of Object.entries(room.players)) {
-    if (!player.role) continue;
-    const penalty = PRIMARY_APP_PENALTIES[player.role];
-    if (!penalty) continue;
-    const opened = room.playerActivity[playerId] ?? [];
-    if (!opened.includes(penalty.app)) {
-      (room.state[penalty.variable] as number) += penalty.delta;
-    }
-  }
-}
+import { PRIMARY_APP_PENALTIES, applyActivityPenalties } from "./activityPenalties.js";
 
 function makePlayer(id: string, role: string, faction: string): Player {
   return {
@@ -49,11 +23,12 @@ function makePlayer(id: string, role: string, faction: string): Player {
   };
 }
 
-function makeRoom(players: Player[]): Pick<GameRoom, "players" | "state" | "playerActivity"> {
+function makeRoom(players: Player[]): Pick<GameRoom, "players" | "state" | "playerActivity" | "round"> {
   return {
     players: Object.fromEntries(players.map((p) => [p.id, p])),
     state: { ...INITIAL_STATE },
     playerActivity: {},
+    round: 1,
   };
 }
 

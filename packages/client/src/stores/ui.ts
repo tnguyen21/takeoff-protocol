@@ -17,7 +17,6 @@ export interface WindowState {
 interface UIStore {
   windows: WindowState[];
   topZ: number;
-  notifications: Notification[];
   openedThisRound: Set<string>; // appIds opened during the current round
 
   // Window actions
@@ -34,14 +33,6 @@ interface UIStore {
   resetRoundActivity: () => void;
 }
 
-interface Notification {
-  id: string;
-  title: string;
-  body: string;
-  appId: string;
-  timestamp: number;
-}
-
 const DEFAULT_SIZE = { width: 520, height: 400 };
 const OFFSET_STEP = 30;
 const MENUBAR_H = 28;
@@ -51,7 +42,6 @@ const MAX_VISIBLE_WINDOWS = 6;
 export const useUIStore = create<UIStore>((set, get) => ({
   windows: [],
   topZ: 0,
-  notifications: [],
   openedThisRound: new Set<string>(),
 
   initWindows: (apps) => {
@@ -70,52 +60,54 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   openWindow: (appId, title) => {
-    const { windows, topZ } = get();
-    const existing = windows.find((w) => w.id === appId);
+    let shouldPlay = false;
+    set((s) => {
+      const existing = s.windows.find((w) => w.id === appId);
 
-    // Count currently visible (open + not minimized) windows, excluding the target window
-    const visibleWindows = windows.filter((w) => w.isOpen && !w.isMinimized && w.id !== appId);
+      // Count currently visible (open + not minimized) windows, excluding the target window
+      const visibleWindows = s.windows.filter((w) => w.isOpen && !w.isMinimized && w.id !== appId);
 
-    // If opening this window would exceed the cap, auto-minimize the oldest visible window
-    const isNewlyVisible = !existing || !existing.isOpen || existing.isMinimized;
-    let updatedWindows = windows;
+      // If opening this window would exceed the cap, auto-minimize the oldest visible window
+      const isNewlyVisible = !existing || !existing.isOpen || existing.isMinimized;
+      let updatedWindows = s.windows;
 
-    if (isNewlyVisible && visibleWindows.length >= MAX_VISIBLE_WINDOWS) {
-      const oldest = visibleWindows.reduce((a, b) => (a.zIndex < b.zIndex ? a : b));
-      updatedWindows = updatedWindows.map((w) => (w.id === oldest.id ? { ...w, isMinimized: true } : w));
-    }
+      if (isNewlyVisible && visibleWindows.length >= MAX_VISIBLE_WINDOWS) {
+        const oldest = visibleWindows.reduce((a, b) => (a.zIndex < b.zIndex ? a : b));
+        updatedWindows = updatedWindows.map((w) => (w.id === oldest.id ? { ...w, isMinimized: true } : w));
+      }
 
-    const newTopZ = topZ + 1;
+      const newTopZ = s.topZ + 1;
 
-    if (existing) {
-      // Already exists — focus and unminimize
-      updatedWindows = updatedWindows.map((w) =>
-        w.id === appId ? { ...w, isOpen: true, isMinimized: false, zIndex: newTopZ } : w,
-      );
-    } else {
-      // Create new
-      const offset = windows.length * OFFSET_STEP;
-      updatedWindows = [
-        ...updatedWindows,
-        {
-          id: appId,
-          appId,
-          title,
-          isOpen: true,
-          position: { x: 80 + offset, y: 60 + offset },
-          size: { ...DEFAULT_SIZE },
-          zIndex: newTopZ,
-          isMinimized: false,
-          isMaximized: false,
-        },
-      ];
-    }
+      if (existing) {
+        // Already exists — focus and unminimize
+        updatedWindows = updatedWindows.map((w) =>
+          w.id === appId ? { ...w, isOpen: true, isMinimized: false, zIndex: newTopZ } : w,
+        );
+      } else {
+        // Create new
+        const offset = s.windows.length * OFFSET_STEP;
+        updatedWindows = [
+          ...updatedWindows,
+          {
+            id: appId,
+            appId,
+            title,
+            isOpen: true,
+            position: { x: 80 + offset, y: 60 + offset },
+            size: { ...DEFAULT_SIZE },
+            zIndex: newTopZ,
+            isMinimized: false,
+            isMaximized: false,
+          },
+        ];
+      }
 
-    const prev = get().openedThisRound;
-    const updatedOpened = new Set(prev);
-    updatedOpened.add(appId);
-    set({ topZ: newTopZ, windows: updatedWindows, openedThisRound: updatedOpened });
-    if (isNewlyVisible) soundManager.play("pop");
+      const updatedOpened = new Set(s.openedThisRound);
+      updatedOpened.add(appId);
+      shouldPlay = isNewlyVisible;
+      return { topZ: newTopZ, windows: updatedWindows, openedThisRound: updatedOpened };
+    });
+    if (shouldPlay) soundManager.play("pop");
   },
 
   closeWindow: (id) =>
@@ -123,16 +115,17 @@ export const useUIStore = create<UIStore>((set, get) => ({
       windows: s.windows.map((w) => (w.id === id ? { ...w, isOpen: false } : w)),
     })),
 
-  focusWindow: (id) => {
-    const { topZ, openedThisRound } = get();
-    const updatedOpened = new Set(openedThisRound);
-    updatedOpened.add(id); // id === appId in this codebase
-    set({
-      topZ: topZ + 1,
-      windows: get().windows.map((w) => (w.id === id ? { ...w, zIndex: topZ + 1 } : w)),
-      openedThisRound: updatedOpened,
-    });
-  },
+  focusWindow: (id) =>
+    set((s) => {
+      const newTopZ = s.topZ + 1;
+      const updatedOpened = new Set(s.openedThisRound);
+      updatedOpened.add(id); // id === appId in this codebase
+      return {
+        topZ: newTopZ,
+        windows: s.windows.map((w) => (w.id === id ? { ...w, zIndex: newTopZ } : w)),
+        openedThisRound: updatedOpened,
+      };
+    }),
 
   moveWindow: (id, x, y) =>
     set((s) => ({

@@ -18,6 +18,9 @@ const PULSE_STYLE = `
 .dock-primary-dot {
   animation: dock-pulse 1.8s ease-in-out infinite;
 }
+.negotiation-pulse {
+  animation: dock-pulse 1.2s ease-in-out infinite;
+}
 `;
 
 export function Dock() {

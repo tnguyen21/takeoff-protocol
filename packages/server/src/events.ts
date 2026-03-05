@@ -2,11 +2,48 @@ import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer } from "./game.js";
+import { getRoundDecisions } from "./content/decisions/rounds.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { getLoggerForRoom } from "./logger/registry.js";
 
 // Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
 const extendUses = new Map<string, number>();
+
+const GM_STATE_BOUNDS: Readonly<Record<keyof StateVariables, [number, number]>> = {
+  obCapability: [0, 100],
+  promCapability: [0, 100],
+  chinaCapability: [0, 100],
+  usChinaGap: [-8, 16],
+  obPromGap: [-8, 16],
+  alignmentConfidence: [0, 100],
+  misalignmentSeverity: [0, 100],
+  publicAwareness: [0, 100],
+  publicSentiment: [-100, 100],
+  economicDisruption: [0, 100],
+  taiwanTension: [0, 100],
+  obInternalTrust: [0, 100],
+  securityLevelOB: [1, 5],
+  securityLevelProm: [1, 5],
+  intlCooperation: [0, 100],
+  marketIndex: [0, 200],
+  regulatoryPressure: [0, 100],
+  globalMediaCycle: [0, 5],
+  chinaWeightTheftProgress: [0, 100],
+  aiAutonomyLevel: [0, 100],
+  whistleblowerPressure: [0, 100],
+  openSourceMomentum: [0, 100],
+  doomClockDistance: [0, 5],
+  obMorale: [0, 100],
+  obBurnRate: [0, 100],
+  obBoardConfidence: [0, 100],
+  promMorale: [0, 100],
+  promBurnRate: [0, 100],
+  promBoardConfidence: [0, 100],
+  promSafetyBreakthroughProgress: [0, 100],
+  cdzComputeUtilization: [0, 100],
+  ccpPatience: [0, 100],
+  domesticChipProgress: [0, 100],
+};
 
 export function registerGameEvents(io: Server, socket: Socket) {
   // ── Room Management ──
@@ -191,47 +228,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const room = getRoom(code);
     if (!room || room.gmId !== socket.id) return;
 
-    const STATE_BOUNDS: Record<string, [number, number]> = {
-      // Tier 1
-      obCapability: [0, 100],
-      promCapability: [0, 100],
-      chinaCapability: [0, 100],
-      usChinaGap: [-24, 24],
-      obPromGap: [-24, 24],
-      alignmentConfidence: [0, 100],
-      misalignmentSeverity: [0, 100],
-      publicAwareness: [0, 100],
-      publicSentiment: [-100, 100],
-      economicDisruption: [0, 100],
-      taiwanTension: [0, 100],
-      obInternalTrust: [0, 100],
-      securityLevelOB: [1, 5],
-      securityLevelProm: [1, 5],
-      intlCooperation: [0, 100],
-      // Tier 2
-      cdzComputeUtilization: [0, 100],
-      domesticChipProgress: [0, 100],
-      promSafetyBreakthroughProgress: [0, 100],
-      aiAutonomyLevel: [0, 100],
-      doomClockDistance: [0, 10],
-      regulatoryPressure: [0, 100],
-      obBoardConfidence: [0, 100],
-      promBoardConfidence: [0, 100],
-      ccpPatience: [0, 100],
-      chinaWeightTheftProgress: [0, 100],
-      whistleblowerPressure: [0, 100],
-      // Tier 3
-      globalMediaCycle: [-100, 100],
-      marketIndex: [0, 100],
-      obBurnRate: [0, 100],
-      promBurnRate: [0, 100],
-      promMorale: [0, 100],
-      openSourceMomentum: [0, 100],
-    };
-
-    if (!(variable in STATE_BOUNDS)) return;
+    if (!(variable in GM_STATE_BOUNDS)) return;
     const key = variable as keyof StateVariables;
-    const [min, max] = STATE_BOUNDS[variable];
+    const [min, max] = GM_STATE_BOUNDS[key];
     const oldVal = room.state[key];
     room.state[key] = Math.max(min, Math.min(max, value));
 
@@ -285,6 +284,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (uses >= 2) return; // max 2 extends per phase
 
     extendUses.set(key, uses + 1);
+    // Prune stale entries for this room so the map doesn't grow across phases.
+    for (const k of extendUses.keys()) {
+      if (k.startsWith(`${code}:`) && k !== key) extendUses.delete(k);
+    }
     room.timer.endsAt += 60_000;
     syncPhaseTimer(io, room);
     getLoggerForRoom(code).log("phase.extended", { round: room.round, phase: room.phase, extendCount: uses + 1 }, { actorId: "gm", round: room.round, phase: room.phase });
@@ -322,6 +325,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
       if (!room.players[targetPlayerId]) {
         callback({ ok: false, error: `Player not found: ${targetPlayerId}` });
+        return;
+      }
+      if (targetPlayerId.startsWith("__bot_")) {
+        callback({ ok: false, error: "Cannot DM bots (no socket connection)" });
         return;
       }
 
@@ -376,36 +383,39 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!room || room.phase !== "decision") return;
 
     const player = room.players[socket.id];
+    if (!player || !player.faction || !player.role) return;
+    const roundDecisions = getRoundDecisions(room.round);
+    if (!roundDecisions) return;
+
+    const indiv = roundDecisions.individual.find((d) => d.role === player.role);
+    const team = roundDecisions.team.find((d) => d.faction === player.faction);
+
+    const validIndividual = individual && indiv?.options.some((o) => o.id === individual) ? individual : null;
+    const validTeamVote = teamVote && team?.options.some((o) => o.id === teamVote) ? teamVote : undefined;
 
     // Record individual decision
-    if (individual) {
-      room.decisions[socket.id] = individual;
+    if (validIndividual) {
+      room.decisions[socket.id] = validIndividual;
     }
 
     // Log decisions
-    if (player) {
-      const timeRemainingMs = room.timer.endsAt - Date.now();
-      const logger = getLoggerForRoom(code);
-      if (individual) logger.log("decision.individual_submitted", { playerName: player.name, role: player.role, optionId: individual, timeRemainingMs }, { actorId: player.name, round: room.round, phase: room.phase });
-      if (teamVote) logger.log("decision.team_vote", { playerName: player.name, faction: player.faction, optionId: teamVote }, { actorId: player.name, round: room.round, phase: room.phase });
-    }
+    const timeRemainingMs = room.timer.endsAt - Date.now();
+    const logger = getLoggerForRoom(code);
+    if (validIndividual) logger.log("decision.individual_submitted", { playerName: player.name, role: player.role, optionId: validIndividual, timeRemainingMs }, { actorId: player.name, round: room.round, phase: room.phase });
+    if (validTeamVote) logger.log("decision.team_vote", { playerName: player.name, faction: player.faction, optionId: validTeamVote }, { actorId: player.name, round: room.round, phase: room.phase });
 
     // Record team vote
-    if (teamVote) {
-      if (player && player.faction) {
-        if (!room.teamVotes[player.faction]) {
-          room.teamVotes[player.faction] = {};
-        }
-        room.teamVotes[player.faction][socket.id] = teamVote;
+    if (validTeamVote) {
+      if (!room.teamVotes[player.faction]) room.teamVotes[player.faction] = {};
+      room.teamVotes[player.faction][socket.id] = validTeamVote;
 
-        // Emit votes to team leader
-        for (const [pid, p] of Object.entries(room.players)) {
-          if (p.faction === player.faction && p.isLeader) {
-            io.to(pid).emit("decision:votes", {
-              faction: player.faction,
-              votes: room.teamVotes[player.faction],
-            });
-          }
+      // Emit votes to team leader
+      for (const [pid, p] of Object.entries(room.players)) {
+        if (p.faction === player.faction && p.isLeader) {
+          io.to(pid).emit("decision:votes", {
+            faction: player.faction,
+            votes: room.teamVotes[player.faction],
+          });
         }
       }
     }
@@ -426,6 +436,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     const player = room.players[socket.id];
     if (!player?.isLeader || !player.faction) return;
+    const roundDecisions = getRoundDecisions(room.round);
+    if (!roundDecisions) return;
+    const team = roundDecisions.team.find((d) => d.faction === player.faction);
+    if (!team?.options.some((o) => o.id === teamDecision)) return;
 
     room.teamDecisions[player.faction] = teamDecision;
     getLoggerForRoom(code).log("decision.team_locked", { faction: player.faction, optionId: teamDecision, leaderName: player.name }, { actorId: player.name, round: room.round, phase: room.phase });
@@ -444,6 +458,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     const sender = room.players[socket.id];
     if (!sender || !sender.faction) return;
+    if (to !== null) {
+      if (to.startsWith("__bot_")) return;
+      if (!room.players[to]) return;
+    }
 
     const targetName = to ? room.players[to]?.name ?? to : null;
     getLoggerForRoom(code).log("message.sent", { from: sender.name, toName: targetName, faction: sender.faction, contentLength: content.length, isTeamChat: to === null }, { actorId: sender.name, round: room.round, phase: room.phase });
@@ -477,9 +495,15 @@ export function registerGameEvents(io: Server, socket: Socket) {
       io.to(socket.id).emit("message:receive", message); // echo back to sender
     }
 
-    // GM sees all messages
+    // GM sees all messages (avoid duplicating if the GM is also a normal recipient)
     if (room.gmId) {
-      io.to(room.gmId).emit("message:receive", { ...message, _gmView: true });
+      const gmId = room.gmId;
+      const gmPlayer = room.players[gmId];
+      const gmAlreadyReceived = gmId === socket.id
+        || (to === null ? gmPlayer?.faction === sender.faction : gmId === to);
+      if (!gmAlreadyReceived) {
+        io.to(gmId).emit("message:receive", { ...message, _gmView: true });
+      }
     }
   });
 
@@ -632,7 +656,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!trimmed || trimmed.length > 280) return;
 
     const tweet = {
-      id: `tweet_${Date.now()}_${socket.id.slice(-4)}`,
+      id: crypto.randomUUID(),
       playerName: player.name,
       playerRole: player.role,
       playerFaction: player.faction,

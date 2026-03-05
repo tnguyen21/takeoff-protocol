@@ -291,6 +291,25 @@ describe("computeFogView", () => {
     expect(view.obCapability.confidence).toBeGreaterThan(0);
   });
 
+  it("keeps estimates within confidence bounds and varies by round", () => {
+    const trueValue = BASE_STATE.obCapability;
+    const confidence = 15; // from FOG_MATRIX: obCapability → prometheus
+
+    const values = [1, 2, 3, 4, 5].map((round) => {
+      const view = computeFogView(BASE_STATE, "prometheus", "prom_ceo", round);
+      expect(view.obCapability.accuracy).toBe("estimate");
+      expect(view.obCapability.confidence).toBe(confidence);
+      return view.obCapability.value;
+    });
+
+    for (const v of values) {
+      expect(v).toBeGreaterThanOrEqual(trueValue - confidence);
+      expect(v).toBeLessThanOrEqual(trueValue + confidence);
+    }
+
+    expect(new Set(values).size).toBeGreaterThan(1);
+  });
+
   it("returns all keys from StateVariables", () => {
     const view = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
     const expectedKeys: (keyof StateVariables)[] = [

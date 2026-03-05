@@ -193,10 +193,7 @@ function resolvePublicReaction(s: StateVariables): number {
   if (s.publicAwareness <= 20) return 4; // Unaware — transition happened invisibly
   // High regulatory pressure + negative sentiment → riots
   if (s.regulatoryPressure > 70 && s.publicSentiment < 0) return 0;
-  // Negative media cycle + high regulatory pressure → sustained protest at minimum
-  if (s.globalMediaCycle < -60 && s.regulatoryPressure > 60) return 0;
-  // Positive media + positive sentiment → cautiously optimistic
-  if (s.globalMediaCycle >= 30 && s.publicSentiment >= 30 && s.publicAwareness <= 90) return 3;
+  // Positive sentiment → cautiously optimistic
   if (s.publicSentiment >= 30 && s.publicAwareness <= 90) return 3;
   if (s.publicSentiment >= 0) return 2;
   if (s.publicSentiment >= -40) return 1;
@@ -251,8 +248,6 @@ function resolveOpenSource(s: StateVariables): number {
   if (s.securityLevelOB >= 4 && s.securityLevelProm >= 4 && s.openSourceMomentum < 40) return 2;
   // Moderate momentum or cooperation → strategic release
   if (s.intlCooperation >= 40 || s.openSourceMomentum >= 40) return 1;
-  // Low awareness + low cooperation → irrelevant
-  if (s.publicAwareness <= 30 && s.intlCooperation <= 30) return 3;
   return 3; // Irrelevant — open vs closed became a non-factor
 }
 
@@ -283,19 +278,7 @@ export function computeEndingArcs(state: StateVariables): EndingArc[] {
     openSource: resolveOpenSource,
   };
 
-  const arcIds: EndingArcId[] = [
-    "aiRace",
-    "alignment",
-    "control",
-    "usChinaRelations",
-    "publicReaction",
-    "economy",
-    "prometheusFate",
-    "taiwan",
-    "openSource",
-  ];
-
-  return arcIds.map((id) => {
+  return (Object.keys(resolvers) as EndingArcId[]).map((id) => {
     const result = resolvers[id](state);
     const spectrum = SPECTRA[id];
     return {

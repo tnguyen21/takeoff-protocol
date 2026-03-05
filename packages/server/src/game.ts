@@ -8,25 +8,13 @@ import { getBriefing } from "./content/briefings.js";
 import { getGeneratedBriefing, getGeneratedContent, getGeneratedNpcTriggers } from "./generation/cache.js";
 import { triggerGeneration } from "./generation/orchestrator.js";
 import "./content/index.js";
-import { ROUND1_DECISIONS } from "./content/decisions/round1.js";
-import { ROUND2_DECISIONS } from "./content/decisions/round2.js";
-import { ROUND3_DECISIONS } from "./content/decisions/round3.js";
-import { ROUND4_DECISIONS } from "./content/decisions/round4.js";
-import { ROUND5_DECISIONS } from "./content/decisions/round5.js";
+import { getRoundDecisions } from "./content/decisions/rounds.js";
 import { getNpcTriggersForRound } from "./content/npc/index.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
+import { applyActivityPenalties } from "./activityPenalties.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
-
-// Round N decisions at index N-1.
-const ROUND_DECISIONS = [
-  ROUND1_DECISIONS,  // index 0 = round 1
-  ROUND2_DECISIONS,  // index 1 = round 2
-  ROUND3_DECISIONS,  // index 2 = round 3
-  ROUND4_DECISIONS,  // index 3 = round 4
-  ROUND5_DECISIONS,  // index 4 = round 5
-];
 
 /**
  * Build a map of role_id → first name from all players in the room.
@@ -100,7 +88,15 @@ export function syncPhaseTimer(io: Server, room: GameRoom) {
   if (room.phase === "lobby" || room.phase === "ending") return;
 
   const remaining = Math.max(0, room.timer.endsAt - Date.now());
+  const expectedRound = room.round;
+  const expectedPhase = room.phase;
+  const expectedEndsAt = room.timer.endsAt;
   const timer = setTimeout(() => {
+    // Guard against a manual GM advance landing in the same tick as a timeout.
+    if (room.round !== expectedRound) return;
+    if (room.phase !== expectedPhase) return;
+    if (room.timer.endsAt !== expectedEndsAt) return;
+    if (room.timer.pausedAt) return;
     advancePhase(io, room);
   }, remaining);
 
@@ -235,15 +231,6 @@ export function advancePhase(io: Server, room: GameRoom) {
   } else {
     // End of round
     if (room.phase === "resolution") {
-      // Save round history
-      room.history.push({
-        round: room.round,
-        decisions: { ...room.decisions },
-        teamDecisions: { ...room.teamDecisions },
-        stateBefore: { ...room.state },
-        stateAfter: { ...room.state }, // will be updated by resolution
-      });
-
       if (room.round >= TOTAL_ROUNDS) {
         room.phase = "ending";
         clearPhaseTimer(room);
@@ -339,7 +326,7 @@ export function advancePhase(io: Server, room: GameRoom) {
 export function emitDecisions(io: Server, room: GameRoom) {
   // Tutorial round has no real decisions
   if (room.round === 0) return;
-  const roundDecisions = ROUND_DECISIONS[room.round - 1];
+  const roundDecisions = getRoundDecisions(room.round);
   if (!roundDecisions) return;
 
   for (const [socketId, player] of Object.entries(room.players)) {
@@ -387,61 +374,54 @@ export function emitBriefing(io: Server, room: GameRoom) {
   }
 }
 
+const ACCUMULATING_APPS: ReadonlySet<string> = new Set([
+  "slack", "email", "memo", "security", "intel", "military", "arxiv", "signal", "briefing",
+]);
+
+function getMergedContentForPlayer(room: GameRoom, player: Player): AppContent[] {
+  const preAuthored = getContentForPlayer(room.round, player.faction!, player.role!, room.state);
+
+  const generatedContent = getGeneratedContent(room, room.round, player.faction!);
+  if (!generatedContent || generatedContent.length === 0) return preAuthored;
+
+  const generatedByApp = new Map(generatedContent.map((c) => [c.app, c]));
+  const merged: AppContent[] = [];
+
+  for (const preApp of preAuthored) {
+    const genApp = generatedByApp.get(preApp.app);
+    if (!genApp) {
+      merged.push(preApp);
+    } else if (ACCUMULATING_APPS.has(preApp.app)) {
+      merged.push({ ...preApp, items: [...preApp.items, ...genApp.items] });
+      generatedByApp.delete(preApp.app);
+    } else {
+      merged.push(genApp);
+      generatedByApp.delete(preApp.app);
+    }
+  }
+
+  for (const genApp of generatedByApp.values()) {
+    merged.push(genApp);
+  }
+
+  const seenIds = new Set<string>();
+  return merged.map((appContent) => ({
+    ...appContent,
+    items: appContent.items.filter((item) => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    }),
+  }));
+}
+
 export function emitContent(io: Server, room: GameRoom) {
   const nameMap = buildNameMap(room);
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
     try {
-      // Pre-authored content (always available)
-      const preAuthored = getContentForPlayer(room.round, player.faction, player.role, room.state);
-
-      // Merge generated content with pre-authored content
-      const generatedContent = getGeneratedContent(room, room.round, player.faction);
-      let finalContent: AppContent[];
-      if (generatedContent && generatedContent.length > 0) {
-        // Accumulating apps (slack, email, memo, signal, etc.) keep pre-authored history
-        // and append generated items. Fresh apps (news, twitter) get replaced entirely.
-        const ACCUMULATING: Set<string> = new Set([
-          "slack", "email", "memo", "security", "intel", "military", "arxiv", "signal", "briefing",
-        ]);
-        const generatedByApp = new Map(generatedContent.map((c) => [c.app, c]));
-        const merged: AppContent[] = [];
-
-        for (const preApp of preAuthored) {
-          const genApp = generatedByApp.get(preApp.app);
-          if (!genApp) {
-            // No generated version — keep pre-authored as-is
-            merged.push(preApp);
-          } else if (ACCUMULATING.has(preApp.app)) {
-            // Accumulating app: append generated items to pre-authored history
-            merged.push({ ...preApp, items: [...preApp.items, ...genApp.items] });
-            generatedByApp.delete(preApp.app);
-          } else {
-            // Fresh app: replace entirely with generated version
-            merged.push(genApp);
-            generatedByApp.delete(preApp.app);
-          }
-        }
-        // Add any generated apps that had no pre-authored counterpart
-        for (const genApp of generatedByApp.values()) {
-          merged.push(genApp);
-        }
-
-        // Dedup guard by ID
-        const seenIds = new Set<string>();
-        finalContent = merged.map((appContent) => ({
-          ...appContent,
-          items: appContent.items.filter((item) => {
-            if (seenIds.has(item.id)) return false;
-            seenIds.add(item.id);
-            return true;
-          }),
-        }));
-      } else {
-        finalContent = preAuthored;
-      }
-
-      const personalized = personalizeContent(finalContent, nameMap);
+      const content = getMergedContentForPlayer(room, player);
+      const personalized = personalizeContent(content, nameMap);
       io.to(socketId).emit("game:content", { content: personalized });
     } catch (err) {
       // Round content file may not exist yet (future rounds) — silently skip
@@ -492,49 +472,6 @@ const STATE_LABELS: Record<keyof StateVariables, string> = {
   ccpPatience: "CCP Patience",
   domesticChipProgress: "Domestic Chip Progress",
 };
-
-// ── Activity Penalties ──
-
-interface ActivityPenalty {
-  app: AppId;
-  variable: keyof StateVariables;
-  delta: number;
-}
-
-const PRIMARY_APP_PENALTIES: Partial<Record<Role, ActivityPenalty>> = {
-  ob_cto:        { app: "wandb",    variable: "obCapability",        delta: -3 },
-  ob_safety:     { app: "slack",    variable: "alignmentConfidence",  delta: -3 },
-  ob_ceo:        { app: "email",    variable: "obInternalTrust",      delta: -3 },
-  prom_scientist:{ app: "wandb",    variable: "promCapability",       delta: -3 },
-  china_director:{ app: "compute",  variable: "chinaCapability",      delta: -3 },
-  ext_journalist:{ app: "signal",   variable: "publicAwareness",      delta: -3 },
-  ext_nsa:       { app: "briefing", variable: "intlCooperation",      delta: -3 },
-  ext_vc:        { app: "bloomberg",variable: "economicDisruption",   delta: 2  },
-};
-
-function applyActivityPenalties(room: GameRoom): void {
-  if (!room.playerActivity) return;
-  // Tutorial round: no penalties
-  if (room.round === 0) return;
-  const penaltyLogger = getLoggerForRoom(room.code);
-  for (const [playerId, player] of Object.entries(room.players)) {
-    if (!player.role) continue;
-    const penalty = PRIMARY_APP_PENALTIES[player.role];
-    if (!penalty) continue;
-    const opened = room.playerActivity[playerId] ?? [];
-    if (!opened.includes(penalty.app)) {
-      const current = room.state[penalty.variable];
-      (room.state[penalty.variable] as number) = current + penalty.delta;
-      penaltyLogger.log(EVENT_NAMES.ACTIVITY_PENALTY, {
-        playerId: player.name,
-        role: player.role,
-        primaryApp: penalty.app,
-        variable: penalty.variable,
-        delta: penalty.delta,
-      }, { round: room.round, phase: room.phase, actorId: player.name });
-    }
-  }
-}
 
 // ── Threshold Events ──
 
@@ -991,7 +928,7 @@ export function buildNarrative(
 }
 
 function emitResolution(io: Server, room: GameRoom) {
-  const roundDecisions = ROUND_DECISIONS[room.round - 1];
+  const roundDecisions = getRoundDecisions(room.round);
   const stateBefore = { ...room.state };
   const resLogger = getLoggerForRoom(room.code);
   resLogger.log(EVENT_NAMES.STATE_SNAPSHOT, {
@@ -1035,12 +972,37 @@ function emitResolution(io: Server, room: GameRoom) {
   room.state = stateAfter;
 
   // Apply activity penalties (players who skipped their primary app)
-  applyActivityPenalties(room);
+  const appliedPenalties = applyActivityPenalties(room);
+  for (const p of appliedPenalties) {
+    const player = room.players[p.playerId];
+    if (!player) continue;
+    resLogger.log(EVENT_NAMES.ACTIVITY_PENALTY, {
+      playerId: player.name,
+      role: p.role,
+      primaryApp: p.primaryApp,
+      variable: p.variable,
+      delta: p.delta,
+    }, { round: room.round, phase: room.phase, actorId: player.name });
+  }
   // Reset activity tracking for next round
   room.playerActivity = {};
 
   // Fire any threshold events that have been crossed
   checkThresholds(io, room);
+
+  const historyEntry = {
+    round: room.round,
+    decisions: { ...room.decisions },
+    teamDecisions: { ...room.teamDecisions },
+    stateBefore,
+    stateAfter: { ...room.state },
+  };
+  const existingIdx = room.history.findIndex((h) => h.round === room.round);
+  if (existingIdx >= 0) {
+    room.history[existingIdx] = historyEntry;
+  } else {
+    room.history.push(historyEntry);
+  }
 
   // Trigger async generation for next round — fire-and-forget, never blocks resolution
   void triggerGeneration(room, room.round + 1);
@@ -1156,14 +1118,14 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
 
   if (player) {
     if (!player.faction || !player.role) return;
+    const nameMap = buildNameMap(room);
     // Fog-of-war state view
     const view = computeFogView(room.state, player.faction, player.role, room.round);
     socket.emit("game:state", { view });
 
     // Current round content (intel phase onwards — content persists)
     try {
-      const content = getContentForPlayer(room.round, player.faction, player.role, room.state);
-      const nameMap = buildNameMap(room);
+      const content = getMergedContentForPlayer(room, player);
       const personalized = personalizeContent(content, nameMap);
       socket.emit("game:content", { content: personalized });
     } catch {
@@ -1172,10 +1134,12 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
 
     // Briefing text (relevant in briefing phase but also good to replay for context)
     try {
-      const briefing = getBriefing(room.round);
+      const generated = getGeneratedBriefing(room, room.round);
+      const briefing = generated ?? getBriefing(room.round);
       const { common, factionVariants } = briefing;
       const variant = factionVariants?.[player.faction];
-      const text = variant ? `${common}\n\n${variant}` : common;
+      const combined = variant ? `${common}\n\n${variant}` : common;
+      const text = personalizeText(combined, nameMap);
       socket.emit("game:briefing", { text });
     } catch {
       // No briefing content for this round
@@ -1183,7 +1147,7 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
 
     // Decision options (if in decision phase)
     if (room.phase === "decision") {
-      const roundDecisions = ROUND_DECISIONS[room.round - 1];
+      const roundDecisions = getRoundDecisions(room.round);
       if (roundDecisions) {
         const individual = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role) ?? null;
         const team = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction) ?? null;

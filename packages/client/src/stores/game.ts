@@ -481,13 +481,25 @@ socket.on("game:content", (data: { content: AppContent[] }) => {
   useGameStore.setState({ content: stamped });
 });
 
-// Published content notification (server emits game:publish with article/research/leak metadata)
-socket.on("game:publish", (data: { publication?: { type?: string; headline?: string; title?: string }; summary?: string }) => {
+type GamePublishPayload =
+  | { publication?: { type?: string; headline?: string; title?: string }; summary?: string }
+  | { publication: Publication; newsContent: AppContent; twitterContent: AppContent; summary: string };
+
+// Published content notification + content injection.
+socket.on("game:publish", (data: GamePublishPayload) => {
   const pub = data.publication;
   if (pub) {
-    const headline = pub.headline ?? pub.title ?? "New publication";
-    const type = pub.type === "leak" ? "LEAK" : pub.type === "research" ? "Research" : "BREAKING";
-    useNotificationsStore.getState().addNotification({ appId: "news", title: `${type}: ${headline}`, body: data.summary ?? "" });
+    const headline = (pub as any).headline ?? (pub as any).title ?? "New publication";
+    const pubType = (pub as any).type as PublicationType | undefined;
+    const typeLabel = pubType === "leak" ? "LEAK" : pubType === "research" ? "Research" : "BREAKING";
+    useNotificationsStore.getState().addNotification({ appId: "news", title: `${typeLabel}: ${headline}`, body: data.summary ?? "" });
+  }
+
+  if ("newsContent" in data && "twitterContent" in data) {
+    useGameStore.setState((state) => ({
+      publications: [...state.publications, data.publication],
+      content: [...state.content, data.newsContent, data.twitterContent],
+    }));
   }
 });
 
@@ -523,17 +535,6 @@ socket.on("game:ending", (data: { arcs: EndingArc[]; history: RoundHistory[]; fi
     endingPlayers: data.players,
   });
 });
-
-socket.on(
-  "game:publish",
-  (data: { publication: Publication; newsContent: AppContent; twitterContent: AppContent; summary: string }) => {
-    useGameStore.setState((state) => ({
-      publications: [...state.publications, data.publication],
-      // Inject news and twitter content items into the content array
-      content: [...state.content, data.newsContent, data.twitterContent],
-    }));
-  },
-);
 
 socket.on("game:notification", (data: GameNotification) => {
   useGameStore.setState((state) => ({

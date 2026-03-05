@@ -10,7 +10,7 @@ import {
 } from "./emailUtils.js";
 import type { EmailFolder, EmailItem } from "./emailUtils.js";
 
-type EmailWithIndex = EmailItem & { _originalIdx: number };
+type EmailWithId = EmailItem & { id: string };
 
 // ── Avatar color helper ───────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ const FOLDER_META: Record<EmailFolder, { label: string; icon: string }> = {
 
 // ── Static email data ─────────────────────────────────────────────────────────
 
-const STATIC_EMAILS: EmailItem[] = [
+const STATIC_EMAILS: EmailWithId[] = ([
   // --- Inbox, unread ---
   {
     from: "Dr. Rachel Hayes",
@@ -334,9 +334,10 @@ I believe we have an obligation to disclose these issues in the board meeting be
 
 — [Not yet sent]`,
   },
-];
+] satisfies EmailItem[]).map((email, idx) => ({ ...email, id: `static_${idx}` }));
 
-const REGULATORY_EMAIL: EmailItem = {
+const REGULATORY_EMAIL: EmailWithId = {
+  id: "regulatory_inquiry",
   from: "Congressional Select Committee",
   subject: "[URGENT] Congressional Inquiry — AI Development Practices",
   preview:
@@ -377,9 +378,10 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
 
   // Build email list from game content or fall back to static data
   const docItems = content.filter((i) => i.type === "document");
-  const baseEmails: EmailItem[] =
+  const baseEmails: EmailWithId[] =
     docItems.length > 0
       ? docItems.map((item) => ({
+          id: item.id,
           from: item.sender ?? "Unknown",
           subject: item.subject ?? "(no subject)",
           preview: item.body.slice(0, 120),
@@ -390,7 +392,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
         }))
       : STATIC_EMAILS;
 
-  const allEmails: EmailItem[] = highRegulatory
+  const allEmails: EmailWithId[] = highRegulatory
     ? [REGULATORY_EMAIL, ...baseEmails]
     : baseEmails;
 
@@ -398,8 +400,8 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const [activeFolder, setActiveFolder] = useState<EmailFolder>("inbox");
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState(0);
-  const [leakSent, setLeakSent] = useState<Record<number, boolean>>({});
-  const [readEmails, setReadEmails] = useState<Record<number, boolean>>({}); // Track read state by email index
+  const [leakSent, setLeakSent] = useState<Record<string, boolean>>({});
+  const [readEmails, setReadEmails] = useState<Record<string, boolean>>({}); // Track read state by email id
 
   // Compose state
   const [composeOpen, setComposeOpen] = useState(false);
@@ -409,11 +411,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const [composeBody, setComposeBody] = useState("");
   const [composeSent, setComposeSent] = useState(false);
 
-  // Dismiss email toasts when app is opened (on mount) and when new content arrives
-  useEffect(() => {
-    useNotificationsStore.getState().dismissByApp("email");
-  }, []);
-
+  // Dismiss email toasts when app is opened and when new content arrives
   useEffect(() => {
     useNotificationsStore.getState().dismissByApp("email");
   }, [content.length]);
@@ -424,11 +422,10 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   }, [activeFolder, searchQuery]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
-  // Mark emails as read based on local state, preserving original index for read tracking
-  const emailsWithReadState = allEmails.map((email, idx) => ({
+  // Mark emails as read based on local state
+  const emailsWithReadState = allEmails.map((email) => ({
     ...email,
-    _originalIdx: idx,
-    read: email.read || readEmails[idx],
+    read: email.read || !!readEmails[email.id],
   }));
   const folderEmails = filterEmailsByFolder(emailsWithReadState, activeFolder);
   const filteredEmails = filterEmailsBySearch(folderEmails, searchQuery);
@@ -445,18 +442,17 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
         (email.subject ?? "") + " " + (email.body ?? "")
       ));
 
-  // The index of the selected email in the allEmails array (for leakSent tracking)
-  const globalIndex = selectedEmail ? (selectedEmail as EmailWithIndex)._originalIdx ?? -1 : -1;
+  const selectedEmailId = selectedEmail ? (selectedEmail as EmailWithId).id : null;
 
   function handleLeak() {
-    if (!selectedEmail || globalIndex < 0 || leakSent[globalIndex]) return;
+    if (!selectedEmail || !selectedEmailId || leakSent[selectedEmailId]) return;
     publishArticle({
       type: "leak",
       title: `LEAKED: ${selectedEmail.subject}`,
       content: `[Internal memo obtained by journalist]\n\nFrom: ${selectedEmail.from}\n\n${selectedEmail.body ?? selectedEmail.preview}`,
       source: "Anonymous Source (OB Internal)",
     });
-    setLeakSent((prev) => ({ ...prev, [globalIndex]: true }));
+    setLeakSent((prev) => ({ ...prev, [selectedEmailId]: true }));
   }
 
   function openCompose(mode: "new" | "reply" | "forward") {
@@ -588,15 +584,13 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
           ) : (
             filteredEmails.map((e, i) => (
               <div
-                key={i}
+                key={(e as EmailWithId).id}
                 onClick={() => {
                   setSelected(i);
                   setComposeOpen(false);
                   // Mark email as read when clicked
-                  const globalIdx = (e as EmailWithIndex)._originalIdx;
-                  if (globalIdx >= 0 && !readEmails[globalIdx]) {
-                    setReadEmails((prev) => ({ ...prev, [globalIdx]: true }));
-                  }
+                  const emailId = (e as EmailWithId).id;
+                  if (!readEmails[emailId]) setReadEmails((prev) => ({ ...prev, [emailId]: true }));
                 }}
                 className={`px-2.5 py-2 border-b border-white/5 cursor-pointer hover:bg-white/5 ${
                   safeSelected === i && !composeOpen ? "bg-blue-900/30" : ""
@@ -749,7 +743,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
                     Leak this memo to the press. This is irreversible and will increase public awareness.
                   </div>
                 </div>
-                {leakSent[globalIndex] ? (
+                {selectedEmailId && leakSent[selectedEmailId] ? (
                   <span className="text-[10px] text-green-400 font-semibold">✓ Leaked</span>
                 ) : (
                   <button

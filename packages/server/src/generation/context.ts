@@ -12,11 +12,7 @@ import type {
 } from "@takeoff/shared";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 import { FACTION_IDENTITIES, FACTION_VOICES } from "./prompts/voices.js";
-import { ROUND1_DECISIONS } from "../content/decisions/round1.js";
-import { ROUND2_DECISIONS } from "../content/decisions/round2.js";
-import { ROUND3_DECISIONS } from "../content/decisions/round3.js";
-import { ROUND4_DECISIONS } from "../content/decisions/round4.js";
-import { ROUND5_DECISIONS } from "../content/decisions/round5.js";
+import { getRoundDecisions } from "../content/decisions/rounds.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,16 +44,6 @@ export interface GenerationContext {
   playerSlackMessages: Partial<Record<Faction, Record<string, PlayerSlackMessage[]>>>;
 }
 
-// ── Round decisions indexed by round number (1-based) ────────────────────────
-
-const ROUND_DECISIONS = [
-  ROUND1_DECISIONS, // index 0 = round 1
-  ROUND2_DECISIONS, // index 1 = round 2
-  ROUND3_DECISIONS, // index 2 = round 3
-  ROUND4_DECISIONS, // index 3 = round 4
-  ROUND5_DECISIONS, // index 4 = round 5
-];
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
@@ -65,7 +51,7 @@ const ROUND_DECISIONS = [
  * Searches both individual and team decisions.
  */
 function findOptionById(optionId: string, round: number) {
-  const roundDec = ROUND_DECISIONS[round - 1];
+  const roundDec = getRoundDecisions(round);
   if (!roundDec) return undefined;
   for (const dec of [...roundDec.individual, ...roundDec.team]) {
     const opt = dec.options.find((o) => o.id === optionId);

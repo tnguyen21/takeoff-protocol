@@ -290,6 +290,7 @@
 │   │   │   ├── generation
 │   │   │   ├── logger
 │   │   │   ├── activity.test.ts
+│   │   │   ├── activityPenalties.ts
 │   │   │   ├── devBots.test.ts
 │   │   │   ├── devBots.ts
 │   │   │   ├── events.test.ts
@@ -335,4 +336,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 314 files
+22 directories, 315 files

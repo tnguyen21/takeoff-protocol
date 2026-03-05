@@ -47,7 +47,8 @@ function analyzeVariable(varName: string): DecisionInfo[] {
 
   const results: DecisionInfo[] = [];
   for (const { round, decisions } of allRounds) {
-    const allDecisions = [...decisions.individual, ...(decisions.collective || [])];
+    const teamDecisions = (decisions as any).team ?? (decisions as any).collective ?? [];
+    const allDecisions = [...decisions.individual, ...teamDecisions];
     for (const d of allDecisions) {
       const deltas: number[] = [];
       const optionIds: string[] = [];
@@ -202,7 +203,8 @@ const allRoundsData = [
 const gapAdditions: { optionId: string; variable: string; delta: number }[] = [];
 
 for (const { round, decisions } of allRoundsData) {
-  const allDecisions = [...decisions.individual, ...(decisions.collective || [])];
+  const teamDecisions = (decisions as any).team ?? (decisions as any).collective ?? [];
+  const allDecisions = [...decisions.individual, ...teamDecisions];
   for (const d of allDecisions) {
     const role = (d as any).role;
 

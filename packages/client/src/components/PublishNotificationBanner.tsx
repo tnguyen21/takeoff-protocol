@@ -11,13 +11,15 @@ export function PublishNotificationBanner() {
   // Auto-dismiss notifications after 6 seconds
   useEffect(() => {
     if (notifications.length === 0) return;
-    const oldest = notifications[0];
-    const elapsed = Date.now() - oldest.timestamp;
-    const remaining = Math.max(0, 6000 - elapsed);
-    const timer = setTimeout(() => {
-      dismissNotification(oldest.id);
-    }, remaining);
-    return () => clearTimeout(timer);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const notif of notifications.slice(0, 3)) {
+      const elapsed = Date.now() - notif.timestamp;
+      const remaining = Math.max(0, 6000 - elapsed);
+      timers.push(setTimeout(() => dismissNotification(notif.id), remaining));
+    }
+    return () => {
+      for (const t of timers) clearTimeout(t);
+    };
   }, [notifications, dismissNotification]);
 
   if (notifications.length === 0) return null;

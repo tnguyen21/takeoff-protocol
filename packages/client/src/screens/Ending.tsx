@@ -292,6 +292,4 @@ function DebriefScreen() {
 
 // ── Main Ending Screen ─────────────────────────────────────────────────────────
 
-export function Ending() {
-  return <DebriefScreen />;
-}
+export const Ending = DebriefScreen;

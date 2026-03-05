@@ -23,7 +23,9 @@ for (const varName of TARGET_VARS) {
   const rows: any[] = [];
 
   for (const { round, decisions } of allRounds) {
-    const allDecisions = [...decisions.individual, ...(decisions.collective || [])];
+    // Schema is { individual, team } in production, but keep backward compat for old "collective".
+    const teamDecisions = (decisions as any).team ?? (decisions as any).collective ?? [];
+    const allDecisions = [...decisions.individual, ...teamDecisions];
     for (const d of allDecisions) {
       const deltas: number[] = [];
       for (const opt of d.options) {

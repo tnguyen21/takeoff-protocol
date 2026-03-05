@@ -364,7 +364,9 @@ export const NPC_PERSONAS: NpcPersona[] = [
 /** Set of all persona IDs for fast membership checks. */
 export const NPC_IDS: Set<string> = new Set(NPC_PERSONAS.map((p) => p.id));
 
+const NPC_PERSONA_BY_ID: Map<string, NpcPersona> = new Map(NPC_PERSONAS.map((p) => [p.id, p]));
+
 /** Returns the NpcPersona for the given id, or undefined if not found. */
 export function getNpcPersona(id: string): NpcPersona | undefined {
-  return NPC_PERSONAS.find((p) => p.id === id);
+  return NPC_PERSONA_BY_ID.get(id);
 }

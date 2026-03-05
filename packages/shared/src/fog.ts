@@ -54,9 +54,23 @@ const FOG_MATRIX: FogMatrix = {
  * Uses a seeded offset so the same player sees consistent (but wrong) values within a round.
  */
 function applyNoise(trueValue: number, confidence: number, seed: number): number {
-  // Simple deterministic noise from seed
-  const noise = ((Math.sin(seed * 9301 + 49297) % 233280) / 233280) * 2 - 1; // -1 to 1
+  // Deterministic pseudo-random in [-1, 1] from a numeric seed.
+  // Note: Math.sin() is already bounded [-1, 1], so we use the fractional part
+  // after scaling to avoid collapsing the distribution near 0.
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  const frac = x - Math.floor(x); // [0, 1)
+  const noise = frac * 2 - 1; // [-1, 1)
   return Math.round(trueValue + noise * confidence);
+}
+
+function hashString(str: string): number {
+  // FNV-1a 32-bit hash for stable per-key seeding.
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 /**
@@ -69,7 +83,7 @@ export function computeFogView(
   round: number,
 ): StateView {
   const view = {} as StateView;
-  const seed = round * 1000 + faction.charCodeAt(0);
+  const seed = round * 1000 + hashString(faction);
 
   for (const key of Object.keys(FOG_MATRIX) as (keyof StateVariables)[]) {
     const fogEntry = FOG_MATRIX[key][faction];
@@ -82,7 +96,7 @@ export function computeFogView(
         break;
       case "estimate":
         fogVar = {
-          value: applyNoise(trueValue, fogEntry.confidence!, seed + key.charCodeAt(0)),
+          value: applyNoise(trueValue, fogEntry.confidence!, seed + hashString(String(key))),
           accuracy: "estimate",
           confidence: fogEntry.confidence,
         };
