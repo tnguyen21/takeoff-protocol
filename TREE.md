@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-04189ce25e2a
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-c09155e4a9cd
 ├── docs
 │   ├── APP-AUDIT-COMMUNICATION.md
 │   ├── APP-AUDIT-DATA-ANALYTICS.md
