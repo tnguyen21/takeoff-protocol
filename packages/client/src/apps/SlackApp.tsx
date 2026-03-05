@@ -27,11 +27,6 @@ function MessageToolbar() {
       <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Add reaction">
         😊
       </button>
-      <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Reply in thread">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M1 2.5A1.5 1.5 0 012.5 1h11A1.5 1.5 0 0115 2.5v8A1.5 1.5 0 0113.5 12H9.621l-2.56 2.56A.5.5 0 016.5 14.5V12H2.5A1.5 1.5 0 011 10.5v-8z" />
-        </svg>
-      </button>
       <button className="text-neutral-400 hover:text-white px-1 py-0.5 text-[11px] rounded hover:bg-white/10 transition-colors" title="Bookmark">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
           <path d="M2 2a2 2 0 012-2h8a2 2 0 012 2v13.5a.5.5 0 01-.777.416L8 13.101l-5.223 2.815A.5.5 0 012 15.5V2z" />
@@ -118,17 +113,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
 
   const hasAnyMessages = channelIntelMessages.length > 0 || channelTeamMessages.length > 0;
 
-  // Group consecutive intel messages by same sender for thread indicator
-  type IntelGroup = { messages: typeof intelMessages; key: string };
-  const intelGroups: IntelGroup[] = [];
-  for (const m of channelIntelMessages) {
-    const last = intelGroups[intelGroups.length - 1];
-    if (last && last.messages[0].sender === m.sender) {
-      last.messages.push(m);
-    } else {
-      intelGroups.push({ messages: [m], key: m.id });
-    }
-  }
 
   return (
     <div className="flex h-full bg-[#1a1d21] text-white text-sm font-sans">
@@ -213,47 +197,28 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             </div>
           )}
 
-          {/* Intel messages grouped by sender cluster */}
-          {intelGroups.map((group) => (
-            <div key={group.key}>
-              {group.messages.map((m, i) => (
-                <div
-                  key={m.id}
-                  className="relative flex gap-3 group"
-                  onMouseEnter={() => setHoveredMessageId(m.id)}
-                  onMouseLeave={() => setHoveredMessageId(null)}
-                >
-                  {/* Only show avatar for first message in cluster */}
-                  {i === 0 ? (
-                    <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
-                      {initials(m.sender ?? "?")}
-                    </div>
-                  ) : (
-                    <div className="w-8 shrink-0" />
+          {/* Intel messages */}
+          {channelIntelMessages.map((m) => (
+            <div
+              key={m.id}
+              className="relative flex gap-3 group"
+              onMouseEnter={() => setHoveredMessageId(m.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
+            >
+              <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
+                {initials(m.sender ?? "?")}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-semibold text-xs text-blue-300">{m.sender ?? "System"}</span>
+                  <span className="text-neutral-500 text-xs">{m.timestamp}</span>
+                  {m.channel && assignChannelToMessage(m) !== "#general" && (
+                    <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(m)}</span>
                   )}
-                  <div className="flex-1 min-w-0">
-                    {i === 0 && (
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-semibold text-xs text-blue-300">{m.sender ?? "System"}</span>
-                        <span className="text-neutral-500 text-xs">{m.timestamp}</span>
-                        {m.channel && assignChannelToMessage(m) !== "#general" && (
-                          <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(m)}</span>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
-                  </div>
-                  {hoveredMessageId === m.id && <MessageToolbar />}
                 </div>
-              ))}
-              {/* Thread indicator for clusters with multiple messages */}
-              {group.messages.length > 1 && (
-                <div className="ml-11 mt-1">
-                  <button className="text-[10px] text-blue-400 hover:text-blue-300 hover:underline transition-colors">
-                    {group.messages.length} replies
-                  </button>
-                </div>
-              )}
+                <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
+              </div>
+              {hoveredMessageId === m.id && <MessageToolbar />}
             </div>
           ))}
 
