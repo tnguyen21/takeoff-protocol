@@ -1,5 +1,7 @@
 import React from "react";
 import type { AppProps } from "./types.js";
+import type { Role } from "@takeoff/shared";
+import { useGameStore } from "../stores/game.js";
 
 // ─── Markdown renderer (fixes table bug: <tr> wrapped in proper <table>) ──────
 
@@ -199,9 +201,20 @@ function NewPageEditor({ onSubmit, onCancel }: { onSubmit: (p: UserPage) => void
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-type Page = { title: string; body: string; sender?: string; timestamp?: string; isUserCreated?: true };
+type Page = { title: string; body: string; sender?: string; senderRole?: Role; timestamp?: string; isUserCreated?: true };
+
+interface LobbyPlayerLike { role: Role | null; name: string; }
+
+function resolveAuthor(senderRole: Role | undefined, sender: string | undefined, lobbyPlayers: LobbyPlayerLike[]): string {
+  if (senderRole) {
+    const player = lobbyPlayers.find((p) => p.role === senderRole);
+    if (player) return player.name;
+  }
+  return sender ?? "Unknown";
+}
 
 export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
+  const lobbyPlayers = useGameStore((s) => s.lobbyPlayers);
   const memoItems = content.filter((i) => i.type === "memo" || i.type === "document");
 
   // Server-provided pages from content
@@ -209,6 +222,7 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
     title: item.subject ?? "Untitled Document",
     body: item.body,
     sender: item.sender,
+    senderRole: item.senderRole,
     timestamp: item.timestamp,
   }));
 
@@ -317,7 +331,11 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
             <div className="prose prose-sm max-w-none">
               <h1 className="text-2xl font-bold mb-3 text-neutral-900">{currentPage.title}</h1>
               <PageMetadata
-                author={currentPage.sender ?? "You"}
+                author={
+                  currentPage.isUserCreated
+                    ? "You"
+                    : resolveAuthor(currentPage.senderRole, currentPage.sender, lobbyPlayers)
+                }
                 timestamp={currentPage.timestamp}
               />
               {currentPage.body ? (
