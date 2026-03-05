@@ -407,7 +407,11 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const [composeBody, setComposeBody] = useState("");
   const [composeSent, setComposeSent] = useState(false);
 
-  // Dismiss email toasts when app is open
+  // Dismiss email toasts when app is opened (on mount) and when new content arrives
+  useEffect(() => {
+    useNotificationsStore.getState().dismissByApp("email");
+  }, []);
+
   useEffect(() => {
     useNotificationsStore.getState().dismissByApp("email");
   }, [content.length]);
