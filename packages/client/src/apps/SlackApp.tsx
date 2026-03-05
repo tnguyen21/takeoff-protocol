@@ -53,9 +53,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
   // Unread counts per channel
   const unreadCounts = computeUnreadCounts(intelMessages, seenChannels, activeChannel);
 
-  // Faction teammates for DM section (same faction, not self)
-  const factionTeammates = lobbyPlayers.filter((p) => p.id !== playerId && p.faction === myFaction);
-
   // Handle channel click
   const handleChannelClick = useCallback((ch: string) => {
     setActiveChannel(ch);
@@ -143,26 +140,6 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             </div>
           </div>
 
-          {/* Direct Messages section */}
-          <div>
-            <div className="text-[#c9b9c9] text-[10px] font-semibold px-2 py-1 uppercase tracking-wide">Direct Messages</div>
-            <div className="space-y-0.5">
-              {factionTeammates.length === 0 && (
-                <div className="text-[#c9b9c9]/50 text-[10px] px-2 py-1">No teammates online</div>
-              )}
-              {factionTeammates.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-[#c9b9c9] hover:bg-white/10 text-xs transition-colors"
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${p.connected ? "bg-green-400" : "bg-neutral-500"}`}
-                  />
-                  <span className="truncate">{p.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
