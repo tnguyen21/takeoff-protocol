@@ -16,8 +16,16 @@ function initials(name: string): string {
     .slice(0, 2);
 }
 
-function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function formatTime(ts: number | string): string {
+  const d = typeof ts === "string" ? new Date(ts) : new Date(ts);
+  if (isNaN(d.getTime())) return String(ts);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function toEpoch(ts: number | string): number {
+  if (typeof ts === "number") return ts;
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
 
@@ -95,7 +103,33 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
     [sendMessage]
   );
 
-  const hasAnyMessages = channelIntelMessages.length > 0 || channelTeamMessages.length > 0;
+  // Merge intel + player messages into a single sorted list
+  type UnifiedMsg =
+    | { kind: "intel"; id: string; sender: string; timestamp: string; body: string; channel?: string; sortKey: number }
+    | { kind: "player"; id: string; from: string; fromName: string; content: string; timestamp: number; sortKey: number };
+
+  const unifiedMessages: UnifiedMsg[] = [
+    ...channelIntelMessages.map((m) => ({
+      kind: "intel" as const,
+      id: m.id,
+      sender: m.sender ?? "System",
+      timestamp: m.timestamp,
+      body: m.body,
+      channel: m.channel,
+      sortKey: toEpoch(m.timestamp),
+    })),
+    ...channelTeamMessages.map((m) => ({
+      kind: "player" as const,
+      id: m.id,
+      from: m.from,
+      fromName: m.fromName,
+      content: m.content,
+      timestamp: m.timestamp,
+      sortKey: m.timestamp,
+    })),
+  ].sort((a, b) => a.sortKey - b.sortKey);
+
+  const hasAnyMessages = unifiedMessages.length > 0;
 
 
   return (
@@ -161,48 +195,37 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
             </div>
           )}
 
-          {/* Intel messages */}
-          {channelIntelMessages.map((m) => (
-            <div
-              key={m.id}
-              className="relative flex gap-3 group"
-            >
-              <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
-                {initials(m.sender ?? "?")}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-semibold text-xs text-blue-300">{m.sender ?? "System"}</span>
-                  <span className="text-neutral-500 text-xs">{m.timestamp}</span>
-                  {m.channel && assignChannelToMessage(m) !== "#general" && (
-                    <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(m)}</span>
-                  )}
+          {unifiedMessages.map((m) =>
+            m.kind === "intel" ? (
+              <div key={m.id} className="relative flex gap-3 group">
+                <div className="w-8 h-8 rounded bg-blue-800 flex items-center justify-center text-xs font-bold shrink-0 text-white">
+                  {initials(m.sender)}
                 </div>
-                <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
-              </div>
-            </div>
-          ))}
-
-          {/* Live team chat messages (always in #general) */}
-          {channelTeamMessages.map((m) => (
-            <div
-              key={m.id}
-              className="relative flex gap-3 group"
-            >
-              <div className="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-xs font-bold shrink-0 text-white">
-                {initials(m.fromName)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <span className={`font-semibold text-xs ${m.from === playerId ? "text-yellow-300" : "text-white"}`}>
-                    {m.fromName}
-                  </span>
-                  <span className="text-neutral-500 text-xs">{formatTime(m.timestamp)}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-semibold text-xs text-blue-300">{m.sender}</span>
+                    <span className="text-neutral-500 text-xs">{formatTime(m.timestamp)}</span>
+                  </div>
+                  <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.body}</p>
                 </div>
-                <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.content}</p>
               </div>
-            </div>
-          ))}
+            ) : (
+              <div key={m.id} className="relative flex gap-3 group">
+                <div className="w-8 h-8 rounded bg-purple-700 flex items-center justify-center text-xs font-bold shrink-0 text-white">
+                  {initials(m.fromName)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`font-semibold text-xs ${m.from === playerId ? "text-yellow-300" : "text-white"}`}>
+                      {m.fromName}
+                    </span>
+                    <span className="text-neutral-500 text-xs">{formatTime(m.timestamp)}</span>
+                  </div>
+                  <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{m.content}</p>
+                </div>
+              </div>
+            )
+          )}
           <div ref={messagesEndRef} />
         </div>
 

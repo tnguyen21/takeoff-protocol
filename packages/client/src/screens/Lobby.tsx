@@ -196,7 +196,7 @@ export function Lobby() {
   const canStart = isGM && allPlayersHaveRoles && (lobbyPlayers.length >= MIN_PLAYERS || allowOverride);
 
   return (
-    <div className="min-h-screen w-screen bg-neutral-950 flex flex-col">
+    <div className="h-screen w-screen bg-neutral-950 flex flex-col overflow-hidden">
       {/* Header bar */}
       <div className="border-b border-neutral-800/80 px-8 py-4 flex items-center justify-between bg-neutral-950/90 backdrop-blur-sm sticky top-0 z-10">
         <div>

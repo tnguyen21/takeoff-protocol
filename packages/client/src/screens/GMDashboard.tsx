@@ -1102,7 +1102,7 @@ export function GMDashboard() {
           )}
 
           {/* Player Panel */}
-          <div style={{ flex: 1, overflow: "auto" }}>
+          <div>
             <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
               Players
             </div>
