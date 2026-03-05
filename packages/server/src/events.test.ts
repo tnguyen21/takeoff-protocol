@@ -19,6 +19,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { Faction, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
+import { seedBotsForRoom } from "./devBots.js";
+import { getLobbyState } from "./rooms.js";
 import { NPC_PERSONAS, getNpcPersona } from "./content/npcPersonas.js";
 import type { EventContext } from "./logger/types.js";
 import { getLoggerForRoom, _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
@@ -592,5 +594,95 @@ describe("tweet:send", () => {
     expect(ok).toBe(true);
     const bEvents = (emitted[TWEET_PLAYER_B] ?? []).filter((e) => e.event === "tweet:receive");
     expect(bEvents).toHaveLength(1);
+  });
+});
+
+// ── dev:fill-bots handler ──────────────────────────────────────────────────────
+
+/**
+ * Invariants:
+ * INV-2: dev:fill-bots is rejected when the caller is not the GM
+ * INV-3: After filling bots, room:state is broadcast to all clients in room
+ * INV-4: After filling bots, room.players has entries for bot roles (minimum_table)
+ */
+
+function invokeDevFillBotsHandler(
+  io: import("socket.io").Server,
+  roomCode: string,
+  socketId: string,
+  room: GameRoom | undefined,
+): { ok: boolean; error?: string } {
+  // Replicate handler logic from events.ts (dev:fill-bots)
+  if (!room) return { ok: false, error: "Room not found" };
+  if (room.gmId !== socketId) return { ok: false, error: "Only GM can fill bots" };
+
+  seedBotsForRoom(room, socketId, { mode: "minimum_table" });
+
+  // Broadcast room:state to all in room
+  (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
+    .to(roomCode).emit("room:state", getLobbyState(room));
+
+  return { ok: true };
+}
+
+const FILL_GM_ID = "gm-fill-1";
+const FILL_PLAYER_ID = "player-fill-1";
+
+describe("dev:fill-bots", () => {
+  let room: GameRoom;
+  let emitted: Record<string, EmittedEvent[]>;
+  let io: import("socket.io").Server;
+
+  beforeEach(() => {
+    const mock = createMockIo();
+    io = mock.io;
+    emitted = mock.emitted;
+    room = makeRoom(FILL_GM_ID, []);
+    room.code = "FILL";
+  });
+
+  it("INV-2: rejects non-GM caller", () => {
+    const result = invokeDevFillBotsHandler(io, room.code, FILL_PLAYER_ID, room);
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/Only GM/);
+    expect(Object.keys(room.players)).toHaveLength(0);
+  });
+
+  it("INV-4: fills room.players with bots for all minimum_table roles on success", () => {
+    const result = invokeDevFillBotsHandler(io, room.code, FILL_GM_ID, room);
+    expect(result.ok).toBe(true);
+
+    const botIds = Object.keys(room.players).filter((id) => id.startsWith("__bot_"));
+    expect(botIds.length).toBeGreaterThan(0);
+
+    // All bots have faction and role set
+    for (const botId of botIds) {
+      const bot = room.players[botId]!;
+      expect(bot.faction).not.toBeNull();
+      expect(bot.role).not.toBeNull();
+    }
+  });
+
+  it("INV-3: broadcasts room:state to the room after filling bots", () => {
+    invokeDevFillBotsHandler(io, room.code, FILL_GM_ID, room);
+    const roomEmits = emitted["FILL"] ?? [];
+    const stateEmit = roomEmits.find((e) => e.event === "room:state");
+    expect(stateEmit).toBeDefined();
+    // The broadcast includes all bot players
+    const players = (stateEmit!.data as { players: unknown[] }).players;
+    expect(players.length).toBeGreaterThan(0);
+  });
+
+  it("INV-4: human player in room is not overwritten by bots", () => {
+    const humanPlayer = makePlayer(FILL_PLAYER_ID);
+    humanPlayer.faction = "openbrain";
+    humanPlayer.role = "ob_ceo";
+    room.players[FILL_PLAYER_ID] = humanPlayer;
+
+    invokeDevFillBotsHandler(io, room.code, FILL_GM_ID, room);
+
+    // Human player still has the same role
+    expect(room.players[FILL_PLAYER_ID]!.role).toBe("ob_ceo");
+    expect(room.players[FILL_PLAYER_ID]!.faction).toBe("openbrain");
   });
 });

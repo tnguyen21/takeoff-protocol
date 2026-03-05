@@ -668,6 +668,26 @@ export function registerGameEvents(io: Server, socket: Socket) {
     }
   });
 
+  // ── Dev Tools (dev/test only) ──
+
+  if (process.env.NODE_ENV !== "production") {
+    socket.on("dev:fill-bots", async (callback: (res: { ok: boolean; error?: string }) => void) => {
+      const code = socket.data.roomCode;
+      if (!code) return callback({ ok: false, error: "Not in a room" });
+      const room = getRoom(code);
+      if (!room) return callback({ ok: false, error: "Room not found" });
+      if (room.gmId !== socket.id) return callback({ ok: false, error: "Only GM can fill bots" });
+
+      const { seedBotsForRoom } = await import("./devBots.js");
+      seedBotsForRoom(room, socket.id, { mode: "minimum_table" });
+
+      // Broadcast updated lobby to all clients so player list reflects bots
+      io.to(code).emit("room:state", getLobbyState(room));
+
+      callback({ ok: true });
+    });
+  }
+
   // ── Dev Bootstrap (dev/test only) ──
 
   if (process.env.NODE_ENV !== "production") {

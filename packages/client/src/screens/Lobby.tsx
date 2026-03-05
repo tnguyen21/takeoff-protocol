@@ -104,6 +104,7 @@ export function Lobby() {
     startTutorial,
     gmGenerationEnabled,
     gmSetGeneration,
+    devFillBots,
   } = useGameStore();
 
   const [joinCode, setJoinCode] = useState("");
@@ -450,6 +451,27 @@ export function Lobby() {
                   Start Game →
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dev Tools — only visible in local dev mode */}
+        {import.meta.env.DEV && isGM && (
+          <div className="border border-yellow-900/50 rounded-xl p-5 bg-yellow-950/20 mt-4">
+            <h3 className="text-yellow-400 font-semibold mb-1 text-sm">Dev Tools</h3>
+            <p className="text-neutral-500 text-xs mb-3">Fill empty roles with bots for solo playtesting</p>
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  const res = await devFillBots();
+                  if (res.ok) {
+                    setTimeout(() => startGame(), 300);
+                  }
+                }}
+                className="bg-yellow-900/60 hover:bg-yellow-800/60 text-yellow-300 rounded-lg px-4 py-2 text-sm font-medium transition-colors border border-yellow-800/60 hover:border-yellow-700/60"
+              >
+                Start as GM + Bots
+              </button>
             </div>
           </div>
         )}

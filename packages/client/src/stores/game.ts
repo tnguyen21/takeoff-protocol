@@ -121,6 +121,7 @@ interface GameStore {
   gmJump: (round: number, phase: string) => void;
   gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
   gmSetGeneration: (enabled: boolean) => void;
+  devFillBots: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -306,6 +307,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gmSetGeneration: (enabled) => {
     socket.emit("gm:set-generation", { enabled });
   },
+
+  devFillBots: () =>
+    new Promise((resolve) => {
+      socket.emit("dev:fill-bots", (res: { ok: boolean; error?: string }) => {
+        resolve(res);
+      });
+    }),
 }));
 
 // ── Socket Listeners ──
