@@ -119,6 +119,7 @@ APP VOICE RULES:
 - memo: Internal document. Headers, bullet points. Classification markings for sensitive ones.
 - signal: Encrypted DM energy. Short, urgent, paranoid.
 - intel: ICD 203 format. Classification headers. Confidence levels (HIGH/MODERATE/LOW).
+- arxiv: Academic preprint style. Research papers with abstract, methodology, findings. NOT corporate emails.
 
 ## App Format Reference
 
@@ -154,6 +155,10 @@ When generating for "news":
 When generating for "twitter":
 - Format: { body: "tweet text with #hashtags @mentions" }
 - Voice: Hot takes, ratio bait, doom posting, hype posting. 280 chars max.
+
+When generating for "arxiv":
+- Format: { subject: "arXiv: 'Paper Title' — Author et al., Institution (Year)", body: "Abstract text. 3-5 sentences covering methodology, key findings, and implications." }
+- Voice: Academic preprint style. These are research papers, not corporate emails. Include realistic arXiv category tags (cs.AI, cs.LG, cs.CR, stat.ML, etc.), varied international author names, and real institutions. Weight toward AI/ML topics given the game context, but include adjacent CS fields (systems, security, theory). Findings should subtly reflect the current state of the AI race.
 
 HARD RULES:
 - Never contradict the current game state.

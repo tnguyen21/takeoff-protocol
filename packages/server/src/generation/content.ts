@@ -15,6 +15,7 @@ export const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
   signal: "message",
   intel: "document",
   bloomberg: "row",
+  arxiv: "document",
 };
 
 // ── Schema Builder ────────────────────────────────────────────────────────────
@@ -148,6 +149,7 @@ Voice guide: ${FACTION_VOICES[faction]}`,
     signal: `Each item MUST include "sender" (handle or name). Keep messages short and paranoid.`,
     intel: `Each item MUST include "subject" (report title). Use ICD 203 format with classification headers.`,
     bloomberg: `Use financial shorthand. Include ticker symbols, basis points, source attribution ("Sources say").`,
+    arxiv: `Each item MUST include "subject" (paper title with authors/institution, e.g. "arXiv: 'Scaling Laws for X' — Smith et al., MIT (2027)") and "body" (abstract-style summary). Use realistic author names and institutions. Mix of AI safety, ML, policy, and adjacent CS topics.`,
   };
 
   // App voice guide and generation instructions

@@ -23,6 +23,7 @@ export const APP_VOICES: Partial<Record<AppId, string>> = {
   memo: "Internal document. Headers, bullet points. Classification markings for sensitive ones. Format: { subject: 'MEMO: Topic', body: 'content with headers' }.",
   signal: "Encrypted DM energy. Short, urgent, paranoid. Disappearing message vibes. Format: { sender: 'Contact Name', body: 'short encrypted message' }.",
   intel: "ICD 203 format. Classification headers. Confidence levels (HIGH/MODERATE/LOW). Analytic tradecraft. Format: { subject: 'CLASSIFICATION — Title', body: 'assessment body' }.",
+  arxiv: "Academic preprint style. Structured abstract with key findings and implications. Author list with institutions. arXiv category tags. Citation counts for older papers. Format: { subject: \"arXiv: 'Paper Title' — Authors, Institution (Year)\", body: 'Abstract text with key findings, methodology summary, and implications. 3-5 sentences.' }.",
 };
 
 /**

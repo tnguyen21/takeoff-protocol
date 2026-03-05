@@ -498,6 +498,7 @@ describe("INV-1 (new apps): each new app produces items with the correct type af
     { app: "signal", expectedType: "message" },
     { app: "intel", expectedType: "document" },
     { app: "bloomberg", expectedType: "row" },
+    { app: "arxiv", expectedType: "document" },
   ];
 
   for (const { app, expectedType } of newAppCases) {
