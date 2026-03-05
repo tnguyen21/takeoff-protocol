@@ -370,6 +370,27 @@ export const CHINA_SLACK: ContentItem[] = [
       classification: "critical",
     },
     // #random — team life
+    // Round 1 flavor — #research
+    {
+      id: "china-slack-r1-flavor-research-1",
+      type: "message",
+      round: 1,
+      sender: "Zhang Yun (Training Infra)",
+      channel: "#research",
+      body: "Quick compute efficiency update: we hit 91 tokens/sec/GPU on the latest D-F3 warmup run. Three months ago we were at 74. Not magic — mostly kernel fusion and gradient checkpointing tuning. The gap to OB's published throughput numbers is now under 15%. Still a gap, but it's a gap we can name.",
+      timestamp: "2026-11-10T14:20:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "china-slack-r1-flavor-research-2",
+      type: "message",
+      round: 1,
+      sender: "Li Wei (Benchmarks)",
+      channel: "#research",
+      body: "Ran MATH-500, GPQA, and HumanEval against the OB Agent-3 public release numbers. Our current model is at 81%/64%/79% respectively; Agent-3 is at 88%/71%/85%. The coding gap hurts. Pre-training data quality on code is the obvious lever — worth a conversation about where we source next batch.",
+      timestamp: "2026-11-12T16:45:00Z",
+      classification: "flavor",
+    },
     {
       id: "china-r1-slack-random-1",
       type: "message",
@@ -389,6 +410,27 @@ export const CHINA_SLACK: ContentItem[] = [
       body: "Basketball tonight at 20:00 on the east court. We have 8 people, need 2 more. GPU team is invited to redeem themselves after last week. @Wei Xinbo you are not allowed to complain about the score if you're also complaining about lunch.",
       timestamp: "2026-11-05T17:30:00Z",
       classification: "context",
+    },
+    // Round 1 flavor — #random
+    {
+      id: "china-slack-r1-flavor-random-1",
+      type: "message",
+      round: 1,
+      sender: "Chen Bo (Data Pipelines)",
+      channel: "#random",
+      body: "Two hours each way from Jinan on the shuttle. Fourteen days in a row. Someone at facilities told me CDZ campus housing is 'under review for expansion.' I have been told this since August. I am not holding my breath.",
+      timestamp: "2026-11-07T08:50:00Z",
+      classification: "flavor",
+    },
+    {
+      id: "china-slack-r1-flavor-random-2",
+      type: "message",
+      round: 1,
+      sender: "Xu Ming (Night Shift)",
+      channel: "#random",
+      body: "Night crew solidarity shoutout. 02:00-08:00 is actually fine once you accept it. The cafeteria is empty, the GPU telemetry dashboards have a kind of beauty at that hour, and nobody schedules meetings. Highly recommend. (Do not recommend voluntarily.)",
+      timestamp: "2026-11-09T03:15:00Z",
+      classification: "flavor",
     },
     {
       id: "china-r2-slack-random-1",
