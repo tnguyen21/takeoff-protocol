@@ -266,6 +266,7 @@ export interface GameRoom {
   messages: GameMessage[]; // all messages for replay on reconnect
   playerActivity?: Record<string, string[]>; // playerId → list of AppId strings opened this round
   timerOverrides?: Partial<Record<GamePhase, number>>; // GM-set durations in seconds, per phase
+  generationEnabled?: boolean; // GM toggle: true=AI generation on, false=off, undefined=use env config
   firedThresholds?: Set<string>; // IDs of threshold events that have already fired (once-only)
   uiDegradationActive?: boolean;  // flagged by aiAutonomyLevel+alignmentConfidence threshold
   storyBible?: StoryBible; // initialized when generation starts; undefined until then

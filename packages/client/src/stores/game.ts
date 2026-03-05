@@ -89,6 +89,7 @@ interface GameStore {
   gmExtendUsesRemaining: number; // 2 initially, decrements on extend (GM only)
   gmPlayerActivity: Record<string, string[]>; // playerId → opened app IDs (GM only)
   gmTimerOverrides: Partial<Record<GamePhase, number>>; // GM-set phase durations in seconds
+  gmGenerationEnabled: boolean | null; // null = not configured (use env default)
 
   // Ending
   endingArcs: EndingArc[];
@@ -119,6 +120,7 @@ interface GameStore {
   gmSetState: (variable: keyof StateVariables, value: number) => void;
   gmJump: (round: number, phase: string) => void;
   gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
+  gmSetGeneration: (enabled: boolean) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -148,6 +150,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gmExtendUsesRemaining: 2,
   gmPlayerActivity: {},
   gmTimerOverrides: {},
+  gmGenerationEnabled: null,
   endingArcs: [],
   endingHistory: [],
   endingFinalState: null,
@@ -298,6 +301,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gmSetTimers: (overrides) => {
     socket.emit("gm:set-timers", overrides);
+  },
+
+  gmSetGeneration: (enabled) => {
+    socket.emit("gm:set-generation", { enabled });
   },
 }));
 
@@ -522,6 +529,10 @@ socket.on("gm:activity", (data: { playerId: string; opened: string[] }) => {
 
 socket.on("gm:timers-updated", (data: { timerOverrides: Partial<Record<GamePhase, number>> }) => {
   useGameStore.setState({ gmTimerOverrides: data.timerOverrides });
+});
+
+socket.on("gm:generation-updated", (data: { enabled: boolean }) => {
+  useGameStore.setState({ gmGenerationEnabled: data.enabled });
 });
 
 // ── Selectors ──

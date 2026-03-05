@@ -241,6 +241,19 @@ export function registerGameEvents(io: Server, socket: Socket) {
     getLoggerForRoom(code).log("state.gm_override", { variable, oldValue: oldVal, newValue: room.state[key] }, { actorId: "gm", round: room.round, phase: room.phase });
   });
 
+  socket.on("gm:set-generation", ({ enabled }: { enabled: boolean }, callback?: (res: { ok: boolean; error?: string }) => void) => {
+    const code = socket.data.roomCode;
+    if (!code) { callback?.({ ok: false, error: "Not in a room" }); return; }
+    const room = getRoom(code);
+    if (!room || room.gmId !== socket.id) { callback?.({ ok: false, error: "Only GM can toggle generation" }); return; }
+    if (room.phase !== "lobby") { callback?.({ ok: false, error: "Can only toggle generation in lobby" }); return; }
+
+    room.generationEnabled = enabled;
+    socket.emit("gm:generation-updated", { enabled: room.generationEnabled });
+    console.log(`[gm:set-generation] ${enabled ? "enabled" : "disabled"} for room ${code}`);
+    callback?.({ ok: true });
+  });
+
   socket.on("gm:set-timers", (overrides: Partial<Record<GamePhase, number>>) => {
     const code = socket.data.roomCode;
     if (!code) return;

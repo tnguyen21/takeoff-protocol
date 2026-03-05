@@ -1,4 +1,4 @@
-import type { Faction, GameRoom } from "@takeoff/shared";
+import type { AppId, Faction, GameRoom } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
   logFallback,
@@ -8,7 +8,7 @@ import {
   logValidationFailure,
 } from "./metrics.js";
 import { generateBriefingWithRetry } from "./briefing.js";
-import { generateContentWithRetry } from "./content.js";
+import { APP_TYPE_MAP, generateContentWithRetry } from "./content.js";
 import { generateNpcMessagesWithRetry } from "./npc.js";
 import { buildGenerationContext } from "./context.js";
 import {
@@ -49,11 +49,18 @@ export async function triggerGeneration(
     return;
   }
 
-  // ── Kill switch ───────────────────────────────────────────────────────────
+  // ── Kill switch (room toggle takes precedence over env) ──────────────────
   const config = getGenerationConfig();
-  if (!config.enabled) {
-    return;
-  }
+  const roomEnabled = room.generationEnabled;
+  if (roomEnabled === false) return;               // GM explicitly disabled
+  if (roomEnabled === undefined && !config.enabled) return; // no GM preference, check env
+
+  // When room toggle is on, enable everything; otherwise use env config
+  const briefingsEnabled = roomEnabled === true ? true : config.briefingsEnabled;
+  const contentApps: AppId[] = roomEnabled === true
+    ? (Object.keys(APP_TYPE_MAP) as AppId[])
+    : config.contentApps;
+  const npcEnabled = roomEnabled === true ? true : config.npcEnabled;
 
   // ── Idempotency check ─────────────────────────────────────────────────────
   const existingStatus = getGenerationStatus(room, round);
@@ -75,7 +82,7 @@ export async function triggerGeneration(
     let npcOk = true;
 
     // ── Briefing generation ─────────────────────────────────────────────────
-    if (config.briefingsEnabled) {
+    if (briefingsEnabled) {
       const briefingArtifact = "briefing";
       const startTs = Date.now();
       logGenerationStart(round, briefingArtifact);
@@ -103,7 +110,7 @@ export async function triggerGeneration(
     }
 
     // ── Content generation ──────────────────────────────────────────────────
-    if (config.contentApps.length > 0) {
+    if (contentApps.length > 0) {
       for (const faction of ALL_FACTIONS) {
         const contentArtifact = `content:${faction}`;
         const startTs = Date.now();
@@ -113,7 +120,7 @@ export async function triggerGeneration(
           resolvedProvider,
           context,
           faction,
-          config.contentApps,
+          contentApps,
         );
 
         const durationMs = Date.now() - startTs;
@@ -130,7 +137,7 @@ export async function triggerGeneration(
     }
 
     // ── NPC generation ───────────────────────────────────────────────────────
-    if (config.npcEnabled) {
+    if (npcEnabled) {
       const npcArtifact = "npc";
       const startTs = Date.now();
       logGenerationStart(round, npcArtifact);
