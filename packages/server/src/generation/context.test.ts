@@ -17,6 +17,7 @@ import {
   initializeStoryBible,
   updateStoryBible,
   summarizeOlderRounds,
+  extractPlayerSlackMessages,
 } from "./context.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -86,6 +87,21 @@ function dmMessage(from: string, to: string): GameMessage {
     content: "SECRET PLAN: let's leak the memo",
     timestamp: 1000,
     isTeamChat: false,
+  };
+}
+
+function teamChatMessage(overrides: Partial<GameMessage> = {}): GameMessage {
+  return {
+    id: "tc-1",
+    from: "player-1",
+    fromName: "Alice",
+    to: null,
+    faction: "openbrain",
+    content: "Let's check the safety eval results",
+    timestamp: 2000,
+    isTeamChat: true,
+    channel: "#research",
+    ...overrides,
   };
 }
 
@@ -566,5 +582,90 @@ describe("failure modes", () => {
     const ctx = buildGenerationContext(room, 2);
     expect(ctx.storyBible).toBeDefined();
     expect(ctx.storyBible!.factions).toHaveLength(4);
+  });
+});
+
+// ── extractPlayerSlackMessages ────────────────────────────────────────────────
+
+describe("extractPlayerSlackMessages", () => {
+  it("returns empty object when messages array is empty", () => {
+    const result = extractPlayerSlackMessages([]);
+    expect(result).toEqual({});
+  });
+
+  it("excludes DM messages (isTeamChat === false)", () => {
+    const result = extractPlayerSlackMessages([dmMessage("p1", "p2")]);
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+
+  it("excludes NPC team chat messages (isNpc === true)", () => {
+    const npcMsg = teamChatMessage({ isNpc: true });
+    const result = extractPlayerSlackMessages([npcMsg]);
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+
+  it("includes player team chat messages grouped by faction and channel", () => {
+    const msg = teamChatMessage({ faction: "openbrain", channel: "#research" });
+    const result = extractPlayerSlackMessages([msg]);
+    expect(result.openbrain).toBeDefined();
+    expect(result.openbrain!["#research"]).toHaveLength(1);
+    expect(result.openbrain!["#research"]![0]!.from).toBe("Alice");
+    expect(result.openbrain!["#research"]![0]!.content).toBe("Let's check the safety eval results");
+  });
+
+  it("defaults channel to '#general' when channel is missing", () => {
+    const msg = teamChatMessage({ channel: undefined });
+    const result = extractPlayerSlackMessages([msg]);
+    expect(result.openbrain!["#general"]).toHaveLength(1);
+  });
+
+  it("groups messages from different channels separately", () => {
+    const msgs = [
+      teamChatMessage({ id: "tc-1", channel: "#research", content: "research msg" }),
+      teamChatMessage({ id: "tc-2", channel: "#general", content: "general msg" }),
+    ];
+    const result = extractPlayerSlackMessages(msgs);
+    expect(result.openbrain!["#research"]).toHaveLength(1);
+    expect(result.openbrain!["#general"]).toHaveLength(1);
+  });
+
+  it("groups messages from different factions separately", () => {
+    const msgs = [
+      teamChatMessage({ id: "tc-1", faction: "openbrain", channel: "#general" }),
+      teamChatMessage({ id: "tc-2", faction: "prometheus", channel: "#general" }),
+    ];
+    const result = extractPlayerSlackMessages(msgs);
+    expect(result.openbrain!["#general"]).toHaveLength(1);
+    expect(result.prometheus!["#general"]).toHaveLength(1);
+  });
+
+  it("caps messages per channel at 20 (keeps the last 20)", () => {
+    const msgs: GameMessage[] = [];
+    for (let i = 0; i < 25; i++) {
+      msgs.push(teamChatMessage({ id: `tc-${i}`, content: `message ${i}`, channel: "#general" }));
+    }
+    const result = extractPlayerSlackMessages(msgs);
+    const channelMsgs = result.openbrain!["#general"]!;
+    expect(channelMsgs).toHaveLength(20);
+    // Should keep the last 20 (messages 5-24)
+    expect(channelMsgs[0]!.content).toBe("message 5");
+    expect(channelMsgs[19]!.content).toBe("message 24");
+  });
+
+  it("buildGenerationContext includes playerSlackMessages in returned context", () => {
+    const room = makeRoom({
+      messages: [teamChatMessage({ faction: "openbrain", channel: "#research" })],
+    });
+    const ctx = buildGenerationContext(room, 2);
+    expect(ctx.playerSlackMessages).toBeDefined();
+    expect(ctx.playerSlackMessages.openbrain!["#research"]).toHaveLength(1);
+  });
+
+  it("buildGenerationContext returns empty playerSlackMessages when room has no team chat", () => {
+    const room = makeRoom({
+      messages: [dmMessage("p1", "p2")],
+    });
+    const ctx = buildGenerationContext(room, 2);
+    expect(ctx.playerSlackMessages).toEqual({});
   });
 });

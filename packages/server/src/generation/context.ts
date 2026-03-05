@@ -1,5 +1,6 @@
 import type {
   Faction,
+  GameMessage,
   GameRoom,
   Publication,
   Role,
@@ -19,6 +20,13 @@ import { ROUND5_DECISIONS } from "../content/decisions/round5.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+/** A single player chat message extracted for generation context. */
+export interface PlayerSlackMessage {
+  from: string;    // display name of the sender
+  content: string;
+  channel: string; // normalised channel name, e.g. '#general'
+}
+
 /**
  * All context the generation functions need to produce reactive content.
  * Built from GameRoom state by buildGenerationContext() before each generation call.
@@ -32,6 +40,12 @@ export interface GenerationContext {
   publications: Publication[];
   targetRound: number;
   roundArc: RoundArc;
+  /**
+   * Recent player Slack messages from team chat, grouped by faction then channel.
+   * Used to give NPCs awareness of what players discussed last round.
+   * Each channel keeps the last ~20 messages (oldest-first within the channel).
+   */
+  playerSlackMessages: Partial<Record<Faction, Record<string, PlayerSlackMessage[]>>>;
 }
 
 // ── Round decisions indexed by round number (1-based) ────────────────────────
@@ -114,6 +128,8 @@ function computeTone(state: StateVariables, round: number): string {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+const PLAYER_SLACK_MESSAGES_PER_CHANNEL = 20;
+
 /**
  * Build the shared context object passed to every generation call.
  * Strips private data (player DMs, socket IDs) from the room.
@@ -130,6 +146,10 @@ export function buildGenerationContext(room: GameRoom, targetRound: number): Gen
       name: p.name,
     }));
 
+  // Extract player team chat messages, grouped by faction → channel.
+  // Only include non-NPC team chat messages (isTeamChat === true, isNpc !== true).
+  const playerSlackMessages = extractPlayerSlackMessages(room.messages ?? []);
+
   return {
     storyBible,
     currentState: room.state,
@@ -139,7 +159,45 @@ export function buildGenerationContext(room: GameRoom, targetRound: number): Gen
     publications: room.publications ?? [],
     targetRound,
     roundArc: ROUND_ARCS[targetRound],
+    playerSlackMessages,
   };
+}
+
+/**
+ * Extract player team-chat messages from a GameMessage array.
+ * Groups by faction → channel, capping at PLAYER_SLACK_MESSAGES_PER_CHANNEL per channel.
+ * DMs (isTeamChat === false) and NPC messages are excluded.
+ */
+export function extractPlayerSlackMessages(
+  messages: GameMessage[],
+): Partial<Record<Faction, Record<string, PlayerSlackMessage[]>>> {
+  const result: Partial<Record<Faction, Record<string, PlayerSlackMessage[]>>> = {};
+
+  for (const msg of messages) {
+    if (!msg.isTeamChat) continue;
+    if (msg.isNpc) continue;
+
+    const faction = msg.faction;
+    const channel = msg.channel ?? "#general";
+
+    if (!result[faction]) result[faction] = {};
+    const byChannel = result[faction]!;
+    if (!byChannel[channel]) byChannel[channel] = [];
+    byChannel[channel]!.push({ from: msg.fromName, content: msg.content, channel });
+  }
+
+  // Keep only the last N messages per channel (cap the window)
+  for (const factionData of Object.values(result)) {
+    if (!factionData) continue;
+    for (const channel of Object.keys(factionData)) {
+      const msgs = factionData[channel]!;
+      if (msgs.length > PLAYER_SLACK_MESSAGES_PER_CHANNEL) {
+        factionData[channel] = msgs.slice(msgs.length - PLAYER_SLACK_MESSAGES_PER_CHANNEL);
+      }
+    }
+  }
+
+  return result;
 }
 
 /**

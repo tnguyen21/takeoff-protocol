@@ -310,6 +310,7 @@ function makeContext() {
       escalation: "Test Escalation",
       keyTensions: ["Tension 1"],
     },
+    playerSlackMessages: {},
   };
 }
 

@@ -75,6 +75,7 @@ function makeContext(overrides: Partial<GenerationContext> = {}): GenerationCont
     publications: [],
     history: [],
     roundArc: ROUND_ARCS[2]!,
+    playerSlackMessages: {},
     ...overrides,
   };
 }

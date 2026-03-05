@@ -1,8 +1,22 @@
 import type { AppContent, AppId, ContentItem, ContentItemType, Faction } from "@takeoff/shared";
-import type { GenerationContext } from "./context.js";
+import type { GenerationContext, PlayerSlackMessage } from "./context.js";
 import type { GenerationProvider } from "./provider.js";
 import { APP_VOICES, CONTENT_SYSTEM_PROMPT, FACTION_VOICES } from "./prompts/index.js";
 import { contentBudget, validateContent } from "./validate.js";
+
+// ── Valid Slack channels ───────────────────────────────────────────────────────
+
+export const VALID_SLACK_CHANNELS = [
+  "#general",
+  "#research",
+  "#alignment",
+  "#safety",
+  "#announcements",
+  "#ops",
+  "#random",
+] as const;
+
+export type ValidSlackChannel = (typeof VALID_SLACK_CHANNELS)[number];
 
 // ── App → ContentItemType mapping ─────────────────────────────────────────────
 
@@ -75,6 +89,17 @@ function buildContentSchema(type: ContentItemType): object {
 
 // ── Prompt Builder ────────────────────────────────────────────────────────────
 
+/** Format player Slack messages for injection into the generation prompt. */
+function formatPlayerSlackContext(messages: Record<string, PlayerSlackMessage[]>): string {
+  const channelSections: string[] = [];
+  for (const [channel, msgs] of Object.entries(messages)) {
+    if (msgs.length === 0) continue;
+    const lines = msgs.map((m) => `  ${m.from}: ${m.content}`).join("\n");
+    channelSections.push(`${channel}:\n${lines}`);
+  }
+  return channelSections.join("\n\n");
+}
+
 function buildUserPrompt(
   context: GenerationContext,
   faction: Faction,
@@ -83,7 +108,7 @@ function buildUserPrompt(
   retryFeedback?: string,
   appCount?: number,
 ): string {
-  const { storyBible, roundArc, currentState, history, firedThresholds, publications, targetRound } = context;
+  const { storyBible, roundArc, currentState, history, firedThresholds, publications, targetRound, playerSlackMessages } = context;
   const parts: string[] = [];
 
   // Layer 2: Story Bible
@@ -140,6 +165,27 @@ Individual decisions: ${JSON.stringify(last.decisions, null, 2)}`,
     `## TARGET FACTION: ${faction.toUpperCase()}
 Voice guide: ${FACTION_VOICES[faction]}`,
   );
+
+  // Player Slack discussion context (only for the slack app)
+  if (app === "slack") {
+    const factionMessages = playerSlackMessages[faction];
+    if (factionMessages && Object.keys(factionMessages).length > 0) {
+      const formatted = formatPlayerSlackContext(factionMessages);
+      parts.push(
+        `## PLAYER SLACK DISCUSSION (previous round)
+The following are recent messages players sent in their Slack channels last round.
+Use these as thematic inspiration — have NPCs react to the *topics and concerns* raised,
+NOT quote players directly. If no messages exist for a channel, generate standalone content.
+
+${formatted}`,
+      );
+    } else {
+      parts.push(
+        `## PLAYER SLACK DISCUSSION (previous round)
+No player messages in Slack last round. Generate standalone contextual messages as usual.`,
+      );
+    }
+  }
 
   // Per-app structural hints
   const APP_STRUCTURAL_HINTS: Partial<Record<AppId, string>> = {
@@ -220,6 +266,25 @@ function forceType(items: ContentItem[], type: ContentItemType): ContentItem[] {
   return items.map((item) => ({ ...item, type }));
 }
 
+/**
+ * Validate and normalise the `channel` field on slack (message) items.
+ * - If channel is missing or not a known VALID_SLACK_CHANNELS entry, default to '#general'.
+ * - Case-insensitive match: '#Research' → '#research'.
+ */
+export function forceSlackChannel(items: ContentItem[]): ContentItem[] {
+  const validSet = new Set<string>(VALID_SLACK_CHANNELS);
+  return items.map((item) => {
+    const raw = item.channel;
+    if (!raw) return { ...item, channel: "#general" };
+    if (validSet.has(raw)) return item;
+    // Case-insensitive fallback
+    const lower = raw.toLowerCase();
+    const match = VALID_SLACK_CHANNELS.find((c) => c === lower);
+    if (match) return { ...item, channel: match };
+    return { ...item, channel: "#general" };
+  });
+}
+
 // ── Core Generator ────────────────────────────────────────────────────────────
 
 /**
@@ -265,6 +330,9 @@ export async function generateContent(
     items = ensureGenPrefix(items);
     items = forceRound(items, context.targetRound);
     items = forceType(items, type);
+    if (app === "slack") {
+      items = forceSlackChannel(items);
+    }
 
     results.push({ faction, app, items });
   }

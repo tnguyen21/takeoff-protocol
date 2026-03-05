@@ -4,7 +4,7 @@ import type { GenerationContext } from "./context.js";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { MockProvider, GenerationParseError } from "./provider.js";
 import { validateContent, validateFogSafety, contentBudget } from "./validate.js";
-import { generateContent, generateContentWithRetry } from "./content.js";
+import { generateContent, generateContentWithRetry, forceSlackChannel, VALID_SLACK_CHANNELS } from "./content.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 
 // ── Shared test fixtures ──────────────────────────────────────────────────────
@@ -55,6 +55,7 @@ const BASE_CONTEXT: GenerationContext = {
   publications: [],
   targetRound: 3,
   roundArc: ROUND_ARCS[3]!,
+  playerSlackMessages: {},
 };
 
 /** Build a valid ContentItem. */
@@ -786,5 +787,209 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     // 20 items: 4 crit, 10 context, 2 rh, 4 bc — valid for 2 apps
     const result = validateContent(items, "openbrain", 3, 2);
     expect(result.valid).toBe(true);
+  });
+});
+
+// ── INV-1 (slack): forceSlackChannel validates and normalises channel fields ───
+
+describe("INV-1 (slack): forceSlackChannel normalises channel fields", () => {
+  it("defaults to '#general' when channel is missing", () => {
+    const items: ContentItem[] = [
+      makeItem({ id: "gen-s1", type: "message", classification: "context" }),
+    ];
+    const result = forceSlackChannel(items);
+    expect(result[0]!.channel).toBe("#general");
+  });
+
+  it("preserves a valid channel when already present", () => {
+    const items: ContentItem[] = [
+      { ...makeItem({ id: "gen-s2", type: "message", classification: "context" }), channel: "#research" },
+    ];
+    const result = forceSlackChannel(items);
+    expect(result[0]!.channel).toBe("#research");
+  });
+
+  it("replaces an invalid channel with '#general'", () => {
+    const items: ContentItem[] = [
+      { ...makeItem({ id: "gen-s3", type: "message", classification: "context" }), channel: "#bogus-channel" },
+    ];
+    const result = forceSlackChannel(items);
+    expect(result[0]!.channel).toBe("#general");
+  });
+
+  it("handles case-insensitive channel matching", () => {
+    const items: ContentItem[] = [
+      { ...makeItem({ id: "gen-s4", type: "message", classification: "context" }), channel: "#RESEARCH" },
+    ];
+    const result = forceSlackChannel(items);
+    expect(result[0]!.channel).toBe("#research");
+  });
+
+  it("all returned channels are members of VALID_SLACK_CHANNELS", () => {
+    const mixedItems: ContentItem[] = [
+      { ...makeItem({ id: "gen-s5", type: "message", classification: "context" }), channel: "#safety" },
+      { ...makeItem({ id: "gen-s6", type: "message", classification: "context" }), channel: "#bad" },
+      makeItem({ id: "gen-s7", type: "message", classification: "context" }),
+    ];
+    const result = forceSlackChannel(mixedItems);
+    const validSet = new Set<string>(VALID_SLACK_CHANNELS);
+    for (const item of result) {
+      expect(validSet.has(item.channel!)).toBe(true);
+    }
+  });
+});
+
+// ── INV-1 (slack): generateContent applies forceSlackChannel to slack items ───
+
+describe("INV-1 (slack): generateContent enforces valid channels on slack items", () => {
+  it("replaces invalid channel with '#general' during post-processing", async () => {
+    const rawItems: ContentItem[] = [
+      { ...makeItem({ id: "gen-slack-bad-ch", type: "message", classification: "context" }), channel: "#notachannel" },
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["slack"]);
+    expect(result[0]!.items[0]!.channel).toBe("#general");
+  });
+
+  it("preserves a valid channel through post-processing", async () => {
+    const rawItems: ContentItem[] = [
+      { ...makeItem({ id: "gen-slack-good-ch", type: "message", classification: "context" }), channel: "#alignment" },
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["slack"]);
+    expect(result[0]!.items[0]!.channel).toBe("#alignment");
+  });
+
+  it("does NOT apply forceSlackChannel to non-slack apps", async () => {
+    // signal app also uses type 'message' but should not have channel forced
+    const rawItems: ContentItem[] = [
+      makeItem({ id: "gen-signal-1", type: "message", classification: "context" }),
+      // no channel field — should remain undefined for signal
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["signal"]);
+    // signal items should not have channel injected
+    expect(result[0]!.items[0]!.channel).toBeUndefined();
+  });
+});
+
+// ── INV-2 (slack): generation succeeds with no player messages ────────────────
+
+describe("INV-2 (slack): generation succeeds when no player messages exist", () => {
+  it("generateContent succeeds with empty playerSlackMessages", async () => {
+    const rawItems: ContentItem[] = [
+      { ...makeItem({ id: "gen-slack-empty", type: "message", classification: "context" }), channel: "#general" },
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const contextNoMessages: GenerationContext = { ...BASE_CONTEXT, playerSlackMessages: {} };
+    const result = await generateContent(provider, contextNoMessages, "openbrain", ["slack"]);
+    expect(result[0]!.items.length).toBeGreaterThan(0);
+  });
+
+  it("generateContent succeeds when faction has no messages in playerSlackMessages", async () => {
+    const rawItems: ContentItem[] = [
+      { ...makeItem({ id: "gen-slack-no-faction", type: "message", classification: "context" }), channel: "#research" },
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    // Other factions have messages, but openbrain does not
+    const contextOtherFaction: GenerationContext = {
+      ...BASE_CONTEXT,
+      playerSlackMessages: {
+        prometheus: { "#general": [{ from: "Bob", content: "hello", channel: "#general" }] },
+      },
+    };
+    const result = await generateContent(provider, contextOtherFaction, "openbrain", ["slack"]);
+    expect(result[0]!.items.length).toBeGreaterThan(0);
+  });
+});
+
+// ── INV-3 (slack): player messages appear in the generation prompt ────────────
+
+describe("INV-3 (slack): player messages are included in the slack generation prompt", () => {
+  it("prompt includes channel name and content when player messages exist", async () => {
+    let capturedPrompt = "";
+    const capturingProvider: GenerationProvider = {
+      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions }): Promise<T> {
+        capturedPrompt = params.userPrompt;
+        return { items: [{ ...makeItem({ id: "gen-slack-captured", type: "message", classification: "context" }), channel: "#research" }] } as T;
+      },
+    };
+
+    const contextWithMessages: GenerationContext = {
+      ...BASE_CONTEXT,
+      playerSlackMessages: {
+        openbrain: {
+          "#research": [{ from: "Alice", content: "We should prioritize safety eval", channel: "#research" }],
+        },
+      },
+    };
+
+    await generateContent(capturingProvider, contextWithMessages, "openbrain", ["slack"]);
+
+    expect(capturedPrompt).toContain("#research");
+    expect(capturedPrompt).toContain("safety eval");
+    expect(capturedPrompt).toContain("Alice");
+  });
+
+  it("prompt contains fallback text when no player messages exist", async () => {
+    let capturedPrompt = "";
+    const capturingProvider: GenerationProvider = {
+      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions }): Promise<T> {
+        capturedPrompt = params.userPrompt;
+        return { items: [] } as T;
+      },
+    };
+
+    await generateContent(capturingProvider, BASE_CONTEXT, "openbrain", ["slack"]);
+
+    expect(capturedPrompt).toContain("No player messages");
+  });
+
+  it("prompt does NOT include player message section when generating for non-slack app", async () => {
+    let capturedPrompt = "";
+    const capturingProvider: GenerationProvider = {
+      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions }): Promise<T> {
+        capturedPrompt = params.userPrompt;
+        return { items: [] } as T;
+      },
+    };
+
+    const contextWithMessages: GenerationContext = {
+      ...BASE_CONTEXT,
+      playerSlackMessages: {
+        openbrain: {
+          "#research": [{ from: "Alice", content: "SECRET", channel: "#research" }],
+        },
+      },
+    };
+
+    await generateContent(capturingProvider, contextWithMessages, "openbrain", ["news"]);
+
+    expect(capturedPrompt).not.toContain("PLAYER SLACK DISCUSSION");
+  });
+});
+
+// ── INV-4 (slack): generated items pass existing validation ───────────────────
+
+describe("INV-4 (slack): slack items pass post-processing invariants (id, round, type, channel)", () => {
+  it("slack item with wrong id/round/type/channel is fully corrected", async () => {
+    const rawItems: ContentItem[] = [
+      {
+        id: "no-gen-prefix",
+        type: "headline" as const,  // wrong type
+        round: 99,                   // wrong round
+        body: "message body",
+        timestamp: "2027-01-01T00:00:00Z",
+        classification: "context",
+        channel: "#notvalid",        // wrong channel
+      },
+    ];
+    const provider = new MockProvider({ items: rawItems });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["slack"]);
+    const item = result[0]!.items[0]!;
+    expect(item.id.startsWith("gen-")).toBe(true);
+    expect(item.round).toBe(BASE_CONTEXT.targetRound);
+    expect(item.type).toBe("message");
+    expect(item.channel).toBe("#general");
   });
 });
