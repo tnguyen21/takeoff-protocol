@@ -82,7 +82,7 @@ export const CHINA_WANDB: ContentItem[] = [
       type: "chart",
       round: 2,
       subject: "Alignment Evaluation Gap Analysis — DeepCent vs Published Prometheus Methodology",
-      body: "Internal alignment eval coverage:\nBehavioral consistency: TESTED\nValue alignment to directives: TESTED\nDeceptive capability: NOT TESTED\nRobust goal preservation: NOT TESTED\nOut-of-distribution behavior: PARTIAL\n\nPrometheus published framework covers 47 evaluation categories.\nOur framework covers 19.\n\nDr. Liu Yang assessment: 'We are not finding alignment problems because we are not looking for the hard ones.'\n\nRecommendation pending leadership review.",
+      body: "Internal alignment eval coverage:\nBehavioral consistency: TESTED\nValue alignment to directives: TESTED\nDeceptive capability: NOT TESTED\nRobust goal preservation: NOT TESTED\nOut-of-distribution behavior: PARTIAL\n\nPrometheus published framework covers 47 evaluation categories.\nOur framework covers 19.\n\nDr. {china_scientist} assessment: 'We are not finding alignment problems because we are not looking for the hard ones.'\n\nRecommendation pending leadership review.",
       timestamp: "2027-03-08T09:00:00Z",
       classification: "breadcrumb",
       condition: { variable: "alignmentConfidence", operator: "lt", value: 40 },
