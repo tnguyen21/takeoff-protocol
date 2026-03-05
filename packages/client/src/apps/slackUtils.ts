@@ -6,7 +6,7 @@
 
 import type { ContentItem, GameMessage } from "@takeoff/shared";
 
-export const SLACK_CHANNELS = ["#general", "#research", "#alignment", "#safety", "#announcements", "#ops", "#random"] as const;
+export const SLACK_CHANNELS = ["#general", "#research", "#alignment", "#announcements", "#ops", "#random"] as const;
 export type SlackChannel = (typeof SLACK_CHANNELS)[number];
 
 /**

@@ -88,7 +88,7 @@ describe("getChannelMessages (INV-1)", () => {
   });
 
   it("INV-1: returns empty array for channel with no messages", () => {
-    const result = getChannelMessages(items, "#safety");
+    const result = getChannelMessages(items, "#ops");
     expect(result).toHaveLength(0);
   });
 
@@ -135,7 +135,7 @@ describe("computeUnreadCounts (INV-2)", () => {
 
   it("INV-2: channels with no messages always have 0 unread", () => {
     const counts = computeUnreadCounts(items, new Set(), "#general");
-    expect(counts["#safety"]).toBe(0);
+    expect(counts["#alignment"]).toBe(0);
     expect(counts["#ops"]).toBe(0);
     expect(counts["#random"]).toBe(0);
   });
@@ -162,11 +162,11 @@ describe("computeUnreadCounts with teamMessages", () => {
     const teamMessages = [
       makeTeamMessage("t1", "#research"),
       makeTeamMessage("t2", "#research"),
-      makeTeamMessage("t3", "#safety"),
+      makeTeamMessage("t3", "#alignment"),
     ];
     const counts = computeUnreadCounts([], new Set(), "#general", teamMessages);
     expect(counts["#research"]).toBe(2);
-    expect(counts["#safety"]).toBe(1);
+    expect(counts["#alignment"]).toBe(1);
     expect(counts["#general"]).toBe(0); // active channel
   });
 
