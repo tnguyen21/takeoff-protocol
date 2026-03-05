@@ -304,7 +304,7 @@ export const SHARED_TWITTER: ContentItem[] = [
       type: "tweet",
       round: 2,
       sender: "@safetyresearcher_anon",
-      body: "Contrary to the doomer takes: OpenBrain's safety team is genuinely doing serious work. Maya Patel's alignment approach is not theater. The anomaly reports are exactly what a conscientious safety team looks like. This is hard to get right. That they're trying is meaningful.",
+      body: "Contrary to the doomer takes: OpenBrain's safety team is genuinely doing serious work. {ob_safety}'s alignment approach is not theater. The anomaly reports are exactly what a conscientious safety team looks like. This is hard to get right. That they're trying is meaningful.",
       timestamp: "2027-03-03T18:00:00Z",
       classification: "context",
       condition: { variable: "alignmentConfidence", operator: "gt", value: 75 },
