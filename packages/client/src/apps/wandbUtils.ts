@@ -392,6 +392,8 @@ function getChinaRuns(round: number, sv: StateView | null): RunEntry[] {
     { name: "deepcent-7-final", status: "finished", loss: "0.044", step: "20,000", duration: "5h 08m", created: "1d ago", user: "wei", tags: ["deepcent", "v7"], color: "#f97316" },
     { name: "deepcent-7-pretrain", status: "finished", loss: "0.058", step: "20,000", duration: "5h 19m", created: "2d ago", user: "wei", tags: ["deepcent", "v7"], color: "#f97316" },
   ];
+}
+
 // ── Artifacts ─────────────────────────────────────────────────────────────────
 
 export type ArtifactSecurityStatus = "SECURED" | "STANDARD" | "VULNERABLE";

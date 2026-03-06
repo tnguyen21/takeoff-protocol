@@ -306,6 +306,8 @@ describe("getRuns", () => {
     const sprintRun = runs.find((r) => r.name === "safety-sprint-v1");
     expect(sprintRun).toBeDefined();
     expect(sprintRun!.status).toBe("running");
+  });
+});
 // ── Helper for artifact tests ────────────────────────────────────────────────
 
 function makeViewWithValues(overrides: Partial<{ securityLevelOB: number; securityLevelProm: number; chinaWeightTheftProgress: number }>): StateView {
