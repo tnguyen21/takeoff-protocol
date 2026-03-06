@@ -2,13 +2,12 @@ import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { isLeaderRole } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
-import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer } from "./game.js";
+import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getRoundDecisions } from "./content/decisions/rounds.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { getLoggerForRoom } from "./logger/registry.js";
 
-// Track timer extend uses per phase: `${code}:${round}:${phase}` → count (max 2)
-const extendUses = new Map<string, number>();
+import { extendUses, cleanupRoom } from "./extendUses.js";
 
 const GM_STATE_BOUNDS: Readonly<Record<keyof StateVariables, [number, number]>> = {
   obCapability: [0, 100],
@@ -854,6 +853,14 @@ export function registerGameEvents(io: Server, socket: Socket) {
       player.connected = false;
       io.to(code).emit("room:state", getLobbyState(room));
       getLoggerForRoom(code).log("player.disconnected", { playerName: player.name, faction: player.faction, role: player.role }, { actorId: player.name, round: room.round, phase: room.phase });
+    }
+
+    // If all players are now disconnected, clear the phase timer and extend uses
+    // to prevent the auto-advance timer from firing on an abandoned room.
+    const allDisconnected = Object.values(room.players).every((p) => !p.connected);
+    if (allDisconnected) {
+      clearPhaseTimer(room);
+      cleanupRoom(code);
     }
   });
 }
