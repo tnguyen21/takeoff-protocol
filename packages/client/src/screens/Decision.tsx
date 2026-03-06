@@ -109,11 +109,13 @@ export function Decision() {
     if (phase !== "decision") return;
 
     const tick = () => {
-      const now = Date.now();
-      const endsAt = timer.pausedAt ? timer.endsAt - (now - timer.pausedAt) : timer.endsAt;
-      const remaining = Math.max(0, endsAt - now);
+      if (timer.pausedAt) {
+        const remaining = Math.max(0, timer.endsAt - timer.pausedAt);
+        setTimeRemaining(remaining);
+        return;
+      }
+      const remaining = Math.max(0, timer.endsAt - Date.now());
       setTimeRemaining(remaining);
-
       if (remaining === 0 && !timedOut) {
         setTimedOut(true);
       }
