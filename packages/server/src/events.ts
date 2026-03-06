@@ -1,5 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
+import { isLeaderRole } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer } from "./game.js";
 import { getRoundDecisions } from "./content/decisions/rounds.js";
@@ -753,7 +754,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
               name: "Dev",
               faction,
               role,
-              isLeader: ["ob_ceo", "prom_ceo", "china_director"].includes(role),
+              isLeader: isLeaderRole(role),
               connected: true,
             };
             existing.players[socket.id] = player;
@@ -779,7 +780,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
           name: "Dev",
           faction,
           role,
-          isLeader: ["ob_ceo", "prom_ceo", "china_director"].includes(role),
+          isLeader: isLeaderRole(role),
           connected: true,
         };
         room.players[socket.id] = player;

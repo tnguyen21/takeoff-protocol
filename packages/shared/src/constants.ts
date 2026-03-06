@@ -76,6 +76,14 @@ export const FACTIONS: FactionConfig[] = [
   },
 ];
 
+// ── Leader Roles ──
+
+export const LEADER_ROLES: readonly Role[] = FACTIONS.flatMap(f => f.roles).filter(r => r.isLeader).map(r => r.id);
+
+export function isLeaderRole(role: Role): boolean {
+  return LEADER_ROLES.includes(role);
+}
+
 // ── Phase Durations (seconds) ──
 
 export const PHASE_DURATIONS: Record<string, number> = {

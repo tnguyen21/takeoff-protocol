@@ -1,4 +1,4 @@
-import { INITIAL_STATE } from "@takeoff/shared";
+import { INITIAL_STATE, isLeaderRole } from "@takeoff/shared";
 import type { Faction, GameMessage, GamePhase, GameRoom, Player, Role, StateVariables } from "@takeoff/shared";
 import { createLoggerForRoom } from "./logger/registry.js";
 
@@ -89,7 +89,7 @@ export function selectRole(
 
   // Determine if this role is a leader
   // Leaders: ob_ceo, prom_ceo, china_director (external has no single leader)
-  player.isLeader = ["ob_ceo", "prom_ceo", "china_director"].includes(role);
+  player.isLeader = isLeaderRole(role);
 
   return true;
 }
