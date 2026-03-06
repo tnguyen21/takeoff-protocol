@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useGameStore } from "../stores/game.js";
-import { buildCapData, getRunStatusColor, getRuns } from "./wandbUtils.js";
+import { buildCapData, buildSystemData, getRunStatusColor, getRuns } from "./wandbUtils.js";
 
 // ── Static chart data ────────────────────────────────────────────────────────
 
@@ -178,6 +178,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const capData = buildCapData(stateHistory, round, stateView);
   const runs = getRuns(round, selectedFaction, stateView);
   const activeRunCount = runs.filter((r) => r.status === "running").length;
+  const systemData = buildSystemData(stateView, selectedFaction, round);
 
   const reports = [...content.filter((i) => i.type === "chart")].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -326,6 +327,88 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
             </>
           )}
 
+          {/* ── System tab ─────────────────────────────────────────── */}
+          {activeTab === "system" && (
+            <div className="space-y-3">
+              {/* Cluster status banner */}
+              {systemData ? (
+                <div className={`flex items-center justify-between px-4 py-2 rounded border text-xs font-medium ${
+                  systemData.clusterStatus === "CAPACITY LIMIT"
+                    ? "bg-red-900/30 border-red-700/50 text-red-300"
+                    : systemData.clusterStatus === "THERMAL WARNING"
+                      ? "bg-yellow-900/30 border-yellow-700/50 text-yellow-300"
+                      : "bg-green-900/20 border-green-700/40 text-green-400"
+                }`}>
+                  <span>Cluster Status: {systemData.clusterStatus}</span>
+                  <span className="tabular-nums">{systemData.baseUtilization}% avg utilization</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between px-4 py-2 rounded border text-xs font-medium bg-green-900/20 border-green-700/40 text-green-400">
+                  <span>Cluster Status: NOMINAL</span>
+                  <span>Loading…</span>
+                </div>
+              )}
+
+              {/* GPU utilization panel */}
+              <ChartPanel title="GPU Utilization">
+                <div className="space-y-1.5">
+                  {systemData ? systemData.gpus.map((gpu) => (
+                    <div key={gpu.label} className="flex items-center gap-2 text-xs">
+                      <span className="text-neutral-500 w-12 shrink-0 text-[10px]">{gpu.label}</span>
+                      <div className="shrink-0">
+                        <LineChart width={90} height={24} data={gpu.sparkData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                          <Line type="monotone" dataKey="v" stroke="#eab308" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                        </LineChart>
+                      </div>
+                      <div className="flex-1 bg-white/5 rounded-sm h-2 overflow-hidden">
+                        <div
+                          className="h-full rounded-sm transition-all duration-500"
+                          style={{
+                            width: `${gpu.utilization}%`,
+                            background: gpu.utilization > 90 ? "#ef4444" : "#eab308",
+                          }}
+                        />
+                      </div>
+                      <span className="text-neutral-400 w-8 text-right tabular-nums text-[10px]">{gpu.utilization}%</span>
+                    </div>
+                  )) : GPU_SPARKLINES.map((gpu) => (
+                    <div key={gpu.label} className="flex items-center gap-2 text-xs">
+                      <span className="text-neutral-500 w-12 shrink-0 text-[10px]">{gpu.label}</span>
+                      <div className="shrink-0">
+                        <LineChart width={90} height={24} data={gpu.data} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                          <Line type="monotone" dataKey="v" stroke="#eab308" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                        </LineChart>
+                      </div>
+                      <span className="text-neutral-400 w-8 text-right tabular-nums text-[10px]">{gpu.pct}</span>
+                    </div>
+                  ))}
+                </div>
+              </ChartPanel>
+
+              {/* Key metrics cards */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-[#111] rounded border border-white/10 p-3">
+                  <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Active Instances</div>
+                  <div className="text-lg font-bold text-white tabular-nums">
+                    {systemData ? systemData.activeInstances : "—"}
+                  </div>
+                </div>
+                <div className="bg-[#111] rounded border border-white/10 p-3">
+                  <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Monthly Compute</div>
+                  <div className="text-lg font-bold text-white tabular-nums">
+                    {systemData ? systemData.monthlyComputeCost : "—"}
+                  </div>
+                </div>
+                <div className="bg-[#111] rounded border border-white/10 p-3">
+                  <div className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Cluster Utilization</div>
+                  <div className="text-lg font-bold text-white tabular-nums">
+                    {systemData ? `${systemData.baseUtilization}%` : "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "charts" && (
             <>
               {/* ── Chart grid 2×2 ─────────────────────────────────── */}
@@ -445,7 +528,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
             </>
           )}
 
-          {activeTab !== "runs" && activeTab !== "charts" && (
+          {activeTab !== "runs" && activeTab !== "charts" && activeTab !== "system" && (
             <div className="flex items-center justify-center h-32 text-neutral-600 text-xs">
               {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} — coming soon
             </div>

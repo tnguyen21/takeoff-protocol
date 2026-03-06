@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { getRunStatusColor, buildCapData, getRuns } from "./wandbUtils.js";
+import { getRunStatusColor, buildCapData, buildSystemData, getRuns } from "./wandbUtils.js";
 import type { StateView } from "@takeoff/shared";
 
 function makeView(
@@ -71,6 +71,64 @@ describe("getRunStatusColor", () => {
   it("INV-1: unknown status falls through to neutral", () => {
     expect(getRunStatusColor("pending")).toBe("text-neutral-400");
     expect(getRunStatusColor("")).toBe("text-neutral-400");
+  });
+});
+
+describe("buildSystemData", () => {
+  it("INV-3: returns null when stateView is null", () => {
+    expect(buildSystemData(null, "openbrain", 1)).toBeNull();
+  });
+
+  it("INV-3: returns null when faction is null", () => {
+    expect(buildSystemData(makeView(50, 60, 40), null, 1)).toBeNull();
+  });
+
+  it("INV-3: returns null for external faction", () => {
+    expect(buildSystemData(makeView(50, 60, 40), "external", 1)).toBeNull();
+  });
+
+  it("INV-1: OB with burnRate 50 → utilization in [80, 90]", () => {
+    // makeView uses fog(30) for obBurnRate by default; override by making a custom view
+    const sv: StateView = { ...makeView(50, 60, 40), obBurnRate: { value: 50, accuracy: "exact" } };
+    const result = buildSystemData(sv, "openbrain", 1);
+    expect(result).not.toBeNull();
+    expect(result!.baseUtilization).toBeGreaterThanOrEqual(80);
+    expect(result!.baseUtilization).toBeLessThanOrEqual(90);
+  });
+
+  it("INV-2: China with cdzComputeUtilization 40 → utilization ~40%", () => {
+    const sv: StateView = { ...makeView(50, 60, 40), cdzComputeUtilization: { value: 40, accuracy: "exact" } };
+    const result = buildSystemData(sv, "china", 1);
+    expect(result).not.toBeNull();
+    expect(result!.baseUtilization).toBe(40);
+  });
+
+  it("INV-4: OB high burn rate (>80) → THERMAL WARNING or CAPACITY LIMIT", () => {
+    const sv: StateView = { ...makeView(50, 60, 40), obBurnRate: { value: 85, accuracy: "exact" } };
+    const result = buildSystemData(sv, "openbrain", 1);
+    expect(result).not.toBeNull();
+    expect(["THERMAL WARNING", "CAPACITY LIMIT"]).toContain(result!.clusterStatus);
+    // utilization should be > 90 at burnRate 85: 65 + 85*0.4 = 99
+    expect(result!.baseUtilization).toBeGreaterThan(90);
+  });
+
+  it("produces 4 GPU entries with reasonable utilization values", () => {
+    const sv: StateView = { ...makeView(50, 60, 40), obBurnRate: { value: 50, accuracy: "exact" } };
+    const result = buildSystemData(sv, "openbrain", 2);
+    expect(result).not.toBeNull();
+    expect(result!.gpus).toHaveLength(4);
+    for (const gpu of result!.gpus) {
+      expect(gpu.utilization).toBeGreaterThanOrEqual(0);
+      expect(gpu.utilization).toBeLessThanOrEqual(100);
+      expect(gpu.sparkData).toHaveLength(10);
+    }
+  });
+
+  it("nominal cluster status when utilization ≤ 90", () => {
+    const sv: StateView = { ...makeView(50, 60, 40), cdzComputeUtilization: { value: 50, accuracy: "exact" } };
+    const result = buildSystemData(sv, "china", 1);
+    expect(result).not.toBeNull();
+    expect(result!.clusterStatus).toBe("NOMINAL");
   });
 });
 

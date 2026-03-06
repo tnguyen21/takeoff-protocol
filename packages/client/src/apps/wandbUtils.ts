@@ -39,6 +39,96 @@ export type CapData = {
   chinaAcc: string;
 };
 
+// ── System data types ────────────────────────────────────────────────────────
+
+export type GpuEntry = {
+  label: string;
+  utilization: number; // 0-100
+  sparkData: { v: number }[];
+};
+
+export type SystemData = {
+  clusterStatus: "NOMINAL" | "THERMAL WARNING" | "CAPACITY LIMIT";
+  baseUtilization: number; // 0-100
+  gpus: GpuEntry[];
+  activeInstances: string;
+  monthlyComputeCost: string;
+};
+
+/** Deterministic pseudo-random variance in [-range, +range] from a numeric seed. */
+function detVariance(seed: number, range: number): number {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return (x - Math.floor(x)) * range * 2 - range;
+}
+
+/**
+ * Derives system/compute metrics from game state for the given faction.
+ * Returns null when stateView or faction is unavailable.
+ *
+ * INV-1: OB with burnRate 50 → utilization in [80, 90]
+ * INV-2: China with cdzComputeUtilization 40 → utilization ~40%
+ * INV-3: Returns null when stateView is null
+ * INV-4: Utilization >80 OB burn rate → THERMAL WARNING or CAPACITY LIMIT
+ */
+export function buildSystemData(
+  stateView: StateView | null,
+  faction: Faction | null,
+  round: number,
+): SystemData | null {
+  if (!stateView || !faction) return null;
+
+  let baseUtil: number;
+  let monthlyComputeCost: string;
+
+  if (faction === "openbrain") {
+    const burnRate = stateView.obBurnRate.value;
+    // At 50 (initial) → ~85%; at 80+ → 95%+
+    baseUtil = Math.min(99, 65 + burnRate * 0.4);
+    monthlyComputeCost = `$${Math.round(47 * (burnRate / 50))}M/mo`;
+  } else if (faction === "prometheus") {
+    const burnRate = stateView.promBurnRate.value;
+    // At 40 (initial) → ~75%; lower baseline
+    baseUtil = Math.min(99, 55 + burnRate * 0.5);
+    monthlyComputeCost = `$${Math.round(38 * (burnRate / 40))}M/mo`;
+  } else if (faction === "china") {
+    const util = stateView.cdzComputeUtilization.value;
+    // Direct mapping
+    baseUtil = util;
+    monthlyComputeCost = `$${Math.round(35 * (util / 40))}M/mo`;
+  } else {
+    return null; // external faction has no compute metrics
+  }
+
+  let clusterStatus: SystemData["clusterStatus"];
+  if (baseUtil > 95) clusterStatus = "CAPACITY LIMIT";
+  else if (baseUtil > 90) clusterStatus = "THERMAL WARNING";
+  else clusterStatus = "NOMINAL";
+
+  // Per-GPU fixed offsets (±3-5%) so GPUs show slight variance
+  const GPU_OFFSETS = [-2, -4, 1, 3];
+  const gpus: GpuEntry[] = GPU_OFFSETS.map((offset, i) => {
+    const gpuUtil = Math.min(100, Math.max(0, Math.round(baseUtil + offset)));
+    const sparkData = Array.from({ length: 10 }, (_, j) => {
+      const v = Math.min(100, Math.max(0, Math.round(gpuUtil + detVariance(round * 100 + i * 10 + j, 4))));
+      return { v };
+    });
+    // Final point reflects current utilization
+    sparkData[9] = { v: gpuUtil };
+    return { label: `GPU ${i}`, utilization: gpuUtil, sparkData };
+  });
+
+  const INSTANCE_COUNTS: Partial<Record<number, string>> = {
+    1: "~200",
+    2: "~100K",
+    3: "~500K",
+    4: "~847K",
+    5: "~1.2M",
+  };
+  const activeInstances = INSTANCE_COUNTS[round] ?? `~${round * 200}`;
+
+  return { clusterStatus, baseUtilization: Math.round(baseUtil), gpus, activeInstances, monthlyComputeCost };
+}
+
 /**
  * Builds capability chart data from game state history.
  * Returns null if no state data is available.
