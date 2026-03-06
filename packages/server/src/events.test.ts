@@ -1,43 +1,103 @@
 /**
- * Tests for gm:send-npc-message socket event handler.
+ * Integration tests for server event handlers.
+ *
+ * These tests wire up REAL handlers from events.ts via registerGameEvents()
+ * and assert on actual room state changes and emitted events.
  *
  * Invariants tested:
- * - INV-1: Only the GM (socket.id === room.gmId) can send NPC messages
- * - INV-2: npcId must exist in NPC_PERSONAS — unknown IDs are rejected
- * - INV-3: targetPlayerId must exist in room.players — unknown targets are rejected
- * - INV-4: On success, message is stored in room.messages with isNpc: true
- * - INV-5: On success, message is emitted to targetPlayerId and echoed to GM with _gmView: true
- *
- * Logging invariants (structured event logging):
- * - LOG-INV-1: room:create emits room.created log event
- * - LOG-INV-2: decision:submit emits decision.individual_submitted with correct actorId
- * - LOG-INV-3: message:send logs metadata only (contentLength), never message content
- * - LOG-INV-4: disconnect emits player.disconnected
- * - LOG-INV-5: All logged events have round and phase context when room is in-game
+ * - INV-1: gm:send-npc-message with valid NPC ID stores message with isNpc: true
+ * - INV-2: gm:send-npc-message from non-GM socket is rejected
+ * - INV-3: decision:submit with valid option ID records in room.decisions
+ * - INV-4: decision:submit with invalid option ID does not record
+ * - INV-5: message:send to null routes to team channel (same-faction only)
  */
 
+// Disable logging to avoid file I/O and setInterval timers during tests
+process.env.LOG_ENABLED = "false";
+
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import type { Faction, GameMessage, GameRoom, Player } from "@takeoff/shared";
+import type { GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
-import { seedBotsForRoom } from "./devBots.js";
-import { getLobbyState } from "./rooms.js";
-import { NPC_PERSONAS, getNpcPersona } from "./content/npcPersonas.js";
-import type { EventContext } from "./logger/types.js";
+import { rooms } from "./rooms.js";
+import { registerGameEvents } from "./events.js";
+import { NPC_PERSONAS } from "./content/npcPersonas.js";
 import { getLoggerForRoom, _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
+import type { EventContext } from "./logger/types.js";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Minimal mocks ─────────────────────────────────────────────────────────────
 
-function makePlayer(id: string): Player {
-  return { id, name: `Player ${id}`, faction: "openbrain", role: "ob_cto", isLeader: false, connected: true };
+interface EmittedEvent { event: string; data: unknown }
+
+function createSocket(id: string) {
+  const handlers = new Map<string, (...args: unknown[]) => void>();
+  const selfEmits: EmittedEvent[] = [];
+
+  const socket = {
+    id,
+    data: {} as { roomCode?: string },
+    handlers,
+    selfEmits,
+    on(event: string, handler: (...args: unknown[]) => void) {
+      handlers.set(event, handler);
+    },
+    emit(event: string, data: unknown) {
+      selfEmits.push({ event, data });
+    },
+    join(_code: string) {},
+  };
+
+  return socket;
 }
 
-function makeRoom(gmId: string, players: Player[]): GameRoom {
+function createIo() {
+  const emits: Record<string, EmittedEvent[]> = {};
+
+  const io = {
+    emits,
+    to(target: string) {
+      return {
+        emit(event: string, data: unknown) {
+          (emits[target] ??= []).push({ event, data });
+        },
+      };
+    },
+  };
+
+  return io;
+}
+
+/** Fire a registered socket event handler by name */
+function fire(
+  handlers: Map<string, (...args: unknown[]) => void>,
+  event: string,
+  ...args: unknown[]
+) {
+  const h = handlers.get(event);
+  if (!h) throw new Error(`Handler not registered: ${event}`);
+  h(...args);
+}
+
+// ── Room setup helpers ────────────────────────────────────────────────────────
+
+function makePlayer(id: string, overrides: Partial<Player> = {}): Player {
   return {
-    code: "TEST",
-    phase: "deliberation",
-    round: 1,
+    id,
+    name: `Player-${id}`,
+    faction: "openbrain",
+    role: "ob_cto",
+    isLeader: false,
+    connected: true,
+    ...overrides,
+  };
+}
+
+function makeTestRoom(gmId: string, code: string): GameRoom {
+  const room: GameRoom = {
+    code,
+    phase: "lobby",
+    round: 0,
     timer: { endsAt: 0 },
-    players: Object.fromEntries(players.map((p) => [p.id, p])),
+    players: {},
     gmId,
     state: { ...INITIAL_STATE },
     decisions: {},
@@ -47,222 +107,13 @@ function makeRoom(gmId: string, players: Player[]): GameRoom {
     publications: [],
     messages: [],
   };
+  rooms.set(code, room);
+  return room;
 }
-
-interface EmittedEvent {
-  event: string;
-  data: unknown;
-}
-
-function createMockIo() {
-  const emitted: Record<string, EmittedEvent[]> = {};
-
-  const io = {
-    to(target: string) {
-      return {
-        emit(event: string, data: unknown) {
-          (emitted[target] ??= []).push({ event, data });
-        },
-      };
-    },
-  };
-
-  return { io: io as unknown as import("socket.io").Server, emitted };
-}
-
-/**
- * Directly invokes the gm:send-npc-message handler logic in isolation,
- * matching the implementation in events.ts.
- */
-function invokeNpcMessageHandler(
-  io: import("socket.io").Server,
-  socketId: string,
-  room: GameRoom | undefined,
-  { npcId, content, targetPlayerId }: { npcId: string; content: string; targetPlayerId: string },
-): { ok: boolean; error?: string } {
-  let result: { ok: boolean; error?: string } = { ok: false, error: "handler not called" };
-
-  const callback = (res: { ok: boolean; error?: string }) => {
-    result = res;
-  };
-
-  // Replicate handler logic from events.ts
-  if (!room) {
-    callback({ ok: false, error: "Not in a room" });
-    return result;
-  }
-
-  if (room.gmId !== socketId) {
-    callback({ ok: false, error: "Only GM can send NPC messages" });
-    return result;
-  }
-
-  const persona = getNpcPersona(npcId);
-  if (!persona) {
-    callback({ ok: false, error: `Unknown NPC id: ${npcId}` });
-    return result;
-  }
-
-  if (!room.players[targetPlayerId]) {
-    callback({ ok: false, error: `Player not found: ${targetPlayerId}` });
-    return result;
-  }
-
-  const targetPlayer = room.players[targetPlayerId];
-  const message = {
-    id: crypto.randomUUID(),
-    from: npcId,
-    fromName: persona.name,
-    to: targetPlayerId,
-    faction: targetPlayer.faction as Faction,
-    content,
-    timestamp: Date.now(),
-    isTeamChat: false,
-    isNpc: true as const,
-  };
-
-  room.messages.push(message);
-
-  (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
-    .to(targetPlayerId).emit("message:receive", message);
-  (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
-    .to(socketId).emit("message:receive", { ...message, _gmView: true });
-
-  callback({ ok: true });
-  return result;
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-const GM_ID = "gm-socket-1";
-const PLAYER_ID = "player-socket-1";
-const VALID_NPC_ID = "__npc_anon__";
-
-describe("gm:send-npc-message", () => {
-  let room: GameRoom;
-  let emitted: Record<string, EmittedEvent[]>;
-  let io: import("socket.io").Server;
-
-  beforeEach(() => {
-    const mock = createMockIo();
-    io = mock.io;
-    emitted = mock.emitted;
-    room = makeRoom(GM_ID, [makePlayer(PLAYER_ID)]);
-  });
-
-  it("INV-2: rejects unknown npcId", () => {
-    const result = invokeNpcMessageHandler(io, GM_ID, room, {
-      npcId: "__npc_nonexistent__",
-      content: "hello",
-      targetPlayerId: PLAYER_ID,
-    });
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/Unknown NPC id/);
-    expect(room.messages).toHaveLength(0);
-  });
-
-  it("INV-3: rejects unknown targetPlayerId", () => {
-    const result = invokeNpcMessageHandler(io, GM_ID, room, {
-      npcId: VALID_NPC_ID,
-      content: "hello",
-      targetPlayerId: "no-such-player",
-    });
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/Player not found/);
-    expect(room.messages).toHaveLength(0);
-  });
-
-  it("INV-1: rejects non-GM socket", () => {
-    const result = invokeNpcMessageHandler(io, "imposter-socket", room, {
-      npcId: VALID_NPC_ID,
-      content: "hello",
-      targetPlayerId: PLAYER_ID,
-    });
-
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/Only GM/);
-    expect(room.messages).toHaveLength(0);
-  });
-
-  it("INV-4: stores message in room.messages with isNpc: true on success", () => {
-    const result = invokeNpcMessageHandler(io, GM_ID, room, {
-      npcId: VALID_NPC_ID,
-      content: "The weight extraction already happened.",
-      targetPlayerId: PLAYER_ID,
-    });
-
-    expect(result.ok).toBe(true);
-    expect(room.messages).toHaveLength(1);
-
-    const msg = room.messages[0];
-    expect(msg.isNpc).toBe(true);
-    expect(msg.from).toBe(VALID_NPC_ID);
-    expect(msg.fromName).toBe("Anonymous Source");
-    expect(msg.to).toBe(PLAYER_ID);
-    expect(msg.isTeamChat).toBe(false);
-    expect(msg.content).toBe("The weight extraction already happened.");
-    expect(typeof msg.id).toBe("string");
-    expect(msg.faction).toBe("openbrain");
-  });
-
-  it("INV-5: emits message:receive to target player", () => {
-    invokeNpcMessageHandler(io, GM_ID, room, {
-      npcId: VALID_NPC_ID,
-      content: "hello",
-      targetPlayerId: PLAYER_ID,
-    });
-
-    const playerEmits = emitted[PLAYER_ID] ?? [];
-    expect(playerEmits.some((e) => e.event === "message:receive")).toBe(true);
-
-    const receivedMsg = playerEmits.find((e) => e.event === "message:receive")?.data as Record<string, unknown>;
-    expect(receivedMsg?.isNpc).toBe(true);
-    expect(receivedMsg?.from).toBe(VALID_NPC_ID);
-    expect((receivedMsg as Record<string, unknown> | undefined)?._gmView).toBeUndefined();
-  });
-
-  it("INV-5: echoes message:receive to GM with _gmView: true", () => {
-    invokeNpcMessageHandler(io, GM_ID, room, {
-      npcId: VALID_NPC_ID,
-      content: "hello",
-      targetPlayerId: PLAYER_ID,
-    });
-
-    const gmEmits = emitted[GM_ID] ?? [];
-    expect(gmEmits.some((e) => e.event === "message:receive")).toBe(true);
-
-    const gmMsg = gmEmits.find((e) => e.event === "message:receive")?.data as Record<string, unknown>;
-    expect(gmMsg?._gmView).toBe(true);
-    expect(gmMsg?.isNpc).toBe(true);
-  });
-
-  it("all NPC_PERSONAS ids are valid for use in handler", () => {
-    for (const persona of NPC_PERSONAS) {
-      const id = persona.id;
-      const r = makeRoom(GM_ID, [makePlayer(PLAYER_ID)]);
-      const { io: testIo } = createMockIo();
-
-      const result = invokeNpcMessageHandler(testIo, GM_ID, r, {
-        npcId: id,
-        content: "test",
-        targetPlayerId: PLAYER_ID,
-      });
-
-      expect(result.ok).toBe(true);
-      expect(r.messages[0].fromName).toBe(persona.name);
-    }
-  });
-});
 
 // ── SpyLogger ─────────────────────────────────────────────────────────────────
 
-interface LogCall {
-  event: string;
-  data: unknown;
-  ctx?: EventContext;
-}
+interface LogCall { event: string; data: unknown; ctx?: EventContext }
 
 class SpyLogger {
   calls: LogCall[] = [];
@@ -274,559 +125,497 @@ class SpyLogger {
   get rejections(): number { return 0; }
 }
 
-// ── Logging Invariant Tests ───────────────────────────────────────────────────
+// ── gm:send-npc-message ───────────────────────────────────────────────────────
 
-const TEST_ROOM_CODE = "TLOG";
+const GM_ID = "gm-npc-1";
+const PLAYER_ID = "player-npc-1";
+const VALID_NPC_ID = "__npc_anon__";
+const NPC_ROOM = "NPC1";
 
-function makeInGameRoom(players: Player[] = []): GameRoom {
-  return {
-    code: TEST_ROOM_CODE,
-    phase: "decision",
-    round: 2,
-    timer: { endsAt: Date.now() + 60_000 },
-    players: Object.fromEntries(players.map((p) => [p.id, p])),
-    gmId: GM_ID,
-    state: { ...INITIAL_STATE },
-    decisions: {},
-    teamDecisions: {},
-    teamVotes: {},
-    history: [],
-    publications: [],
-    messages: [],
-  };
-}
-
-describe("structured logging invariants", () => {
-  let spy: SpyLogger;
+describe("gm:send-npc-message — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let gmSocket: ReturnType<typeof createSocket>;
 
   beforeEach(() => {
-    spy = new SpyLogger();
-    _setLoggerForRoom(TEST_ROOM_CODE, spy);
+    io = createIo();
+    room = makeTestRoom(GM_ID, NPC_ROOM);
+    room.players[PLAYER_ID] = makePlayer(PLAYER_ID);
+
+    gmSocket = createSocket(GM_ID);
+    gmSocket.data.roomCode = NPC_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      gmSocket as unknown as import("socket.io").Socket,
+    );
   });
 
   afterEach(() => {
-    _clearLoggers();
+    rooms.delete(NPC_ROOM);
   });
 
-  // ── LOG-INV-1: room:create emits room.created ──────────────────────────────
-
-  it("LOG-INV-1: room:create logs room.created with actorId=system", () => {
-    // Simulate the room:create handler logging logic
-    spy.log("room.created", { code: TEST_ROOM_CODE, gmName: "Alice" }, { actorId: "system" });
-
-    expect(spy.calls).toHaveLength(1);
-    const call = spy.calls[0];
-    expect(call.event).toBe("room.created");
-    expect((call.data as Record<string, unknown>).code).toBe(TEST_ROOM_CODE);
-    expect((call.data as Record<string, unknown>).gmName).toBe("Alice");
-    expect(call.ctx?.actorId).toBe("system");
-  });
-
-  // ── LOG-INV-2: decision:submit emits decision.individual_submitted ─────────
-
-  it("LOG-INV-2: decision:submit logs individual_submitted with correct actorId and round/phase", () => {
-    const player = makePlayer(PLAYER_ID);
-    const room = makeInGameRoom([player]);
-
-    // Simulate decision:submit handler logging
-    const timeRemainingMs = room.timer.endsAt - Date.now();
-    const logger = spy;
-    logger.log(
-      "decision.individual_submitted",
-      { playerName: player.name, role: player.role, optionId: "option_A", timeRemainingMs },
-      { actorId: player.name, round: room.round, phase: room.phase },
+  it("INV-1: valid NPC message stored in room.messages with isNpc: true", () => {
+    let result: { ok: boolean; error?: string } | undefined;
+    fire(
+      gmSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: VALID_NPC_ID, content: "The extraction already happened.", targetPlayerId: PLAYER_ID },
+      (r: { ok: boolean; error?: string }) => { result = r; },
     );
 
-    expect(spy.calls).toHaveLength(1);
-    const call = spy.calls[0];
-    expect(call.event).toBe("decision.individual_submitted");
-    expect(call.ctx?.actorId).toBe(player.name);
-    expect(call.ctx?.round).toBe(2);
-    expect(call.ctx?.phase).toBe("decision");
-    expect((call.data as Record<string, unknown>).optionId).toBe("option_A");
-    expect((call.data as Record<string, unknown>).timeRemainingMs).toBeTypeOf("number");
+    expect(result?.ok).toBe(true);
+    expect(room.messages).toHaveLength(1);
+    const msg = room.messages[0];
+    expect(msg.isNpc).toBe(true);
+    expect(msg.from).toBe(VALID_NPC_ID);
+    expect(msg.fromName).toBe("Anonymous Source");
+    expect(msg.to).toBe(PLAYER_ID);
+    expect(msg.isTeamChat).toBe(false);
+    expect(msg.content).toBe("The extraction already happened.");
+    expect(msg.faction).toBe("openbrain");
+    expect(typeof msg.id).toBe("string");
   });
 
-  // ── LOG-INV-3: message:send logs metadata only ─────────────────────────────
-
-  it("LOG-INV-3: message:send logs contentLength and never message content", () => {
-    const player = makePlayer(PLAYER_ID);
-    const room = makeInGameRoom([player]);
-    const secretContent = "This is a secret message that must not be logged.";
-
-    // Simulate message:send handler logging
-    spy.log(
-      "message.sent",
-      { from: player.name, toName: null, faction: player.faction, contentLength: secretContent.length, isTeamChat: true },
-      { actorId: player.name, round: room.round, phase: room.phase },
+  it("INV-2: non-GM socket is rejected with error", () => {
+    const playerSocket = createSocket(PLAYER_ID);
+    playerSocket.data.roomCode = NPC_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
     );
 
-    expect(spy.calls).toHaveLength(1);
-    const call = spy.calls[0];
-    expect(call.event).toBe("message.sent");
-
-    // Content must NOT appear anywhere in the logged data
-    const serialized = JSON.stringify(call.data);
-    expect(serialized).not.toContain(secretContent);
-    expect(serialized).not.toContain("secret message");
-
-    // Metadata should be logged
-    const data = call.data as Record<string, unknown>;
-    expect(data.contentLength).toBe(secretContent.length);
-    expect(data.from).toBe(player.name);
-    expect(data.isTeamChat).toBe(true);
-  });
-
-  // ── LOG-INV-4: disconnect emits player.disconnected ───────────────────────
-
-  it("LOG-INV-4: disconnect logs player.disconnected with player info", () => {
-    const player = makePlayer(PLAYER_ID);
-    const room = makeInGameRoom([player]);
-
-    // Simulate disconnect handler logging
-    spy.log(
-      "player.disconnected",
-      { playerName: player.name, faction: player.faction, role: player.role },
-      { actorId: player.name, round: room.round, phase: room.phase },
+    let result: { ok: boolean; error?: string } | undefined;
+    fire(
+      playerSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: VALID_NPC_ID, content: "hello", targetPlayerId: PLAYER_ID },
+      (r: { ok: boolean; error?: string }) => { result = r; },
     );
 
-    expect(spy.calls).toHaveLength(1);
-    const call = spy.calls[0];
-    expect(call.event).toBe("player.disconnected");
-    expect((call.data as Record<string, unknown>).playerName).toBe(player.name);
-    expect((call.data as Record<string, unknown>).faction).toBe("openbrain");
-    expect(call.ctx?.actorId).toBe(player.name);
+    expect(result?.ok).toBe(false);
+    expect(result?.error).toMatch(/Only GM/);
+    expect(room.messages).toHaveLength(0);
   });
 
-  // ── LOG-INV-5: in-game events carry round and phase context ───────────────
+  it("rejects unknown npcId — message not stored", () => {
+    let result: { ok: boolean; error?: string } | undefined;
+    fire(
+      gmSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: "__npc_nonexistent__", content: "hello", targetPlayerId: PLAYER_ID },
+      (r: { ok: boolean; error?: string }) => { result = r; },
+    );
 
-  it("LOG-INV-5: in-game log events include round and phase context", () => {
-    const player = makePlayer(PLAYER_ID);
-    const room = makeInGameRoom([player]);
+    expect(result?.ok).toBe(false);
+    expect(result?.error).toMatch(/Unknown NPC id/);
+    expect(room.messages).toHaveLength(0);
+  });
 
-    // Simulate several in-game log calls
-    spy.log("decision.individual_submitted", {}, { actorId: player.name, round: room.round, phase: room.phase });
-    spy.log("message.sent", {}, { actorId: player.name, round: room.round, phase: room.phase });
-    spy.log("player.disconnected", {}, { actorId: player.name, round: room.round, phase: room.phase });
+  it("rejects unknown targetPlayerId — message not stored", () => {
+    let result: { ok: boolean; error?: string } | undefined;
+    fire(
+      gmSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: VALID_NPC_ID, content: "hello", targetPlayerId: "no-such-player" },
+      (r: { ok: boolean; error?: string }) => { result = r; },
+    );
 
-    for (const call of spy.calls) {
-      expect(call.ctx?.round).toBe(2);
-      expect(call.ctx?.phase).toBe("decision");
+    expect(result?.ok).toBe(false);
+    expect(result?.error).toMatch(/Player not found/);
+    expect(room.messages).toHaveLength(0);
+  });
+
+  it("rejects bot as target (real handler guards __bot_ prefix)", () => {
+    const botId = "__bot_ob_cto";
+    room.players[botId] = makePlayer(botId, { id: botId, name: "Bot" });
+
+    let result: { ok: boolean; error?: string } | undefined;
+    fire(
+      gmSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: VALID_NPC_ID, content: "hello", targetPlayerId: botId },
+      (r: { ok: boolean; error?: string }) => { result = r; },
+    );
+
+    expect(result?.ok).toBe(false);
+    expect(result?.error).toMatch(/Cannot DM bots/);
+    expect(room.messages).toHaveLength(0);
+  });
+
+  it("emits message:receive to target player without _gmView flag", () => {
+    fire(
+      gmSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: VALID_NPC_ID, content: "intel payload", targetPlayerId: PLAYER_ID },
+      (_r: unknown) => {},
+    );
+
+    const playerEmits = io.emits[PLAYER_ID] ?? [];
+    const received = playerEmits.find((e) => e.event === "message:receive");
+    expect(received).toBeDefined();
+    expect((received!.data as Record<string, unknown>)._gmView).toBeUndefined();
+    expect((received!.data as Record<string, unknown>).isNpc).toBe(true);
+  });
+
+  it("echoes message:receive to GM socket with _gmView: true", () => {
+    fire(
+      gmSocket.handlers,
+      "gm:send-npc-message",
+      { npcId: VALID_NPC_ID, content: "intel payload", targetPlayerId: PLAYER_ID },
+      (_r: unknown) => {},
+    );
+
+    const gmEmits = io.emits[GM_ID] ?? [];
+    const gmMsg = gmEmits.find((e) => e.event === "message:receive");
+    expect(gmMsg).toBeDefined();
+    expect((gmMsg!.data as Record<string, unknown>)._gmView).toBe(true);
+    expect((gmMsg!.data as Record<string, unknown>).isNpc).toBe(true);
+  });
+
+  it("all NPC_PERSONAS IDs are accepted by the real handler", () => {
+    // Use a stable uppercase code so getRoom() lookup (which uppercases) matches
+    const MULTI_NPC_ROOM = "NPCM";
+
+    for (const persona of NPC_PERSONAS) {
+      rooms.delete(MULTI_NPC_ROOM);
+      const freshRoom = makeTestRoom(GM_ID, MULTI_NPC_ROOM);
+      freshRoom.players[PLAYER_ID] = makePlayer(PLAYER_ID);
+
+      const freshIo = createIo();
+      const freshSocket = createSocket(GM_ID);
+      freshSocket.data.roomCode = MULTI_NPC_ROOM;
+      registerGameEvents(
+        freshIo as unknown as import("socket.io").Server,
+        freshSocket as unknown as import("socket.io").Socket,
+      );
+
+      let result: { ok: boolean; error?: string } | undefined;
+      fire(
+        freshSocket.handlers,
+        "gm:send-npc-message",
+        { npcId: persona.id, content: "test", targetPlayerId: PLAYER_ID },
+        (r: { ok: boolean; error?: string }) => { result = r; },
+      );
+
+      expect(result?.ok).toBe(true);
+      expect(freshRoom.messages[0].fromName).toBe(persona.name);
     }
-  });
 
-  // ── Critical path: player join → role select → decision (stable actorId) ──
-
-  it("join → role select → decision produces stable actorId across all 3 events", () => {
-    const player = makePlayer(PLAYER_ID);
-
-    spy.log("player.joined", { playerName: player.name, code: TEST_ROOM_CODE }, { actorId: player.name });
-    spy.log("player.role_selected", { playerName: player.name, faction: "openbrain", role: "ob_cto" }, { actorId: player.name });
-    spy.log("decision.individual_submitted", { playerName: player.name, role: "ob_cto", optionId: "opt_1", timeRemainingMs: 30_000 }, { actorId: player.name, round: 1, phase: "decision" });
-
-    expect(spy.calls).toHaveLength(3);
-    const actorIds = spy.calls.map((c) => c.ctx?.actorId);
-    // All 3 events use the same stable actorId (player name)
-    expect(new Set(actorIds).size).toBe(1);
-    expect(actorIds[0]).toBe(player.name);
-  });
-
-  // ── Critical path: GM pause → resume produces paired events ──────────────
-
-  it("GM pause → resume produces paired phase.paused and phase.resumed events", () => {
-    const room = makeInGameRoom();
-
-    // Simulate pause
-    spy.log("phase.paused", { round: room.round, phase: room.phase, remainingMs: 50_000 }, { actorId: "gm", round: room.round, phase: room.phase });
-    // Simulate resume
-    spy.log("phase.resumed", { round: room.round, phase: room.phase, remainingMs: 50_000 }, { actorId: "gm", round: room.round, phase: room.phase });
-
-    expect(spy.calls[0].event).toBe("phase.paused");
-    expect(spy.calls[1].event).toBe("phase.resumed");
-    expect(spy.calls[0].ctx?.actorId).toBe("gm");
-    expect(spy.calls[1].ctx?.actorId).toBe("gm");
-  });
-
-  // ── Failure mode: disconnect for unknown socket — NullLogger, no crash ────
-
-  it("disconnect handler with no registered logger returns NullLogger (no crash)", () => {
-    // No logger set for UNKNOWN_CODE — getLoggerForRoom returns NullLogger
-    // NullLogger.log is a no-op; calling it must not throw
-    const nullLogger = getLoggerForRoom("UNKNOWN_ROOM_CODE_XYZ");
-    expect(() => {
-      nullLogger.log("player.disconnected", { playerName: "Ghost" }, { actorId: "Ghost" });
-    }).not.toThrow();
+    rooms.delete("NPCM");
   });
 });
 
-// ── tweet:send handler ────────────────────────────────────────────────────────
+// ── decision:submit ───────────────────────────────────────────────────────────
 
-/**
- * Invariants:
- * INV-1: tweet:send from player A results in tweet:receive emitted to all players
- * INV-2: Empty or >280 char tweets are silently rejected
- * INV-3: GM receives tweet:receive for all player tweets
- * INV-4: tweet:send does NOT modify any game state variables
- */
+// Round 1, ob_cto valid option IDs: ob_cto_push, ob_cto_audit, ob_cto_safety_compute
+const DEC_GM_ID = "gm-dec-1";
+const DEC_PLAYER_ID = "player-dec-1";
+const DEC_ROOM = "DEC1";
 
-interface TweetPayload {
-  id: string;
-  playerName: string;
-  playerRole: string | null;
-  playerFaction: string | null;
-  text: string;
-  timestamp: number;
-}
-
-function invokeTweetSendHandler(
-  io: import("socket.io").Server,
-  socketId: string,
-  room: GameRoom | undefined,
-  { text }: { text: string },
-): boolean {
-  // Replicate handler logic from events.ts
-  if (!room) return false;
-  const player = room.players[socketId];
-  if (!player) return false;
-
-  const trimmed = text.trim();
-  if (!trimmed || trimmed.length > 280) return false;
-
-  const tweet: TweetPayload = {
-    id: `tweet_${Date.now()}_${socketId.slice(-4)}`,
-    playerName: player.name,
-    playerRole: player.role,
-    playerFaction: player.faction,
-    text: trimmed,
-    timestamp: Date.now(),
-  };
-
-  for (const pid of Object.keys(room.players)) {
-    (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
-      .to(pid).emit("tweet:receive", tweet);
-  }
-  if (room.gmId) {
-    (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
-      .to(room.gmId).emit("tweet:receive", tweet);
-  }
-
-  return true;
-}
-
-const TWEET_GM_ID = "gm-tweet-1";
-const TWEET_PLAYER_A = "player-tweet-a";
-const TWEET_PLAYER_B = "player-tweet-b";
-
-describe("tweet:send", () => {
+describe("decision:submit — real handler", () => {
   let room: GameRoom;
-  let emitted: Record<string, EmittedEvent[]>;
-  let io: import("socket.io").Server;
+  let io: ReturnType<typeof createIo>;
+  let playerSocket: ReturnType<typeof createSocket>;
 
   beforeEach(() => {
-    const mock = createMockIo();
-    io = mock.io;
-    emitted = mock.emitted;
-    room = makeRoom(TWEET_GM_ID, [makePlayer(TWEET_PLAYER_A), makePlayer(TWEET_PLAYER_B)]);
+    io = createIo();
+    room = makeTestRoom(DEC_GM_ID, DEC_ROOM);
+    room.phase = "decision";
+    room.round = 1;
+    room.timer = { endsAt: Date.now() + 60_000 };
+    room.players[DEC_PLAYER_ID] = makePlayer(DEC_PLAYER_ID, {
+      faction: "openbrain",
+      role: "ob_cto",
+    });
+
+    playerSocket = createSocket(DEC_PLAYER_ID);
+    playerSocket.data.roomCode = DEC_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
+    );
   });
 
-  it("INV-1: tweet:send results in tweet:receive emitted to all players in the room", () => {
-    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "Hello world" });
-    expect(ok).toBe(true);
-
-    // Both players receive the tweet
-    const aEvents = (emitted[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive");
-    const bEvents = (emitted[TWEET_PLAYER_B] ?? []).filter((e) => e.event === "tweet:receive");
-    expect(aEvents).toHaveLength(1);
-    expect(bEvents).toHaveLength(1);
-
-    const tweet = aEvents[0].data as TweetPayload;
-    expect(tweet.text).toBe("Hello world");
-    expect(tweet.playerName).toBe(`Player ${TWEET_PLAYER_A}`);
+  afterEach(() => {
+    rooms.delete(DEC_ROOM);
   });
 
-  it("INV-2: empty tweet is silently rejected", () => {
-    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "   " });
-    expect(ok).toBe(false);
-    expect(emitted[TWEET_PLAYER_A]).toBeUndefined();
-    expect(emitted[TWEET_PLAYER_B]).toBeUndefined();
+  it("INV-3: valid individual option recorded in room.decisions", () => {
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+
+    expect(room.decisions[DEC_PLAYER_ID]).toBe("ob_cto_push");
   });
 
-  it("INV-2: tweet exceeding 280 chars is silently rejected", () => {
-    const longText = "a".repeat(281);
-    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: longText });
-    expect(ok).toBe(false);
-    expect(emitted[TWEET_PLAYER_A]).toBeUndefined();
+  it("INV-4: invalid option ID not recorded in room.decisions", () => {
+    fire(playerSocket.handlers, "decision:submit", { individual: "invalid_option_xyz" });
+
+    expect(room.decisions[DEC_PLAYER_ID]).toBeUndefined();
   });
 
-  it("INV-2: tweet of exactly 280 chars is accepted", () => {
-    const exactText = "a".repeat(280);
-    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: exactText });
-    expect(ok).toBe(true);
-    const aEvents = (emitted[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive");
-    expect(aEvents).toHaveLength(1);
+  it("silently ignores submission outside decision phase", () => {
+    room.phase = "deliberation";
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+
+    expect(room.decisions[DEC_PLAYER_ID]).toBeUndefined();
   });
 
-  it("INV-3: GM receives tweet:receive", () => {
-    invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "GM should see this" });
-    const gmEvents = (emitted[TWEET_GM_ID] ?? []).filter((e) => e.event === "tweet:receive");
-    expect(gmEvents).toHaveLength(1);
-    expect((gmEvents[0].data as TweetPayload).text).toBe("GM should see this");
+  it("silently ignores submission for round with no decisions (round 0)", () => {
+    room.phase = "decision";
+    room.round = 0;
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+
+    expect(room.decisions[DEC_PLAYER_ID]).toBeUndefined();
   });
 
-  it("INV-4: tweet:send does not modify any game state variables", () => {
-    const stateBefore = JSON.stringify(room.state);
-    invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "No state change" });
-    expect(JSON.stringify(room.state)).toBe(stateBefore);
+  it("notifies GM of current decision submission status", () => {
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+
+    const gmEmits = io.emits[DEC_GM_ID] ?? [];
+    const statusEmit = gmEmits.find((e) => e.event === "gm:decision-status");
+    expect(statusEmit).toBeDefined();
+    const submitted = (statusEmit!.data as { submitted: string[] }).submitted;
+    expect(submitted).toContain(DEC_PLAYER_ID);
   });
 
-  it("player attribution is correct — name and faction appear in payload", () => {
-    invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "Attribution test" });
-    const tweet = (emitted[TWEET_PLAYER_B] ?? []).find((e) => e.event === "tweet:receive")?.data as TweetPayload;
-    expect(tweet.playerName).toBe(`Player ${TWEET_PLAYER_A}`);
-    expect(tweet.playerFaction).toBe("openbrain");
-  });
+  it("player without role set is silently ignored", () => {
+    room.players[DEC_PLAYER_ID]!.role = null;
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
 
-  it("player without faction/role can still tweet (pre-game scenario)", () => {
-    // Allow tweeting even without role/faction — the task spec says no role restriction
-    room.players[TWEET_PLAYER_A]!.faction = null;
-    room.players[TWEET_PLAYER_A]!.role = null;
-    const ok = invokeTweetSendHandler(io, TWEET_PLAYER_A, room, { text: "Pre-game tweet" });
-    expect(ok).toBe(true);
-    const bEvents = (emitted[TWEET_PLAYER_B] ?? []).filter((e) => e.event === "tweet:receive");
-    expect(bEvents).toHaveLength(1);
+    expect(room.decisions[DEC_PLAYER_ID]).toBeUndefined();
   });
 });
 
-// ── message:send channel invariants ───────────────────────────────────────────
-
-/**
- * Invariants for channel support in message:send:
- * INV-1: Message sent with channel '#research' is received by faction members with channel='#research'
- * INV-2: Message sent without channel field defaults to '#general'
- * INV-3: DM messages ignore channel field (no channel stored)
- * INV-4: Messages persist in room.messages with channel field for reconnect replay
- */
-
-interface MessagePayload {
-  id: string;
-  from: string;
-  fromName: string;
-  to: string | null;
-  faction: string;
-  content: string;
-  timestamp: number;
-  isTeamChat: boolean;
-  channel?: string;
-}
-
-function invokeMessageSendHandler(
-  io: import("socket.io").Server,
-  socketId: string,
-  room: GameRoom | undefined,
-  { to, content, channel }: { to: string | null; content: string; channel?: string },
-): boolean {
-  if (!room) return false;
-  const sender = room.players[socketId];
-  if (!sender || !sender.faction) return false;
-
-  const message: MessagePayload = {
-    id: crypto.randomUUID(),
-    from: sender.id,
-    fromName: sender.name,
-    to,
-    faction: sender.faction,
-    content,
-    timestamp: Date.now(),
-    isTeamChat: to === null,
-    ...(to === null ? { channel: channel ?? "#general" } : {}),
-  };
-
-  room.messages.push(message as unknown as GameMessage);
-
-  const ioTyped = io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } };
-  if (to === null) {
-    for (const [pid, p] of Object.entries(room.players)) {
-      if (p.faction === sender.faction) {
-        ioTyped.to(pid).emit("message:receive", message);
-      }
-    }
-  } else {
-    ioTyped.to(to).emit("message:receive", message);
-    ioTyped.to(socketId).emit("message:receive", message);
-  }
-
-  if (room.gmId) {
-    ioTyped.to(room.gmId).emit("message:receive", { ...message, _gmView: true });
-  }
-
-  return true;
-}
+// ── message:send ──────────────────────────────────────────────────────────────
 
 const MSG_GM_ID = "gm-msg-1";
 const MSG_PLAYER_A = "player-msg-a";
 const MSG_PLAYER_B = "player-msg-b";
-const MSG_PLAYER_OTHER_FACTION = "player-msg-other";
+const MSG_PLAYER_OTHER = "player-msg-other";
+const MSG_ROOM = "MSG1";
 
-describe("message:send channel invariants", () => {
+describe("message:send — real handler", () => {
   let room: GameRoom;
-  let emitted: Record<string, EmittedEvent[]>;
-  let io: import("socket.io").Server;
+  let io: ReturnType<typeof createIo>;
+  let senderSocket: ReturnType<typeof createSocket>;
 
   beforeEach(() => {
-    const mock = createMockIo();
-    io = mock.io;
-    emitted = mock.emitted;
-    room = makeRoom(MSG_GM_ID, [
-      makePlayer(MSG_PLAYER_A),
-      makePlayer(MSG_PLAYER_B),
-    ]);
-    // Give player B the same faction so team chat works
-    room.players[MSG_PLAYER_B]!.faction = "openbrain";
-    // Other faction player
-    const otherPlayer = makePlayer(MSG_PLAYER_OTHER_FACTION);
-    otherPlayer.faction = "prometheus";
-    otherPlayer.role = "prom_ceo";
-    room.players[MSG_PLAYER_OTHER_FACTION] = otherPlayer;
+    io = createIo();
+    room = makeTestRoom(MSG_GM_ID, MSG_ROOM);
+    room.phase = "deliberation";
+    room.round = 1;
+    room.players[MSG_PLAYER_A] = makePlayer(MSG_PLAYER_A, { faction: "openbrain", role: "ob_cto" });
+    room.players[MSG_PLAYER_B] = makePlayer(MSG_PLAYER_B, { faction: "openbrain", role: "ob_ceo" });
+    room.players[MSG_PLAYER_OTHER] = makePlayer(MSG_PLAYER_OTHER, { faction: "prometheus", role: "prom_ceo" });
+
+    senderSocket = createSocket(MSG_PLAYER_A);
+    senderSocket.data.roomCode = MSG_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      senderSocket as unknown as import("socket.io").Socket,
+    );
   });
 
-  it("INV-1: message with channel=#research is received with channel='#research'", () => {
-    const ok = invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "Research update", channel: "#research" });
-    expect(ok).toBe(true);
-
-    const aEvents = (emitted[MSG_PLAYER_A] ?? []).filter((e) => e.event === "message:receive");
-    expect(aEvents).toHaveLength(1);
-    expect((aEvents[0].data as MessagePayload).channel).toBe("#research");
-
-    const bEvents = (emitted[MSG_PLAYER_B] ?? []).filter((e) => e.event === "message:receive");
-    expect(bEvents).toHaveLength(1);
-    expect((bEvents[0].data as MessagePayload).channel).toBe("#research");
+  afterEach(() => {
+    rooms.delete(MSG_ROOM);
   });
 
-  it("INV-1: message with channel=#research is NOT sent to other-faction players", () => {
-    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "Research update", channel: "#research" });
-    const otherEvents = (emitted[MSG_PLAYER_OTHER_FACTION] ?? []).filter((e) => e.event === "message:receive");
-    expect(otherEvents).toHaveLength(0);
+  it("INV-5: team message (to: null) delivered to all same-faction players only", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Team update" });
+
+    // Same-faction players receive it
+    expect((io.emits[MSG_PLAYER_A] ?? []).some((e) => e.event === "message:receive")).toBe(true);
+    expect((io.emits[MSG_PLAYER_B] ?? []).some((e) => e.event === "message:receive")).toBe(true);
+    // Cross-faction player does NOT receive it
+    expect((io.emits[MSG_PLAYER_OTHER] ?? []).filter((e) => e.event === "message:receive")).toHaveLength(0);
   });
 
-  it("INV-2: message without channel defaults to #general", () => {
-    const ok = invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "Hello team" });
-    expect(ok).toBe(true);
+  it("team message stored in room.messages with isTeamChat: true", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Meeting at 3" });
 
-    const msg = room.messages[0] as unknown as MessagePayload;
-    expect(msg.channel).toBe("#general");
-
-    const aEvents = (emitted[MSG_PLAYER_A] ?? []).filter((e) => e.event === "message:receive");
-    expect((aEvents[0].data as MessagePayload).channel).toBe("#general");
+    expect(room.messages).toHaveLength(1);
+    expect(room.messages[0].isTeamChat).toBe(true);
+    expect(room.messages[0].content).toBe("Meeting at 3");
   });
 
-  it("INV-3: DM messages do not have a channel field", () => {
-    const ok = invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: MSG_PLAYER_B, content: "Private", channel: "#research" });
-    expect(ok).toBe(true);
+  it("team message without channel defaults to #general", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Hi team" });
 
-    const msg = room.messages[0] as unknown as MessagePayload;
+    expect((room.messages[0] as unknown as Record<string, unknown>).channel).toBe("#general");
+  });
+
+  it("team message with explicit channel stores that channel", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Research note", channel: "#research" });
+
+    expect((room.messages[0] as unknown as Record<string, unknown>).channel).toBe("#research");
+  });
+
+  it("DM has no channel field", () => {
+    fire(senderSocket.handlers, "message:send", { to: MSG_PLAYER_B, content: "Private" });
+
+    const msg = room.messages[0] as unknown as Record<string, unknown>;
     expect(msg.isTeamChat).toBe(false);
     expect(msg.channel).toBeUndefined();
   });
 
-  it("INV-4: messages persist in room.messages with channel for reconnect replay", () => {
-    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "msg1", channel: "#safety" });
-    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: null, content: "msg2" });
-    invokeMessageSendHandler(io, MSG_PLAYER_A, room, { to: MSG_PLAYER_B, content: "dm" });
+  it("DM is delivered to recipient and echoed to sender", () => {
+    fire(senderSocket.handlers, "message:send", { to: MSG_PLAYER_B, content: "Whisper" });
+
+    expect((io.emits[MSG_PLAYER_B] ?? []).some((e) => e.event === "message:receive")).toBe(true);
+    expect((io.emits[MSG_PLAYER_A] ?? []).some((e) => e.event === "message:receive")).toBe(true);
+  });
+
+  it("GM receives _gmView copy of team message when not in same faction", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Team chat" });
+
+    const gmEmits = io.emits[MSG_GM_ID] ?? [];
+    const gmMsg = gmEmits.find((e) => e.event === "message:receive");
+    expect(gmMsg).toBeDefined();
+    expect((gmMsg!.data as Record<string, unknown>)._gmView).toBe(true);
+  });
+
+  it("rejects DM to bot (real handler guards __bot_ prefix)", () => {
+    const botId = "__bot_ob_cto";
+    room.players[botId] = makePlayer(botId);
+
+    fire(senderSocket.handlers, "message:send", { to: botId, content: "Hello bot" });
+
+    // No message stored, no emit
+    expect(room.messages).toHaveLength(0);
+    expect((io.emits[botId] ?? []).filter((e) => e.event === "message:receive")).toHaveLength(0);
+  });
+
+  it("message persists in room.messages for reconnect replay", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "msg1", channel: "#safety" });
+    fire(senderSocket.handlers, "message:send", { to: null, content: "msg2" });
+    fire(senderSocket.handlers, "message:send", { to: MSG_PLAYER_B, content: "dm" });
 
     expect(room.messages).toHaveLength(3);
-    const [m1, m2, m3] = room.messages as unknown as MessagePayload[];
-    expect(m1.channel).toBe("#safety");
-    expect(m2.channel).toBe("#general");
-    expect(m3.channel).toBeUndefined(); // DM has no channel
+    expect((room.messages[0] as unknown as Record<string, unknown>).channel).toBe("#safety");
+    expect((room.messages[1] as unknown as Record<string, unknown>).channel).toBe("#general");
+    expect((room.messages[2] as unknown as Record<string, unknown>).channel).toBeUndefined();
   });
 });
 
-// ── dev:fill-bots handler ──────────────────────────────────────────────────────
+// ── Logging invariants — real handlers produce correct log entries ─────────────
 
-/**
- * Invariants:
- * INV-2: dev:fill-bots is rejected when the caller is not the GM
- * INV-3: After filling bots, room:state is broadcast to all clients in room
- * INV-4: After filling bots, room.players has entries for bot roles (minimum_table)
- */
+const LOG_GM_ID = "gm-log-1";
+const LOG_PLAYER_ID = "player-log-1";
+const LOG_ROOM = "LOG1";
 
-function invokeDevFillBotsHandler(
-  io: import("socket.io").Server,
-  roomCode: string,
-  socketId: string,
-  room: GameRoom | undefined,
-): { ok: boolean; error?: string } {
-  // Replicate handler logic from events.ts (dev:fill-bots)
-  if (!room) return { ok: false, error: "Room not found" };
-  if (room.gmId !== socketId) return { ok: false, error: "Only GM can fill bots" };
-
-  seedBotsForRoom(room, socketId, { mode: "minimum_table" });
-
-  // Broadcast room:state to all in room
-  (io as unknown as { to: (t: string) => { emit: (e: string, d: unknown) => void } })
-    .to(roomCode).emit("room:state", getLobbyState(room));
-
-  return { ok: true };
-}
-
-const FILL_GM_ID = "gm-fill-1";
-const FILL_PLAYER_ID = "player-fill-1";
-
-describe("dev:fill-bots", () => {
+describe("structured logging — real handlers produce expected log entries", () => {
   let room: GameRoom;
-  let emitted: Record<string, EmittedEvent[]>;
-  let io: import("socket.io").Server;
+  let io: ReturnType<typeof createIo>;
+  let spy: SpyLogger;
 
   beforeEach(() => {
-    const mock = createMockIo();
-    io = mock.io;
-    emitted = mock.emitted;
-    room = makeRoom(FILL_GM_ID, []);
-    room.code = "FILL";
+    io = createIo();
+    spy = new SpyLogger();
+    room = makeTestRoom(LOG_GM_ID, LOG_ROOM);
+    room.phase = "decision";
+    room.round = 1;
+    room.timer = { endsAt: Date.now() + 60_000 };
+    room.players[LOG_PLAYER_ID] = makePlayer(LOG_PLAYER_ID, {
+      faction: "openbrain",
+      role: "ob_cto",
+    });
+    _setLoggerForRoom(LOG_ROOM, spy);
   });
 
-  it("INV-2: rejects non-GM caller", () => {
-    const result = invokeDevFillBotsHandler(io, room.code, FILL_PLAYER_ID, room);
-    expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/Only GM/);
-    expect(Object.keys(room.players)).toHaveLength(0);
+  afterEach(() => {
+    rooms.delete(LOG_ROOM);
+    _clearLoggers();
   });
 
-  it("INV-4: fills room.players with bots for all minimum_table roles on success", () => {
-    const result = invokeDevFillBotsHandler(io, room.code, FILL_GM_ID, room);
-    expect(result.ok).toBe(true);
+  it("LOG-INV-2: decision:submit logs decision.individual_submitted with correct actorId and round/phase", () => {
+    const playerSocket = createSocket(LOG_PLAYER_ID);
+    playerSocket.data.roomCode = LOG_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
+    );
 
-    const botIds = Object.keys(room.players).filter((id) => id.startsWith("__bot_"));
-    expect(botIds.length).toBeGreaterThan(0);
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
 
-    // All bots have faction and role set
-    for (const botId of botIds) {
-      const bot = room.players[botId]!;
-      expect(bot.faction).not.toBeNull();
-      expect(bot.role).not.toBeNull();
+    const decisionLog = spy.calls.find((c) => c.event === "decision.individual_submitted");
+    expect(decisionLog).toBeDefined();
+    expect(decisionLog!.ctx?.actorId).toBe(`Player-${LOG_PLAYER_ID}`);
+    expect(decisionLog!.ctx?.round).toBe(1);
+    expect(decisionLog!.ctx?.phase).toBe("decision");
+    expect((decisionLog!.data as Record<string, unknown>).optionId).toBe("ob_cto_push");
+    expect((decisionLog!.data as Record<string, unknown>).timeRemainingMs).toBeTypeOf("number");
+  });
+
+  it("LOG-INV-3: message:send logs contentLength and never message content", () => {
+    const playerSocket = createSocket(LOG_PLAYER_ID);
+    playerSocket.data.roomCode = LOG_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
+    );
+
+    const secretContent = "This is a secret message that must not be logged.";
+    fire(playerSocket.handlers, "message:send", { to: null, content: secretContent });
+
+    const msgLog = spy.calls.find((c) => c.event === "message.sent");
+    expect(msgLog).toBeDefined();
+
+    // Content must NOT appear in the logged data
+    const serialized = JSON.stringify(msgLog!.data);
+    expect(serialized).not.toContain(secretContent);
+    expect(serialized).not.toContain("secret message");
+
+    // Only metadata is logged
+    const data = msgLog!.data as Record<string, unknown>;
+    expect(data.contentLength).toBe(secretContent.length);
+    expect(data.isTeamChat).toBe(true);
+  });
+
+  it("LOG-INV-4: disconnect logs player.disconnected with player info", () => {
+    room.players[LOG_PLAYER_ID]!.connected = true;
+
+    const playerSocket = createSocket(LOG_PLAYER_ID);
+    playerSocket.data.roomCode = LOG_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
+    );
+
+    fire(playerSocket.handlers, "disconnect");
+
+    const disconnectLog = spy.calls.find((c) => c.event === "player.disconnected");
+    expect(disconnectLog).toBeDefined();
+    expect((disconnectLog!.data as Record<string, unknown>).playerName).toBe(`Player-${LOG_PLAYER_ID}`);
+    expect((disconnectLog!.data as Record<string, unknown>).faction).toBe("openbrain");
+    expect(disconnectLog!.ctx?.actorId).toBe(`Player-${LOG_PLAYER_ID}`);
+  });
+
+  it("LOG-INV-5: in-game log events from real handlers include round and phase context", () => {
+    const playerSocket = createSocket(LOG_PLAYER_ID);
+    playerSocket.data.roomCode = LOG_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
+    );
+
+    // Trigger multiple log-producing events
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+    fire(playerSocket.handlers, "message:send", { to: null, content: "hi" });
+
+    const inGameLogs = spy.calls.filter((c) =>
+      c.event === "decision.individual_submitted" || c.event === "message.sent",
+    );
+    expect(inGameLogs.length).toBeGreaterThan(0);
+
+    for (const log of inGameLogs) {
+      expect(log.ctx?.round).toBe(1);
+      expect(log.ctx?.phase).toBe("decision");
     }
   });
 
-  it("INV-3: broadcasts room:state to the room after filling bots", () => {
-    invokeDevFillBotsHandler(io, room.code, FILL_GM_ID, room);
-    const roomEmits = emitted["FILL"] ?? [];
-    const stateEmit = roomEmits.find((e) => e.event === "room:state");
-    expect(stateEmit).toBeDefined();
-    // The broadcast includes all bot players
-    const players = (stateEmit!.data as { players: unknown[] }).players;
-    expect(players.length).toBeGreaterThan(0);
-  });
-
-  it("INV-4: human player in room is not overwritten by bots", () => {
-    const humanPlayer = makePlayer(FILL_PLAYER_ID);
-    humanPlayer.faction = "openbrain";
-    humanPlayer.role = "ob_ceo";
-    room.players[FILL_PLAYER_ID] = humanPlayer;
-
-    invokeDevFillBotsHandler(io, room.code, FILL_GM_ID, room);
-
-    // Human player still has the same role
-    expect(room.players[FILL_PLAYER_ID]!.role).toBe("ob_ceo");
-    expect(room.players[FILL_PLAYER_ID]!.faction).toBe("openbrain");
+  it("NullLogger is returned for unknown room — no crash on disconnect", () => {
+    const nullLogger = getLoggerForRoom("UNKNOWN_ROOM_XYZ");
+    expect(() => {
+      nullLogger.log("player.disconnected", { playerName: "Ghost" }, { actorId: "Ghost" });
+    }).not.toThrow();
   });
 });
