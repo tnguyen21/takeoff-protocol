@@ -12,7 +12,7 @@ import type {
 } from "@takeoff/shared";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 import { FACTION_IDENTITIES, FACTION_VOICES } from "./prompts/voices.js";
-import { getRoundDecisions } from "../content/decisions/rounds.js";
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,72 +45,6 @@ export interface GenerationContext {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Find a DecisionOption by ID in the given round's decisions.
- * Searches both individual and team decisions.
- */
-function findOptionById(optionId: string, round: number) {
-  const roundDec = getRoundDecisions(round);
-  if (!roundDec) return undefined;
-  for (const dec of [...roundDec.individual, ...roundDec.team]) {
-    const opt = dec.options.find((o) => o.id === optionId);
-    if (opt) return opt;
-  }
-  return undefined;
-}
-
-function describeThreshold(thresholdId: string): string {
-  const descriptions: Record<string, string> = {
-    china_weight_theft: "China exfiltrated model weights from a US lab — capability gap narrowed significantly",
-    auto_leak: "Internal leak has gone public — publicAwareness spiked, whistleblowerPressure dissipated",
-    ob_board_revolt: "OpenBrain board demanded leadership changes — obInternalTrust critically low",
-    ccp_military_mandate: "CCP leadership mandated military options — China stance locked into aggression",
-    prom_alignment_breakthrough: "Prometheus achieved major alignment breakthrough — alignmentConfidence +15",
-    regulatory_emergency_powers: "Emergency regulatory powers invoked — NSA given expanded authority over labs",
-    point_of_no_return: "Doom clock reached critical level — point of no return crossed",
-    ui_degradation: "AI autonomy high with low alignment confidence — system integrity degrading visibly",
-  };
-  return descriptions[thresholdId] ?? `Threshold ${thresholdId} fired`;
-}
-
-function computeActiveThreads(state: StateVariables): string[] {
-  const threads: string[] = [];
-  if (state.chinaWeightTheftProgress > 40) {
-    threads.push("China's weight theft operation is underway — detection risk rising");
-  }
-  if (state.alignmentConfidence < 50) {
-    threads.push("Alignment confidence critically low — misalignment risk elevated");
-  }
-  if (state.whistleblowerPressure > 60) {
-    threads.push("Whistleblower pressure building — internal leak risk high");
-  }
-  if (state.doomClockDistance <= 2) {
-    threads.push("Doom clock approaching critical threshold — catastrophic risk elevated");
-  }
-  if (state.publicAwareness > 60) {
-    threads.push("Public awareness rising — narrative control eroding");
-  }
-  if (state.intlCooperation > 50) {
-    threads.push("International cooperation improving — arms control window open");
-  }
-  if (state.taiwanTension > 60) {
-    threads.push("Taiwan tension elevated — kinetic conflict risk rising");
-  }
-  return threads;
-}
-
-function computeTone(state: StateVariables, round: number): string {
-  if (state.doomClockDistance <= 1) return "existential dread — the point of no return";
-  if (state.alignmentConfidence < 30 && round >= 3) return "crisis mode — misalignment confirmed";
-  if (round === 5) return "endgame — irreversible choices";
-  if (round === 4) return "reckoning — all threads converging";
-  if (round === 3) return "peak tension — impossible choices";
-  if (state.whistleblowerPressure > 70) return "paranoia and exposure — the secret won't hold";
-  if (state.publicAwareness > 70) return "public crisis — narrative lost";
-  if (round === 2) return "acceleration — the race intensifies";
-  return "tension building";
-}
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -219,85 +153,6 @@ export function initializeStoryBible(room: GameRoom): StoryBible {
     activeThreads: [],
     toneShift: "tension building",
   };
-}
-
-/**
- * Append story events from the most recent completed round into the bible.
- * Call this after resolution (decisions applied, thresholds checked).
- * Mutates room.storyBible in place.
- */
-export function updateStoryBible(room: GameRoom): void {
-  if (!room.storyBible) {
-    room.storyBible = initializeStoryBible(room);
-  }
-  const bible = room.storyBible;
-  const round = room.round;
-  const latestHistory = room.history[room.history.length - 1];
-
-  // Guard: no history entry for this round yet — nothing to record
-  if (!latestHistory || latestHistory.round !== round) return;
-
-  // 1. Team decisions → major story events
-  for (const [, optionId] of Object.entries(latestHistory.teamDecisions)) {
-    const option = findOptionById(optionId, round);
-    if (option) {
-      const stateImpact = option.effects
-        .map((e) => `${e.variable} ${e.delta > 0 ? "+" : ""}${e.delta}`)
-        .join(", ");
-      bible.events.push({
-        round,
-        phase: "decision",
-        summary: `Team chose: "${option.label}" — ${option.description}`,
-        stateImpact,
-        narrativeWeight: "major",
-      });
-    }
-  }
-
-  // 2. Individual decisions → minor story events
-  for (const [playerId, optionId] of Object.entries(latestHistory.decisions)) {
-    const player = room.players[playerId];
-    const option = findOptionById(optionId, round);
-    if (option && player) {
-      const stateImpact = option.effects
-        .map((e) => `${e.variable} ${e.delta > 0 ? "+" : ""}${e.delta}`)
-        .join(", ");
-      bible.events.push({
-        round,
-        phase: "decision",
-        summary: `${player.role} (${player.faction}) chose: "${option.label}"`,
-        stateImpact,
-        narrativeWeight: "minor",
-      });
-    }
-  }
-
-  // 3. Threshold events — add any that aren't already recorded
-  // (firedThresholds accumulates across the whole game, so we diff against bible events)
-  const recordedThresholds = new Set(
-    bible.events
-      .filter((e) => e.phase === "threshold")
-      .map((e) => e.summary.replace(/^THRESHOLD:\s+/, ""))
-      .filter(Boolean),
-  );
-
-  for (const thresholdId of room.firedThresholds ?? []) {
-    if (!recordedThresholds.has(thresholdId)) {
-      bible.events.push({
-        round,
-        phase: "threshold",
-        summary: `THRESHOLD: ${thresholdId}`,
-        stateImpact: describeThreshold(thresholdId),
-        narrativeWeight: "major",
-      });
-    }
-  }
-
-  // 4. Active threads — recompute from current state
-  bible.activeThreads = computeActiveThreads(room.state);
-
-  // 5. Tone shift — update based on current state and round
-  bible.toneShift = computeTone(room.state, round);
 }
 
 /**

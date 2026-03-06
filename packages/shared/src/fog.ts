@@ -1,4 +1,4 @@
-import type { Accuracy, Faction, FogVariable, Role, StateVariables, StateView } from "./types.js";
+import type { Accuracy, Faction, FogVariable, StateVariables, StateView } from "./types.js";
 
 /**
  * Fog-of-war visibility matrix.
@@ -79,7 +79,6 @@ function hashString(str: string): number {
 export function computeFogView(
   state: StateVariables,
   faction: Faction,
-  _role: Role,
   round: number,
 ): StateView {
   const view = {} as StateView;

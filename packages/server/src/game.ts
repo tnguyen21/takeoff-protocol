@@ -340,7 +340,7 @@ export function emitDecisions(io: Server, room: GameRoom) {
 export function emitStateViews(io: Server, room: GameRoom) {
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
-    const view = computeFogView(room.state, player.faction, player.role, room.round);
+    const view = computeFogView(room.state, player.faction, room.round);
     io.to(socketId).emit("game:state", { view });
   }
 
@@ -1038,7 +1038,7 @@ function emitResolution(io: Server, room: GameRoom) {
   // Emit fog-filtered resolution to each player
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
-    const fogView = computeFogView(stateAfter, player.faction, player.role, room.round);
+    const fogView = computeFogView(stateAfter, player.faction, room.round);
 
     const filteredDeltas: StateDelta[] = changedKeys
       .filter((key) => fogView[key].accuracy !== "hidden")
@@ -1121,7 +1121,7 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
     if (!player.faction || !player.role) return;
     const nameMap = buildNameMap(room);
     // Fog-of-war state view
-    const view = computeFogView(room.state, player.faction, player.role, room.round);
+    const view = computeFogView(room.state, player.faction, room.round);
     socket.emit("game:state", { view });
 
     // Current round content (intel phase onwards — content persists)

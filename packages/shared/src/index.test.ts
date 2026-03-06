@@ -272,21 +272,21 @@ describe("resolveDecisions", () => {
 
 describe("computeFogView", () => {
   it("returns exact values for own capabilities", () => {
-    const view = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
+    const view = computeFogView(BASE_STATE, "openbrain", 1);
     expect(view.obCapability.accuracy).toBe("exact");
     expect(view.obCapability.value).toBe(BASE_STATE.obCapability);
   });
 
   it("hides variables marked as hidden from faction", () => {
     // obInternalTrust is hidden from prometheus
-    const view = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
+    const view = computeFogView(BASE_STATE, "prometheus", 1);
     expect(view.obInternalTrust.accuracy).toBe("hidden");
     expect(view.obInternalTrust.value).toBe(0);
   });
 
   it("returns estimate for partially-visible variables", () => {
     // obCapability for prometheus is estimate
-    const view = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
+    const view = computeFogView(BASE_STATE, "prometheus", 1);
     expect(view.obCapability.accuracy).toBe("estimate");
     expect(view.obCapability.confidence).toBeGreaterThan(0);
   });
@@ -296,7 +296,7 @@ describe("computeFogView", () => {
     const confidence = 15; // from FOG_MATRIX: obCapability → prometheus
 
     const values = [1, 2, 3, 4, 5].map((round) => {
-      const view = computeFogView(BASE_STATE, "prometheus", "prom_ceo", round);
+      const view = computeFogView(BASE_STATE, "prometheus", round);
       expect(view.obCapability.accuracy).toBe("estimate");
       expect(view.obCapability.confidence).toBe(confidence);
       return view.obCapability.value;
@@ -311,7 +311,7 @@ describe("computeFogView", () => {
   });
 
   it("returns all keys from StateVariables", () => {
-    const view = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
+    const view = computeFogView(BASE_STATE, "openbrain", 1);
     const expectedKeys: (keyof StateVariables)[] = [
       "obCapability", "promCapability", "chinaCapability", "usChinaGap",
       "obPromGap", "alignmentConfidence", "misalignmentSeverity",
@@ -338,8 +338,8 @@ describe("computeFogView", () => {
   it("INV-1: deterministic — same args produce identical results across all factions", () => {
     const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
     for (const faction of factions) {
-      const view1 = computeFogView(BASE_STATE, faction, "ob_ceo", 3);
-      const view2 = computeFogView(BASE_STATE, faction, "ob_ceo", 3);
+      const view1 = computeFogView(BASE_STATE, faction, 3);
+      const view2 = computeFogView(BASE_STATE, faction, 3);
       const keys = Object.keys(view1) as (keyof StateVariables)[];
       for (const key of keys) {
         expect(view1[key].value).toBe(view2[key].value);
@@ -353,7 +353,7 @@ describe("computeFogView", () => {
   it("INV-2: different rounds produce different estimate values for at least some variables", () => {
     // prometheus sees obCapability as estimate(15) — must vary across rounds
     const values = [1, 2, 3, 4, 5].map((round) =>
-      computeFogView(BASE_STATE, "prometheus", "prom_ceo", round).obCapability.value,
+      computeFogView(BASE_STATE, "prometheus", round).obCapability.value,
     );
     expect(new Set(values).size).toBeGreaterThan(1);
   });
@@ -361,7 +361,7 @@ describe("computeFogView", () => {
   // ── INV-3: Systematic FOG_MATRIX verification for all 4 factions ─────────
 
   it("INV-3: openbrain sees correct accuracy level for all variables", () => {
-    const view = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
+    const view = computeFogView(BASE_STATE, "openbrain", 1);
     // exact — own capabilities and internal variables
     expect(view.obCapability).toMatchObject({ accuracy: "exact", value: BASE_STATE.obCapability });
     expect(view.obPromGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.obPromGap });
@@ -401,7 +401,7 @@ describe("computeFogView", () => {
   });
 
   it("INV-3: prometheus sees correct accuracy level for all variables", () => {
-    const view = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
+    const view = computeFogView(BASE_STATE, "prometheus", 1);
     // exact — own capabilities and internal variables
     expect(view.promCapability).toMatchObject({ accuracy: "exact", value: BASE_STATE.promCapability });
     expect(view.obPromGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.obPromGap });
@@ -441,7 +441,7 @@ describe("computeFogView", () => {
   });
 
   it("INV-3: china sees correct accuracy level for all variables", () => {
-    const view = computeFogView(BASE_STATE, "china", "china_director", 1);
+    const view = computeFogView(BASE_STATE, "china", 1);
     // exact — own internal variables + geopolitical variables china controls
     expect(view.chinaCapability).toMatchObject({ accuracy: "exact", value: BASE_STATE.chinaCapability });
     expect(view.usChinaGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.usChinaGap });
@@ -481,7 +481,7 @@ describe("computeFogView", () => {
   });
 
   it("INV-3: external sees correct accuracy level for all variables", () => {
-    const view = computeFogView(BASE_STATE, "external", "ext_journalist", 1);
+    const view = computeFogView(BASE_STATE, "external", 1);
     // exact — public-facing variables
     expect(view.publicAwareness).toMatchObject({ accuracy: "exact", value: BASE_STATE.publicAwareness });
     expect(view.publicSentiment).toMatchObject({ accuracy: "exact", value: BASE_STATE.publicSentiment });
@@ -563,7 +563,7 @@ describe("computeFogView", () => {
       const round = Math.floor(Math.random() * 10) + 1;
 
       for (const { key, faction, confidence } of estimateChecks) {
-        const view = computeFogView(state, faction, "ob_ceo", round);
+        const view = computeFogView(state, faction, round);
         const fv = view[key];
         expect(fv.accuracy).toBe("estimate");
         expect(fv.value).toBeGreaterThanOrEqual(state[key] - confidence);
@@ -581,11 +581,11 @@ describe("computeFogView", () => {
     const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
 
     for (const faction of factions) {
-      expect(() => computeFogView(stateAt0, faction, "ob_ceo", 1)).not.toThrow();
-      expect(() => computeFogView(stateAt100, faction, "ob_ceo", 1)).not.toThrow();
+      expect(() => computeFogView(stateAt0, faction, 1)).not.toThrow();
+      expect(() => computeFogView(stateAt100, faction, 1)).not.toThrow();
       // hidden variables must always return 0 regardless of true value
-      const view0 = computeFogView(stateAt0, faction, "ob_ceo", 1);
-      const view100 = computeFogView(stateAt100, faction, "ob_ceo", 1);
+      const view0 = computeFogView(stateAt0, faction, 1);
+      const view100 = computeFogView(stateAt100, faction, 1);
       expect(view0.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
       expect(view100.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
     }
@@ -596,13 +596,13 @@ describe("computeFogView", () => {
   it("critical path: doomClockDistance is hidden from ALL factions", () => {
     const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
     for (const faction of factions) {
-      const view = computeFogView(BASE_STATE, faction, "ob_ceo", 1);
+      const view = computeFogView(BASE_STATE, faction, 1);
       expect(view.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
     }
   });
 
   it("critical path: china sees its own internal variables as exact; other factions see them as hidden", () => {
-    const chinaView = computeFogView(BASE_STATE, "china", "china_director", 1);
+    const chinaView = computeFogView(BASE_STATE, "china", 1);
     expect(chinaView.cdzComputeUtilization).toMatchObject({ accuracy: "exact", value: BASE_STATE.cdzComputeUtilization });
     expect(chinaView.ccpPatience).toMatchObject({ accuracy: "exact", value: BASE_STATE.ccpPatience });
     expect(chinaView.domesticChipProgress).toMatchObject({ accuracy: "exact", value: BASE_STATE.domesticChipProgress });
@@ -610,7 +610,7 @@ describe("computeFogView", () => {
 
     const others: Faction[] = ["openbrain", "prometheus", "external"];
     for (const faction of others) {
-      const view = computeFogView(BASE_STATE, faction, "ob_ceo", 1);
+      const view = computeFogView(BASE_STATE, faction, 1);
       expect(view.cdzComputeUtilization).toMatchObject({ accuracy: "hidden", value: 0 });
       expect(view.ccpPatience).toMatchObject({ accuracy: "hidden", value: 0 });
       expect(view.domesticChipProgress).toMatchObject({ accuracy: "hidden", value: 0 });
@@ -619,10 +619,10 @@ describe("computeFogView", () => {
   });
 
   it("critical path: usChinaGap and obPromGap have correct accuracy per faction", () => {
-    const ob = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
-    const prom = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
-    const china = computeFogView(BASE_STATE, "china", "china_director", 1);
-    const ext = computeFogView(BASE_STATE, "external", "ext_journalist", 1);
+    const ob = computeFogView(BASE_STATE, "openbrain", 1);
+    const prom = computeFogView(BASE_STATE, "prometheus", 1);
+    const china = computeFogView(BASE_STATE, "china", 1);
+    const ext = computeFogView(BASE_STATE, "external", 1);
 
     // usChinaGap: ob=estimate(3), prom=estimate(4), china=exact, external=estimate(4)
     expect(ob.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 3 });

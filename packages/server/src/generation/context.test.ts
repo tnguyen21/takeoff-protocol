@@ -6,7 +6,7 @@
  * - INV-2: Context excludes player DM content (no room.messages data)
  * - INV-3: Context players array has faction/role/name but no socket IDs
  * - INV-4: initializeStoryBible returns a bible with all 4 factions and 5 round arcs
- * - INV-5: updateStoryBible appends events without losing existing ones
+ * - INV-5: summarizeOlderRounds compresses old events correctly
  */
 
 import { describe, it, expect } from "bun:test";
@@ -15,7 +15,7 @@ import { INITIAL_STATE } from "@takeoff/shared";
 import {
   buildGenerationContext,
   initializeStoryBible,
-  updateStoryBible,
+
   summarizeOlderRounds,
   extractPlayerSlackMessages,
 } from "./context.js";
@@ -319,98 +319,6 @@ describe("initializeStoryBible — INV-4: all 4 factions and 5 round arcs", () =
   });
 });
 
-// ── INV-5: updateStoryBible appends without losing existing events ─────────────
-
-describe("updateStoryBible — INV-5: appends events without losing existing ones", () => {
-  it("preserves existing events when appending new ones", () => {
-    const room = makeRoom({
-      round: 1,
-      storyBible: {
-        ...initializeStoryBible(makeRoom()),
-        events: [
-          {
-            round: 0,
-            phase: "decision",
-            summary: "Pre-existing event",
-            stateImpact: "none",
-            narrativeWeight: "minor",
-          },
-        ],
-      },
-      history: [makeHistory(1, { teamDecisions: {}, decisions: {} })],
-    });
-
-    updateStoryBible(room);
-
-    expect(room.storyBible!.events).toContainEqual(
-      expect.objectContaining({ summary: "Pre-existing event" }),
-    );
-  });
-
-  it("does not crash when room has no history (round 1, no prior decisions)", () => {
-    const room = makeRoom({ round: 1, history: [] });
-    expect(() => updateStoryBible(room)).not.toThrow();
-  });
-
-  it("does not crash when history entry round doesn't match current round", () => {
-    const room = makeRoom({
-      round: 2,
-      history: [makeHistory(1)], // history is for round 1, but current round is 2
-    });
-    expect(() => updateStoryBible(room)).not.toThrow();
-  });
-
-  it("initializes storyBible automatically if missing", () => {
-    const room = makeRoom({ round: 1, history: [makeHistory(1)] });
-    expect(room.storyBible).toBeUndefined();
-    updateStoryBible(room);
-    expect(room.storyBible).toBeDefined();
-    expect(room.storyBible!.factions).toHaveLength(4);
-  });
-
-  it("records threshold events not yet in bible as new events", () => {
-    const room = makeRoom({
-      round: 1,
-      history: [makeHistory(1)],
-      firedThresholds: new Set(["china_weight_theft"]),
-    });
-    updateStoryBible(room);
-    const thresholdEvents = room.storyBible!.events.filter((e) => e.phase === "threshold");
-    expect(thresholdEvents).toHaveLength(1);
-    expect(thresholdEvents[0].summary).toContain("china_weight_theft");
-  });
-
-  it("does not duplicate threshold events already in bible", () => {
-    const bible = initializeStoryBible(makeRoom());
-    bible.events.push({
-      round: 1,
-      phase: "threshold",
-      summary: "THRESHOLD: china_weight_theft",
-      stateImpact: "already recorded",
-      narrativeWeight: "major",
-    });
-    const room = makeRoom({
-      round: 2,
-      storyBible: bible,
-      history: [makeHistory(2)],
-      firedThresholds: new Set(["china_weight_theft"]),
-    });
-    updateStoryBible(room);
-    const thresholdEvents = room.storyBible!.events.filter((e) => e.phase === "threshold");
-    expect(thresholdEvents).toHaveLength(1); // still just 1, not duplicated
-  });
-
-  it("updates toneShift after update", () => {
-    const room = makeRoom({
-      round: 3,
-      history: [makeHistory(3)],
-    });
-    updateStoryBible(room);
-    // Round 3 should reflect peak tension
-    expect(room.storyBible!.toneShift).toContain("tension");
-  });
-});
-
 // ── Critical path: build context for round 2 after round 1 ───────────────────
 
 describe("critical path: round 2 context after round 1", () => {
@@ -441,32 +349,6 @@ describe("critical path: round 2 context after round 1", () => {
     expect(ctx.firedThresholds).toEqual([]);
     expect(ctx.storyBible!.factions).toHaveLength(4);
     expect(ctx.storyBible!.roundArcs).toHaveLength(5);
-  });
-});
-
-// ── Critical path: initialize + update through 2 rounds ─────────────────────
-
-describe("critical path: initialize and update through 2 rounds", () => {
-  it("bible events accumulate correctly across 2 rounds of updates", () => {
-    const room = makeRoom({
-      round: 1,
-      history: [makeHistory(1, { teamDecisions: {}, decisions: {} })],
-    });
-
-    // First update — round 1
-    updateStoryBible(room);
-    const eventsAfterR1 = room.storyBible!.events.length;
-
-    // Simulate round 2 — advance round and add history
-    room.round = 2;
-    room.history.push(makeHistory(2, { teamDecisions: {}, decisions: {} }));
-
-    // Second update — round 2
-    updateStoryBible(room);
-    const eventsAfterR2 = room.storyBible!.events.length;
-
-    // Events should accumulate (not be replaced)
-    expect(eventsAfterR2).toBeGreaterThanOrEqual(eventsAfterR1);
   });
 });
 
@@ -570,11 +452,6 @@ describe("failure modes", () => {
     (room as unknown as Record<string, unknown>).publications = undefined;
     const ctx = buildGenerationContext(room, 2);
     expect(Array.isArray(ctx.publications)).toBe(true);
-  });
-
-  it("updateStoryBible with no history does not crash", () => {
-    const room = makeRoom({ round: 1, history: [] });
-    expect(() => updateStoryBible(room)).not.toThrow();
   });
 
   it("buildGenerationContext with no storyBible initializes one automatically", () => {

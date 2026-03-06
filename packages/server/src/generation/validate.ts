@@ -1,4 +1,4 @@
-import type { ContentItem, Faction, FogVariable, NpcTrigger, Role, StateVariables } from "@takeoff/shared";
+import type { ContentItem, Faction, FogVariable, NpcTrigger, StateVariables } from "@takeoff/shared";
 import { computeFogView } from "@takeoff/shared";
 import { getNpcPersona } from "../content/npcPersonas.js";
 
@@ -105,14 +105,6 @@ export function validateContent(
 
 // ── Fog-Safe Validation ───────────────────────────────────────────────────────
 
-// Placeholder roles used to compute fog view (fog accuracy depends only on faction)
-const FACTION_DEFAULT_ROLES: Record<Faction, Role> = {
-  openbrain: "ob_ceo",
-  prometheus: "prom_ceo",
-  china: "china_director",
-  external: "ext_nsa",
-};
-
 /**
  * Split a camelCase identifier into lowercase word tokens of length > 2.
  * e.g. "chinaWeightTheftProgress" → ["china", "weight", "theft", "progress"]
@@ -140,9 +132,8 @@ export function validateFogSafety(
 ): ValidationResult {
   const warnings: string[] = [];
 
-  const role = FACTION_DEFAULT_ROLES[faction];
   // Round 1 is representative — fog accuracy does not depend on round
-  const fogView = computeFogView(state, faction, role, 1);
+  const fogView = computeFogView(state, faction, 1);
 
   // Collect hidden variables with their true values and keyword lists
   const hiddenVars: Array<{ key: string; value: number; keywords: string[] }> = [];

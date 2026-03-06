@@ -245,7 +245,7 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
     setSelectedRole(cfg.roles[0].id);
   };
 
-  const fogView: StateView = computeFogView(gmRawState, selectedFaction, selectedRole, round);
+  const fogView: StateView = computeFogView(gmRawState, selectedFaction, round);
 
   const dropdownStyle: React.CSSProperties = {
     background: "rgba(255,255,255,0.06)",
