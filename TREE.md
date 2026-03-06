@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-84e55ca6c1c2
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-97d57292398a
 ├── docs
 │   ├── AUDIT-CLIENT.md
 │   ├── AUDIT-SERVER.md
@@ -49,6 +49,7 @@
 │   │   │   ├── game.test.ts
 │   │   │   ├── game.ts
 │   │   │   ├── index.ts
+│   │   │   ├── reconnect.test.ts
 │   │   │   ├── rooms.test.ts
 │   │   │   └── rooms.ts
 │   │   ├── package.json
@@ -78,6 +79,8 @@
 │   ├── report-hawk.md
 │   ├── report-random.md
 │   ├── scale-deltas.ts
+│   ├── simulate-core.ts
+│   ├── simulate.test.ts
 │   ├── simulate.ts
 │   └── targeted-rebalance.ts
 ├── Dockerfile
@@ -87,4 +90,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 66 files
+22 directories, 69 files

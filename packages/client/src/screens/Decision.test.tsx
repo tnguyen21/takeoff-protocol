@@ -68,9 +68,9 @@ const TEAM_DECISION = {
 };
 
 // A non-leader role: ob_cto (isLeader: false)
-const NON_LEADER_ROLE = "ob_cto";
+const NON_LEADER_ROLE = "ob_cto" as const;
 // A leader role: ob_ceo (isLeader: true)
-const LEADER_ROLE = "ob_ceo";
+const LEADER_ROLE = "ob_ceo" as const;
 
 // Timer far in the future so countdown is green and never expires during tests
 const FAR_FUTURE = Date.now() + 10 * 60 * 1000; // 10 minutes from now
