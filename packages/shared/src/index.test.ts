@@ -481,7 +481,7 @@ describe("computeFogView", () => {
   });
 
   it("INV-3: external sees correct accuracy level for all variables", () => {
-    const view = computeFogView(BASE_STATE, "external", "external_reporter", 1);
+    const view = computeFogView(BASE_STATE, "external", "ext_journalist", 1);
     // exact — public-facing variables
     expect(view.publicAwareness).toMatchObject({ accuracy: "exact", value: BASE_STATE.publicAwareness });
     expect(view.publicSentiment).toMatchObject({ accuracy: "exact", value: BASE_STATE.publicSentiment });
@@ -559,7 +559,7 @@ describe("computeFogView", () => {
     for (let i = 0; i < 50; i++) {
       const state = Object.fromEntries(
         stateKeys.map((k) => [k, Math.floor(Math.random() * 101)]),
-      ) as StateVariables;
+      ) as unknown as StateVariables;
       const round = Math.floor(Math.random() * 10) + 1;
 
       for (const { key, faction, confidence } of estimateChecks) {
@@ -576,8 +576,8 @@ describe("computeFogView", () => {
 
   it("INV-5: handles extreme true values (0 and 100) without throwing", () => {
     const stateKeys = Object.keys(BASE_STATE) as (keyof StateVariables)[];
-    const stateAt0 = Object.fromEntries(stateKeys.map((k) => [k, 0])) as StateVariables;
-    const stateAt100 = Object.fromEntries(stateKeys.map((k) => [k, 100])) as StateVariables;
+    const stateAt0 = Object.fromEntries(stateKeys.map((k) => [k, 0])) as unknown as StateVariables;
+    const stateAt100 = Object.fromEntries(stateKeys.map((k) => [k, 100])) as unknown as StateVariables;
     const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
 
     for (const faction of factions) {
@@ -622,7 +622,7 @@ describe("computeFogView", () => {
     const ob = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
     const prom = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
     const china = computeFogView(BASE_STATE, "china", "china_director", 1);
-    const ext = computeFogView(BASE_STATE, "external", "external_reporter", 1);
+    const ext = computeFogView(BASE_STATE, "external", "ext_journalist", 1);
 
     // usChinaGap: ob=estimate(3), prom=estimate(4), china=exact, external=estimate(4)
     expect(ob.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 3 });

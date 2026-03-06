@@ -567,6 +567,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
         source: source || player.name,
         publishedBy: player.role,
         publishedAt: Date.now(),
+        round: room.round,
       };
       room.publications.push(publication);
 

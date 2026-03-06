@@ -73,6 +73,7 @@ function makePublication(overrides: Partial<Publication> = {}): Publication {
     source: "The Verge",
     publishedBy: "ext_journalist",
     publishedAt: 1000,
+    round: 1,
     ...overrides,
   };
 }

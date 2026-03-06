@@ -517,6 +517,7 @@ function injectNewsContent(
     source,
     publishedBy,
     publishedAt: now,
+    round: room.round,
   };
   const summary = `BREAKING: ${title}`;
 
@@ -1152,6 +1153,67 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
         const individual = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role) ?? null;
         const team = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction) ?? null;
         socket.emit("game:decisions", { individual, team });
+      }
+
+      // Gap 1: replay team votes to the reconnected leader
+      if (player.isLeader && room.teamVotes[player.faction]) {
+        socket.emit("decision:votes", {
+          faction: player.faction,
+          votes: room.teamVotes[player.faction],
+        });
+      }
+    }
+
+    // Gap 2: replay ending data if game has ended
+    if (room.phase === "ending") {
+      const arcs = computeEndingArcs(room.state);
+      socket.emit("game:ending", {
+        arcs,
+        history: room.history,
+        finalState: room.state,
+        players: room.players,
+      });
+    }
+
+    // Gap 3: replay publications
+    if (room.publications.length > 0) {
+      for (const pub of room.publications) {
+        const timestamp = new Date(pub.publishedAt).toISOString();
+        const tweetText = pub.type === "leak"
+          ? `BREAKING: ${pub.title} — ${pub.content.slice(0, 200)}${pub.content.length > 200 ? "…" : ""}`
+          : `${pub.title} — ${pub.content.slice(0, 200)}${pub.content.length > 200 ? "…" : ""}`;
+        const classification = pub.type === "leak" ? "critical" : "context";
+        const newsContent: AppContent = {
+          faction: player.faction,
+          role: player.role ?? undefined,
+          app: "news",
+          items: [{
+            id: `pub-news-${pub.id}`,
+            type: "headline",
+            round: pub.round,
+            sender: pub.source,
+            subject: pub.title,
+            body: pub.content,
+            timestamp,
+            classification,
+          }],
+        };
+        const twitterContent: AppContent = {
+          faction: player.faction,
+          role: player.role ?? undefined,
+          app: "twitter",
+          items: [{
+            id: `pub-twitter-${pub.id}`,
+            type: "tweet",
+            round: pub.round,
+            sender: pub.source,
+            body: tweetText,
+            timestamp,
+            classification,
+          }],
+        };
+        const summary = `${pub.type === "leak" ? "🔴 LEAK" : pub.type === "research" ? "📄 RESEARCH" : "📰 PUBLISHED"}: ${pub.title}`;
+        socket.emit("game:publish", { publication: pub, newsContent, twitterContent, summary });
       }
     }
   } else {

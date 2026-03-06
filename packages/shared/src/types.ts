@@ -239,6 +239,7 @@ export interface Publication {
   source: string;
   publishedBy: Role;
   publishedAt: number;
+  round: number;
 }
 
 // ── Notifications ──

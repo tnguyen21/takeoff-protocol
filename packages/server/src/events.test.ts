@@ -619,3 +619,125 @@ describe("structured logging — real handlers produce expected log entries", ()
     }).not.toThrow();
   });
 });
+
+// ── Reconnection replay — replayPlayerState gaps ───────────────────────────────
+
+const REJOIN_GM_ID = "gm-rejoin-1";
+const REJOIN_OLD_ID = "player-rejoin-old";
+const REJOIN_NEW_ID = "player-rejoin-new";
+const REJOIN_ROOM = "RJN1";
+
+describe("room:rejoin — replay state gaps", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let newSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(REJOIN_GM_ID, REJOIN_ROOM);
+    room.round = 1;
+
+    newSocket = createSocket(REJOIN_NEW_ID);
+    newSocket.data.roomCode = undefined; // not yet in the room
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      newSocket as unknown as import("socket.io").Socket,
+    );
+    _setLoggerForRoom(REJOIN_ROOM, new SpyLogger());
+  });
+
+  afterEach(() => {
+    rooms.delete(REJOIN_ROOM);
+    _clearLoggers();
+  });
+
+  it("INV-1: leader reconnecting during decision phase receives decision:votes with current tally", () => {
+    room.phase = "decision";
+    room.players[REJOIN_OLD_ID] = makePlayer(REJOIN_OLD_ID, {
+      faction: "openbrain",
+      role: "ob_ceo",
+      isLeader: true,
+      connected: false,
+    });
+    // Two teammates already voted
+    room.teamVotes["openbrain"] = {
+      "player-teammate-a": "ob_push",
+      "player-teammate-b": "ob_hold",
+    };
+
+    fire(newSocket.handlers, "room:rejoin", { code: REJOIN_ROOM, playerId: REJOIN_OLD_ID }, () => {});
+
+    const voteEvent = newSocket.selfEmits.find((e) => e.event === "decision:votes");
+    expect(voteEvent).toBeDefined();
+    const data = voteEvent!.data as { faction: string; votes: Record<string, string> };
+    expect(data.faction).toBe("openbrain");
+    expect(data.votes["player-teammate-a"]).toBe("ob_push");
+    expect(data.votes["player-teammate-b"]).toBe("ob_hold");
+  });
+
+  it("INV-1: non-leader reconnecting during decision phase does NOT receive decision:votes", () => {
+    room.phase = "decision";
+    room.players[REJOIN_OLD_ID] = makePlayer(REJOIN_OLD_ID, {
+      faction: "openbrain",
+      role: "ob_cto",
+      isLeader: false,
+      connected: false,
+    });
+    room.teamVotes["openbrain"] = { "player-teammate-a": "ob_push" };
+
+    fire(newSocket.handlers, "room:rejoin", { code: REJOIN_ROOM, playerId: REJOIN_OLD_ID }, () => {});
+
+    const voteEvent = newSocket.selfEmits.find((e) => e.event === "decision:votes");
+    expect(voteEvent).toBeUndefined();
+  });
+
+  it("INV-2: player reconnecting after game ends receives game:ending with 9 arcs and non-empty state", () => {
+    room.phase = "ending";
+    room.history = [{ round: 1, decisions: {}, teamDecisions: {}, stateBefore: { ...room.state }, stateAfter: { ...room.state } }];
+    room.players[REJOIN_OLD_ID] = makePlayer(REJOIN_OLD_ID, {
+      faction: "openbrain",
+      role: "ob_cto",
+      connected: false,
+    });
+
+    fire(newSocket.handlers, "room:rejoin", { code: REJOIN_ROOM, playerId: REJOIN_OLD_ID }, () => {});
+
+    const endingEvent = newSocket.selfEmits.find((e) => e.event === "game:ending");
+    expect(endingEvent).toBeDefined();
+    const data = endingEvent!.data as { arcs: unknown[]; history: unknown[]; finalState: unknown; players: unknown };
+    expect(data.arcs).toHaveLength(9);
+    expect(data.history).toHaveLength(1);
+    expect(data.finalState).toBeDefined();
+    expect(data.players).toBeDefined();
+  });
+
+  it("INV-3: player reconnecting with 2 publications in room receives 2 game:publish events", () => {
+    room.phase = "deliberation";
+    room.players[REJOIN_OLD_ID] = makePlayer(REJOIN_OLD_ID, {
+      faction: "openbrain",
+      role: "ob_cto",
+      connected: false,
+    });
+    room.publications = [
+      { id: "pub-1", type: "article", title: "First Article", content: "Content A", source: "OpenBrain", publishedBy: "ob_cto", publishedAt: Date.now() - 5000, round: 1 },
+      { id: "pub-2", type: "leak", title: "Big Leak", content: "Leaked info", source: "Whistleblower", publishedBy: "ob_ceo", publishedAt: Date.now() - 2000, round: 1 },
+    ];
+
+    fire(newSocket.handlers, "room:rejoin", { code: REJOIN_ROOM, playerId: REJOIN_OLD_ID }, () => {});
+
+    const publishEvents = newSocket.selfEmits.filter((e) => e.event === "game:publish");
+    expect(publishEvents).toHaveLength(2);
+
+    const articleEvent = publishEvents.find((e) => (e.data as { publication: { id: string } }).publication.id === "pub-1");
+    expect(articleEvent).toBeDefined();
+    const articleData = articleEvent!.data as { publication: unknown; newsContent: { app: string }; twitterContent: { app: string }; summary: string };
+    expect(articleData.newsContent.app).toBe("news");
+    expect(articleData.twitterContent.app).toBe("twitter");
+    expect(articleData.summary).toContain("First Article");
+
+    const leakEvent = publishEvents.find((e) => (e.data as { publication: { id: string } }).publication.id === "pub-2");
+    expect(leakEvent).toBeDefined();
+    const leakData = leakEvent!.data as { summary: string };
+    expect(leakData.summary).toContain("LEAK");
+  });
+});
