@@ -1,10 +1,5 @@
 /Users/tau/projects/takeoff-protocol
 ├── docs
-│   ├── APP-AUDIT-COMMUNICATION.md
-│   ├── APP-AUDIT-DATA-ANALYTICS.md
-│   ├── APP-AUDIT-GAMESTATE.md
-│   ├── APP-AUDIT-MEDIA-CONTENT.md
-│   ├── APP-AUDIT-SECURITY-INTEL.md
 │   ├── AUDIT-CLIENT.md
 │   ├── AUDIT-SERVER.md
 │   ├── AUDIT-SHARED.md
@@ -181,6 +176,7 @@
 │   │   │   ├── KHZX_2026-03-04T05-11-09-338Z.jsonl
 │   │   │   ├── KMST_2026-03-05T03-27-16-731Z.jsonl
 │   │   │   ├── KRHU_2026-03-04T11-27-59-361Z.jsonl
+│   │   │   ├── L2ZK_2026-03-06T01-31-34-360Z.jsonl
 │   │   │   ├── LAB9_2026-03-05T07-49-43-172Z.jsonl
 │   │   │   ├── LAVK_2026-03-05T05-48-12-219Z.jsonl
 │   │   │   ├── LDF2_2026-03-04T06-51-23-574Z.jsonl
@@ -337,4 +333,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 315 files
+23 directories, 311 files
