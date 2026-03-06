@@ -4,16 +4,10 @@ import { useMessagesStore } from "../stores/messages.js";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
 import type { Faction, GamePhase, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
 import { FACTION_COLORS } from "../constants/factions.js";
+import { formatTime } from "../utils.js";
+import { STATE_LABELS } from "../constants/labels.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatTime(ms: number): string {
-  if (ms <= 0) return "0:00";
-  const totalSeconds = Math.ceil(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 function formatTimestamp(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -26,47 +20,6 @@ const PHASE_LABELS: Record<string, string> = {
   decision: "Decision",
   resolution: "Resolution",
   ending: "Ending",
-};
-
-const STATE_LABELS: Record<keyof StateVariables, string> = {
-  obCapability: "OB Capability",
-  promCapability: "Prom Capability",
-  chinaCapability: "China Capability",
-  usChinaGap: "US-China Gap (mo)",
-  obPromGap: "OB-Prom Gap (mo)",
-  alignmentConfidence: "Alignment Confidence",
-  misalignmentSeverity: "Misalignment Severity",
-  publicAwareness: "Public Awareness",
-  publicSentiment: "Public Sentiment",
-  economicDisruption: "Economic Disruption",
-  taiwanTension: "Taiwan Tension",
-  obInternalTrust: "OB Internal Trust",
-  securityLevelOB: "Security Level (OB)",
-  securityLevelProm: "Security Level (Prom)",
-  intlCooperation: "Intl Cooperation",
-  // Tier 1
-  marketIndex: "Market Index",
-  regulatoryPressure: "Regulatory Pressure",
-  globalMediaCycle: "Global Media Cycle",
-  // Tier 2
-  chinaWeightTheftProgress: "China Weight Theft",
-  aiAutonomyLevel: "AI Autonomy Level",
-  whistleblowerPressure: "Whistleblower Pressure",
-  openSourceMomentum: "Open Source Momentum",
-  doomClockDistance: "Doom Clock Distance",
-  // Tier 3 — OpenBrain
-  obMorale: "OB Morale",
-  obBurnRate: "OB Burn Rate",
-  obBoardConfidence: "OB Board Confidence",
-  // Tier 3 — Prometheus
-  promMorale: "Prom Morale",
-  promBurnRate: "Prom Burn Rate",
-  promBoardConfidence: "Prom Board Confidence",
-  promSafetyBreakthroughProgress: "Prom Safety Breakthrough",
-  // Tier 3 — China
-  cdzComputeUtilization: "CDZ Compute Utilization",
-  ccpPatience: "CCP Patience",
-  domesticChipProgress: "Domestic Chip Progress",
 };
 
 // State variable ranges for bar rendering

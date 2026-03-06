@@ -3,14 +3,7 @@ import { useGameStore } from "../stores/game.js";
 import { FACTIONS } from "@takeoff/shared";
 import type { DecisionOption } from "@takeoff/shared";
 import { soundManager } from "../sounds/index.js";
-
-function formatTime(ms: number): string {
-  if (ms <= 0) return "0:00";
-  const totalSeconds = Math.ceil(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
+import { formatTime } from "../utils.js";
 
 function isLeaderRole(role: string | null): boolean {
   if (!role) return false;
