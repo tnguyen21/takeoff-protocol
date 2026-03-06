@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { getRunStatusColor, buildCapData, buildSystemData, getRuns, getArtifacts } from "./wandbUtils.js";
+import { getRunStatusColor, buildCapData, buildSystemData, getRuns, getArtifacts, getSweepData } from "./wandbUtils.js";
 import type { StateView } from "@takeoff/shared";
 
 function makeView(
@@ -54,6 +54,99 @@ function makeView(
     domesticChipProgress: fog(25),
   };
 }
+
+// Helper: build a StateView with custom alignmentConfidence and misalignmentSeverity
+function makeViewWithAlignment(alignConf: number, misalignSev: number, accuracy: "exact" | "estimate" | "hidden" = "exact"): StateView {
+  const fog = (v: number) => ({ value: v, accuracy } as const);
+  return {
+    obCapability: fog(70),
+    promCapability: fog(60),
+    chinaCapability: fog(50),
+    usChinaGap: fog(0),
+    obPromGap: fog(0),
+    alignmentConfidence: { value: alignConf, accuracy },
+    misalignmentSeverity: { value: misalignSev, accuracy },
+    publicAwareness: fog(50),
+    publicSentiment: fog(0),
+    economicDisruption: fog(20),
+    taiwanTension: fog(30),
+    obInternalTrust: fog(80),
+    securityLevelOB: fog(3),
+    securityLevelProm: fog(3),
+    intlCooperation: fog(50),
+    marketIndex: fog(100),
+    regulatoryPressure: fog(30),
+    globalMediaCycle: fog(0),
+    chinaWeightTheftProgress: fog(0),
+    aiAutonomyLevel: fog(20),
+    whistleblowerPressure: fog(10),
+    openSourceMomentum: fog(40),
+    doomClockDistance: fog(5),
+    obMorale: fog(75),
+    obBurnRate: fog(30),
+    obBoardConfidence: fog(70),
+    promMorale: fog(70),
+    promBurnRate: fog(35),
+    promBoardConfidence: fog(65),
+    promSafetyBreakthroughProgress: fog(10),
+    cdzComputeUtilization: fog(80),
+    ccpPatience: fog(60),
+    domesticChipProgress: fog(25),
+  };
+}
+
+describe("getSweepData", () => {
+  it("INV-1: Prometheus gets 8 probes with confidence values", () => {
+    const sv = makeViewWithAlignment(70, 0);
+    const result = getSweepData(1, "prometheus", sv);
+    expect(result).not.toBeNull();
+    expect(result!.accessDenied).toBe(false);
+    expect(result!.probes).toHaveLength(8);
+    for (const probe of result!.probes) {
+      expect(probe.confidence).not.toBeNull();
+      expect(probe.confidence).toBeGreaterThan(0);
+    }
+  });
+
+  it("INV-2: China gets fewer probes, some marked NOT TESTED", () => {
+    const sv = makeViewWithAlignment(70, 0);
+    const result = getSweepData(1, "china", sv);
+    expect(result).not.toBeNull();
+    // China sees at most 5 probes (indices 0-4, with 0 as NOT TESTED)
+    expect(result!.probes.length).toBeLessThan(8);
+    const notTested = result!.probes.filter((p) => p.status === "NOT TESTED");
+    expect(notTested.length).toBeGreaterThan(0);
+    // NOT TESTED probes should have null confidence
+    for (const p of notTested) {
+      expect(p.confidence).toBeNull();
+    }
+  });
+
+  it("INV-3: High alignmentConfidence (80+) → majority of probes PASS", () => {
+    const sv = makeViewWithAlignment(90, 0);
+    const result = getSweepData(2, "prometheus", sv);
+    expect(result).not.toBeNull();
+    const tested = result!.probes.filter((p) => p.status !== "NOT TESTED" && p.status !== "INCOMPLETE");
+    const passing = tested.filter((p) => p.status === "PASS");
+    // With 90% base pass rate, majority (>50%) should pass
+    expect(passing.length).toBeGreaterThan(tested.length / 2);
+  });
+
+  it("INV-4: misalignmentSeverity > 25 → deceptive-alignment probe shows FAIL or ANOMALY", () => {
+    const sv = makeViewWithAlignment(70, 30);
+    const result = getSweepData(1, "prometheus", sv);
+    expect(result).not.toBeNull();
+    const deceptive = result!.probes.find((p) => p.name === "deceptive-alignment");
+    expect(deceptive).toBeDefined();
+    expect(["FAIL", "ANOMALY"]).toContain(deceptive!.status);
+  });
+
+  it("INV-5: External faction returns null (access denied)", () => {
+    const sv = makeViewWithAlignment(70, 0);
+    expect(getSweepData(1, "external", sv)).toBeNull();
+    expect(getSweepData(1, null, sv)).toBeNull();
+  });
+});
 
 describe("getRunStatusColor", () => {
   it("INV-1: running → green-400", () => {

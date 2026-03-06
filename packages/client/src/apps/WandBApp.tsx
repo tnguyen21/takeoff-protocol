@@ -12,8 +12,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useGameStore } from "../stores/game.js";
-import { buildCapData, buildSystemData, getRunStatusColor, getRuns, getArtifacts } from "./wandbUtils.js";
-import type { ArtifactEntry, ArtifactSecurityStatus } from "./wandbUtils.js";
+import { buildCapData, buildSystemData, getRunStatusColor, getRuns, getArtifacts, getSweepData } from "./wandbUtils.js";
+import type { ArtifactEntry, ArtifactSecurityStatus, ProbeStatus, SweepProbe } from "./wandbUtils.js";
 
 // ── Static chart data ────────────────────────────────────────────────────────
 
@@ -224,6 +224,36 @@ function formatRelativeTime(timestamp: string): string {
   return `${diffDay}d ago`;
 }
 
+// ── Probe status badge ────────────────────────────────────────────────────────
+
+function probeBadgeClass(status: ProbeStatus): string {
+  switch (status) {
+    case "PASS": return "bg-green-900/50 text-green-400 border-green-700/50";
+    case "FAIL": return "bg-red-900/50 text-red-400 border-red-700/50";
+    case "ANOMALY": return "bg-yellow-900/50 text-yellow-400 border-yellow-700/50";
+    case "INCONCLUSIVE": return "bg-neutral-800 text-neutral-400 border-neutral-600/50";
+    case "NOT TESTED": return "bg-neutral-900 text-neutral-600 border-neutral-700/30";
+    case "INCOMPLETE": return "bg-blue-900/30 text-blue-500 border-blue-700/30";
+  }
+}
+
+function SweepRow({ probe }: { probe: SweepProbe }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_90px_70px_100px] text-xs px-3 py-2 border-b border-white/5 hover:bg-white/5 tabular-nums">
+      <span className="text-neutral-200 font-mono text-[11px]">{probe.name}</span>
+      <span>
+        <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${probeBadgeClass(probe.status)}`}>
+          {probe.status}
+        </span>
+      </span>
+      <span className="text-neutral-400 text-[10px]">
+        {probe.confidence != null ? `${probe.confidence}%` : "—"}
+      </span>
+      <span className="text-neutral-500 text-[10px]">{formatRelativeTime(probe.lastRun)}</span>
+    </div>
+  );
+}
+
 export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const stateView = useGameStore((s) => s.stateView);
   const stateHistory = useGameStore((s) => s.stateHistory);
@@ -238,6 +268,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const activeRunCount = runs.filter((r) => r.status === "running").length;
   const systemData = buildSystemData(stateView, selectedFaction, round);
   const artifactResult = getArtifacts(round, selectedFaction, stateView);
+  const sweepData = getSweepData(round, selectedFaction, stateView);
 
   const reports = [...content.filter((i) => i.type === "chart")].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -607,7 +638,63 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
             </>
           )}
 
-          {activeTab !== "runs" && activeTab !== "charts" && activeTab !== "system" && activeTab !== "artifacts" && (
+          {/* ── Sweeps tab ─────────────────────────────────────────── */}
+          {activeTab === "sweeps" && (
+            <>
+              {selectedFaction === "external" ? (
+                <div className="bg-[#111] rounded border border-white/10 flex flex-col items-center justify-center py-16 gap-3">
+                  <span className="text-2xl">🔒</span>
+                  <span className="text-neutral-400 text-sm font-medium">Insufficient clearance</span>
+                  <span className="text-neutral-600 text-xs text-center max-w-xs">
+                    Alignment evaluation data is restricted to lab personnel only.
+                    External stakeholders do not have access to internal safety metrics.
+                  </span>
+                </div>
+              ) : sweepData === null ? (
+                <div className="flex-1 flex items-center justify-center text-neutral-600 text-xs">
+                  No eval data available
+                </div>
+              ) : (() => {
+                const passing = sweepData.probes.filter((p) => p.status === "PASS").length;
+                const total = sweepData.probes.filter((p) => p.status !== "NOT TESTED" && p.status !== "INCOMPLETE").length;
+                const pct = total > 0 ? passing / total : 0;
+                const summaryColor = pct >= 0.8 ? "text-green-400" : pct >= 0.5 ? "text-yellow-400" : "text-red-400";
+                const summaryBg = pct >= 0.8 ? "bg-green-900/20 border-green-700/30" : pct >= 0.5 ? "bg-yellow-900/20 border-yellow-700/30" : "bg-red-900/20 border-red-700/30";
+                return (
+                  <>
+                    {/* Summary bar */}
+                    <div className={`bg-[#111] rounded border ${summaryBg} px-4 py-3 flex items-center gap-3`}>
+                      <span className={`text-xl font-black tabular-nums ${summaryColor}`}>{passing}/{total}</span>
+                      <div>
+                        <div className="text-xs text-white font-medium">probes passing</div>
+                        <div className="text-[10px] text-neutral-500">
+                          {sweepData.probes.length} probes in eval suite · R{round} · {Math.round(pct * 100)}% pass rate
+                        </div>
+                      </div>
+                      <div className="ml-auto">
+                        <div className={`w-2 h-2 rounded-full ${pct >= 0.8 ? "bg-green-400" : pct >= 0.5 ? "bg-yellow-400" : "bg-red-400"}`} />
+                      </div>
+                    </div>
+
+                    {/* Probe table */}
+                    <div className="bg-[#111] rounded border border-white/10 overflow-hidden">
+                      <div className="grid grid-cols-[minmax(0,1fr)_90px_70px_100px] text-[10px] text-neutral-500 uppercase tracking-wider px-3 py-2 border-b border-white/5">
+                        <span>Probe</span>
+                        <span>Status</span>
+                        <span>Confidence</span>
+                        <span>Last Run</span>
+                      </div>
+                      {sweepData.probes.map((probe) => (
+                        <SweepRow key={probe.name} probe={probe} />
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {activeTab !== "runs" && activeTab !== "charts" && activeTab !== "system" && activeTab !== "artifacts" && activeTab !== "sweeps" && (
             <div className="flex items-center justify-center h-32 text-neutral-600 text-xs">
               {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} — coming soon
             </div>
