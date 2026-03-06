@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "../stores/game.js";
-import type { StateDelta } from "@takeoff/shared";
-
-const FACTION_NAMES: Record<string, string> = {
-  openbrain: "OpenBrain",
-  prometheus: "Prometheus",
-  china: "China (DeepCent)",
-  external: "External Stakeholders",
-};
+import type { Faction, StateDelta } from "@takeoff/shared";
+import { FACTION_LONG_NAMES } from "../constants/factions.js";
 
 const REVEAL_DURATION_MS = 4000;
 
@@ -224,7 +218,7 @@ export function Resolution() {
                         flexShrink: 0,
                       }}
                     >
-                      {FACTION_NAMES[faction] ?? faction}
+                      {(faction in FACTION_LONG_NAMES) ? FACTION_LONG_NAMES[faction as Faction] : faction}
                       {isMyFaction && " (you)"}
                     </span>
                     <span

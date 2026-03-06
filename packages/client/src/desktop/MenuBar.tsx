@@ -3,26 +3,20 @@ import { useGameStore } from "../stores/game.js";
 import { useSoundEffects } from "../sounds/index.js";
 import { Volume2, VolumeX } from "lucide-react";
 import { FACTIONS } from "@takeoff/shared";
-import type { RoleConfig } from "@takeoff/shared";
+import type { Faction, Role, RoleConfig } from "@takeoff/shared";
+import { FACTION_PREFIX, FACTION_SHORT_NAMES } from "../constants/factions.js";
 
-const FACTION_PREFIX: Record<string, string> = {
-  openbrain: "OB",
-  prometheus: "Prom",
-  china: "China",
-  external: "Ext",
-};
-
-function getRoleConfig(faction: string | null, role: string | null): RoleConfig | null {
+function getRoleConfig(faction: Faction | null, role: Role | null): RoleConfig | null {
   if (!faction || !role) return null;
   const factionConfig = FACTIONS.find((f) => f.id === faction);
   if (!factionConfig) return null;
   return factionConfig.roles.find((r) => r.id === role) ?? null;
 }
 
-function getRoleDisplayName(faction: string | null, role: string | null): string | null {
+function getRoleDisplayName(faction: Faction | null, role: Role | null): string | null {
   const roleConfig = getRoleConfig(faction, role);
   if (!roleConfig) return null;
-  const prefix = FACTION_PREFIX[faction ?? ""];
+  const prefix = faction ? FACTION_PREFIX[faction] : null;
   return prefix ? `${prefix} ${roleConfig.label}` : roleConfig.label;
 }
 
@@ -74,14 +68,7 @@ export function MenuBar() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const factionLabel =
-    selectedFaction === "openbrain"
-      ? "OpenBrain"
-      : selectedFaction === "prometheus"
-        ? "Prometheus"
-        : selectedFaction === "china"
-          ? "China"
-          : "External";
+  const factionLabel = selectedFaction ? FACTION_SHORT_NAMES[selectedFaction] : "—";
 
   const roleConfig = getRoleConfig(selectedFaction, selectedRole);
 
@@ -283,7 +270,7 @@ export function MenuBar() {
               letterSpacing: "0.02em",
             }}
           >
-            {FACTION_PREFIX[selectedFaction ?? ""]} {roleConfig.label}
+            {(selectedFaction ? FACTION_PREFIX[selectedFaction] : "")} {roleConfig.label}
           </div>
           
           {/* Description */}

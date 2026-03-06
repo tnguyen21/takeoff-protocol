@@ -3,6 +3,7 @@ import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
 import type { Faction, GamePhase, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
+import { FACTION_COLORS } from "../constants/factions.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,13 +26,6 @@ const PHASE_LABELS: Record<string, string> = {
   decision: "Decision",
   resolution: "Resolution",
   ending: "Ending",
-};
-
-const FACTION_COLORS: Record<string, string> = {
-  openbrain: "#8b5cf6",
-  prometheus: "#06b6d4",
-  china: "#ef4444",
-  external: "#f59e0b",
 };
 
 const STATE_LABELS: Record<keyof StateVariables, string> = {
@@ -1117,7 +1111,7 @@ export function GMDashboard() {
                     style={{
                       fontSize: "11px",
                       fontWeight: 700,
-                      color: FACTION_COLORS[faction.id] ?? "#9ca3af",
+                      color: FACTION_COLORS[faction.id as Faction] ?? "#9ca3af",
                       marginBottom: "6px",
                       textTransform: "uppercase",
                       letterSpacing: "0.07em",
@@ -1326,7 +1320,10 @@ export function GMDashboard() {
               </div>
             ) : (
               messages.map((msg) => {
-                const factionColor = FACTION_COLORS[msg.faction] ?? "#9ca3af";
+                const factionColor =
+                  msg.faction && msg.faction in FACTION_COLORS
+                    ? FACTION_COLORS[msg.faction as Faction]
+                    : "#9ca3af";
                 return (
                   <div
                     key={msg.id}
