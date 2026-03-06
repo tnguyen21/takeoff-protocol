@@ -12,19 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useGameStore } from "../stores/game.js";
-import { buildCapData, getRunStatusColor } from "./wandbUtils.js";
-
-// ── Static run data ──────────────────────────────────────────────────────────
-
-const RUNS = [
-  { name: "run-789-ft-v3", status: "running", loss: "0.0412", step: "12,440", duration: "2h 14m", created: "2h ago", user: "alice", tags: ["frontier", "v3"], color: "#0bcabc" },
-  { name: "run-788-base", status: "finished", loss: "0.0581", step: "20,000", duration: "5h 32m", created: "1d ago", user: "bob", tags: ["base"], color: "#ff7e33" },
-  { name: "run-787-ablation", status: "crashed", loss: "NaN", step: "3,210", duration: "0h 28m", created: "2d ago", user: "alice", tags: ["ablation"], color: "#8b5cf6" },
-  { name: "run-786-ft-v2", status: "finished", loss: "0.0621", step: "20,000", duration: "4h 50m", created: "3d ago", user: "charlie", tags: ["frontier", "v2"], color: "#0bcabc" },
-  { name: "run-785-ctx8k", status: "finished", loss: "0.0709", step: "18,500", duration: "4h 12m", created: "4d ago", user: "alice", tags: ["ctx-8k"], color: "#ff7e33" },
-  { name: "run-784-safety", status: "finished", loss: "0.0834", step: "20,000", duration: "5h 01m", created: "5d ago", user: "dana", tags: ["safety"], color: "#8b5cf6" },
-  { name: "run-783-scale", status: "running", loss: "0.1248", step: "8,320", duration: "1h 42m", created: "6h ago", user: "bob", tags: ["scale", "v3"], color: "#0bcabc" },
-];
+import { buildCapData, getRunStatusColor, getRuns } from "./wandbUtils.js";
 
 // ── Static chart data ────────────────────────────────────────────────────────
 
@@ -93,14 +81,7 @@ const GPU_SPARKLINES = [
 
 // ── Nav items ────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
-  { label: "Runs", active: false },
-  { label: "Charts", active: true },
-  { label: "Artifacts", active: false },
-  { label: "Sweeps", active: false },
-  { label: "Reports", active: false },
-  { label: "System", active: false },
-];
+const NAV_LABELS = ["Runs", "Charts", "Artifacts", "Sweeps", "Reports", "System"];
 
 const FILTER_PILLS = [
   { label: "Status: running" },
@@ -120,6 +101,51 @@ function ChartPanel({ title, children }: { title: string; children: React.ReactN
         </div>
       </div>
       <div className="flex-1 p-2">{children}</div>
+    </div>
+  );
+}
+
+// ── RunTable ─────────────────────────────────────────────────────────────────
+
+function RunTable({ runs }: { runs: ReturnType<typeof getRuns> }) {
+  return (
+    <div className="bg-[#111] rounded border border-white/10 overflow-hidden">
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px]">
+          <div className="grid grid-cols-[minmax(0,1fr)_62px_52px_60px_54px_56px_44px_88px] text-[10px] text-neutral-500 uppercase tracking-wider px-3 py-2 border-b border-white/5">
+            <span>Run</span>
+            <span>Status</span>
+            <span>Loss</span>
+            <span>Step</span>
+            <span>Duration</span>
+            <span>Created</span>
+            <span>User</span>
+            <span>Tags</span>
+          </div>
+          {runs.map((r) => (
+            <div
+              key={r.name}
+              className="grid grid-cols-[minmax(0,1fr)_62px_52px_60px_54px_56px_44px_88px] text-xs px-3 py-2 border-b border-white/5 hover:bg-white/5 cursor-pointer tabular-nums"
+            >
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: r.color }} />
+                <span className="text-blue-400 truncate">{r.name}</span>
+              </span>
+              <span className={getRunStatusColor(r.status)}>{r.status}</span>
+              <span className="text-neutral-300 font-mono">{r.loss}</span>
+              <span className="text-neutral-400 font-mono">{r.step}</span>
+              <span className="text-neutral-400">{r.duration}</span>
+              <span className="text-neutral-400">{r.created}</span>
+              <span className="text-neutral-400">{r.user}</span>
+              <span className="flex flex-wrap gap-0.5">
+                {r.tags.map((t) => (
+                  <span key={t} className="bg-blue-900/40 text-blue-300 text-[9px] px-1 py-0.5 rounded border border-blue-700/30">{t}</span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -144,11 +170,14 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const stateView = useGameStore((s) => s.stateView);
   const stateHistory = useGameStore((s) => s.stateHistory);
   const round = useGameStore((s) => s.round);
+  const selectedFaction = useGameStore((s) => s.selectedFaction);
 
   const [activeTab, setActiveTab] = useState("charts");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   const capData = buildCapData(stateHistory, round, stateView);
+  const runs = getRuns(round, selectedFaction, stateView);
+  const activeRunCount = runs.filter((r) => r.status === "running").length;
 
   const reports = [...content.filter((i) => i.type === "chart")].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -167,25 +196,25 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
 
         {/* Project breadcrumb */}
         <div className="px-4 py-2 border-b border-white/5 text-[10px] text-neutral-500 truncate">
-          openbrain / frontier-model-v3
+          {selectedFaction ?? "openbrain"} / frontier-model-v3
         </div>
 
         {/* Nav items */}
         <div className="flex-1 py-1">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeTab === item.label.toLowerCase();
+          {NAV_LABELS.map((label) => {
+            const active = activeTab === label.toLowerCase();
             return (
               <div
-                key={item.label}
-                onClick={() => setActiveTab(item.label.toLowerCase())}
+                key={label}
+                onClick={() => setActiveTab(label.toLowerCase())}
                 className={`flex items-center gap-2.5 px-4 py-2 text-xs cursor-pointer transition-colors ${
-                  isActive
+                  active
                     ? "bg-blue-600/20 text-blue-400 border-r-2 border-blue-500"
                     : "text-neutral-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isActive ? "#3b82f6" : "#444" }} />
-                {item.label}
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active ? "#3b82f6" : "#444" }} />
+                {label}
               </div>
             );
           })}
@@ -194,7 +223,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
         {/* Footer: active run badge */}
         <div className="px-4 py-3 border-t border-white/10">
           <span className="bg-green-900/50 text-green-400 text-[10px] px-2 py-1 rounded-full border border-green-700/50">
-            2 runs active
+            {activeRunCount} run{activeRunCount !== 1 ? "s" : ""} active
           </span>
         </div>
       </nav>
@@ -265,186 +294,162 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
           </div>
         )}
 
-        {/* ── Other non-charts placeholder ─────────────────────────── */}
-        {activeTab !== "charts" && activeTab !== "reports" && (
-          <div className="flex-1 flex items-center justify-center text-neutral-600 text-xs">
-            Coming soon
-          </div>
-        )}
-
-        {/* Scrollable body — Charts tab */}
-        {activeTab === "charts" && (
+        {/* Scrollable body */}
+        {activeTab !== "reports" && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
 
-          {/* ── Chart grid 2×2 ─────────────────────────────────────── */}
-          <div className="grid grid-cols-2 gap-3">
+          {activeTab === "runs" && (
+            <>
+              {/* ── Filter bar ─────────────────────────────────────── */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Filters:</span>
+                {FILTER_PILLS.map((f) => (
+                  <span
+                    key={f.label}
+                    className="flex items-center gap-1 bg-[#1b1d2a] text-white/80 text-[10px] px-2 py-0.5 rounded border border-white/15"
+                  >
+                    {f.label}
+                    <button className="text-neutral-500 hover:text-white ml-0.5 leading-none">×</button>
+                  </span>
+                ))}
+                <button className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">+ Add filter</button>
+              </div>
 
-            {/* Panel 1: Capability Index (dynamic) */}
-            <ChartPanel title="Capability Index">
-              {!capData ? (
-                <div className="h-[120px] flex items-center justify-center text-neutral-600 text-xs">No state data</div>
+              {/* ── Run table ──────────────────────────────────────── */}
+              {runs.length === 0 ? (
+                <div className="bg-[#111] rounded border border-white/10 p-6 text-center text-neutral-500 text-xs">
+                  No runs yet — training begins soon.
+                </div>
               ) : (
-                <>
-                  <ResponsiveContainer width="100%" height={110}>
-                    <ComposedChart data={capData.data} margin={{ top: 4, right: 4, bottom: 0, left: -14 }}>
+                <RunTable runs={runs} />
+              )}
+            </>
+          )}
+
+          {activeTab === "charts" && (
+            <>
+              {/* ── Chart grid 2×2 ─────────────────────────────────── */}
+              <div className="grid grid-cols-2 gap-3">
+
+                {/* Panel 1: Capability Index (dynamic) */}
+                <ChartPanel title="Capability Index">
+                  {!capData ? (
+                    <div className="h-[120px] flex items-center justify-center text-neutral-600 text-xs">No state data</div>
+                  ) : (
+                    <>
+                      <ResponsiveContainer width="100%" height={110}>
+                        <ComposedChart data={capData.data} margin={{ top: 4, right: 4, bottom: 0, left: -14 }}>
+                          <CartesianGrid stroke="#222" strokeDasharray="3 3" />
+                          <XAxis dataKey="round" type="number" domain={[1, 5]} tickCount={5} tick={{ fill: "#555", fontSize: 9 }} tickLine={false} />
+                          <YAxis domain={[0, 100]} tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={26} />
+                          <Tooltip
+                            contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
+                            labelFormatter={(v: unknown) => `Round ${v}`}
+                            formatter={(val: number | undefined, name: string | undefined) => [val != null ? val.toFixed(0) : "", name ?? ""]}
+                          />
+                          <Area stackId="ob" type="monotone" dataKey="obLow" fill="transparent" stroke="none" legendType="none" />
+                          <Area stackId="ob" type="monotone" dataKey="obBandH" fill="#3b82f6" fillOpacity={0.12} stroke="none" legendType="none" />
+                          {capData.obAcc !== "hidden" && (
+                            <Line type="monotone" dataKey="ob" stroke="#3b82f6" strokeWidth={1.5} dot={false} strokeDasharray={capData.obAcc === "estimate" ? "4 2" : undefined} connectNulls name="OB" />
+                          )}
+                          <Area stackId="prom" type="monotone" dataKey="promLow" fill="transparent" stroke="none" legendType="none" />
+                          <Area stackId="prom" type="monotone" dataKey="promBandH" fill="#22c55e" fillOpacity={0.12} stroke="none" legendType="none" />
+                          {capData.promAcc !== "hidden" && (
+                            <Line type="monotone" dataKey="prom" stroke="#22c55e" strokeWidth={1.5} dot={false} strokeDasharray={capData.promAcc === "estimate" ? "4 2" : undefined} connectNulls name="Prom" />
+                          )}
+                          <Area stackId="china" type="monotone" dataKey="chinaLow" fill="transparent" stroke="none" legendType="none" />
+                          <Area stackId="china" type="monotone" dataKey="chinaBandH" fill="#ef4444" fillOpacity={0.12} stroke="none" legendType="none" />
+                          {capData.chinaAcc !== "hidden" && (
+                            <Line type="monotone" dataKey="china" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray={capData.chinaAcc === "estimate" ? "4 2" : undefined} connectNulls name="China" />
+                          )}
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                      <div className="flex gap-3 mt-1 justify-end">
+                        {capData.obAcc !== "hidden" && <span className="flex items-center gap-1 text-[9px] text-blue-400"><span className="w-3 h-px bg-blue-400 inline-block" />OB</span>}
+                        {capData.promAcc !== "hidden" && <span className="flex items-center gap-1 text-[9px] text-green-400"><span className="w-3 h-px bg-green-400 inline-block" />Prom</span>}
+                        {capData.chinaAcc !== "hidden" && <span className="flex items-center gap-1 text-[9px] text-red-400"><span className="w-3 h-px bg-red-400 inline-block" />China</span>}
+                      </div>
+                    </>
+                  )}
+                </ChartPanel>
+
+                {/* Panel 2: Training Loss (static) */}
+                <ChartPanel title="Training Loss">
+                  <ResponsiveContainer width="100%" height={120}>
+                    <LineChart data={TRAINING_LOSS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -14 }}>
                       <CartesianGrid stroke="#222" strokeDasharray="3 3" />
-                      <XAxis dataKey="round" type="number" domain={[1, 5]} tickCount={5} tick={{ fill: "#555", fontSize: 9 }} tickLine={false} />
-                      <YAxis domain={[0, 100]} tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={26} />
+                      <XAxis dataKey="step" tick={{ fill: "#555", fontSize: 9 }} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${v / 1000}k` : String(v)} />
+                      <YAxis tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={30} tickFormatter={(v: number) => v.toFixed(1)} />
                       <Tooltip
                         contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
-                        labelFormatter={(v: unknown) => `Round ${v}`}
-                        formatter={(val: number | undefined, name: string | undefined) => [val != null ? val.toFixed(0) : "", name ?? ""]}
+                        formatter={(val: number | undefined) => [val != null ? val.toFixed(4) : "", "loss"]}
+                        labelFormatter={(v: unknown) => `step ${v}`}
                       />
-                      <Area stackId="ob" type="monotone" dataKey="obLow" fill="transparent" stroke="none" legendType="none" />
-                      <Area stackId="ob" type="monotone" dataKey="obBandH" fill="#3b82f6" fillOpacity={0.12} stroke="none" legendType="none" />
-                      {capData.obAcc !== "hidden" && (
-                        <Line type="monotone" dataKey="ob" stroke="#3b82f6" strokeWidth={1.5} dot={false} strokeDasharray={capData.obAcc === "estimate" ? "4 2" : undefined} connectNulls name="OB" />
-                      )}
-                      <Area stackId="prom" type="monotone" dataKey="promLow" fill="transparent" stroke="none" legendType="none" />
-                      <Area stackId="prom" type="monotone" dataKey="promBandH" fill="#22c55e" fillOpacity={0.12} stroke="none" legendType="none" />
-                      {capData.promAcc !== "hidden" && (
-                        <Line type="monotone" dataKey="prom" stroke="#22c55e" strokeWidth={1.5} dot={false} strokeDasharray={capData.promAcc === "estimate" ? "4 2" : undefined} connectNulls name="Prom" />
-                      )}
-                      <Area stackId="china" type="monotone" dataKey="chinaLow" fill="transparent" stroke="none" legendType="none" />
-                      <Area stackId="china" type="monotone" dataKey="chinaBandH" fill="#ef4444" fillOpacity={0.12} stroke="none" legendType="none" />
-                      {capData.chinaAcc !== "hidden" && (
-                        <Line type="monotone" dataKey="china" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray={capData.chinaAcc === "estimate" ? "4 2" : undefined} connectNulls name="China" />
-                      )}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                  <div className="flex gap-3 mt-1 justify-end">
-                    {capData.obAcc !== "hidden" && <span className="flex items-center gap-1 text-[9px] text-blue-400"><span className="w-3 h-px bg-blue-400 inline-block" />OB</span>}
-                    {capData.promAcc !== "hidden" && <span className="flex items-center gap-1 text-[9px] text-green-400"><span className="w-3 h-px bg-green-400 inline-block" />Prom</span>}
-                    {capData.chinaAcc !== "hidden" && <span className="flex items-center gap-1 text-[9px] text-red-400"><span className="w-3 h-px bg-red-400 inline-block" />China</span>}
-                  </div>
-                </>
-              )}
-            </ChartPanel>
-
-            {/* Panel 2: Training Loss (static) */}
-            <ChartPanel title="Training Loss">
-              <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={TRAINING_LOSS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -14 }}>
-                  <CartesianGrid stroke="#222" strokeDasharray="3 3" />
-                  <XAxis dataKey="step" tick={{ fill: "#555", fontSize: 9 }} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${v / 1000}k` : String(v)} />
-                  <YAxis tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={30} tickFormatter={(v: number) => v.toFixed(1)} />
-                  <Tooltip
-                    contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
-                    formatter={(val: number | undefined) => [val != null ? val.toFixed(4) : "", "loss"]}
-                    labelFormatter={(v: unknown) => `step ${v}`}
-                  />
-                  <Line type="monotone" dataKey="loss" stroke="#f97316" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartPanel>
-
-            {/* Panel 3: Learning Rate Schedule (static) */}
-            <ChartPanel title="Learning Rate">
-              <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={LR_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
-                  <CartesianGrid stroke="#222" strokeDasharray="3 3" />
-                  <XAxis dataKey="step" tick={{ fill: "#555", fontSize: 9 }} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${v / 1000}k` : String(v)} />
-                  <YAxis tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={34} tickFormatter={(v: number) => v === 0 ? "0" : v.toExponential(0)} />
-                  <Tooltip
-                    contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
-                    formatter={(val: number | undefined) => [val != null ? val.toExponential(2) : "", "lr"]}
-                    labelFormatter={(v: unknown) => `step ${v}`}
-                  />
-                  <Line type="monotone" dataKey="lr" stroke="#a78bfa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartPanel>
-
-            {/* Panel 4: Throughput tokens/sec (static) */}
-            <ChartPanel title="Throughput (tok/s)">
-              <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={THROUGHPUT_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
-                  <CartesianGrid stroke="#222" strokeDasharray="3 3" />
-                  <XAxis dataKey="step" tick={{ fill: "#555", fontSize: 9 }} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${v / 1000}k` : String(v)} />
-                  <YAxis tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={36} domain={[42000, 47000]} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
-                    formatter={(val: number | undefined) => [val != null ? val.toLocaleString() : "", "tok/s"]}
-                    labelFormatter={(v: unknown) => `step ${v}`}
-                  />
-                  <Line type="monotone" dataKey="tps" stroke="#34d399" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartPanel>
-          </div>
-
-          {/* ── Filter bar ─────────────────────────────────────────── */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Filters:</span>
-            {FILTER_PILLS.map((f) => (
-              <span
-                key={f.label}
-                className="flex items-center gap-1 bg-[#1b1d2a] text-white/80 text-[10px] px-2 py-0.5 rounded border border-white/15"
-              >
-                {f.label}
-                <button className="text-neutral-500 hover:text-white ml-0.5 leading-none">×</button>
-              </span>
-            ))}
-            <button className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">+ Add filter</button>
-          </div>
-
-          {/* ── Run table ──────────────────────────────────────────── */}
-          <div className="bg-[#111] rounded border border-white/10 overflow-hidden">
-            <div className="overflow-x-auto">
-              <div className="min-w-[600px]">
-                <div className="grid grid-cols-[minmax(0,1fr)_62px_52px_60px_54px_56px_44px_88px] text-[10px] text-neutral-500 uppercase tracking-wider px-3 py-2 border-b border-white/5">
-                  <span>Run</span>
-                  <span>Status</span>
-                  <span>Loss</span>
-                  <span>Step</span>
-                  <span>Duration</span>
-                  <span>Created</span>
-                  <span>User</span>
-                  <span>Tags</span>
-                </div>
-                {RUNS.map((r) => (
-                  <div
-                    key={r.name}
-                    className={`grid grid-cols-[minmax(0,1fr)_62px_52px_60px_54px_56px_44px_88px] text-xs px-3 py-2 border-b border-white/5 hover:bg-white/5 cursor-pointer tabular-nums`}
-                  >
-                    <span className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: r.color }} />
-                      <span className="text-blue-400 truncate">{r.name}</span>
-                    </span>
-                    <span className={getRunStatusColor(r.status)}>{r.status}</span>
-                    <span className="text-neutral-300 font-mono">{r.loss}</span>
-                    <span className="text-neutral-400 font-mono">{r.step}</span>
-                    <span className="text-neutral-400">{r.duration}</span>
-                    <span className="text-neutral-400">{r.created}</span>
-                    <span className="text-neutral-400">{r.user}</span>
-                    <span className="flex flex-wrap gap-0.5">
-                      {r.tags.map((t) => (
-                        <span key={t} className="bg-blue-900/40 text-blue-300 text-[9px] px-1 py-0.5 rounded border border-blue-700/30">{t}</span>
-                      ))}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ── GPU sparklines ─────────────────────────────────────── */}
-          <div className="bg-[#111] rounded border border-white/10 p-3">
-            <div className="text-xs text-neutral-400 mb-2 font-medium">System / GPU Utilization</div>
-            <div className="space-y-1.5">
-              {GPU_SPARKLINES.map((gpu) => (
-                <div key={gpu.label} className="flex items-center gap-2 text-xs">
-                  <span className="text-neutral-500 w-12 shrink-0 text-[10px]">{gpu.label}</span>
-                  <div className="shrink-0">
-                    <LineChart width={90} height={24} data={gpu.data} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-                      <Line type="monotone" dataKey="v" stroke="#eab308" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                      <Line type="monotone" dataKey="loss" stroke="#f97316" strokeWidth={1.5} dot={false} isAnimationActive={false} />
                     </LineChart>
-                  </div>
-                  <span className="text-neutral-400 w-8 text-right tabular-nums text-[10px]">{gpu.pct}</span>
+                  </ResponsiveContainer>
+                </ChartPanel>
+
+                {/* Panel 3: Learning Rate Schedule (static) */}
+                <ChartPanel title="Learning Rate">
+                  <ResponsiveContainer width="100%" height={120}>
+                    <LineChart data={LR_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
+                      <CartesianGrid stroke="#222" strokeDasharray="3 3" />
+                      <XAxis dataKey="step" tick={{ fill: "#555", fontSize: 9 }} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${v / 1000}k` : String(v)} />
+                      <YAxis tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={34} tickFormatter={(v: number) => v === 0 ? "0" : v.toExponential(0)} />
+                      <Tooltip
+                        contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
+                        formatter={(val: number | undefined) => [val != null ? val.toExponential(2) : "", "lr"]}
+                        labelFormatter={(v: unknown) => `step ${v}`}
+                      />
+                      <Line type="monotone" dataKey="lr" stroke="#a78bfa" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartPanel>
+
+                {/* Panel 4: Throughput tokens/sec (static) */}
+                <ChartPanel title="Throughput (tok/s)">
+                  <ResponsiveContainer width="100%" height={120}>
+                    <LineChart data={THROUGHPUT_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
+                      <CartesianGrid stroke="#222" strokeDasharray="3 3" />
+                      <XAxis dataKey="step" tick={{ fill: "#555", fontSize: 9 }} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${v / 1000}k` : String(v)} />
+                      <YAxis tick={{ fill: "#555", fontSize: 9 }} tickLine={false} width={36} domain={[42000, 47000]} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                      <Tooltip
+                        contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: 4, fontSize: 10 }}
+                        formatter={(val: number | undefined) => [val != null ? val.toLocaleString() : "", "tok/s"]}
+                        labelFormatter={(v: unknown) => `step ${v}`}
+                      />
+                      <Line type="monotone" dataKey="tps" stroke="#34d399" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartPanel>
+              </div>
+
+              {/* ── GPU sparklines ─────────────────────────────────── */}
+              <div className="bg-[#111] rounded border border-white/10 p-3">
+                <div className="text-xs text-neutral-400 mb-2 font-medium">System / GPU Utilization</div>
+                <div className="space-y-1.5">
+                  {GPU_SPARKLINES.map((gpu) => (
+                    <div key={gpu.label} className="flex items-center gap-2 text-xs">
+                      <span className="text-neutral-500 w-12 shrink-0 text-[10px]">{gpu.label}</span>
+                      <div className="shrink-0">
+                        <LineChart width={90} height={24} data={gpu.data} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                          <Line type="monotone" dataKey="v" stroke="#eab308" dot={false} strokeWidth={1.5} isAnimationActive={false} />
+                        </LineChart>
+                      </div>
+                      <span className="text-neutral-400 w-8 text-right tabular-nums text-[10px]">{gpu.pct}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            </>
+          )}
+
+          {activeTab !== "runs" && activeTab !== "charts" && (
+            <div className="flex items-center justify-center h-32 text-neutral-600 text-xs">
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} — coming soon
             </div>
-          </div>
+          )}
 
         </div>
         )}

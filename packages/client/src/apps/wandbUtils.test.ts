@@ -4,10 +4,11 @@
  * Invariants tested:
  * - INV-1: getRunStatusColor returns correct CSS class per status string
  * - INV-2: buildCapData returns null for empty state, correct shape when populated
+ * - INV-3..7: getRuns returns faction/round-appropriate dynamic run entries
  */
 
 import { describe, expect, it } from "bun:test";
-import { getRunStatusColor, buildCapData } from "./wandbUtils.js";
+import { getRunStatusColor, buildCapData, getRuns } from "./wandbUtils.js";
 import type { StateView } from "@takeoff/shared";
 
 function makeView(
@@ -131,5 +132,121 @@ describe("buildCapData", () => {
     expect(result!.data).toHaveLength(2);
     // Second data point should be from sv at round 2
     expect(result!.data[1].ob).toBe(80);
+  });
+});
+
+describe("getRuns", () => {
+  it("INV-5: returns empty array when faction is null", () => {
+    const result = getRuns(1, null, null);
+    expect(result).toEqual([]);
+  });
+
+  it("INV-1: R1 openbrain includes Agent-1 with status finished", () => {
+    const runs = getRuns(1, "openbrain", null);
+    const agent1 = runs.find((r) => r.name === "agent-1-pretrain");
+    expect(agent1).toBeDefined();
+    expect(agent1!.status).toBe("finished");
+  });
+
+  it("INV-1: R1 openbrain includes Agent-2 queued", () => {
+    const runs = getRuns(1, "openbrain", null);
+    const agent2 = runs.find((r) => r.name === "agent-2-staging");
+    expect(agent2).toBeDefined();
+    expect(agent2!.status).toBe("queued");
+  });
+
+  it("INV-2: R3 openbrain with misalignmentSeverity <= 25 does NOT include crashed alignment run", () => {
+    const sv = makeView(70, 60, 50);
+    // default misalignmentSeverity is 0 in makeView
+    const runs = getRuns(3, "openbrain", sv);
+    const alignRun = runs.find((r) => r.name === "alignment-probe-v7");
+    expect(alignRun).toBeUndefined();
+  });
+
+  it("INV-2: R3 openbrain with misalignmentSeverity > 25 includes crashed alignment-probe-v7", () => {
+    // Build a StateView with high misalignment
+    const fog = (v: number) => ({ value: v, accuracy: "exact" as const });
+    const sv: import("@takeoff/shared").StateView = {
+      obCapability: fog(70),
+      promCapability: fog(60),
+      chinaCapability: fog(50),
+      usChinaGap: fog(0),
+      obPromGap: fog(0),
+      alignmentConfidence: fog(50),
+      misalignmentSeverity: fog(30), // > 25
+      publicAwareness: fog(50),
+      publicSentiment: fog(0),
+      economicDisruption: fog(20),
+      taiwanTension: fog(30),
+      obInternalTrust: fog(80),
+      securityLevelOB: fog(3),
+      securityLevelProm: fog(3),
+      intlCooperation: fog(50),
+      marketIndex: fog(100),
+      regulatoryPressure: fog(30),
+      globalMediaCycle: fog(0),
+      chinaWeightTheftProgress: fog(0),
+      aiAutonomyLevel: fog(20),
+      whistleblowerPressure: fog(10),
+      openSourceMomentum: fog(40),
+      doomClockDistance: fog(5),
+      obMorale: fog(75),
+      obBurnRate: fog(30),
+      obBoardConfidence: fog(70),
+      promMorale: fog(70),
+      promBurnRate: fog(35),
+      promBoardConfidence: fog(65),
+      promSafetyBreakthroughProgress: fog(10),
+      cdzComputeUtilization: fog(80),
+      ccpPatience: fog(60),
+      domesticChipProgress: fog(25),
+    };
+    const runs = getRuns(3, "openbrain", sv);
+    const alignRun = runs.find((r) => r.name === "alignment-probe-v7");
+    expect(alignRun).toBeDefined();
+    expect(alignRun!.status).toBe("crashed");
+  });
+
+  it("INV-3: R1 prometheus includes alignment-eval-suite run", () => {
+    const runs = getRuns(1, "prometheus", null);
+    const evalRun = runs.find((r) => r.name === "alignment-eval-suite");
+    expect(evalRun).toBeDefined();
+    expect(evalRun!.status).toBe("running");
+  });
+
+  it("INV-4: R2 china includes deepcent-frontier-3 run", () => {
+    const runs = getRuns(2, "china", null);
+    const dcRun = runs.find((r) => r.name === "deepcent-frontier-3");
+    expect(dcRun).toBeDefined();
+    expect(dcRun!.status).toBe("running");
+  });
+
+  it("returns non-empty array for external faction (empty — not a training faction)", () => {
+    const runs = getRuns(1, "external", null);
+    expect(runs).toEqual([]);
+  });
+
+  it("R4 openbrain with low alignmentConfidence shows failed safety-eval run", () => {
+    const fog = (v: number) => ({ value: v, accuracy: "exact" as const });
+    const sv: import("@takeoff/shared").StateView = {
+      ...makeView(70, 60, 50),
+      alignmentConfidence: fog(30), // < 35
+    };
+    const runs = getRuns(4, "openbrain", sv);
+    const safetyRun = runs.find((r) => r.name === "safety-eval-comprehensive");
+    expect(safetyRun).toBeDefined();
+    expect(safetyRun!.status).toBe("failed");
+  });
+
+  it("R2 prometheus with promSafetyBreakthroughProgress > 30 includes safety-sprint", () => {
+    const fog = (v: number) => ({ value: v, accuracy: "exact" as const });
+    const sv: import("@takeoff/shared").StateView = {
+      ...makeView(70, 60, 50),
+      promSafetyBreakthroughProgress: fog(35), // > 30
+    };
+    const runs = getRuns(2, "prometheus", sv);
+    const sprintRun = runs.find((r) => r.name === "safety-sprint-v1");
+    expect(sprintRun).toBeDefined();
+    expect(sprintRun!.status).toBe("running");
   });
 });
