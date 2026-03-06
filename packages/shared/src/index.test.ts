@@ -786,4 +786,227 @@ describe("computeEndingArcs", () => {
     const publicArc = arcs.find((a) => a.id === "publicReaction")!;
     expect(publicArc.result).toBe(0); // Riots and upheaval
   });
+
+  // ── resolveAiRace branch coverage ──────────────────────────────────────────
+
+  it("resolveAiRace: OB dominant when capable, leading prom, china not close", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, obCapability: 70, obPromGap: 5, usChinaGap: 5 });
+    expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(2);
+  });
+
+  it("resolveAiRace: 3-way stalemate when no condition fires", () => {
+    // BASE_STATE: obCapability=50 (<65), chinaClose=false, promClosing=false → result 0
+    const arcs = computeEndingArcs(BASE_STATE);
+    expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(0);
+  });
+
+  it("resolveAiRace: China parity via high compute + chip independence", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, usChinaGap: 0, cdzComputeUtilization: 85, domesticChipProgress: 65 });
+    expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(1);
+  });
+
+  it("resolveAiRace: Prometheus leads via safety breakthrough", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, promSafetyBreakthroughProgress: 85 });
+    expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(3);
+  });
+
+  it("resolveAiRace: Prometheus leads via gap closure", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, obPromGap: 0, promCapability: 60 });
+    expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(3);
+  });
+
+  it("resolveAiRace: chinaClose takes priority over promClosing (returns 1 not 3)", () => {
+    // Both chinaClose and promClosing are true; china check comes first → 1
+    const arcs = computeEndingArcs({
+      ...BASE_STATE,
+      usChinaGap: -3, // chinaClose
+      promSafetyBreakthroughProgress: 85, // promClosing
+    });
+    expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(1);
+  });
+
+  // ── resolveAlignment branch coverage ───────────────────────────────────────
+
+  it("resolveAlignment: doomClockDistance=2 is NOT misaligned (boundary)", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, doomClockDistance: 2 });
+    expect(arcs.find((a) => a.id === "alignment")!.result).not.toBe(0);
+  });
+
+  it("resolveAlignment: superficial alignment from moderate confidence + high severity", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 30, misalignmentSeverity: 55 });
+    expect(arcs.find((a) => a.id === "alignment")!.result).toBe(1);
+  });
+
+  it("resolveAlignment: aligned to oversight from moderate confidence + low severity", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 55, misalignmentSeverity: 30, aiAutonomyLevel: 60 });
+    expect(arcs.find((a) => a.id === "alignment")!.result).toBe(2);
+  });
+
+  it("resolveAlignment: full misaligned fallthrough when confidence low and severity high", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 20, misalignmentSeverity: 70 });
+    expect(arcs.find((a) => a.id === "alignment")!.result).toBe(0);
+  });
+
+  // ── resolveControl branch coverage ─────────────────────────────────────────
+
+  it("resolveControl: distributed/democratic when cooperation+trust both high", () => {
+    const arcs = computeEndingArcs({
+      ...BASE_STATE,
+      intlCooperation: 65,
+      obInternalTrust: 65,
+      obBoardConfidence: 55,
+      promBoardConfidence: 55,
+      aiAutonomyLevel: 50,
+    });
+    expect(arcs.find((a) => a.id === "control")!.result).toBe(4);
+  });
+
+  it("resolveControl: AI outpaced oversight overrides all when aiAutonomyLevel > 70", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, aiAutonomyLevel: 75 });
+    expect(arcs.find((a) => a.id === "control")!.result).toBe(1);
+  });
+
+  it("resolveControl: government controlled via high regulatoryPressure", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, regulatoryPressure: 75 });
+    expect(arcs.find((a) => a.id === "control")!.result).toBe(3);
+  });
+
+  it("resolveControl: single company when OB dominates with entrenched board", () => {
+    const arcs = computeEndingArcs({
+      ...BASE_STATE,
+      obCapability: 80,
+      chinaCapability: 40,
+      intlCooperation: 20,
+      obBoardConfidence: 65,
+    });
+    expect(arcs.find((a) => a.id === "control")!.result).toBe(2);
+  });
+
+  it("resolveControl: AI autonomous when low alignment + capable systems (no one controls)", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 20, obCapability: 75, aiAutonomyLevel: 50 });
+    expect(arcs.find((a) => a.id === "control")!.result).toBe(1);
+  });
+
+  // ── resolveEconomy branch coverage ─────────────────────────────────────────
+
+  it("resolveEconomy: AI-driven boom when low disruption + high market + low burn", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 10, marketIndex: 80 });
+    // adjustedDisruption = 10 + (20+20)/2*0.2 - (80-50)*0.3 = 10 + 4 - 9 = 5 → boom
+    expect(arcs.find((a) => a.id === "economy")!.result).toBe(3);
+  });
+
+  it("resolveEconomy: collapse when high disruption + low market + high burn rates", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 80, marketIndex: 20, obBurnRate: 80, promBurnRate: 80 });
+    // adjustedDisruption = 80 + 80*0.2 - (20-50)*0.3 = 80 + 16 + 9 = 105 → collapse
+    expect(arcs.find((a) => a.id === "economy")!.result).toBe(0);
+  });
+
+  it("resolveEconomy: disruption with adaptation when adjustedDisruption mid-range", () => {
+    // adjustedDisruption = 45 + 4 - 0 = 49 → result 2
+    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 45, marketIndex: 50 });
+    expect(arcs.find((a) => a.id === "economy")!.result).toBe(2);
+  });
+
+  // ── resolvePrometheusFate branch coverage ──────────────────────────────────
+
+  it("resolvePrometheusFate: marginalized when board confidence and morale both low", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, promBoardConfidence: 20, promMorale: 30 });
+    expect(arcs.find((a) => a.id === "prometheusFate")!.result).toBe(0);
+  });
+
+  it("resolvePrometheusFate: became trusted lab when prom capability matches or beats OB", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, promCapability: 60, obCapability: 50, obPromGap: -5 });
+    expect(arcs.find((a) => a.id === "prometheusFate")!.result).toBe(4);
+  });
+
+  it("resolvePrometheusFate: merger when OB leads by small gap + low prom morale", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, obPromGap: 3, promMorale: 50 });
+    expect(arcs.find((a) => a.id === "prometheusFate")!.result).toBe(2);
+  });
+
+  it("resolvePrometheusFate: went open-source via intlCooperation (no higher condition)", () => {
+    // promMorale=60 prevents merger; intlCooperation=45 triggers open-source
+    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 45, promMorale: 60 });
+    expect(arcs.find((a) => a.id === "prometheusFate")!.result).toBe(1);
+  });
+
+  // ── resolveUsChinaRelations branch coverage ────────────────────────────────
+
+  it("resolveUsChinaRelations: arms control from moderate cooperation + low tension", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 55, taiwanTension: 35 });
+    expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(3);
+  });
+
+  it("resolveUsChinaRelations: cold war fallthrough when cooperation and tension both low", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 20, taiwanTension: 50 });
+    expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(1);
+  });
+
+  it("resolveUsChinaRelations: chipReducesTension raises cooperation ceiling to 35", () => {
+    // Without chip progress ceiling=20, so taiwanTension=30 would block result 4.
+    // With domesticChipProgress>60, ceiling=35, so taiwanTension=30 allows result 4.
+    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 75, taiwanTension: 30, domesticChipProgress: 65 });
+    expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(4);
+  });
+
+  it("resolveUsChinaRelations: weight theft + high tension forces conflict", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, chinaWeightTheftProgress: 85, taiwanTension: 75 });
+    expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(0);
+  });
+
+  // ── resolveOpenSource branch coverage ─────────────────────────────────────
+
+  it("resolveOpenSource: closed won when both labs locked down + low momentum", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, securityLevelOB: 4, securityLevelProm: 4, openSourceMomentum: 30 });
+    expect(arcs.find((a) => a.id === "openSource")!.result).toBe(2);
+  });
+
+  it("resolveOpenSource: irrelevant fallthrough when momentum, security, and cooperation all low", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 20, openSourceMomentum: 20, securityLevelOB: 3, securityLevelProm: 3 });
+    expect(arcs.find((a) => a.id === "openSource")!.result).toBe(3);
+  });
+
+  it("resolveOpenSource: strategic open-source via high momentum", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, openSourceMomentum: 65 });
+    expect(arcs.find((a) => a.id === "openSource")!.result).toBe(1);
+  });
+
+  // ── resolveTaiwan branch coverage ──────────────────────────────────────────
+
+  it("resolveTaiwan: de-escalation when tension low + cooperation present", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, taiwanTension: 35, intlCooperation: 45 });
+    expect(arcs.find((a) => a.id === "taiwan")!.result).toBe(3);
+  });
+
+  it("resolveTaiwan: non-issue via domestic chip progress reducing Taiwan motivation", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, domesticChipProgress: 65, taiwanTension: 45 });
+    expect(arcs.find((a) => a.id === "taiwan")!.result).toBe(4);
+  });
+
+  it("resolveTaiwan: standoff when tension is mid-range", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, taiwanTension: 55 });
+    expect(arcs.find((a) => a.id === "taiwan")!.result).toBe(2);
+  });
+
+  it("resolveTaiwan: blockade when tension high but not extreme", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, taiwanTension: 65 });
+    expect(arcs.find((a) => a.id === "taiwan")!.result).toBe(1);
+  });
+
+  // ── resolvePublicReaction branch coverage ──────────────────────────────────
+
+  it("resolvePublicReaction: sustained protest when negative sentiment + moderate awareness", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, publicSentiment: -30, publicAwareness: 60 });
+    expect(arcs.find((a) => a.id === "publicReaction")!.result).toBe(1);
+  });
+
+  it("resolvePublicReaction: anxious but stable when sentiment slightly positive", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, publicSentiment: 5, publicAwareness: 50 });
+    expect(arcs.find((a) => a.id === "publicReaction")!.result).toBe(2);
+  });
+
+  it("resolvePublicReaction: unaware when publicAwareness <= 20 regardless of sentiment", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, publicAwareness: 15, publicSentiment: -80 });
+    expect(arcs.find((a) => a.id === "publicReaction")!.result).toBe(4);
+  });
 });
