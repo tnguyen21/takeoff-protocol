@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { AppProps } from "./types.js";
 import {
   ComposedChart,
@@ -126,12 +126,34 @@ function ChartPanel({ title, children }: { title: string; children: React.ReactN
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export const WandBApp = React.memo(function WandBApp(_props: AppProps) {
+function formatRelativeTime(timestamp: string): string {
+  const now = Date.now();
+  const then = new Date(timestamp).getTime();
+  if (isNaN(then)) return timestamp;
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const stateView = useGameStore((s) => s.stateView);
   const stateHistory = useGameStore((s) => s.stateHistory);
   const round = useGameStore((s) => s.round);
 
+  const [activeTab, setActiveTab] = useState("charts");
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
   const capData = buildCapData(stateHistory, round, stateView);
+
+  const reports = [...content.filter((i) => i.type === "chart")].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
+  const selectedReport = reports.find((r) => r.id === selectedReportId) ?? null;
 
   return (
     <div className="flex h-full bg-[#0d0d0d] text-white text-sm overflow-hidden">
@@ -150,19 +172,23 @@ export const WandBApp = React.memo(function WandBApp(_props: AppProps) {
 
         {/* Nav items */}
         <div className="flex-1 py-1">
-          {NAV_ITEMS.map((item) => (
-            <div
-              key={item.label}
-              className={`flex items-center gap-2.5 px-4 py-2 text-xs cursor-pointer transition-colors ${
-                item.active
-                  ? "bg-blue-600/20 text-blue-400 border-r-2 border-blue-500"
-                  : "text-neutral-400 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: item.active ? "#3b82f6" : "#444" }} />
-              {item.label}
-            </div>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeTab === item.label.toLowerCase();
+            return (
+              <div
+                key={item.label}
+                onClick={() => setActiveTab(item.label.toLowerCase())}
+                className={`flex items-center gap-2.5 px-4 py-2 text-xs cursor-pointer transition-colors ${
+                  isActive
+                    ? "bg-blue-600/20 text-blue-400 border-r-2 border-blue-500"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isActive ? "#3b82f6" : "#444" }} />
+                {item.label}
+              </div>
+            );
+          })}
         </div>
 
         {/* Footer: active run badge */}
@@ -177,18 +203,77 @@ export const WandBApp = React.memo(function WandBApp(_props: AppProps) {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Header bar */}
         <div className="border-b border-white/10 px-4 py-2 flex items-center gap-3 shrink-0 bg-[#0d0d0d]">
-          <span className="text-neutral-400 text-xs">Charts</span>
+          <span className="text-neutral-400 text-xs capitalize">{activeTab}</span>
           <span className="text-neutral-600 text-xs">/</span>
           <span className="text-white text-xs font-semibold">frontier-model-v3</span>
           <div className="ml-auto flex items-center gap-2">
             <span className="text-neutral-500 text-[10px]">Last 7 days</span>
-            <span className="bg-[#1b1d2a] text-neutral-300 text-[10px] px-2 py-0.5 rounded border border-white/10 cursor-pointer hover:bg-white/10">
-              + Add panel
-            </span>
+            {activeTab === "charts" && (
+              <span className="bg-[#1b1d2a] text-neutral-300 text-[10px] px-2 py-0.5 rounded border border-white/10 cursor-pointer hover:bg-white/10">
+                + Add panel
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Scrollable body */}
+        {/* ── Reports tab ──────────────────────────────────────────── */}
+        {activeTab === "reports" && (
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            {/* Left: report list */}
+            <div className="w-[220px] shrink-0 border-r border-white/10 overflow-y-auto">
+              {reports.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-neutral-600 text-xs p-4 text-center">
+                  No reports available yet.
+                </div>
+              ) : (
+                reports.map((r) => {
+                  const isSelected = r.id === selectedReportId;
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => setSelectedReportId(r.id)}
+                      className={`px-3 py-2.5 border-b border-white/5 cursor-pointer transition-colors ${
+                        isSelected ? "bg-blue-600/20 border-l-2 border-l-blue-500 pl-2.5" : "hover:bg-white/5"
+                      }`}
+                    >
+                      <div className={`text-xs font-medium leading-snug ${isSelected ? "text-blue-300" : "text-white"}`}>
+                        {r.subject ?? r.body.slice(0, 60)}
+                      </div>
+                      <div className="text-[10px] text-neutral-500 mt-0.5">{formatRelativeTime(r.timestamp)}</div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Right: detail pane */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {selectedReport ? (
+                <div>
+                  <div className="mb-3 pb-3 border-b border-white/10">
+                    <div className="text-sm font-semibold text-white mb-1">{selectedReport.subject ?? "Report"}</div>
+                    <div className="text-[10px] text-neutral-500">{formatRelativeTime(selectedReport.timestamp)}</div>
+                  </div>
+                  <pre className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed font-mono">{selectedReport.body}</pre>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-neutral-600 text-xs">
+                  Select a report
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Other non-charts placeholder ─────────────────────────── */}
+        {activeTab !== "charts" && activeTab !== "reports" && (
+          <div className="flex-1 flex items-center justify-center text-neutral-600 text-xs">
+            Coming soon
+          </div>
+        )}
+
+        {/* Scrollable body — Charts tab */}
+        {activeTab === "charts" && (
         <div className="flex-1 overflow-y-auto p-3 space-y-3">
 
           {/* ── Chart grid 2×2 ─────────────────────────────────────── */}
@@ -362,6 +447,7 @@ export const WandBApp = React.memo(function WandBApp(_props: AppProps) {
           </div>
 
         </div>
+        )}
       </div>
     </div>
   );

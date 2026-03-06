@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-e936926451f7
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-531d15c984cb
 ├── docs
 │   ├── AUDIT-CLIENT.md
 │   ├── AUDIT-SERVER.md
@@ -25,13 +25,13 @@
 │   │   │   ├── App.tsx
 │   │   │   ├── index.css
 │   │   │   ├── main.tsx
-│   │   │   └── socket.ts
+│   │   │   ├── socket.ts
+│   │   │   └── utils.ts
 │   │   ├── index.html
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── vite.config.ts
 │   ├── server
-│   │   ├── logs
 │   │   ├── src
 │   │   │   ├── content
 │   │   │   ├── generation
@@ -85,4 +85,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 63 files
+22 directories, 64 files
