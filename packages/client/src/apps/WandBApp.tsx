@@ -12,7 +12,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useGameStore } from "../stores/game.js";
-import { buildCapData, buildSystemData, getRunStatusColor, getRuns } from "./wandbUtils.js";
+import { buildCapData, buildSystemData, getRunStatusColor, getRuns, getArtifacts } from "./wandbUtils.js";
+import type { ArtifactEntry, ArtifactSecurityStatus } from "./wandbUtils.js";
 
 // ── Static chart data ────────────────────────────────────────────────────────
 
@@ -150,6 +151,63 @@ function RunTable({ runs }: { runs: ReturnType<typeof getRuns> }) {
   );
 }
 
+// ── Artifact helpers ─────────────────────────────────────────────────────────
+
+const SECURITY_BADGE: Record<ArtifactSecurityStatus, { label: string; cls: string }> = {
+  SECURED: { label: "SECURED", cls: "bg-green-900/40 text-green-400 border-green-700/30" },
+  STANDARD: { label: "STANDARD", cls: "bg-yellow-900/40 text-yellow-400 border-yellow-700/30" },
+  VULNERABLE: { label: "VULNERABLE", cls: "bg-red-900/40 text-red-400 border-red-700/30" },
+};
+
+const TYPE_BADGE: Record<ArtifactEntry["type"], string> = {
+  model: "bg-blue-900/40 text-blue-300 border-blue-700/30",
+  dataset: "bg-purple-900/40 text-purple-300 border-purple-700/30",
+  framework: "bg-cyan-900/40 text-cyan-300 border-cyan-700/30",
+};
+
+function ArtifactCard({ artifact }: { artifact: ArtifactEntry }) {
+  const sec = SECURITY_BADGE[artifact.securityStatus];
+  return (
+    <div className={`bg-[#111] rounded border border-white/10 p-3 flex flex-col gap-2 ${artifact.archived ? "opacity-60" : ""}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-white text-xs font-mono font-semibold truncate">{artifact.name}</span>
+          {artifact.draft && (
+            <span className="text-[9px] px-1 py-0.5 rounded border bg-neutral-800 text-neutral-400 border-white/10 shrink-0">DRAFT</span>
+          )}
+          {artifact.archived && (
+            <span className="text-[9px] px-1 py-0.5 rounded border bg-neutral-800 text-neutral-500 border-white/10 shrink-0">ARCHIVED</span>
+          )}
+          {artifact.classified && (
+            <span className="text-[9px] px-1 py-0.5 rounded border bg-red-900/60 text-red-300 border-red-700/40 shrink-0">CLASSIFIED</span>
+          )}
+        </div>
+        <span className={`text-[9px] px-1.5 py-0.5 rounded border shrink-0 font-semibold tracking-wide ${sec.cls}`}>{sec.label}</span>
+      </div>
+
+      {artifact.breachAffected && (
+        <div className="text-[9px] text-red-400 font-semibold bg-red-900/20 border border-red-700/30 rounded px-2 py-1">
+          BREACH CONFIRMED — WEIGHTS COMPROMISED
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 text-[10px] text-neutral-500">
+        <span className={`px-1.5 py-0.5 rounded border ${TYPE_BADGE[artifact.type]}`}>{artifact.type}</span>
+        <span>{artifact.size}</span>
+        <span>{artifact.created}</span>
+      </div>
+
+      {artifact.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {artifact.tags.map((t) => (
+            <span key={t} className="text-[9px] px-1 py-0.5 rounded border bg-[#1b1d2a] text-neutral-400 border-white/10">{t}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 function formatRelativeTime(timestamp: string): string {
@@ -179,6 +237,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
   const runs = getRuns(round, selectedFaction, stateView);
   const activeRunCount = runs.filter((r) => r.status === "running").length;
   const systemData = buildSystemData(stateView, selectedFaction, round);
+  const artifactResult = getArtifacts(round, selectedFaction, stateView);
 
   const reports = [...content.filter((i) => i.type === "chart")].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -323,6 +382,26 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
                 </div>
               ) : (
                 <RunTable runs={runs} />
+              )}
+            </>
+          )}
+
+          {/* ── Artifacts tab ──────────────────────────────────────── */}
+          {activeTab === "artifacts" && (
+            <>
+              {artifactResult.breachWarning && (
+                <div className="bg-red-900/20 border border-red-700/40 rounded px-3 py-2 text-xs text-red-400 font-semibold tracking-wide">
+                  ⚠ UNAUTHORIZED ACCESS DETECTED — weight repository integrity compromised
+                </div>
+              )}
+              {artifactResult.artifacts.length === 0 ? (
+                <div className="flex items-center justify-center h-32 text-neutral-600 text-xs">
+                  No artifacts available
+                </div>
+              ) : (
+                artifactResult.artifacts.map((a) => (
+                  <ArtifactCard key={a.name} artifact={a} />
+                ))
               )}
             </>
           )}
@@ -528,7 +607,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
             </>
           )}
 
-          {activeTab !== "runs" && activeTab !== "charts" && activeTab !== "system" && (
+          {activeTab !== "runs" && activeTab !== "charts" && activeTab !== "system" && activeTab !== "artifacts" && (
             <div className="flex items-center justify-center h-32 text-neutral-600 text-xs">
               {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} — coming soon
             </div>

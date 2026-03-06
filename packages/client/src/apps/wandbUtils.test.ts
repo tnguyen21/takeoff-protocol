@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { getRunStatusColor, buildCapData, buildSystemData, getRuns } from "./wandbUtils.js";
+import { getRunStatusColor, buildCapData, buildSystemData, getRuns, getArtifacts } from "./wandbUtils.js";
 import type { StateView } from "@takeoff/shared";
 
 function makeView(
@@ -306,5 +306,98 @@ describe("getRuns", () => {
     const sprintRun = runs.find((r) => r.name === "safety-sprint-v1");
     expect(sprintRun).toBeDefined();
     expect(sprintRun!.status).toBe("running");
+// ── Helper for artifact tests ────────────────────────────────────────────────
+
+function makeViewWithValues(overrides: Partial<{ securityLevelOB: number; securityLevelProm: number; chinaWeightTheftProgress: number }>): StateView {
+  const base = makeView(50, 50, 50);
+  return {
+    ...base,
+    securityLevelOB: { value: overrides.securityLevelOB ?? 3, accuracy: "exact" },
+    securityLevelProm: { value: overrides.securityLevelProm ?? 3, accuracy: "exact" },
+    chinaWeightTheftProgress: { value: overrides.chinaWeightTheftProgress ?? 0, accuracy: "exact" },
+  };
+}
+
+describe("getArtifacts", () => {
+  it("INV-1: OB R3 artifacts include agent-4-weights", () => {
+    const sv = makeViewWithValues({ securityLevelOB: 3 });
+    const { artifacts } = getArtifacts(3, "openbrain", sv);
+    expect(artifacts.some((a) => a.name === "agent-4-weights")).toBe(true);
+  });
+
+  it("INV-1: OB R1 artifacts include agent-1-weights but not later models", () => {
+    const sv = makeViewWithValues({ securityLevelOB: 3 });
+    const { artifacts } = getArtifacts(1, "openbrain", sv);
+    expect(artifacts.some((a) => a.name === "agent-1-weights")).toBe(true);
+    expect(artifacts.some((a) => a.name === "agent-4-weights")).toBe(false);
+  });
+
+  it("INV-2: OB with securityLevelOB=2 shows STANDARD badge on active artifact", () => {
+    const sv = makeViewWithValues({ securityLevelOB: 2 });
+    const { artifacts } = getArtifacts(3, "openbrain", sv);
+    const active = artifacts.find((a) => a.name === "agent-4-weights");
+    expect(active).toBeDefined();
+    expect(active!.securityStatus).toBe("STANDARD");
+  });
+
+  it("INV-2: OB with securityLevelOB=4 shows SECURED badge", () => {
+    const sv = makeViewWithValues({ securityLevelOB: 4 });
+    const { artifacts } = getArtifacts(3, "openbrain", sv);
+    const active = artifacts.find((a) => a.name === "agent-4-weights");
+    expect(active!.securityStatus).toBe("SECURED");
+  });
+
+  it("INV-2: OB with securityLevelOB=1 shows VULNERABLE badge", () => {
+    const sv = makeViewWithValues({ securityLevelOB: 1 });
+    const { artifacts } = getArtifacts(3, "openbrain", sv);
+    const active = artifacts.find((a) => a.name === "agent-4-weights");
+    expect(active!.securityStatus).toBe("VULNERABLE");
+  });
+
+  it("INV-3: OB with chinaWeightTheftProgress > 60 sets breachWarning", () => {
+    const sv = makeViewWithValues({ chinaWeightTheftProgress: 70 });
+    const result = getArtifacts(3, "openbrain", sv);
+    expect(result.breachWarning).toBe(true);
+    expect(result.breachConfirmed).toBe(false);
+  });
+
+  it("INV-3: OB with chinaWeightTheftProgress <= 60 has no breach warning", () => {
+    const sv = makeViewWithValues({ chinaWeightTheftProgress: 60 });
+    const result = getArtifacts(3, "openbrain", sv);
+    expect(result.breachWarning).toBe(false);
+  });
+
+  it("INV-3: OB with chinaWeightTheftProgress >= 100 sets breachConfirmed and marks artifact", () => {
+    const sv = makeViewWithValues({ chinaWeightTheftProgress: 100 });
+    const result = getArtifacts(3, "openbrain", sv);
+    expect(result.breachConfirmed).toBe(true);
+    const affected = result.artifacts.find((a) => a.name === "agent-4-weights");
+    expect(affected?.breachAffected).toBe(true);
+  });
+
+  it("INV-4: China with chinaWeightTheftProgress >= 100 includes acquired-agent-weights", () => {
+    const sv = makeViewWithValues({ chinaWeightTheftProgress: 100 });
+    const result = getArtifacts(3, "china", sv);
+    expect(result.artifacts.some((a) => a.name === "acquired-agent-weights")).toBe(true);
+    const acquired = result.artifacts.find((a) => a.name === "acquired-agent-weights");
+    expect(acquired?.classified).toBe(true);
+  });
+
+  it("INV-4: China with chinaWeightTheftProgress < 100 does NOT include acquired-agent-weights", () => {
+    const sv = makeViewWithValues({ chinaWeightTheftProgress: 90 });
+    const result = getArtifacts(3, "china", sv);
+    expect(result.artifacts.some((a) => a.name === "acquired-agent-weights")).toBe(false);
+  });
+
+  it("Prometheus artifacts include alignment-framework entries", () => {
+    const sv = makeViewWithValues({ securityLevelProm: 3 });
+    const { artifacts } = getArtifacts(2, "prometheus", sv);
+    expect(artifacts.some((a) => a.name.startsWith("alignment-framework"))).toBe(true);
+  });
+
+  it("null faction returns empty artifacts", () => {
+    const result = getArtifacts(3, null, null);
+    expect(result.artifacts).toHaveLength(0);
+    expect(result.breachWarning).toBe(false);
   });
 });
