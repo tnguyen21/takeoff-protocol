@@ -20,7 +20,10 @@
     "zustand": "^5"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^20.8.3",
     "@tailwindcss/vite": "^4.2.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",

@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-531d15c984cb
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-84e55ca6c1c2
 ├── docs
 │   ├── AUDIT-CLIENT.md
 │   ├── AUDIT-SERVER.md
@@ -26,7 +26,9 @@
 │   │   │   ├── index.css
 │   │   │   ├── main.tsx
 │   │   │   ├── socket.ts
+│   │   │   ├── test-preload.ts
 │   │   │   └── utils.ts
+│   │   ├── bunfig.toml
 │   │   ├── index.html
 │   │   ├── package.json
 │   │   ├── tsconfig.json
@@ -85,4 +87,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 64 files
+22 directories, 66 files
