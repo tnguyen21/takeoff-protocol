@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { resolveDecisions } from "./resolution.js";
 import { computeFogView } from "./fog.js";
 import { computeEndingArcs } from "./endings.js";
-import type { DecisionOption, GameMessage, NpcPersona, NpcTrigger, StateVariables } from "./types.js";
+import type { DecisionOption, Faction, GameMessage, NpcPersona, NpcTrigger, StateVariables } from "./types.js";
 
 const BASE_STATE: StateVariables = {
   obCapability: 50,
@@ -331,6 +331,310 @@ describe("computeFogView", () => {
     for (const key of expectedKeys) {
       expect(view[key]).toBeDefined();
     }
+  });
+
+  // ── INV-1: Determinism ────────────────────────────────────────────────────
+
+  it("INV-1: deterministic — same args produce identical results across all factions", () => {
+    const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
+    for (const faction of factions) {
+      const view1 = computeFogView(BASE_STATE, faction, "ob_ceo", 3);
+      const view2 = computeFogView(BASE_STATE, faction, "ob_ceo", 3);
+      const keys = Object.keys(view1) as (keyof StateVariables)[];
+      for (const key of keys) {
+        expect(view1[key].value).toBe(view2[key].value);
+        expect(view1[key].accuracy).toBe(view2[key].accuracy);
+      }
+    }
+  });
+
+  // ── INV-2: Cross-round variation ─────────────────────────────────────────
+
+  it("INV-2: different rounds produce different estimate values for at least some variables", () => {
+    // prometheus sees obCapability as estimate(15) — must vary across rounds
+    const values = [1, 2, 3, 4, 5].map((round) =>
+      computeFogView(BASE_STATE, "prometheus", "prom_ceo", round).obCapability.value,
+    );
+    expect(new Set(values).size).toBeGreaterThan(1);
+  });
+
+  // ── INV-3: Systematic FOG_MATRIX verification for all 4 factions ─────────
+
+  it("INV-3: openbrain sees correct accuracy level for all variables", () => {
+    const view = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
+    // exact — own capabilities and internal variables
+    expect(view.obCapability).toMatchObject({ accuracy: "exact", value: BASE_STATE.obCapability });
+    expect(view.obPromGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.obPromGap });
+    expect(view.obInternalTrust).toMatchObject({ accuracy: "exact", value: BASE_STATE.obInternalTrust });
+    expect(view.securityLevelOB).toMatchObject({ accuracy: "exact", value: BASE_STATE.securityLevelOB });
+    expect(view.whistleblowerPressure).toMatchObject({ accuracy: "exact", value: BASE_STATE.whistleblowerPressure });
+    expect(view.obMorale).toMatchObject({ accuracy: "exact", value: BASE_STATE.obMorale });
+    expect(view.obBurnRate).toMatchObject({ accuracy: "exact", value: BASE_STATE.obBurnRate });
+    expect(view.obBoardConfidence).toMatchObject({ accuracy: "exact", value: BASE_STATE.obBoardConfidence });
+    // estimate
+    expect(view.promCapability).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.chinaCapability).toMatchObject({ accuracy: "estimate", confidence: 20 });
+    expect(view.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 3 });
+    expect(view.alignmentConfidence).toMatchObject({ accuracy: "estimate", confidence: 20 });
+    expect(view.misalignmentSeverity).toMatchObject({ accuracy: "estimate", confidence: 25 });
+    expect(view.publicAwareness).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.publicSentiment).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.economicDisruption).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.securityLevelProm).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.marketIndex).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.regulatoryPressure).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.globalMediaCycle).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.aiAutonomyLevel).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    // hidden
+    expect(view.chinaWeightTheftProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.openSourceMomentum).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.taiwanTension).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.intlCooperation).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promMorale).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promBurnRate).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promBoardConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promSafetyBreakthroughProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.cdzComputeUtilization).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.ccpPatience).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.domesticChipProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+  });
+
+  it("INV-3: prometheus sees correct accuracy level for all variables", () => {
+    const view = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
+    // exact — own capabilities and internal variables
+    expect(view.promCapability).toMatchObject({ accuracy: "exact", value: BASE_STATE.promCapability });
+    expect(view.obPromGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.obPromGap });
+    expect(view.alignmentConfidence).toMatchObject({ accuracy: "exact", value: BASE_STATE.alignmentConfidence });
+    expect(view.economicDisruption).toMatchObject({ accuracy: "exact", value: BASE_STATE.economicDisruption });
+    expect(view.securityLevelProm).toMatchObject({ accuracy: "exact", value: BASE_STATE.securityLevelProm });
+    expect(view.promMorale).toMatchObject({ accuracy: "exact", value: BASE_STATE.promMorale });
+    expect(view.promBurnRate).toMatchObject({ accuracy: "exact", value: BASE_STATE.promBurnRate });
+    expect(view.promBoardConfidence).toMatchObject({ accuracy: "exact", value: BASE_STATE.promBoardConfidence });
+    expect(view.promSafetyBreakthroughProgress).toMatchObject({ accuracy: "exact", value: BASE_STATE.promSafetyBreakthroughProgress });
+    // estimate
+    expect(view.obCapability).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 4 });
+    expect(view.publicAwareness).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.publicSentiment).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.securityLevelOB).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.intlCooperation).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.marketIndex).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.regulatoryPressure).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.globalMediaCycle).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.aiAutonomyLevel).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    expect(view.openSourceMomentum).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    // hidden
+    expect(view.chinaCapability).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obInternalTrust).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.misalignmentSeverity).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.taiwanTension).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.chinaWeightTheftProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.whistleblowerPressure).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obMorale).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obBurnRate).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obBoardConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.cdzComputeUtilization).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.ccpPatience).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.domesticChipProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+  });
+
+  it("INV-3: china sees correct accuracy level for all variables", () => {
+    const view = computeFogView(BASE_STATE, "china", "china_director", 1);
+    // exact — own internal variables + geopolitical variables china controls
+    expect(view.chinaCapability).toMatchObject({ accuracy: "exact", value: BASE_STATE.chinaCapability });
+    expect(view.usChinaGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.usChinaGap });
+    expect(view.taiwanTension).toMatchObject({ accuracy: "exact", value: BASE_STATE.taiwanTension });
+    expect(view.chinaWeightTheftProgress).toMatchObject({ accuracy: "exact", value: BASE_STATE.chinaWeightTheftProgress });
+    expect(view.cdzComputeUtilization).toMatchObject({ accuracy: "exact", value: BASE_STATE.cdzComputeUtilization });
+    expect(view.ccpPatience).toMatchObject({ accuracy: "exact", value: BASE_STATE.ccpPatience });
+    expect(view.domesticChipProgress).toMatchObject({ accuracy: "exact", value: BASE_STATE.domesticChipProgress });
+    // estimate
+    expect(view.obCapability).toMatchObject({ accuracy: "estimate", confidence: 25 });
+    expect(view.promCapability).toMatchObject({ accuracy: "estimate", confidence: 30 });
+    expect(view.obPromGap).toMatchObject({ accuracy: "estimate", confidence: 3 });
+    expect(view.publicAwareness).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.economicDisruption).toMatchObject({ accuracy: "estimate", confidence: 20 });
+    expect(view.securityLevelOB).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.securityLevelProm).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.intlCooperation).toMatchObject({ accuracy: "estimate", confidence: 10 });
+    // hidden
+    expect(view.alignmentConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.misalignmentSeverity).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.publicSentiment).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obInternalTrust).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.marketIndex).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.regulatoryPressure).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.globalMediaCycle).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.aiAutonomyLevel).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.whistleblowerPressure).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.openSourceMomentum).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obMorale).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obBurnRate).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obBoardConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promMorale).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promBurnRate).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promBoardConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promSafetyBreakthroughProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+  });
+
+  it("INV-3: external sees correct accuracy level for all variables", () => {
+    const view = computeFogView(BASE_STATE, "external", "external_reporter", 1);
+    // exact — public-facing variables
+    expect(view.publicAwareness).toMatchObject({ accuracy: "exact", value: BASE_STATE.publicAwareness });
+    expect(view.publicSentiment).toMatchObject({ accuracy: "exact", value: BASE_STATE.publicSentiment });
+    expect(view.economicDisruption).toMatchObject({ accuracy: "exact", value: BASE_STATE.economicDisruption });
+    expect(view.intlCooperation).toMatchObject({ accuracy: "exact", value: BASE_STATE.intlCooperation });
+    expect(view.marketIndex).toMatchObject({ accuracy: "exact", value: BASE_STATE.marketIndex });
+    expect(view.regulatoryPressure).toMatchObject({ accuracy: "exact", value: BASE_STATE.regulatoryPressure });
+    expect(view.globalMediaCycle).toMatchObject({ accuracy: "exact", value: BASE_STATE.globalMediaCycle });
+    // estimate
+    expect(view.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 4 });
+    expect(view.alignmentConfidence).toMatchObject({ accuracy: "estimate", confidence: 25 });
+    expect(view.taiwanTension).toMatchObject({ accuracy: "estimate", confidence: 15 });
+    expect(view.securityLevelOB).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    expect(view.securityLevelProm).toMatchObject({ accuracy: "estimate", confidence: 1 });
+    // hidden
+    expect(view.obCapability).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promCapability).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.chinaCapability).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obPromGap).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.misalignmentSeverity).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obInternalTrust).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.chinaWeightTheftProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.aiAutonomyLevel).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.whistleblowerPressure).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.openSourceMomentum).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obMorale).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obBurnRate).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.obBoardConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promMorale).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promBurnRate).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promBoardConfidence).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.promSafetyBreakthroughProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.cdzComputeUtilization).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.ccpPatience).toMatchObject({ accuracy: "hidden", value: 0 });
+    expect(view.domesticChipProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+  });
+
+  // ── INV-4: Property test — estimate bounds hold across random states ───────
+
+  it("INV-4: estimate values stay within trueValue ± confidence for 50 random states", () => {
+    type EstimateCheck = { key: keyof StateVariables; faction: Faction; confidence: number };
+    const estimateChecks: EstimateCheck[] = [
+      { key: "obCapability", faction: "prometheus", confidence: 15 },
+      { key: "obCapability", faction: "china", confidence: 25 },
+      { key: "promCapability", faction: "openbrain", confidence: 15 },
+      { key: "promCapability", faction: "china", confidence: 30 },
+      { key: "chinaCapability", faction: "openbrain", confidence: 20 },
+      { key: "usChinaGap", faction: "openbrain", confidence: 3 },
+      { key: "usChinaGap", faction: "prometheus", confidence: 4 },
+      { key: "usChinaGap", faction: "external", confidence: 4 },
+      { key: "obPromGap", faction: "china", confidence: 3 },
+      { key: "alignmentConfidence", faction: "openbrain", confidence: 20 },
+      { key: "alignmentConfidence", faction: "external", confidence: 25 },
+      { key: "misalignmentSeverity", faction: "openbrain", confidence: 25 },
+      { key: "publicAwareness", faction: "openbrain", confidence: 10 },
+      { key: "publicAwareness", faction: "china", confidence: 15 },
+      { key: "publicSentiment", faction: "openbrain", confidence: 15 },
+      { key: "economicDisruption", faction: "openbrain", confidence: 15 },
+      { key: "economicDisruption", faction: "china", confidence: 20 },
+      { key: "taiwanTension", faction: "external", confidence: 15 },
+      { key: "securityLevelOB", faction: "prometheus", confidence: 1 },
+      { key: "securityLevelProm", faction: "openbrain", confidence: 1 },
+      { key: "intlCooperation", faction: "prometheus", confidence: 10 },
+      { key: "intlCooperation", faction: "china", confidence: 10 },
+      { key: "marketIndex", faction: "openbrain", confidence: 10 },
+      { key: "regulatoryPressure", faction: "openbrain", confidence: 10 },
+      { key: "globalMediaCycle", faction: "openbrain", confidence: 1 },
+      { key: "aiAutonomyLevel", faction: "openbrain", confidence: 10 },
+      { key: "openSourceMomentum", faction: "prometheus", confidence: 10 },
+    ];
+
+    const stateKeys = Object.keys(BASE_STATE) as (keyof StateVariables)[];
+
+    for (let i = 0; i < 50; i++) {
+      const state = Object.fromEntries(
+        stateKeys.map((k) => [k, Math.floor(Math.random() * 101)]),
+      ) as StateVariables;
+      const round = Math.floor(Math.random() * 10) + 1;
+
+      for (const { key, faction, confidence } of estimateChecks) {
+        const view = computeFogView(state, faction, "ob_ceo", round);
+        const fv = view[key];
+        expect(fv.accuracy).toBe("estimate");
+        expect(fv.value).toBeGreaterThanOrEqual(state[key] - confidence);
+        expect(fv.value).toBeLessThanOrEqual(state[key] + confidence);
+      }
+    }
+  });
+
+  // ── INV-5: Extreme true values ────────────────────────────────────────────
+
+  it("INV-5: handles extreme true values (0 and 100) without throwing", () => {
+    const stateKeys = Object.keys(BASE_STATE) as (keyof StateVariables)[];
+    const stateAt0 = Object.fromEntries(stateKeys.map((k) => [k, 0])) as StateVariables;
+    const stateAt100 = Object.fromEntries(stateKeys.map((k) => [k, 100])) as StateVariables;
+    const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
+
+    for (const faction of factions) {
+      expect(() => computeFogView(stateAt0, faction, "ob_ceo", 1)).not.toThrow();
+      expect(() => computeFogView(stateAt100, faction, "ob_ceo", 1)).not.toThrow();
+      // hidden variables must always return 0 regardless of true value
+      const view0 = computeFogView(stateAt0, faction, "ob_ceo", 1);
+      const view100 = computeFogView(stateAt100, faction, "ob_ceo", 1);
+      expect(view0.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+      expect(view100.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+    }
+  });
+
+  // ── Critical paths ────────────────────────────────────────────────────────
+
+  it("critical path: doomClockDistance is hidden from ALL factions", () => {
+    const factions: Faction[] = ["openbrain", "prometheus", "china", "external"];
+    for (const faction of factions) {
+      const view = computeFogView(BASE_STATE, faction, "ob_ceo", 1);
+      expect(view.doomClockDistance).toMatchObject({ accuracy: "hidden", value: 0 });
+    }
+  });
+
+  it("critical path: china sees its own internal variables as exact; other factions see them as hidden", () => {
+    const chinaView = computeFogView(BASE_STATE, "china", "china_director", 1);
+    expect(chinaView.cdzComputeUtilization).toMatchObject({ accuracy: "exact", value: BASE_STATE.cdzComputeUtilization });
+    expect(chinaView.ccpPatience).toMatchObject({ accuracy: "exact", value: BASE_STATE.ccpPatience });
+    expect(chinaView.domesticChipProgress).toMatchObject({ accuracy: "exact", value: BASE_STATE.domesticChipProgress });
+    expect(chinaView.chinaWeightTheftProgress).toMatchObject({ accuracy: "exact", value: BASE_STATE.chinaWeightTheftProgress });
+
+    const others: Faction[] = ["openbrain", "prometheus", "external"];
+    for (const faction of others) {
+      const view = computeFogView(BASE_STATE, faction, "ob_ceo", 1);
+      expect(view.cdzComputeUtilization).toMatchObject({ accuracy: "hidden", value: 0 });
+      expect(view.ccpPatience).toMatchObject({ accuracy: "hidden", value: 0 });
+      expect(view.domesticChipProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+      expect(view.chinaWeightTheftProgress).toMatchObject({ accuracy: "hidden", value: 0 });
+    }
+  });
+
+  it("critical path: usChinaGap and obPromGap have correct accuracy per faction", () => {
+    const ob = computeFogView(BASE_STATE, "openbrain", "ob_ceo", 1);
+    const prom = computeFogView(BASE_STATE, "prometheus", "prom_ceo", 1);
+    const china = computeFogView(BASE_STATE, "china", "china_director", 1);
+    const ext = computeFogView(BASE_STATE, "external", "external_reporter", 1);
+
+    // usChinaGap: ob=estimate(3), prom=estimate(4), china=exact, external=estimate(4)
+    expect(ob.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 3 });
+    expect(prom.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 4 });
+    expect(china.usChinaGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.usChinaGap });
+    expect(ext.usChinaGap).toMatchObject({ accuracy: "estimate", confidence: 4 });
+
+    // obPromGap: ob=exact, prom=exact, china=estimate(3), external=hidden
+    expect(ob.obPromGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.obPromGap });
+    expect(prom.obPromGap).toMatchObject({ accuracy: "exact", value: BASE_STATE.obPromGap });
+    expect(china.obPromGap).toMatchObject({ accuracy: "estimate", confidence: 3 });
+    expect(ext.obPromGap).toMatchObject({ accuracy: "hidden", value: 0 });
   });
 });
 
