@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
-import { isLeaderRole } from "@takeoff/shared";
+import { isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getRoundDecisions } from "./content/decisions/rounds.js";
@@ -9,41 +9,6 @@ import { getLoggerForRoom } from "./logger/registry.js";
 
 import { extendUses, cleanupRoom } from "./extendUses.js";
 
-const GM_STATE_BOUNDS: Readonly<Record<keyof StateVariables, [number, number]>> = {
-  obCapability: [0, 100],
-  promCapability: [0, 100],
-  chinaCapability: [0, 100],
-  usChinaGap: [-8, 16],
-  obPromGap: [-8, 16],
-  alignmentConfidence: [0, 100],
-  misalignmentSeverity: [0, 100],
-  publicAwareness: [0, 100],
-  publicSentiment: [-100, 100],
-  economicDisruption: [0, 100],
-  taiwanTension: [0, 100],
-  obInternalTrust: [0, 100],
-  securityLevelOB: [1, 5],
-  securityLevelProm: [1, 5],
-  intlCooperation: [0, 100],
-  marketIndex: [0, 200],
-  regulatoryPressure: [0, 100],
-  globalMediaCycle: [0, 5],
-  chinaWeightTheftProgress: [0, 100],
-  aiAutonomyLevel: [0, 100],
-  whistleblowerPressure: [0, 100],
-  openSourceMomentum: [0, 100],
-  doomClockDistance: [0, 5],
-  obMorale: [0, 100],
-  obBurnRate: [0, 100],
-  obBoardConfidence: [0, 100],
-  promMorale: [0, 100],
-  promBurnRate: [0, 100],
-  promBoardConfidence: [0, 100],
-  promSafetyBreakthroughProgress: [0, 100],
-  cdzComputeUtilization: [0, 100],
-  ccpPatience: [0, 100],
-  domesticChipProgress: [0, 100],
-};
 
 export function registerGameEvents(io: Server, socket: Socket) {
   // ── Room Management ──
@@ -229,9 +194,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const room = getRoom(code);
     if (!room || room.gmId !== socket.id) return;
 
-    if (!(variable in GM_STATE_BOUNDS)) return;
+    if (!(variable in STATE_VARIABLE_RANGES)) return;
     const key = variable as keyof StateVariables;
-    const [min, max] = GM_STATE_BOUNDS[key];
+    const [min, max] = STATE_VARIABLE_RANGES[key];
     const oldVal = room.state[key];
     room.state[key] = Math.max(min, Math.min(max, value));
 

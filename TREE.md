@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-b5e77a60a72e
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-f32153f227ce
 ├── docs
 │   ├── AUDIT-CLIENT.md
 │   ├── AUDIT-SERVER.md

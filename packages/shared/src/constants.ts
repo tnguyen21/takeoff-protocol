@@ -1,5 +1,50 @@
 import type { AppId, Faction, Role, StateVariables } from "./types.js";
 
+// ── State Variable Ranges ──
+
+/**
+ * Canonical clamping ranges for every StateVariables key.
+ * Used by clampState(), server GM validation, and client bar rendering.
+ *
+ * Note: usChinaGap and obPromGap use [-8, 16] (asymmetric by design —
+ * gap cannot be as negative as positive).
+ */
+export const STATE_VARIABLE_RANGES: Readonly<Record<keyof StateVariables, [number, number]>> = {
+  obCapability: [0, 100],
+  promCapability: [0, 100],
+  chinaCapability: [0, 100],
+  usChinaGap: [-8, 16],
+  obPromGap: [-8, 16],
+  alignmentConfidence: [0, 100],
+  misalignmentSeverity: [0, 100],
+  publicAwareness: [0, 100],
+  publicSentiment: [-100, 100],
+  economicDisruption: [0, 100],
+  taiwanTension: [0, 100],
+  obInternalTrust: [0, 100],
+  securityLevelOB: [1, 5],
+  securityLevelProm: [1, 5],
+  intlCooperation: [0, 100],
+  marketIndex: [0, 200],
+  regulatoryPressure: [0, 100],
+  globalMediaCycle: [0, 5],
+  chinaWeightTheftProgress: [0, 100],
+  aiAutonomyLevel: [0, 100],
+  whistleblowerPressure: [0, 100],
+  openSourceMomentum: [0, 100],
+  doomClockDistance: [0, 5],
+  obMorale: [0, 100],
+  obBurnRate: [0, 100],
+  obBoardConfidence: [0, 100],
+  promMorale: [0, 100],
+  promBurnRate: [0, 100],
+  promBoardConfidence: [0, 100],
+  promSafetyBreakthroughProgress: [0, 100],
+  cdzComputeUtilization: [0, 100],
+  ccpPatience: [0, 100],
+  domesticChipProgress: [0, 100],
+};
+
 // ── Faction Metadata ──
 
 export interface FactionConfig {

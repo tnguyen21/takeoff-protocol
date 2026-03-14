@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { resolveDecisions } from "./resolution.js";
+import { resolveDecisions, clampState } from "./resolution.js";
+import { STATE_VARIABLE_RANGES } from "./constants.js";
 import { computeFogView } from "./fog.js";
 import { computeEndingArcs } from "./endings.js";
 import type { DecisionOption, Faction, GameMessage, NpcPersona, NpcTrigger, StateVariables } from "./types.js";
@@ -1008,5 +1009,78 @@ describe("computeEndingArcs", () => {
   it("resolvePublicReaction: unaware when publicAwareness <= 20 regardless of sentiment", () => {
     const arcs = computeEndingArcs({ ...BASE_STATE, publicAwareness: 15, publicSentiment: -80 });
     expect(arcs.find((a) => a.id === "publicReaction")!.result).toBe(4);
+  });
+});
+
+// ── STATE_VARIABLE_RANGES + clampState invariants ─────────────────────────────
+
+describe("STATE_VARIABLE_RANGES", () => {
+  it("INV-1: has an entry for every key in StateVariables", () => {
+    // BASE_STATE covers every StateVariables key; verify each is present in ranges
+    for (const key of Object.keys(BASE_STATE) as (keyof StateVariables)[]) {
+      expect(STATE_VARIABLE_RANGES).toHaveProperty(key);
+    }
+  });
+
+  it("INV-3: usChinaGap range is [-8, 16], not [-24, 24]", () => {
+    expect(STATE_VARIABLE_RANGES.usChinaGap).toEqual([-8, 16]);
+  });
+
+  it("INV-4: obPromGap range is [-8, 16], not [-24, 24]", () => {
+    expect(STATE_VARIABLE_RANGES.obPromGap).toEqual([-8, 16]);
+  });
+});
+
+describe("clampState", () => {
+  it("INV-2: clamps every variable to its declared range", () => {
+    // Build a state with every variable set to a huge out-of-range value
+    const overflowState = { ...BASE_STATE } as unknown as StateVariables;
+    const underflowState = { ...BASE_STATE } as unknown as StateVariables;
+    for (const key of Object.keys(STATE_VARIABLE_RANGES) as (keyof StateVariables)[]) {
+      const [min, max] = STATE_VARIABLE_RANGES[key];
+      overflowState[key] = max + 9999;
+      underflowState[key] = min - 9999;
+    }
+
+    clampState(overflowState);
+    clampState(underflowState);
+
+    for (const key of Object.keys(STATE_VARIABLE_RANGES) as (keyof StateVariables)[]) {
+      const [min, max] = STATE_VARIABLE_RANGES[key];
+      expect(overflowState[key]).toBe(max);
+      expect(underflowState[key]).toBe(min);
+    }
+  });
+
+  it("clamps usChinaGap above 16 to 16 (bug fix: was [-24,24])", () => {
+    const s = { ...BASE_STATE, usChinaGap: 20 } as unknown as StateVariables;
+    clampState(s);
+    expect(s.usChinaGap).toBe(16);
+  });
+
+  it("clamps usChinaGap below -8 to -8 (bug fix: was [-24,24])", () => {
+    const s = { ...BASE_STATE, usChinaGap: -20 } as unknown as StateVariables;
+    clampState(s);
+    expect(s.usChinaGap).toBe(-8);
+  });
+
+  it("clamps obPromGap above 16 to 16 (bug fix: was [-24,24])", () => {
+    const s = { ...BASE_STATE, obPromGap: 20 } as unknown as StateVariables;
+    clampState(s);
+    expect(s.obPromGap).toBe(16);
+  });
+
+  it("clamps obPromGap below -8 to -8 (bug fix: was [-24,24])", () => {
+    const s = { ...BASE_STATE, obPromGap: -20 } as unknown as StateVariables;
+    clampState(s);
+    expect(s.obPromGap).toBe(-8);
+  });
+
+  it("does not mutate values already within range", () => {
+    const s = { ...BASE_STATE } as unknown as StateVariables;
+    clampState(s);
+    for (const key of Object.keys(BASE_STATE) as (keyof StateVariables)[]) {
+      expect(s[key]).toBe(BASE_STATE[key]);
+    }
   });
 });

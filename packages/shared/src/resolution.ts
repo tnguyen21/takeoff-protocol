@@ -1,4 +1,5 @@
 import type { DecisionOption, StateEffect, StateVariables } from "./types.js";
+import { STATE_VARIABLE_RANGES } from "./constants.js";
 
 /**
  * Apply a single state effect to game state.
@@ -29,49 +30,13 @@ function applyEffect(state: StateVariables, effect: StateEffect): void {
 
 /**
  * Clamp all state variables to their valid ranges.
+ * Ranges are defined in STATE_VARIABLE_RANGES (packages/shared/src/constants.ts).
  */
-function clampState(state: StateVariables): void {
-  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-
-  state.obCapability = clamp(state.obCapability, 0, 100);
-  state.promCapability = clamp(state.promCapability, 0, 100);
-  state.chinaCapability = clamp(state.chinaCapability, 0, 100);
-  state.usChinaGap = clamp(state.usChinaGap, -8, 16);
-  state.obPromGap = clamp(state.obPromGap, -8, 16);
-  state.alignmentConfidence = clamp(state.alignmentConfidence, 0, 100);
-  state.misalignmentSeverity = clamp(state.misalignmentSeverity, 0, 100);
-  state.publicAwareness = clamp(state.publicAwareness, 0, 100);
-  state.publicSentiment = clamp(state.publicSentiment, -100, 100);
-  state.economicDisruption = clamp(state.economicDisruption, 0, 100);
-  state.taiwanTension = clamp(state.taiwanTension, 0, 100);
-  state.obInternalTrust = clamp(state.obInternalTrust, 0, 100);
-  state.securityLevelOB = clamp(state.securityLevelOB, 1, 5);
-  state.securityLevelProm = clamp(state.securityLevelProm, 1, 5);
-  state.intlCooperation = clamp(state.intlCooperation, 0, 100);
-
-  // ── Tier 1: Public-Facing ──
-  state.marketIndex = clamp(state.marketIndex, 0, 200);
-  state.regulatoryPressure = clamp(state.regulatoryPressure, 0, 100);
-  state.globalMediaCycle = clamp(state.globalMediaCycle, 0, 5);
-
-  // ── Tier 2: Hidden Engine ──
-  state.chinaWeightTheftProgress = clamp(state.chinaWeightTheftProgress, 0, 100);
-  state.aiAutonomyLevel = clamp(state.aiAutonomyLevel, 0, 100);
-  state.whistleblowerPressure = clamp(state.whistleblowerPressure, 0, 100);
-  state.openSourceMomentum = clamp(state.openSourceMomentum, 0, 100);
-  state.doomClockDistance = clamp(state.doomClockDistance, 0, 5);
-
-  // ── Tier 3: Per-Faction Internal ──
-  state.obMorale = clamp(state.obMorale, 0, 100);
-  state.obBurnRate = clamp(state.obBurnRate, 0, 100);
-  state.obBoardConfidence = clamp(state.obBoardConfidence, 0, 100);
-  state.promMorale = clamp(state.promMorale, 0, 100);
-  state.promBurnRate = clamp(state.promBurnRate, 0, 100);
-  state.promBoardConfidence = clamp(state.promBoardConfidence, 0, 100);
-  state.promSafetyBreakthroughProgress = clamp(state.promSafetyBreakthroughProgress, 0, 100);
-  state.cdzComputeUtilization = clamp(state.cdzComputeUtilization, 0, 100);
-  state.ccpPatience = clamp(state.ccpPatience, 0, 100);
-  state.domesticChipProgress = clamp(state.domesticChipProgress, 0, 100);
+export function clampState(state: StateVariables): void {
+  for (const key of Object.keys(STATE_VARIABLE_RANGES) as (keyof StateVariables)[]) {
+    const [min, max] = STATE_VARIABLE_RANGES[key];
+    state[key] = Math.max(min, Math.min(max, state[key]));
+  }
 }
 
 /**

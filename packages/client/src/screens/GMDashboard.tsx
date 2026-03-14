@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "../stores/game.js";
 import { useMessagesStore } from "../stores/messages.js";
-import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, computeEndingArcs, computeFogView } from "@takeoff/shared";
+import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, STATE_VARIABLE_RANGES, computeEndingArcs, computeFogView } from "@takeoff/shared";
 import type { Faction, GamePhase, Role, StateVariables, EndingArc, StateView } from "@takeoff/shared";
 import { FACTION_COLORS } from "../constants/factions.js";
 import { formatTime } from "../utils.js";
@@ -22,50 +22,9 @@ const PHASE_LABELS: Record<string, string> = {
   ending: "Ending",
 };
 
-// State variable ranges for bar rendering
-const STATE_RANGES: Record<keyof StateVariables, [number, number]> = {
-  obCapability: [0, 100],
-  promCapability: [0, 100],
-  chinaCapability: [0, 100],
-  usChinaGap: [-24, 24],
-  obPromGap: [-24, 24],
-  alignmentConfidence: [0, 100],
-  misalignmentSeverity: [0, 100],
-  publicAwareness: [0, 100],
-  publicSentiment: [-100, 100],
-  economicDisruption: [0, 100],
-  taiwanTension: [0, 100],
-  obInternalTrust: [0, 100],
-  securityLevelOB: [1, 5],
-  securityLevelProm: [1, 5],
-  intlCooperation: [0, 100],
-  // Tier 1
-  marketIndex: [0, 200],
-  regulatoryPressure: [0, 100],
-  globalMediaCycle: [0, 5],
-  // Tier 2
-  chinaWeightTheftProgress: [0, 100],
-  aiAutonomyLevel: [0, 100],
-  whistleblowerPressure: [0, 100],
-  openSourceMomentum: [0, 100],
-  doomClockDistance: [0, 5],
-  // Tier 3 — OpenBrain
-  obMorale: [0, 100],
-  obBurnRate: [0, 100],
-  obBoardConfidence: [0, 100],
-  // Tier 3 — Prometheus
-  promMorale: [0, 100],
-  promBurnRate: [0, 100],
-  promBoardConfidence: [0, 100],
-  promSafetyBreakthroughProgress: [0, 100],
-  // Tier 3 — China
-  cdzComputeUtilization: [0, 100],
-  ccpPatience: [0, 100],
-  domesticChipProgress: [0, 100],
-};
 
 function barPct(key: keyof StateVariables, value: number): number {
-  const [min, max] = STATE_RANGES[key];
+  const [min, max] = STATE_VARIABLE_RANGES[key];
   return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
 }
 
@@ -170,7 +129,7 @@ function DevStatePanel({
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
-          const [min, max] = STATE_RANGES[key];
+          const [min, max] = STATE_VARIABLE_RANGES[key];
           const value = getValue(key);
           const hasPending = pending[key] !== undefined;
 
