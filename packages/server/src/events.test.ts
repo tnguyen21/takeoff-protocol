@@ -20,6 +20,8 @@ import type { GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { rooms } from "./rooms.js";
 import { registerGameEvents } from "./events.js";
+import { clearPhaseTimer } from "./game.js";
+import { extendUses, cleanupRoom } from "./extendUses.js";
 import { NPC_PERSONAS } from "./content/npcPersonas.js";
 import { getLoggerForRoom, _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 import type { EventContext } from "./logger/types.js";
@@ -739,5 +741,439 @@ describe("room:rejoin — replay state gaps", () => {
     expect(leakEvent).toBeDefined();
     const leakData = leakEvent!.data as { summary: string };
     expect(leakData.summary).toContain("LEAK");
+  });
+});
+
+// ── gm:set-state ──────────────────────────────────────────────────────────────
+
+const SS_GM_ID = "gm-ss-1";
+const SS_ROOM = "SS01";
+
+describe("gm:set-state — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let gmSocket: ReturnType<typeof createSocket>;
+  let spy: SpyLogger;
+
+  beforeEach(() => {
+    io = createIo();
+    spy = new SpyLogger();
+    room = makeTestRoom(SS_GM_ID, SS_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    _setLoggerForRoom(SS_ROOM, spy);
+    gmSocket = createSocket(SS_GM_ID);
+    gmSocket.data.roomCode = SS_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, gmSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(SS_ROOM);
+    _clearLoggers();
+  });
+
+  it("non-GM socket silently ignored — state unchanged", () => {
+    const other = createSocket("non-gm-ss");
+    other.data.roomCode = SS_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, other as unknown as import("socket.io").Socket);
+    const orig = room.state.publicAwareness;
+    fire(other.handlers, "gm:set-state", { variable: "publicAwareness", value: 99 });
+    expect(room.state.publicAwareness).toBe(orig);
+  });
+
+  it("invalid variable name silently ignored — no state change", () => {
+    const snap = { ...room.state };
+    fire(gmSocket.handlers, "gm:set-state", { variable: "notARealVar", value: 50 });
+    expect(room.state).toEqual(snap);
+  });
+
+  it("value within bounds stored exactly", () => {
+    fire(gmSocket.handlers, "gm:set-state", { variable: "publicAwareness", value: 75 });
+    expect(room.state.publicAwareness).toBe(75);
+  });
+
+  it("value above max clamped to max (usChinaGap max=16, set 30 → 16)", () => {
+    fire(gmSocket.handlers, "gm:set-state", { variable: "usChinaGap", value: 30 });
+    expect(room.state.usChinaGap).toBe(16);
+  });
+
+  it("value below min clamped to min (usChinaGap min=-8, set -50 → -8)", () => {
+    fire(gmSocket.handlers, "gm:set-state", { variable: "usChinaGap", value: -50 });
+    expect(room.state.usChinaGap).toBe(-8);
+  });
+
+  it("emitStateViews fires — game:state emitted to GM socket", () => {
+    fire(gmSocket.handlers, "gm:set-state", { variable: "publicAwareness", value: 50 });
+    const gmEmits = io.emits[SS_GM_ID] ?? [];
+    expect(gmEmits.some((e) => e.event === "game:state")).toBe(true);
+  });
+
+  it("logs state.gm_override with variable, oldValue, newValue, and gm actorId", () => {
+    const oldVal = room.state.publicAwareness;
+    fire(gmSocket.handlers, "gm:set-state", { variable: "publicAwareness", value: 75 });
+    const log = spy.calls.find((c) => c.event === "state.gm_override");
+    expect(log).toBeDefined();
+    const d = log!.data as Record<string, unknown>;
+    expect(d.variable).toBe("publicAwareness");
+    expect(d.oldValue).toBe(oldVal);
+    expect(d.newValue).toBe(75);
+    expect(log!.ctx?.actorId).toBe("gm");
+  });
+});
+
+// ── gm:pause ──────────────────────────────────────────────────────────────────
+
+const PAUSE_GM_ID = "gm-pause-1";
+const PAUSE_ROOM = "PAUSE1";
+
+describe("gm:pause — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let gmSocket: ReturnType<typeof createSocket>;
+  let spy: SpyLogger;
+
+  beforeEach(() => {
+    io = createIo();
+    spy = new SpyLogger();
+    room = makeTestRoom(PAUSE_GM_ID, PAUSE_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    room.timer = { endsAt: Date.now() + 120_000 };
+    _setLoggerForRoom(PAUSE_ROOM, spy);
+    gmSocket = createSocket(PAUSE_GM_ID);
+    gmSocket.data.roomCode = PAUSE_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, gmSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    clearPhaseTimer(room);
+    rooms.delete(PAUSE_ROOM);
+    _clearLoggers();
+  });
+
+  it("non-GM socket silently ignored — timer not paused", () => {
+    const other = createSocket("non-gm-pause");
+    other.data.roomCode = PAUSE_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, other as unknown as import("socket.io").Socket);
+    fire(other.handlers, "gm:pause");
+    expect(room.timer.pausedAt).toBeUndefined();
+  });
+
+  it("first call sets pausedAt and emits game:phase to room", () => {
+    fire(gmSocket.handlers, "gm:pause");
+    expect(room.timer.pausedAt).toBeTypeOf("number");
+    const emitted = (io.emits[PAUSE_ROOM] ?? []).find((e) => e.event === "game:phase");
+    expect(emitted).toBeDefined();
+    const data = emitted!.data as { timer: { pausedAt?: number } };
+    expect(data.timer.pausedAt).toBeTypeOf("number");
+  });
+
+  it("second call clears pausedAt and endsAt >= original (resume extends timer by paused duration)", () => {
+    const endsAtBefore = room.timer.endsAt;
+    fire(gmSocket.handlers, "gm:pause"); // pause
+    fire(gmSocket.handlers, "gm:pause"); // resume
+    expect(room.timer.pausedAt).toBeUndefined();
+    expect(room.timer.endsAt).toBeGreaterThanOrEqual(endsAtBefore);
+  });
+
+  it("logs phase.paused on first call and phase.resumed on second call", () => {
+    fire(gmSocket.handlers, "gm:pause");
+    expect(spy.calls.find((c) => c.event === "phase.paused")).toBeDefined();
+    fire(gmSocket.handlers, "gm:pause");
+    expect(spy.calls.find((c) => c.event === "phase.resumed")).toBeDefined();
+  });
+});
+
+// ── gm:extend ─────────────────────────────────────────────────────────────────
+
+const EXTEND_GM_ID = "gm-ext-1";
+const EXTEND_ROOM = "EXT01";
+
+describe("gm:extend — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let gmSocket: ReturnType<typeof createSocket>;
+  let spy: SpyLogger;
+
+  beforeEach(() => {
+    io = createIo();
+    spy = new SpyLogger();
+    room = makeTestRoom(EXTEND_GM_ID, EXTEND_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    room.timer = { endsAt: Date.now() + 120_000 };
+    _setLoggerForRoom(EXTEND_ROOM, spy);
+    gmSocket = createSocket(EXTEND_GM_ID);
+    gmSocket.data.roomCode = EXTEND_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, gmSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    clearPhaseTimer(room);
+    cleanupRoom(EXTEND_ROOM);
+    rooms.delete(EXTEND_ROOM);
+    _clearLoggers();
+  });
+
+  it("non-GM socket silently ignored — endsAt unchanged", () => {
+    const other = createSocket("non-gm-ext");
+    other.data.roomCode = EXTEND_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, other as unknown as import("socket.io").Socket);
+    const before = room.timer.endsAt;
+    fire(other.handlers, "gm:extend");
+    expect(room.timer.endsAt).toBe(before);
+  });
+
+  it("first extend adds 60 seconds and emits gm:extend-ack with usesRemaining=1", () => {
+    const before = room.timer.endsAt;
+    fire(gmSocket.handlers, "gm:extend");
+    expect(room.timer.endsAt).toBe(before + 60_000);
+    const ack = (io.emits[EXTEND_GM_ID] ?? []).find((e) => e.event === "gm:extend-ack");
+    expect(ack).toBeDefined();
+    expect((ack!.data as { usesRemaining: number }).usesRemaining).toBe(1);
+  });
+
+  it("second extend adds another 60 seconds and usesRemaining=0", () => {
+    const before = room.timer.endsAt;
+    fire(gmSocket.handlers, "gm:extend");
+    fire(gmSocket.handlers, "gm:extend");
+    expect(room.timer.endsAt).toBe(before + 120_000);
+    const acks = (io.emits[EXTEND_GM_ID] ?? []).filter((e) => e.event === "gm:extend-ack");
+    expect((acks[1]!.data as { usesRemaining: number }).usesRemaining).toBe(0);
+  });
+
+  it("third extend attempt rejected — endsAt unchanged after 2 extends", () => {
+    const before = room.timer.endsAt;
+    fire(gmSocket.handlers, "gm:extend");
+    fire(gmSocket.handlers, "gm:extend");
+    fire(gmSocket.handlers, "gm:extend"); // rejected
+    expect(room.timer.endsAt).toBe(before + 120_000); // only 2×60s added
+    const acks = (io.emits[EXTEND_GM_ID] ?? []).filter((e) => e.event === "gm:extend-ack");
+    expect(acks).toHaveLength(2); // no third ack
+  });
+
+  it("stale extendUses entries for the same room are pruned on extend", () => {
+    extendUses.set(`${EXTEND_ROOM}:1:briefing`, 1); // stale entry
+    fire(gmSocket.handlers, "gm:extend");
+    expect(extendUses.has(`${EXTEND_ROOM}:1:briefing`)).toBe(false);
+    expect(extendUses.get(`${EXTEND_ROOM}:1:intel`)).toBe(1);
+  });
+});
+
+// ── gm:advance ────────────────────────────────────────────────────────────────
+
+const ADV_GM_ID = "gm-adv-1";
+const ADV_ROOM = "ADV01";
+
+describe("gm:advance — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let gmSocket: ReturnType<typeof createSocket>;
+  let spy: SpyLogger;
+
+  beforeEach(() => {
+    io = createIo();
+    spy = new SpyLogger();
+    room = makeTestRoom(ADV_GM_ID, ADV_ROOM);
+    room.round = 1;
+    room.phase = "briefing";
+    _setLoggerForRoom(ADV_ROOM, spy);
+    gmSocket = createSocket(ADV_GM_ID);
+    gmSocket.data.roomCode = ADV_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, gmSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    clearPhaseTimer(room);
+    rooms.delete(ADV_ROOM);
+    _clearLoggers();
+  });
+
+  it("non-GM socket silently ignored — phase unchanged", () => {
+    const other = createSocket("non-gm-adv");
+    other.data.roomCode = ADV_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, other as unknown as import("socket.io").Socket);
+    fire(other.handlers, "gm:advance");
+    expect(room.phase).toBe("briefing");
+  });
+
+  it("advance moves phase from briefing to intel", () => {
+    fire(gmSocket.handlers, "gm:advance");
+    expect(room.phase).toBe("intel");
+  });
+
+  it("logs phase.gm_advanced with gm actorId and pre-advance round/phase", () => {
+    fire(gmSocket.handlers, "gm:advance");
+    const log = spy.calls.find((c) => c.event === "phase.gm_advanced");
+    expect(log).toBeDefined();
+    expect(log!.ctx?.actorId).toBe("gm");
+    expect(log!.ctx?.round).toBe(1);
+    expect(log!.ctx?.phase).toBe("briefing"); // logged before phase changes
+  });
+});
+
+// ── publish:submit ────────────────────────────────────────────────────────────
+
+const PUB_GM_ID = "gm-pub-1";
+const PUB_JOURNALIST = "player-pub-journalist";
+const PUB_OTHER = "player-pub-other";
+const PUB_ROOM = "PUB01";
+
+describe("publish:submit — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let journalistSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(PUB_GM_ID, PUB_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    room.players[PUB_JOURNALIST] = makePlayer(PUB_JOURNALIST, { faction: "external", role: "ext_journalist" });
+    room.players[PUB_OTHER] = makePlayer(PUB_OTHER, { faction: "openbrain", role: "ob_cto" });
+    journalistSocket = createSocket(PUB_JOURNALIST);
+    journalistSocket.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, journalistSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(PUB_ROOM);
+  });
+
+  it("non-publisher role (ob_cto) silently ignored — no publication stored", () => {
+    const nonPub = createSocket(PUB_OTHER);
+    nonPub.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, nonPub as unknown as import("socket.io").Socket);
+    fire(nonPub.handlers, "publish:submit", { type: "article", title: "Test", content: "Body", source: "OB" });
+    expect(room.publications).toHaveLength(0);
+  });
+
+  it("ext_journalist can publish article — stored in room.publications", () => {
+    fire(journalistSocket.handlers, "publish:submit", { type: "article", title: "Big Story", content: "Details", source: "Press" });
+    expect(room.publications).toHaveLength(1);
+    const pub = room.publications[0];
+    expect(pub.type).toBe("article");
+    expect(pub.title).toBe("Big Story");
+    expect(pub.publishedBy).toBe("ext_journalist");
+  });
+
+  it("ob_safety can publish a leak", () => {
+    const safetyId = "player-pub-safety";
+    room.players[safetyId] = makePlayer(safetyId, { faction: "openbrain", role: "ob_safety" });
+    const safetySocket = createSocket(safetyId);
+    safetySocket.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, safetySocket as unknown as import("socket.io").Socket);
+    fire(safetySocket.handlers, "publish:submit", { type: "leak", title: "Internal Concerns", content: "...", source: "Anon" });
+    expect(room.publications).toHaveLength(1);
+    expect(room.publications[0].type).toBe("leak");
+  });
+
+  it("ob_safety cannot publish articles — silently ignored", () => {
+    const safetyId = "player-pub-safety2";
+    room.players[safetyId] = makePlayer(safetyId, { faction: "openbrain", role: "ob_safety" });
+    const safetySocket = createSocket(safetyId);
+    safetySocket.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, safetySocket as unknown as import("socket.io").Socket);
+    fire(safetySocket.handlers, "publish:submit", { type: "article", title: "Article", content: "...", source: "OB" });
+    expect(room.publications).toHaveLength(0);
+  });
+
+  it("article applies +15 publicAwareness and +10 publicSentiment to state", () => {
+    const initAwareness = room.state.publicAwareness;
+    const initSentiment = room.state.publicSentiment;
+    fire(journalistSocket.handlers, "publish:submit", { type: "article", title: "Title", content: "Content", source: "Press" });
+    expect(room.state.publicAwareness).toBe(initAwareness + 15);
+    expect(room.state.publicSentiment).toBe(initSentiment + 10);
+  });
+
+  it("leak applies +25 publicAwareness and -10 publicSentiment to state", () => {
+    const initAwareness = room.state.publicAwareness;
+    const initSentiment = room.state.publicSentiment;
+    fire(journalistSocket.handlers, "publish:submit", { type: "leak", title: "Leak Title", content: "Leaked", source: "Whistleblower" });
+    expect(room.state.publicAwareness).toBe(initAwareness + 25);
+    expect(room.state.publicSentiment).toBe(initSentiment - 10);
+  });
+
+  it("game:publish emitted to all players in the room", () => {
+    fire(journalistSocket.handlers, "publish:submit", { type: "article", title: "Breaking", content: "News", source: "Press" });
+    for (const pid of [PUB_JOURNALIST, PUB_OTHER]) {
+      expect((io.emits[pid] ?? []).some((e) => e.event === "game:publish")).toBe(true);
+    }
+  });
+
+  it("game:notification emitted to all players in the room", () => {
+    fire(journalistSocket.handlers, "publish:submit", { type: "article", title: "Breaking", content: "News", source: "Press" });
+    for (const pid of [PUB_JOURNALIST, PUB_OTHER]) {
+      expect((io.emits[pid] ?? []).some((e) => e.event === "game:notification")).toBe(true);
+    }
+  });
+});
+
+// ── tweet:send ────────────────────────────────────────────────────────────────
+
+const TWEET_GM_ID = "gm-tweet-1";
+const TWEET_PLAYER_A = "player-tweet-a";
+const TWEET_PLAYER_B = "player-tweet-b";
+const TWEET_ROOM = "TWE01";
+
+describe("tweet:send — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let senderSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(TWEET_GM_ID, TWEET_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    room.players[TWEET_PLAYER_A] = makePlayer(TWEET_PLAYER_A, { faction: "openbrain", role: "ob_cto" });
+    room.players[TWEET_PLAYER_B] = makePlayer(TWEET_PLAYER_B, { faction: "prometheus", role: "prom_ceo" });
+    senderSocket = createSocket(TWEET_PLAYER_A);
+    senderSocket.data.roomCode = TWEET_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, senderSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(TWEET_ROOM);
+  });
+
+  it("valid tweet broadcast to all players (including sender)", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "Hello world" });
+    for (const pid of [TWEET_PLAYER_A, TWEET_PLAYER_B]) {
+      expect((io.emits[pid] ?? []).some((e) => e.event === "tweet:receive")).toBe(true);
+    }
+  });
+
+  it("tweet also broadcast to GM", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "Watch this" });
+    expect((io.emits[TWEET_GM_ID] ?? []).some((e) => e.event === "tweet:receive")).toBe(true);
+  });
+
+  it("tweet object has correct shape (id, playerName, playerRole, playerFaction, text, timestamp)", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "  trimmed  " });
+    const ev = (io.emits[TWEET_PLAYER_A] ?? []).find((e) => e.event === "tweet:receive");
+    expect(ev).toBeDefined();
+    const tweet = ev!.data as Record<string, unknown>;
+    expect(typeof tweet.id).toBe("string");
+    expect(tweet.playerName).toBe(`Player-${TWEET_PLAYER_A}`);
+    expect(tweet.playerRole).toBe("ob_cto");
+    expect(tweet.playerFaction).toBe("openbrain");
+    expect(tweet.text).toBe("trimmed");
+    expect(typeof tweet.timestamp).toBe("number");
+  });
+
+  it("empty string (after trim) silently ignored — no tweet:receive emitted", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "   " });
+    expect((io.emits[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive")).toHaveLength(0);
+  });
+
+  it("text longer than 280 chars silently ignored", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "x".repeat(281) });
+    expect((io.emits[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive")).toHaveLength(0);
+  });
+
+  it("text exactly 280 chars is accepted", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "x".repeat(280) });
+    expect((io.emits[TWEET_PLAYER_A] ?? []).some((e) => e.event === "tweet:receive")).toBe(true);
   });
 });
