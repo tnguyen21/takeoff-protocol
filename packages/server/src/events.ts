@@ -192,6 +192,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const room = getRoom(code);
     if (!room || room.gmId !== socket.id) return;
     getLoggerForRoom(code).log("phase.gm_advanced", { round: room.round, phase: room.phase }, { actorId: "gm", round: room.round, phase: room.phase });
+    clearPhaseTimer(room);
     advancePhase(io, room);
   });
 

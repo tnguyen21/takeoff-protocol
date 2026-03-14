@@ -1523,3 +1523,62 @@ describe("personalizeContent", () => {
     expect(result.items[0].subject).toBe("From {ob_ceo}");
   });
 });
+
+// ── INV-1 & INV-2: gm:advance + pending timer race condition ──
+
+describe("advancePhase race condition — timer + manual advance", () => {
+  it("INV-1: manual advance with pending timer causes exactly 1 phase transition", async () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "RACE_TEST_1",
+      phase: "briefing",
+      round: 1,
+      players: { p1: player1 },
+      timer: { endsAt: Date.now() + 50 },
+    });
+
+    const { io } = createMockIo();
+    // Schedule a timer that would fire in 50ms
+    syncPhaseTimer(io, room);
+    const phaseBeforeAdvance = room.phase;
+
+    // Manually advance — this should clear the timer first, then advance once
+    clearPhaseTimer(room);
+    advancePhase(io, room);
+    const phaseAfterManual = room.phase;
+
+    // Wait past the timer deadline to ensure timer callback doesn't fire again
+    await wait(100);
+
+    expect(phaseBeforeAdvance).toBe("briefing");
+    // Phase should have advanced exactly once (briefing → intel)
+    expect(phaseAfterManual).toBe("intel");
+    // After waiting, phase should still be the same — no double-advance
+    expect(room.phase).toBe("intel");
+
+    clearPhaseTimer(room);
+  });
+
+  it("INV-2: timer callback does not fire after clearPhaseTimer is called", async () => {
+    const player1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "RACE_TEST_2",
+      phase: "briefing",
+      round: 1,
+      players: { p1: player1 },
+      timer: { endsAt: Date.now() + 50 },
+    });
+
+    const { io } = createMockIo();
+    syncPhaseTimer(io, room);
+
+    // Cancel the timer before it fires (simulating what gm:advance does)
+    clearPhaseTimer(room);
+
+    // Wait past the original deadline
+    await wait(100);
+
+    // Phase must remain unchanged — the timer must have been cancelled
+    expect(room.phase).toBe("briefing");
+  });
+});
