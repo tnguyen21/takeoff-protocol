@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
-import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs } from "@takeoff/shared";
+import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getContentForPlayer } from "./content/loader.js";
@@ -974,6 +974,7 @@ function emitResolution(io: Server, room: GameRoom) {
 
   // Apply activity penalties (players who skipped their primary app)
   const appliedPenalties = applyActivityPenalties(room);
+  clampState(room.state); // ensure penalties respect canonical bounds
   for (const p of appliedPenalties) {
     const player = room.players[p.playerId];
     if (!player) continue;

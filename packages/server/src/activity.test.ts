@@ -165,6 +165,35 @@ describe("applyActivityPenalties", () => {
   });
 });
 
+// ── INV-1: Penalty boundary clamping ─────────────────────────────────────────
+
+describe("applyActivityPenalties boundary clamping", () => {
+  it("INV-1: penalty at minimum bound clamps to 0, not below", () => {
+    const player = makePlayer("p1", "ob_cto", "openbrain");
+    const room = makeRoom([player]);
+    room.state.obCapability = 2; // low value, penalty delta=-3 would push to -1
+    room.playerActivity = { p1: [] }; // wandb not opened → penalty triggers
+
+    applyActivityPenalties(room);
+    // Local clamping in applyActivityPenalties ensures floor of 0
+    expect(room.state.obCapability).toBe(0);
+  });
+
+  it("INV-2: repeated penalty application at 0 stays at 0, not negative", () => {
+    const player = makePlayer("p1", "ob_cto", "openbrain");
+    const room = makeRoom([player]);
+    room.state.obCapability = 0; // already at minimum
+    room.playerActivity = { p1: [] }; // penalty triggers
+
+    applyActivityPenalties(room);
+    expect(room.state.obCapability).toBe(0);
+
+    // Apply again to confirm idempotent clamping
+    applyActivityPenalties(room);
+    expect(room.state.obCapability).toBe(0);
+  });
+});
+
 // ── INV-4: Activity reset between rounds ─────────────────────────────────────
 
 describe("playerActivity reset on resolution", () => {
