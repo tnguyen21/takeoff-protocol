@@ -9,6 +9,11 @@ import { getLoggerForRoom } from "./logger/registry.js";
 
 import { extendUses, cleanupRoom } from "./extendUses.js";
 
+// ── Input length limits ────────────────────────────────────────────────────────
+const MAX_CHAT_LENGTH = 2000;
+const MAX_PUBLISH_TITLE_LENGTH = 200;
+const MAX_PUBLISH_CONTENT_LENGTH = 5000;
+const MAX_TWEET_LENGTH = 280;
 
 export function registerGameEvents(io: Server, socket: Socket) {
   // ── Room Management ──
@@ -433,6 +438,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
       if (!room.players[to]) return;
     }
 
+    content = content.slice(0, MAX_CHAT_LENGTH);
+
     const targetName = to ? room.players[to]?.name ?? to : null;
     getLoggerForRoom(code).log("message.sent", { from: sender.name, toName: targetName, faction: sender.faction, contentLength: content.length, isTeamChat: to === null }, { actorId: sender.name, round: room.round, phase: room.phase });
 
@@ -496,6 +503,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
       // Leak mechanic: ob_safety can only do leaks, not articles
       if (player.role === "ob_safety" && type !== "leak") return;
+
+      title = title.slice(0, MAX_PUBLISH_TITLE_LENGTH);
+      content = content.slice(0, MAX_PUBLISH_CONTENT_LENGTH);
 
       getLoggerForRoom(code).log("publish.submitted", { playerName: player.name, role: player.role, type, title }, { actorId: player.name, round: room.round, phase: room.phase });
 
@@ -623,8 +633,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const player = room.players[socket.id];
     if (!player) return;
 
-    const trimmed = text.trim();
-    if (!trimmed || trimmed.length > 280) return;
+    const trimmed = text.trim().slice(0, MAX_TWEET_LENGTH);
+    if (!trimmed) return;
 
     const tweet = {
       id: `tweet_${crypto.randomUUID()}`,

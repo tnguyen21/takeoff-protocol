@@ -545,6 +545,112 @@ describe("message:send — real handler", () => {
   });
 });
 
+// ── message:send length guards ────────────────────────────────────────────────
+
+const MSG_LEN_GM = "gm-msglen-1";
+const MSG_LEN_SENDER = "player-msglen-a";
+const MSG_LEN_PEER = "player-msglen-b";
+const MSG_LEN_ROOM = "MSGL";
+
+describe("message:send — length guards", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let senderSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(MSG_LEN_GM, MSG_LEN_ROOM);
+    room.phase = "deliberation";
+    room.round = 1;
+    room.players[MSG_LEN_SENDER] = makePlayer(MSG_LEN_SENDER, { faction: "openbrain", role: "ob_cto" });
+    room.players[MSG_LEN_PEER] = makePlayer(MSG_LEN_PEER, { faction: "openbrain", role: "ob_ceo" });
+    senderSocket = createSocket(MSG_LEN_SENDER);
+    senderSocket.data.roomCode = MSG_LEN_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, senderSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(MSG_LEN_ROOM);
+  });
+
+  it("INV-1: message at exactly 2000 chars is accepted unchanged", () => {
+    const exact = "a".repeat(2000);
+    fire(senderSocket.handlers, "message:send", { to: null, content: exact });
+    expect(room.messages[0].content).toBe(exact);
+  });
+
+  it("INV-2: message exceeding 2000 chars is truncated to 2000", () => {
+    fire(senderSocket.handlers, "message:send", { to: null, content: "b".repeat(3000) });
+    expect(room.messages[0].content).toBe("b".repeat(2000));
+  });
+
+  it("INV-3: normal-length message is unaffected", () => {
+    const msg = "Hello team";
+    fire(senderSocket.handlers, "message:send", { to: null, content: msg });
+    expect(room.messages[0].content).toBe(msg);
+  });
+});
+
+// ── publish:submit length guards ──────────────────────────────────────────────
+
+const PUB_LEN_GM = "gm-publen-1";
+const PUB_LEN_PLAYER = "player-publen-1";
+const PUB_LEN_ROOM = "PUBL";
+
+describe("publish:submit — length guards", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let playerSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(PUB_LEN_GM, PUB_LEN_ROOM);
+    room.phase = "deliberation";
+    room.round = 1;
+    room.players[PUB_LEN_PLAYER] = makePlayer(PUB_LEN_PLAYER, { faction: "external", role: "ext_journalist" });
+    playerSocket = createSocket(PUB_LEN_PLAYER);
+    playerSocket.data.roomCode = PUB_LEN_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, playerSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(PUB_LEN_ROOM);
+  });
+
+  it("INV-1: title at exactly 200 chars is accepted unchanged", () => {
+    const exact = "t".repeat(200);
+    fire(playerSocket.handlers, "publish:submit", { type: "article", title: exact, content: "body", source: "Test" });
+    expect(room.publications[0].title).toBe(exact);
+  });
+
+  it("INV-2: title exceeding 200 chars is truncated to 200", () => {
+    fire(playerSocket.handlers, "publish:submit", { type: "article", title: "t".repeat(300), content: "body", source: "Test" });
+    expect(room.publications[0].title).toBe("t".repeat(200));
+  });
+
+  it("INV-3: normal-length title is unaffected", () => {
+    fire(playerSocket.handlers, "publish:submit", { type: "article", title: "Short title", content: "body", source: "Test" });
+    expect(room.publications[0].title).toBe("Short title");
+  });
+
+  it("INV-1: content at exactly 5000 chars is accepted unchanged", () => {
+    const exact = "c".repeat(5000);
+    fire(playerSocket.handlers, "publish:submit", { type: "article", title: "Title", content: exact, source: "Test" });
+    expect(room.publications[0].content).toBe(exact);
+  });
+
+  it("INV-2: content exceeding 5000 chars is truncated to 5000", () => {
+    fire(playerSocket.handlers, "publish:submit", { type: "article", title: "Title", content: "c".repeat(7000), source: "Test" });
+    expect(room.publications[0].content).toBe("c".repeat(5000));
+  });
+
+  it("INV-3: normal-length content is unaffected", () => {
+    const body = "Short article body.";
+    fire(playerSocket.handlers, "publish:submit", { type: "article", title: "Title", content: body, source: "Test" });
+    expect(room.publications[0].content).toBe(body);
+  });
+});
+
 // ── Logging invariants — real handlers produce correct log entries ─────────────
 
 const LOG_GM_ID = "gm-log-1";
@@ -1214,13 +1320,18 @@ describe("tweet:send — real handler", () => {
     expect((io.emits[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive")).toHaveLength(0);
   });
 
-  it("text longer than 280 chars silently ignored", () => {
-    fire(senderSocket.handlers, "tweet:send", { text: "x".repeat(281) });
-    expect((io.emits[TWEET_PLAYER_A] ?? []).filter((e) => e.event === "tweet:receive")).toHaveLength(0);
+  it("text longer than 280 chars is truncated to 280 and sent (INV-2)", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "x".repeat(400) });
+    const ev = (io.emits[TWEET_PLAYER_A] ?? []).find((e) => e.event === "tweet:receive");
+    expect(ev).toBeDefined();
+    expect((ev!.data as Record<string, unknown>).text).toBe("x".repeat(280));
   });
 
-  it("text exactly 280 chars is accepted", () => {
-    fire(senderSocket.handlers, "tweet:send", { text: "x".repeat(280) });
-    expect((io.emits[TWEET_PLAYER_A] ?? []).some((e) => e.event === "tweet:receive")).toBe(true);
+  it("text exactly 280 chars is accepted unchanged (INV-1)", () => {
+    const exact = "x".repeat(280);
+    fire(senderSocket.handlers, "tweet:send", { text: exact });
+    const ev = (io.emits[TWEET_PLAYER_A] ?? []).find((e) => e.event === "tweet:receive");
+    expect(ev).toBeDefined();
+    expect((ev!.data as Record<string, unknown>).text).toBe(exact);
   });
 });
