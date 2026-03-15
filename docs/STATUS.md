@@ -33,13 +33,7 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 
 ### Server
 
-| Priority | Bug | Location | Notes |
-|----------|-----|----------|-------|
-| MEDIUM | `getContentForPlayer` doesn't dedup by app | content/loader.ts | Two registrations for the same `(faction, app)` pair produce duplicate content blocks. |
-| LOW | GM receives duplicate messages if also a player | events.ts:482 | Unconditional GM echo in team chat. |
-| LOW | `tweet:send` ID not UUID-safe | events.ts:635 | Uses `Date.now()` + 4-char socket suffix. Collision risk under concurrent sends. |
-| LOW | DMs to bot socket IDs silently fail | events.ts:296 | Socket.IO no-ops. No error returned. |
-| LOW | No input length guards on player messages | events.ts | `message:send` and `publish:submit` content is unlimited. Low risk for closed audience. |
+No known server bugs.
 
 ### Client
 
@@ -88,6 +82,11 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 | No room cleanup lifecycle | TTL pruning for abandoned rooms, timer/extendUses cleanup | 10588f5 |
 | Decision auto-submit stale closure | Replaced closure-captured values with refs | 8da6a92 |
 | Decision option IDs not validated on submit | Already validated at events.ts:359-360 (was stale bug report) | N/A |
+| `getContentForPlayer` duplicate app entries | Dedup by app name, merge items | b170ccd |
+| GM duplicate messages when also a player | Guard skips echo when GM is in sending faction | 1dceadc |
+| `tweet:send` ID not UUID-safe | Already used `crypto.randomUUID()`; added `tweet_` prefix | 58016b6 |
+| DMs to bot socket IDs silently fail | Returns error to sender for `__bot_` targets | 56b9de5 |
+| No input length guards on player messages | Truncation: chat 2000, tweet 280, publish title 200 / content 5000 | 7cf69a6 |
 | Race: double `advancePhase` from timer + GM manual advance | `clearPhaseTimer()` called before manual advance | a31da4e |
 | Activity penalty delta not clamped | `clampState()` called after `applyActivityPenalties()` | 5c49f1c |
 | `clampState` was 30-line manual enumeration | Refactored to loop over canonical `STATE_VARIABLE_RANGES` | fe66bf6 |
@@ -222,7 +221,7 @@ Missing:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1212 pass, 2 skip, 0 fail across 40 test files
+- 1230 pass, 2 skip, 0 fail across 40 test files
 - Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,000+ lines) + logger suite (400+ lines)
 - Client: ErrorBoundary component tests + utility tests across all apps
 - Shared: resolution, fog, endings with property tests
