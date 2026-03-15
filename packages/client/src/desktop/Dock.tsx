@@ -10,16 +10,6 @@ const ICON_SIZE = 44;
 const ICON_GAP = 4;
 const ICON_DISPLAY_SIZE = 24;
 
-const PULSE_STYLE = `
-@keyframes dock-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-.dock-primary-dot {
-  animation: dock-pulse 1.8s ease-in-out infinite;
-}
-`;
-
 export function Dock() {
   const { windows, openWindow, focusWindow, minimizeWindow, openedThisRound } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
@@ -56,8 +46,6 @@ export function Dock() {
   };
 
   return (
-    <>
-    <style>{PULSE_STYLE}</style>
     <div
       className="absolute left-0 right-0 flex justify-center"
       style={{ bottom: "8px", pointerEvents: "none", zIndex: 5000 }}
@@ -206,6 +194,5 @@ export function Dock() {
         })}
       </div>
     </div>
-    </>
   );
 }

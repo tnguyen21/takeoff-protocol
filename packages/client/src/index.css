@@ -32,3 +32,38 @@ button:focus-visible {
 .negotiation-pulse {
   animation: negotiation-pulse 1.8s ease-in-out infinite;
 }
+
+/* Component animations */
+@keyframes dock-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.dock-primary-dot {
+  animation: dock-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes roleTooltipIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-slide-in {
+  from { transform: translateX(calc(100% + 24px)); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes newsTickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes bbgTapeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.bbg-tape-inner {
+  animation: bbgTapeScroll 35s linear infinite;
+  white-space: nowrap;
+}

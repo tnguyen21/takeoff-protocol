@@ -309,12 +309,6 @@ export const NewsApp = React.memo(function NewsApp({ content }: AppProps) {
         </div>
       </div>
 
-      <style>{`
-        @keyframes newsTickerScroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 });

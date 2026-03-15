@@ -191,17 +191,6 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
 
   return (
     <div className="flex flex-col h-full bg-black text-green-400 font-mono text-xs">
-      <style>{`
-        @keyframes bbgTapeScroll {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .bbg-tape-inner {
-          animation: bbgTapeScroll 35s linear infinite;
-          white-space: nowrap;
-        }
-      `}</style>
-
       {/* Header */}
       <div className="bg-[#f26522] text-black px-3 py-1 flex items-center justify-between shrink-0">
         <span className="font-bold text-sm tracking-widest">BLOOMBERG TERMINAL</span>

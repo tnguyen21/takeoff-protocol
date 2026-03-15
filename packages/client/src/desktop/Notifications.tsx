@@ -132,18 +132,6 @@ export function Notifications() {
 
   return (
     <>
-      <style>{`
-        @keyframes toast-slide-in {
-          from {
-            transform: translateX(calc(100% + 24px));
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
       {visible.map((notif, index) => (
         <Toast key={notif.id} notif={notif} index={index} />
       ))}

@@ -247,19 +247,6 @@ export function MenuBar() {
             animation: "roleTooltipIn 0.15s ease-out",
           }}
         >
-          <style>{`
-            @keyframes roleTooltipIn {
-              from {
-                opacity: 0;
-                transform: translateY(-4px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
-          
           {/* Role Title */}
           <div
             style={{
