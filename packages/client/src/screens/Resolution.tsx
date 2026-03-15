@@ -105,6 +105,7 @@ export function Resolution() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+    // Deps: paragraphs is derived from resolution.narrative; intervalRef, setRevealedCount, setFullyRevealed are stable refs/setters
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolution?.narrative]);
 

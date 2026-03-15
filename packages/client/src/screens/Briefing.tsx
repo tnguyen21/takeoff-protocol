@@ -65,6 +65,7 @@ export function Briefing() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+    // Deps: paragraphs is derived from text; intervalRef, setRevealedCount, setFullyRevealed are stable refs/setters
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
