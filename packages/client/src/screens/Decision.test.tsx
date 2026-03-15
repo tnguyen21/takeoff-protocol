@@ -13,8 +13,8 @@
  * - FAIL-1: phase !== "decision" → component renders nothing
  */
 
-import { describe, expect, it, beforeEach, mock } from "bun:test";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, beforeEach, afterEach, mock } from "bun:test";
+import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { useGameStore } from "../stores/game.js";
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
@@ -91,6 +91,10 @@ function baseState() {
 
 beforeEach(() => {
   useGameStore.setState(baseState());
+});
+
+afterEach(() => {
+  cleanup();
 });
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -242,6 +246,73 @@ describe("Decision component — leader vs non-leader", () => {
 
     const lockBtn = screen.getByRole("button", { name: /Team Decision Locked/i });
     expect((lockBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("Decision component — auto-submit stale-closure fix", () => {
+  // INV-1: timer auto-submit always submits the most recent user selection (not a
+  //         stale closure value from a previous render).
+  // INV-2: manual submit via button click uses the current selection.
+  // INV-3: auto-submit fires exactly once (autoSubmitted guard still works).
+
+  it("INV-1: timer auto-submit submits latest selection when user changed it before expiry", async () => {
+    const submitDecision = mock(() => {});
+    useGameStore.setState({ submitDecision, timer: { endsAt: FAR_FUTURE } });
+    render(<Decision />);
+
+    // Select option A
+    fireEvent.click(screen.getAllByRole("radio", { name: /Publish/i })[0]);
+    // Immediately change to option B
+    fireEvent.click(screen.getAllByRole("radio", { name: /Suppress/i })[0]);
+
+    // Timer fires — changing endsAt to the past causes tick() to set timedOut=true
+    await act(async () => {
+      useGameStore.setState({ timer: { endsAt: Date.now() - 100 } });
+    });
+
+    // Must submit option B (the latest selection), not option A
+    expect(submitDecision).toHaveBeenCalledTimes(1);
+    expect(submitDecision).toHaveBeenCalledWith("suppress", undefined);
+  });
+
+  it("INV-1: timer auto-submit with no selection submits empty string", async () => {
+    const submitDecision = mock(() => {});
+    // Render with an already-expired timer so auto-submit fires on mount
+    useGameStore.setState({ submitDecision, timer: { endsAt: Date.now() - 100 } });
+
+    await act(async () => {
+      render(<Decision />);
+    });
+
+    expect(submitDecision).toHaveBeenCalledTimes(1);
+    expect(submitDecision).toHaveBeenCalledWith("", undefined);
+  });
+
+  it("INV-2: manual submit via button uses the current selection", () => {
+    const submitDecision = mock(() => {});
+    useGameStore.setState({ submitDecision });
+    render(<Decision />);
+
+    fireEvent.click(screen.getAllByRole("radio", { name: /Suppress/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Submit Decision/i }));
+
+    expect(submitDecision).toHaveBeenCalledWith("suppress", undefined);
+  });
+
+  it("INV-3: auto-submit fires exactly once even after repeated timer state changes", async () => {
+    const submitDecision = mock(() => {});
+    useGameStore.setState({ submitDecision, timer: { endsAt: Date.now() - 100 } });
+
+    await act(async () => {
+      render(<Decision />);
+    });
+
+    // Simulate another timer update (e.g. from the interval tick) — should not re-submit
+    await act(async () => {
+      useGameStore.setState({ timer: { endsAt: Date.now() - 200 } });
+    });
+
+    expect(submitDecision).toHaveBeenCalledTimes(1);
   });
 });
 

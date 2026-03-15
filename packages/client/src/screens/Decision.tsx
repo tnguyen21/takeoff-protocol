@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useGameStore } from "../stores/game.js";
 import { FACTIONS } from "@takeoff/shared";
 import type { DecisionOption } from "@takeoff/shared";
@@ -87,6 +87,12 @@ export function Decision() {
   const [individualChoice, setIndividualChoice] = useState<string | null>(null);
   const [teamVoteChoice, setTeamVoteChoice] = useState<string | null>(null);
   const [leaderFinalChoice, setLeaderFinalChoice] = useState<string | null>(null);
+
+  // Refs that always hold the latest choice values, eliminating stale closure in auto-submit
+  const individualChoiceRef = useRef(individualChoice);
+  const teamVoteChoiceRef = useRef(teamVoteChoice);
+  useEffect(() => { individualChoiceRef.current = individualChoice; }, [individualChoice]);
+  useEffect(() => { teamVoteChoiceRef.current = teamVoteChoice; }, [teamVoteChoice]);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
   const [autoSubmitted, setAutoSubmitted] = useState(false);
@@ -126,12 +132,14 @@ export function Decision() {
     return () => clearInterval(interval);
   }, [phase, timer, timedOut]);
 
-  // Auto-submit when timer expires (if not already submitted)
+  // Auto-submit when timer expires (if not already submitted).
+  // Reads from refs so the callback always uses the latest choice values even if
+  // the timer fires in the same render batch as a radio-button selection change.
   const handleSubmit = useCallback(() => {
     if (decisionSubmitted) return;
     soundManager.play("pop");
-    submitDecision(individualChoice ?? "", teamVoteChoice ?? undefined);
-  }, [decisionSubmitted, individualChoice, teamVoteChoice, submitDecision]);
+    submitDecision(individualChoiceRef.current ?? "", teamVoteChoiceRef.current ?? undefined);
+  }, [decisionSubmitted, submitDecision]);
 
   useEffect(() => {
     if (timedOut && !decisionSubmitted && !autoSubmitted) {
