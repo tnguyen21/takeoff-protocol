@@ -12,6 +12,7 @@ import { getRoundDecisions } from "./content/decisions/rounds.js";
 import { getNpcTriggersForRound } from "./content/npc/index.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { applyActivityPenalties } from "./activityPenalties.js";
+import { updateStoryBible } from "./generation/context.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
@@ -991,6 +992,9 @@ function emitResolution(io: Server, room: GameRoom) {
 
   // Fire any threshold events that have been crossed
   checkThresholds(io, room);
+
+  // Accumulate narrative events for this round into the story bible
+  updateStoryBible(room);
 
   const historyEntry = {
     round: room.round,

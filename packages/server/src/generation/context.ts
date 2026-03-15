@@ -12,6 +12,7 @@ import type {
 } from "@takeoff/shared";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 import { FACTION_IDENTITIES, FACTION_VOICES } from "./prompts/voices.js";
+import { getRoundDecisions } from "../content/decisions/rounds.js";
 
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -201,4 +202,96 @@ export function summarizeOlderRounds(bible: StoryBible, currentRound: number): S
     ...bible,
     events: [...summaryEvents, ...recentEvents],
   };
+}
+
+/**
+ * Accumulate narrative events for the just-completed round into the story bible.
+ * Mutates room.storyBible in place (initializing it if undefined).
+ * Call this after checkThresholds() and before creating the history entry in emitResolution().
+ */
+export function updateStoryBible(room: GameRoom): void {
+  // Ensure bible exists
+  if (!room.storyBible) {
+    room.storyBible = initializeStoryBible(room);
+  }
+  const bible = room.storyBible;
+  const round = room.round;
+
+  // No-op if no decisions were collected this round
+  if (
+    Object.keys(room.decisions).length === 0 &&
+    Object.keys(room.teamDecisions).length === 0
+  ) {
+    return;
+  }
+
+  const roundDecisions = getRoundDecisions(round);
+
+  // a) Record team decisions (major weight)
+  for (const [faction, optionId] of Object.entries(room.teamDecisions)) {
+    if (!roundDecisions) continue;
+    const teamDec = roundDecisions.team.find((t) => t.faction === (faction as Faction));
+    if (!teamDec) continue;
+    const opt = teamDec.options.find((o) => o.id === optionId);
+    if (!opt) continue;
+    bible.events.push({
+      round,
+      phase: "decision",
+      summary: `${faction} chose: "${opt.label}"`,
+      stateImpact: opt.effects
+        .map((e) => `${e.variable} ${e.delta > 0 ? "+" : ""}${e.delta}`)
+        .join(", "),
+      narrativeWeight: "major",
+    });
+  }
+
+  // b) Record individual decisions (minor weight)
+  for (const [playerId, optionId] of Object.entries(room.decisions)) {
+    const player = room.players[playerId];
+    if (!player || !roundDecisions) continue;
+    let opt: { label: string; effects: { variable: string; delta: number }[] } | undefined;
+    for (const indiv of roundDecisions.individual) {
+      opt = indiv.options.find((o) => o.id === optionId);
+      if (opt) break;
+    }
+    if (!opt) continue;
+    bible.events.push({
+      round,
+      phase: "decision",
+      summary: `${player.role} (${player.faction}) chose: "${opt.label}"`,
+      stateImpact: opt.effects
+        .map((e) => `${e.variable} ${e.delta > 0 ? "+" : ""}${e.delta}`)
+        .join(", "),
+      narrativeWeight: "minor",
+    });
+  }
+
+  // c) TODO: Record threshold events that fired this round.
+  //    room.firedThresholds is an all-time set of fired IDs; there is no per-round
+  //    snapshot available here, so we cannot distinguish which ones fired this round
+  //    vs. previous rounds without additional bookkeeping.
+
+  // d) Record publications from this round
+  const roundPubs = (room.publications ?? []).filter((p) => p.round === round);
+  for (const pub of roundPubs) {
+    bible.events.push({
+      round,
+      phase: "publication",
+      summary: `${pub.publishedBy} published: "${pub.title}"`,
+      stateImpact: "",
+      narrativeWeight: "minor",
+    });
+  }
+
+  // e) Update tone based on current state
+  const { publicSentiment, taiwanTension, alignmentConfidence } = room.state;
+  if (publicSentiment < -30) {
+    bible.toneShift = "crisis";
+  } else if (taiwanTension > 70) {
+    bible.toneShift = "tense";
+  } else if (alignmentConfidence > 70) {
+    bible.toneShift = "cautiously optimistic";
+  } else {
+    bible.toneShift = "uncertain";
+  }
 }
