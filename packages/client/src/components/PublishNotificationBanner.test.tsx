@@ -210,10 +210,10 @@ describe("PublishNotificationBanner — timer independence (INV-2)", () => {
 
     // Collect the actual dismiss callbacks registered with setTimeout
     const registeredCallbacks: Array<() => void> = [];
-    const setTimeoutSpy = spyOn(globalThis, "setTimeout").mockImplementation((fn: TimerHandler) => {
+    const setTimeoutSpy = spyOn(globalThis, "setTimeout").mockImplementation(((fn: TimerHandler) => {
       registeredCallbacks.push(fn as () => void);
       return 0 as unknown as ReturnType<typeof setTimeout>;
-    });
+    }) as unknown as typeof setTimeout);
 
     useGameStore.setState({
       notifications: [notif("id-alpha", BASE - 0), notif("id-beta", BASE - 500)],

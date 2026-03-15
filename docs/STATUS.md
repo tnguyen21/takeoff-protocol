@@ -6,7 +6,7 @@ Last updated: 2026-03-15
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1233 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All P0, P1, server, and shared bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1242 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
 
 **Not yet done:** First real playtest, production deployment, generation quality validation, external role balancing.
 
@@ -37,18 +37,7 @@ No known server bugs.
 
 ### Client
 
-| Priority | Bug | Location | Notes |
-|----------|-----|----------|-------|
-| MEDIUM | Desktop subscribes to entire game store | screens/Desktop.tsx:37 | No selector — re-renders on every state change (GM decision status, timer ticks, etc). |
-| MEDIUM | `getContentForApp` called per-window per-render | screens/Desktop.tsx:82-83 | Filters entire content array for every visible window on every render. Memoize a `contentByApp` map. |
-| MEDIUM | PublishNotificationBanner — only oldest notification auto-dismisses | components/PublishNotificationBanner.tsx:12-21 | Notifications 2 and 3 linger past 6-second target. |
-| MEDIUM | SignalApp O(n²) contact sort | apps/SignalApp.tsx:340-349 | Sort comparator calls `messages.filter(...)` twice per comparison. Pre-compute last timestamp per contact. |
-| MEDIUM | SignalApp unread counts in render body | apps/SignalApp.tsx:151-167 | Computed via loops on every render including every keystroke. Needs `useMemo`. |
-| LOW | WandBApp ignores `content` prop | apps/WandBApp.tsx:129 | Renders fully static data regardless of server content. |
-| LOW | `Ending.tsx` passthrough wrapper | screens/Ending.tsx:255 | `export const Ending = DebriefScreen` — dead indirection. |
-| LOW | Inline `<style>` injected on every render | Dock.tsx, MenuBar.tsx, Notifications.tsx, NewsApp.tsx, BloombergApp.tsx | CSS animations as inline `<style>` elements. Move to global stylesheet. |
-| LOW | MemoApp page lookup by mutable title | apps/MemoApp.tsx:238 | `allPages.find(p => p.title === effectiveTitle)` — if title changes between content deliveries, selected page changes silently. |
-| LOW | Suppressed `exhaustive-deps` ESLint warnings | Briefing.tsx:68, Resolution.tsx:114 | Behavior is correct today but conceals dependency chain from future readers. |
+No known client bugs.
 
 ### Shared
 
@@ -99,6 +88,15 @@ No known shared bugs.
 | UIStore `openWindow`/`focusWindow` race | Refactored to `set(s => ...)` pattern | 7df3c48 |
 | Dead `notifications` field in UIStore | Removed field and interface | 7df3c48 |
 | Faction display maps scattered | Already consolidated in `constants/factions.ts` | (was false positive) |
+| Desktop subscribes to entire game store | Replaced with 5 individual Zustand selectors | 340a11c |
+| `getContentForApp` per-window per-render | Memoized `contentByApp` map via `useMemo` | 340a11c |
+| PublishNotificationBanner auto-dismiss | Timer logic verified correct; added 9 confirming tests | bee3f64 |
+| SignalApp O(n²) contact sort | Pre-computed `lastTimestampByPlayer` map | 164c213 |
+| SignalApp unread counts in render body | Wrapped in `useMemo` with proper deps | 164c213 |
+| `Ending.tsx` passthrough wrapper | Renamed `DebriefScreen` → `Ending`, removed alias | d9cc35a |
+| Inline `<style>` injected on every render | Moved 5 animation keyframes to index.css | 19a8bda |
+| MemoApp page lookup by mutable title | Switched to stable ID-based page selection | f34a92a |
+| Suppressed `exhaustive-deps` ESLint warnings | Added explanatory comments documenting why safe | 8627b17 |
 
 ---
 
@@ -220,7 +218,7 @@ Missing:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1233 pass, 2 skip, 0 fail across 40 test files
+- 1242 pass, 2 skip, 0 fail across 40 test files
 - Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,000+ lines) + logger suite (400+ lines)
 - Client: ErrorBoundary component tests + utility tests across all apps
 - Shared: resolution, fog, endings with property tests
@@ -269,9 +267,8 @@ All P1 code bugs are fixed. Remaining:
 10. Implement decision generation (Phase D from GENERATIVE-CONTENT.md)
 
 ### P3 — Polish
-11. Desktop performance (Zustand selectors, memoize contentByApp)
-12. Fix `negotiation-pulse` CSS, notification timer, inline style cleanup
-13. Add client dwell-time tracking for activity reports
-14. Build `compare-games.ts` analysis script
-15. Twitter faction bubble system
-16. Real-time NPC responses (Slack Option B)
+11. Add client dwell-time tracking for activity reports
+12. Build `compare-games.ts` analysis script
+13. Twitter faction bubble system
+14. Real-time NPC responses (Slack Option B)
+15. WandBApp content integration (currently static data in most tabs)
