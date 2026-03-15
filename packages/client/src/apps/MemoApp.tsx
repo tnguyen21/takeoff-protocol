@@ -146,7 +146,7 @@ function Breadcrumb({ crumbs }: { crumbs: string[] }) {
 
 // ─── New page inline editor ───────────────────────────────────────────────────
 
-type UserPage = { title: string; body: string; isUserCreated: true };
+type UserPage = { id: string; title: string; body: string; isUserCreated: true };
 
 function NewPageEditor({ onSubmit, onCancel }: { onSubmit: (p: UserPage) => void; onCancel: () => void }) {
   const [title, setTitle] = React.useState("");
@@ -156,7 +156,7 @@ function NewPageEditor({ onSubmit, onCancel }: { onSubmit: (p: UserPage) => void
     e.preventDefault();
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
-    onSubmit({ title: trimmedTitle, body, isUserCreated: true });
+    onSubmit({ id: `memo_user_${crypto.randomUUID()}`, title: trimmedTitle, body, isUserCreated: true });
   };
 
   return (
@@ -201,7 +201,7 @@ function NewPageEditor({ onSubmit, onCancel }: { onSubmit: (p: UserPage) => void
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-type Page = { title: string; body: string; sender?: string; senderRole?: Role; timestamp?: string; isUserCreated?: true };
+type Page = { id: string; title: string; body: string; sender?: string; senderRole?: Role; timestamp?: string; isUserCreated?: true };
 
 interface LobbyPlayerLike { role: Role | null; name: string; }
 
@@ -219,6 +219,7 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
 
   // Server-provided pages from content
   const serverPages: Page[] = memoItems.map((item) => ({
+    id: item.id,
     title: item.subject ?? "Untitled Document",
     body: item.body,
     sender: item.sender,
@@ -227,25 +228,23 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
   }));
 
   const [userPages, setUserPages] = React.useState<UserPage[]>([]);
-  const [selectedTitle, setSelectedTitle] = React.useState<string | null>(
-    serverPages.length > 0 ? serverPages[0].title : null
-  );
+  const [selectedPageId, setSelectedPageId] = React.useState<string | null>(null);
   const [showNewPageEditor, setShowNewPageEditor] = React.useState(false);
 
   const allPages: Page[] = [...serverPages, ...userPages];
 
   // If selection is null but pages now exist (e.g. after content loads), pick first
-  const effectiveTitle = selectedTitle ?? allPages[0]?.title ?? null;
-  const currentPage = allPages.find((p) => p.title === effectiveTitle) ?? null;
+  const effectiveId = selectedPageId ?? allPages[0]?.id ?? null;
+  const currentPage = allPages.find((p) => p.id === effectiveId) ?? null;
 
   const handleCreatePage = (page: UserPage) => {
     setUserPages((prev) => [...prev, page]);
-    setSelectedTitle(page.title);
+    setSelectedPageId(page.id);
     setShowNewPageEditor(false);
   };
 
-  const breadcrumbs = effectiveTitle
-    ? ["Workspace", "Documents", effectiveTitle]
+  const breadcrumbs = currentPage
+    ? ["Workspace", "Documents", currentPage.title]
     : ["Workspace", "Documents"];
 
   return (
@@ -265,10 +264,10 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
               </div>
               {serverPages.map((page) => (
                 <div
-                  key={page.title}
-                  onClick={() => { setSelectedTitle(page.title); setShowNewPageEditor(false); }}
+                  key={page.id}
+                  onClick={() => { setSelectedPageId(page.id); setShowNewPageEditor(false); }}
                   className={`flex items-center gap-1.5 rounded cursor-pointer text-xs py-1.5 px-2 ${
-                    effectiveTitle === page.title && !showNewPageEditor
+                    effectiveId === page.id && !showNewPageEditor
                       ? "bg-blue-100 text-blue-800 font-medium"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
@@ -290,10 +289,10 @@ export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
               </div>
               {userPages.map((page) => (
                 <div
-                  key={page.title}
-                  onClick={() => { setSelectedTitle(page.title); setShowNewPageEditor(false); }}
+                  key={page.id}
+                  onClick={() => { setSelectedPageId(page.id); setShowNewPageEditor(false); }}
                   className={`flex items-center gap-1.5 rounded cursor-pointer text-xs py-1.5 px-2 ${
-                    effectiveTitle === page.title && !showNewPageEditor
+                    effectiveId === page.id && !showNewPageEditor
                       ? "bg-blue-100 text-blue-800 font-medium"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
