@@ -426,7 +426,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const sender = room.players[socket.id];
     if (!sender || !sender.faction) return;
     if (to !== null) {
-      if (to.startsWith("__bot_")) return;
+      if (to.startsWith("__bot_")) {
+        socket.emit("error", { message: "Cannot send DMs to bot players" });
+        return;
+      }
       if (!room.players[to]) return;
     }
 

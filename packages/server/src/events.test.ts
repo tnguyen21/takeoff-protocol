@@ -486,6 +486,31 @@ describe("message:send — real handler", () => {
     expect((io.emits[botId] ?? []).filter((e) => e.event === "message:receive")).toHaveLength(0);
   });
 
+  it("INV-1: DM to bot socket ID emits error to sender", () => {
+    const botId = "__bot_openbrain_ob_ceo";
+    room.players[botId] = makePlayer(botId, { id: botId });
+
+    fire(senderSocket.handlers, "message:send", { to: botId, content: "Hey bot" });
+
+    const errorEvent = senderSocket.selfEmits.find((e) => e.event === "error");
+    expect(errorEvent).toBeDefined();
+    expect((errorEvent!.data as Record<string, unknown>).message).toBe("Cannot send DMs to bot players");
+    expect(room.messages).toHaveLength(0);
+  });
+
+  it("INV-2: DM to real player socket ID works normally", () => {
+    fire(senderSocket.handlers, "message:send", { to: MSG_PLAYER_B, content: "Valid DM" });
+
+    // Message stored
+    expect(room.messages).toHaveLength(1);
+    expect(room.messages[0].content).toBe("Valid DM");
+    // Delivered to recipient and echoed to sender
+    expect((io.emits[MSG_PLAYER_B] ?? []).some((e) => e.event === "message:receive")).toBe(true);
+    expect((io.emits[MSG_PLAYER_A] ?? []).some((e) => e.event === "message:receive")).toBe(true);
+    // No error emitted to sender
+    expect(senderSocket.selfEmits.find((e) => e.event === "error")).toBeUndefined();
+  });
+
   it("message persists in room.messages for reconnect replay", () => {
     fire(senderSocket.handlers, "message:send", { to: null, content: "msg1", channel: "#safety" });
     fire(senderSocket.handlers, "message:send", { to: null, content: "msg2" });
