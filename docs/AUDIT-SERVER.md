@@ -1,5 +1,15 @@
 # Server Package Audit — Findings
 
+> **Fix Status (2026-03-15):**
+> - 3.1 (HIGH) Double advancePhase race — **FIXED** (a31da4e: clearPhaseTimer before manual advance)
+> - 3.2 (HIGH) Activity penalties unclamped — **FIXED** (5c49f1c: clampState after penalties)
+> - 3.3 (HIGH) replayPlayerState skips generated content — **PARTIALLY FIXED** (uses getMergedContentForPlayer, but generated briefings still not replayed)
+> - 3.4 (HIGH) history[].stateAfter pre-penalty — **OUTSTANDING**
+> - 1.1 ROUND_DECISIONS triplicated — **OUTSTANDING** (still in game.ts, devBots.ts, context.ts)
+> - 1.3 STATE_BOUNDS rebuilt in handler — **OUTSTANDING** (still inside gm:set-state handler)
+> - Clamping bounds inconsistency (GM vs resolution) — **FIXED** (fe66bf6: canonical STATE_VARIABLE_RANGES)
+> - See `STATUS.md` for full current bug list and priorities.
+
 ## Files Audited
 - `src/index.ts`, `src/game.ts` (1174 lines), `src/rooms.ts`, `src/events.ts` (834 lines), `src/devBots.ts`
 - `src/content/loader.ts`, `index.ts`, `npc/index.ts`, `npcPersonas.ts`

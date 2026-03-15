@@ -1,5 +1,17 @@
 # packages/shared/src — Audit Report
 
+> **Fix Status (2026-03-15):**
+> - 1.1 Unused `_role` param in computeFogView — **FIXED** (parameter removed)
+> - 1.2 `arcIds` array duplicates resolver keys — **FIXED** (uses Object.keys(resolvers))
+> - 2.1 `clampState` 30-line manual enumeration — **FIXED** (fe66bf6: loops over STATE_VARIABLE_RANGES)
+> - 2.2 `applyNoise` correlated seeds for `ob*` vars — **FIXED** (uses hashString per variable)
+> - 2.3 `resolvePublicReaction` redundant branch — **FIXED** (condition removed)
+> - 3.1 (BUG) `applyNoise` formula broken — **FIXED** (sin * 233280, fractional part extraction)
+> - 3.2 (BUG) `globalMediaCycle < -60` unreachable — **FIXED** (replaced with publicSentiment check)
+> - 1.6 `globalMediaCycle` typed as `number` — **OUTSTANDING** (should be union type)
+> - 3.3 `resolveOpenSource` dead branch — **OUTSTANDING** (catch-all return 3, minor)
+> - See `STATUS.md` for full current bug list and priorities.
+
 ## 1. Dead Code / Unnecessary Complexity
 
 **1.1 `_role` parameter in `computeFogView` is unused (`fog.ts:68`)**

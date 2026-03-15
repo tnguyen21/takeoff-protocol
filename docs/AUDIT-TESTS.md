@@ -1,5 +1,17 @@
 # Tests & Scripts — Audit Report
 
+> **Fix Status (2026-03-15):**
+> - events.test.ts shadow testing — **FIXED** (complete rewrite, now tests real handlers via registerGameEvents)
+> - activity.test.ts tests local copy — **FIXED** (now imports real applyActivityPenalties)
+> - Fog noise test gap (no value-range assertion) — **FIXED** (property test: estimates within confidence bounds)
+> - computeEndingArcs test gaps — **FIXED** (41 new tests covering all 9 resolver branches)
+> - Clamping bounds inconsistency — **FIXED** (canonical STATE_VARIABLE_RANGES)
+> - analyze-bias.ts `decisions.collective` bug — **FIXED** (checks .team with .collective fallback)
+> - emitResolution not exported — **OUTSTANDING** (covered indirectly through integration tests)
+> - Migration scripts not archived — **OUTSTANDING** (still in scripts/, no tests, no dry-run)
+> - Current: 751 pass, 2 skip, 0 fail across 22 test files.
+> - See `STATUS.md` for full current state.
+
 ## Overall Verdict
 
 The test suite has a **fundamental structural problem**: the most critical tests don't actually test the production code. Shadow-testing and inline reimplementations dominate, meaning large portions of the server could be completely rewritten and the tests would still pass green. The shared package tests are the best in the suite. The scripts are a maintenance hazard.

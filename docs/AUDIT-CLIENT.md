@@ -1,5 +1,13 @@
 # Client Package Audit — Findings
 
+> **Fix Status (2026-03-15):**
+> - All bugs listed below are **still present** as of this date.
+> - 1.1/3.1 (CRITICAL) Double `game:publish` handler — **OUTSTANDING**
+> - 2.1/3.2 (HIGH) SlackApp stale closure — **OUTSTANDING**
+> - 2.5/3.5 (MEDIUM) EmailApp read state by index — **OUTSTANDING**
+> - 3.6 (MEDIUM) `negotiation-pulse` CSS undefined — **OUTSTANDING**
+> - See `STATUS.md` for full current bug list and priorities.
+
 ## 1. Dead Code / Unnecessary Complexity
 
 **1.1 Duplicate `game:publish` socket handler (HIGH)**
