@@ -1,6 +1,7 @@
 /Users/tau/projects/takeoff-protocol
 ├── docs
 │   ├── BACKLOG.md
+│   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
 │   ├── DEV-TOOLS.md
 │   ├── EXTERNAL-ROLES-AUDIT.md
@@ -342,4 +343,4 @@
 ├── tsconfig.json
 └── watch_20260315-200412
 
-23 directories, 320 files
+23 directories, 321 files
