@@ -140,6 +140,13 @@ function resolveAiRace(s: StateVariables): number {
   // Prometheus catch-up: standard gap closure OR safety breakthrough proved its worth
   const promClosing = (s.obPromGap <= 1 && s.promCapability >= 55) || s.promSafetyBreakthroughProgress >= 80;
   const obDominant = s.obCapability >= 65 && s.obPromGap >= 4 && !chinaClose;
+  // Priority order: China parity (1) > Prometheus lead (3) > OB dominant (2) > multi-polar (0).
+  // chinaClose and promClosing use entirely different state variables and CAN both be true
+  // simultaneously (e.g. China has high compute + chip independence while Prometheus has
+  // also closed the gap on OpenBrain). China parity is intentionally checked first: when a
+  // peer-state competitor has reached capability parity, that geopolitical story overrides
+  // the inter-US-lab competition regardless of Prometheus's standing.
+  // obDominant already guards with !chinaClose, keeping it consistent with this ordering.
   if (chinaClose) return 1;
   if (promClosing) return 3;
   if (obDominant) return 2;
