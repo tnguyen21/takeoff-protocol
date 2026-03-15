@@ -21,6 +21,8 @@ import type { GameMessage, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { rooms } from "./rooms.js";
 import { registerGameEvents } from "./events.js";
+import { setGeneratedBriefing } from "./generation/cache.js";
+import { emitBriefing } from "./game.js";
 
 // ── Minimal mocks (same pattern as events.test.ts) ───────────────────────────
 
@@ -545,5 +547,110 @@ describe.skip("room:rejoin — INV-8: post-ending rejoin (requires w-18873d9343e
   it("ending arcs replayed when phase=ending (game:ending event)", () => {
     // When w-18873d9343e8 is merged: set room.phase="ending", set room.endingData
     // fire rejoin, verify game:ending is emitted with arc outcomes
+  });
+});
+
+// ── Briefing replay invariants ────────────────────────────────────────────────
+
+const BRF_ROOM = "RJBRF";
+const BRF_GM = "gm-brf";
+const BRF_OLD = "brf-old";
+const BRF_NEW = "brf-new";
+
+describe("room:rejoin — briefing replay", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let newSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeRoom(BRF_ROOM, BRF_GM, { phase: "briefing", round: 1 });
+    room.players[BRF_OLD] = makePlayer(BRF_OLD, { faction: "openbrain", role: "ob_cto" });
+
+    newSocket = createSocket(BRF_NEW);
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      newSocket as unknown as import("socket.io").Socket,
+    );
+  });
+
+  afterEach(() => {
+    rooms.delete(BRF_ROOM);
+  });
+
+  it("INV-1: emits generated briefing when room cache has one", () => {
+    setGeneratedBriefing(room, 1, {
+      common: "Generated common text",
+      factionVariants: {
+        openbrain: "Generated OB variant",
+        prometheus: "Prom variant",
+        china: "China variant",
+        external: "External variant",
+      },
+    });
+
+    fire(newSocket.handlers, "room:rejoin", { code: BRF_ROOM, playerId: BRF_OLD }, () => {});
+
+    const briefingEmit = newSocket.selfEmits.find((e) => e.event === "game:briefing");
+    expect(briefingEmit).toBeDefined();
+    const text = (briefingEmit!.data as { text: string }).text;
+    expect(text).toContain("Generated common text");
+    expect(text).toContain("Generated OB variant");
+  });
+
+  it("INV-1 regression: pre-authored text is NOT emitted when generated briefing exists", () => {
+    setGeneratedBriefing(room, 1, {
+      common: "Generated common text",
+      factionVariants: {
+        openbrain: "Generated OB variant",
+        prometheus: "Prom variant",
+        china: "China variant",
+        external: "External variant",
+      },
+    });
+
+    fire(newSocket.handlers, "room:rejoin", { code: BRF_ROOM, playerId: BRF_OLD }, () => {});
+
+    const briefingEmit = newSocket.selfEmits.find((e) => e.event === "game:briefing");
+    const text = (briefingEmit!.data as { text: string }).text;
+    // Pre-authored round 1 common text starts with "It's November 2026"
+    expect(text).not.toContain("It's November 2026");
+  });
+
+  it("INV-2: emits pre-authored briefing when no generated briefing exists", () => {
+    // No setGeneratedBriefing call — room.generatedRounds is unset
+
+    fire(newSocket.handlers, "room:rejoin", { code: BRF_ROOM, playerId: BRF_OLD }, () => {});
+
+    const briefingEmit = newSocket.selfEmits.find((e) => e.event === "game:briefing");
+    expect(briefingEmit).toBeDefined();
+    const text = (briefingEmit!.data as { text: string }).text;
+    // Pre-authored round 1 briefing contains this string
+    expect(text).toContain("It's November 2026");
+  });
+
+  it("INV-3: replayPlayerState emits same text as emitBriefing for the same player", () => {
+    setGeneratedBriefing(room, 1, {
+      common: "Invariant common",
+      factionVariants: {
+        openbrain: "Invariant OB variant",
+        prometheus: "Prom v",
+        china: "China v",
+        external: "Ext v",
+      },
+    });
+
+    // Trigger replayPlayerState via rejoin
+    fire(newSocket.handlers, "room:rejoin", { code: BRF_ROOM, playerId: BRF_OLD }, () => {});
+    const replayText = (newSocket.selfEmits.find((e) => e.event === "game:briefing")?.data as { text: string })?.text;
+
+    // After rejoin, BRF_NEW is in room.players; call emitBriefing and compare
+    const emitIo = createIo();
+    emitBriefing(emitIo as unknown as import("socket.io").Server, room);
+    const emittedText = (emitIo.emits[BRF_NEW]?.find((e) => e.event === "game:briefing")?.data as { text: string })?.text;
+
+    expect(replayText).toBeDefined();
+    expect(emittedText).toBeDefined();
+    expect(replayText).toBe(emittedText);
   });
 });

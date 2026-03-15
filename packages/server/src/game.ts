@@ -351,23 +351,33 @@ export function emitStateViews(io: Server, room: GameRoom) {
   }
 }
 
+/**
+ * Resolve the briefing text for a specific player, using generated content if available,
+ * falling back to pre-authored. Applies name personalization.
+ */
+export function getBriefingTextForPlayer(room: GameRoom, player: Player, nameMap: Map<string, string>): string {
+  const generated = getGeneratedBriefing(room, room.round);
+  const briefing = generated ?? getBriefing(room.round);
+  const { common, factionVariants } = briefing;
+  const variant = factionVariants?.[player.faction!];
+  const combined = variant ? `${common}\n\n${variant}` : common;
+  return personalizeText(combined, nameMap);
+}
+
 export function emitBriefing(io: Server, room: GameRoom) {
   try {
-    const generated = getGeneratedBriefing(room, room.round);
-    const briefing = generated ?? getBriefing(room.round);
-    const { common, factionVariants } = briefing;
     const nameMap = buildNameMap(room);
 
     for (const [socketId, player] of Object.entries(room.players)) {
       if (!player.faction) continue;
-      const variant = factionVariants?.[player.faction];
-      const combined = variant ? `${common}\n\n${variant}` : common;
-      const text = personalizeText(combined, nameMap);
+      const text = getBriefingTextForPlayer(room, player, nameMap);
       io.to(socketId).emit("game:briefing", { text });
     }
 
     // GM gets the common briefing (unmodified — no player name context needed)
     if (room.gmId) {
+      const generated = getGeneratedBriefing(room, room.round);
+      const { common } = generated ?? getBriefing(room.round);
       io.to(room.gmId).emit("game:briefing", { text: common });
     }
   } catch (err) {
@@ -1140,12 +1150,7 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
 
     // Briefing text (relevant in briefing phase but also good to replay for context)
     try {
-      const generated = getGeneratedBriefing(room, room.round);
-      const briefing = generated ?? getBriefing(room.round);
-      const { common, factionVariants } = briefing;
-      const variant = factionVariants?.[player.faction];
-      const combined = variant ? `${common}\n\n${variant}` : common;
-      const text = personalizeText(combined, nameMap);
+      const text = getBriefingTextForPlayer(room, player, nameMap);
       socket.emit("game:briefing", { text });
     } catch {
       // No briefing content for this round
