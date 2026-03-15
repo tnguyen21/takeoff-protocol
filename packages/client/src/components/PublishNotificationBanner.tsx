@@ -8,7 +8,13 @@ import { useGameStore } from "../stores/game.js";
 export function PublishNotificationBanner() {
   const { notifications, dismissNotification } = useGameStore();
 
-  // Auto-dismiss notifications after 6 seconds
+  // Auto-dismiss notifications after 6 seconds.
+  //
+  // When this effect reruns (e.g. after a sibling notification is dismissed),
+  // the `remaining` calculation is still correct: notif.timestamp is stable because
+  // Zustand's dismissNotification uses Array.filter(), which preserves the original
+  // object references — it does NOT reconstruct notification objects with new timestamps.
+  // So `6000 - (Date.now() - notif.timestamp)` always reflects true remaining time.
   useEffect(() => {
     if (notifications.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
