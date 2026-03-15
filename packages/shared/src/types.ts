@@ -32,6 +32,9 @@ export interface Player {
 
 // ── State Variables ──
 
+/** Discrete media-narrative phase: 0=ai-hype … 5=ai-normalized */
+export type MediaCycle = 0 | 1 | 2 | 3 | 4 | 5;
+
 export interface StateVariables {
   obCapability: number;        // Agent level (100-scale, maps to Agent 1-5)
   promCapability: number;
@@ -52,7 +55,7 @@ export interface StateVariables {
   // ── Tier 1: Public-Facing ──
   marketIndex: number;           // 0-200, stock market proxy
   regulatoryPressure: number;    // 0-100
-  globalMediaCycle: number;      // 0-5 enum: 0=ai-hype, 1=ai-fear, 2=ai-crisis, 3=ai-war, 4=ai-regulation, 5=ai-normalized
+  globalMediaCycle: MediaCycle;  // 0=ai-hype, 1=ai-fear, 2=ai-crisis, 3=ai-war, 4=ai-regulation, 5=ai-normalized
 
   // ── Tier 2: Hidden Engine ──
   chinaWeightTheftProgress: number; // 0-100

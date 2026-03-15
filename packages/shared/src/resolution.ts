@@ -1,4 +1,4 @@
-import type { DecisionOption, StateEffect, StateVariables } from "./types.js";
+import type { DecisionOption, MediaCycle, StateEffect, StateVariables } from "./types.js";
 import { STATE_VARIABLE_RANGES } from "./constants.js";
 
 /**
@@ -35,8 +35,11 @@ function applyEffect(state: StateVariables, effect: StateEffect): void {
 export function clampState(state: StateVariables): void {
   for (const key of Object.keys(STATE_VARIABLE_RANGES) as (keyof StateVariables)[]) {
     const [min, max] = STATE_VARIABLE_RANGES[key];
-    state[key] = Math.max(min, Math.min(max, state[key]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (state as any)[key] = Math.max(min, Math.min(max, state[key] as number));
   }
+  // globalMediaCycle is a discrete enum — round to nearest integer after clamping
+  state.globalMediaCycle = Math.round(state.globalMediaCycle) as MediaCycle;
 }
 
 /**
