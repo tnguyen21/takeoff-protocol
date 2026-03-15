@@ -6,7 +6,7 @@ Last updated: 2026-03-15
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1189 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All P0 bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1212 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All P0 and P1 code bugs are fixed.
 
 **Not yet done:** First real playtest, production deployment, generation quality validation, external role balancing.
 
@@ -35,10 +35,6 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 
 | Priority | Bug | Location | Notes |
 |----------|-----|----------|-------|
-| HIGH | `replayPlayerState` skips generated content on reconnect | game.ts | Calls `getBriefing`/`getContentForPlayer` directly, bypassing generated-content merge. Reconnecting players see pre-authored content while others see generated. Partially fixed (uses `getMergedContentForPlayer`) but generated briefings still not replayed. |
-| HIGH | `history[].stateAfter` records pre-penalty state | game.ts ~line 237 | Comment says "will be updated by resolution" but nothing updates it. Misleading for generation context and analysis. |
-| MEDIUM | Decision option IDs not validated on submit | events.ts:359 | Any string accepted and written to `room.decisions`. Only caught in `emitResolution`. |
-| MEDIUM | No room cleanup lifecycle | rooms.ts, game.ts:20, extendUses.ts | `rooms` Map, `phaseTimers` Map, and `extendUses` Map grow forever. Abandoned rooms never pruned. |
 | MEDIUM | `getContentForPlayer` doesn't dedup by app | content/loader.ts | Two registrations for the same `(faction, app)` pair produce duplicate content blocks. |
 | LOW | GM receives duplicate messages if also a player | events.ts:482 | Unconditional GM echo in team chat. |
 | LOW | `tweet:send` ID not UUID-safe | events.ts:635 | Uses `Date.now()` + 4-char socket suffix. Collision risk under concurrent sends. |
@@ -51,7 +47,6 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 |----------|-----|----------|-------|
 | MEDIUM | Desktop subscribes to entire game store | screens/Desktop.tsx:37 | No selector — re-renders on every state change (GM decision status, timer ticks, etc). |
 | MEDIUM | `getContentForApp` called per-window per-render | screens/Desktop.tsx:82-83 | Filters entire content array for every visible window on every render. Memoize a `contentByApp` map. |
-| MEDIUM | Decision auto-submit stale closure | screens/Decision.tsx:135-139 | `handleSubmit` captures choice values at creation time. Timer fire after selection change submits stale values. |
 | MEDIUM | `negotiation-pulse` CSS class applied but never defined | desktop/Dock.tsx:95 | Signal icon produces no visual effect during Round 4 negotiation. Only `dock-pulse` is defined. |
 | MEDIUM | PublishNotificationBanner — only oldest notification auto-dismisses | components/PublishNotificationBanner.tsx:12-21 | Notifications 2 and 3 linger past 6-second target. |
 | MEDIUM | SignalApp O(n²) contact sort | apps/SignalApp.tsx:340-349 | Sort comparator calls `messages.filter(...)` twice per comparison. Pre-compute last timestamp per contact. |
@@ -88,6 +83,11 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 | `formatTime` duplicated in Decision/GMDashboard | Extracted to `utils.ts` | (earlier) |
 | `STATE_LABELS` duplicated in Ending/GMDashboard | Extracted to `constants/labels.ts` | (earlier) |
 | `ROUND_DECISIONS` triplicated across 3 files | Single export in `content/decisions/rounds.ts` | (earlier) |
+| `replayPlayerState` skips generated briefings | Extracted `getBriefingTextForPlayer` helper; both paths unified | 23e50bf |
+| `history[].stateAfter` invariant untested | Verified correct; added regression tests locking post-mutation capture | 58b89a5 |
+| No room cleanup lifecycle | TTL pruning for abandoned rooms, timer/extendUses cleanup | 10588f5 |
+| Decision auto-submit stale closure | Replaced closure-captured values with refs | 8da6a92 |
+| Decision option IDs not validated on submit | Already validated at events.ts:359-360 (was stale bug report) | N/A |
 | Race: double `advancePhase` from timer + GM manual advance | `clearPhaseTimer()` called before manual advance | a31da4e |
 | Activity penalty delta not clamped | `clampState()` called after `applyActivityPenalties()` | 5c49f1c |
 | `clampState` was 30-line manual enumeration | Refactored to loop over canonical `STATE_VARIABLE_RANGES` | fe66bf6 |
@@ -222,7 +222,7 @@ Missing:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1189 pass, 2 skip, 0 fail across 40 test files
+- 1212 pass, 2 skip, 0 fail across 40 test files
 - Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,000+ lines) + logger suite (400+ lines)
 - Client: ErrorBoundary component tests + utility tests across all apps
 - Shared: resolution, fog, endings with property tests
@@ -260,12 +260,9 @@ These are not bugs but would improve maintainability:
 All P0 items are fixed. See "Bugs Fixed" table.
 
 ### P1 — Fix Before Hosting
-1. Fix `replayPlayerState` to use generated briefings/content on reconnect
-2. Fix `history[].stateAfter` to record post-penalty state
-3. Add room cleanup lifecycle (TTL pruning for rooms, timers, extendUses)
-4. Validate decision option IDs on submit
-5. Deploy to Fly.io and smoke test
-6. Run at least one full playtest with real humans
+All P1 code bugs are fixed. Remaining:
+1. Deploy to Fly.io and smoke test
+2. Run at least one full playtest with real humans
 
 ### P2 — Enrich Gameplay
 7. Add external role individual decisions (NSA R2-5, VC board authority, diplomat negotiation)

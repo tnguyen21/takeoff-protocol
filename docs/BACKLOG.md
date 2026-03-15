@@ -8,25 +8,7 @@ See also: `STATUS.md` for current bug list and priority recommendations.
 
 ## P1 — Fix Before Hosting
 
-### Server: Reconnect Replays Stale Content
-**Files:** `game.ts` (`replayPlayerState`)
-
-`replayPlayerState` calls `getBriefing`/`getContentForPlayer` directly, bypassing the generated-content merge path used by `emitBriefing`/`emitContent`. Reconnecting players see pre-authored content while other players see generated content. Fix by extracting a shared `getEffectiveContent()`/`emitBriefingTo()` helper used by both the normal and reconnect paths.
-
-### Server: Fix `history[].stateAfter`
-**File:** `game.ts` ~line 237
-
-`stateAfter` records pre-penalty, pre-threshold state. Nothing updates it afterward. Fix by recording stateAfter after `applyActivityPenalties()` + `checkThresholds()` + `clampState()`.
-
-### Server: Room Cleanup Lifecycle
-**Files:** `rooms.ts`, `game.ts:20`, `extendUses.ts`
-
-`rooms` Map, `phaseTimers` Map, and `extendUses` Map grow forever. Add: TTL-based pruning for abandoned rooms (all disconnected for >N minutes), timer cancellation on room end, extend uses cleanup on room end.
-
-### Server: Validate Decision Option IDs
-**File:** `events.ts:359`
-
-Any string accepted as decision option ID. Validate against the current round's decision options immediately on submit. Reject unknown IDs with error.
+All P1 code bugs are fixed. Remaining:
 
 ### Deploy to Fly.io
 **Files:** `Dockerfile`, `fly.toml`
