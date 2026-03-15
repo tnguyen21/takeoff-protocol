@@ -140,7 +140,7 @@ function DecisionHistoryPanel({ history }: { history: RoundHistory[] }) {
   );
 }
 
-function DebriefScreen() {
+export function Ending() {
   const { endingArcs, endingHistory, endingFinalState } = useGameStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -250,6 +250,3 @@ function DebriefScreen() {
   );
 }
 
-// ── Main Ending Screen ─────────────────────────────────────────────────────────
-
-export const Ending = DebriefScreen;
