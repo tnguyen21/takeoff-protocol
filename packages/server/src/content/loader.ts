@@ -16,6 +16,17 @@ export function registerContent(mod: ContentModule): void {
   registry.push(mod);
 }
 
+/** @internal Test-only: snapshot the registry for restore. */
+export function _snapshotRegistry(): ContentModule[] {
+  return [...registry];
+}
+
+/** @internal Test-only: replace the registry contents. */
+export function _restoreRegistry(snapshot: ContentModule[]): void {
+  registry.length = 0;
+  registry.push(...snapshot);
+}
+
 // ── Condition evaluation (unchanged) ──
 
 function evaluateCondition(condition: NonNullable<ContentItem["condition"]>, state: StateVariables): boolean {
@@ -57,7 +68,8 @@ const ACCUMULATING_APPS: Set<AppId> = new Set([
  * INV-4: Accumulating apps return items from rounds 0..N; fresh apps return only round N.
  */
 export function getContentForPlayer(round: number, faction: Faction, role: Role, state: StateVariables): AppContent[] {
-  const result: AppContent[] = [];
+  // Map from AppId to merged AppContent — deduplicates multiple registrations for the same app.
+  const appMap = new Map<AppId, AppContent>();
 
   for (const mod of registry) {
     // INV-1: faction filter
@@ -78,13 +90,25 @@ export function getContentForPlayer(round: number, faction: Faction, role: Role,
 
     if (filteredItems.length === 0) continue;
 
-    result.push({
-      faction: mod.faction,
-      role: mod.role,
-      app: mod.app,
-      items: filteredItems,
-    });
+    const existing = appMap.get(mod.app);
+    if (existing) {
+      // Merge items from this registration into the existing entry, deduplicating by id.
+      const seenIds = new Set(existing.items.map((i) => i.id));
+      for (const item of filteredItems) {
+        if (!seenIds.has(item.id)) {
+          existing.items.push(item);
+          seenIds.add(item.id);
+        }
+      }
+    } else {
+      appMap.set(mod.app, {
+        faction: mod.faction,
+        role: mod.role,
+        app: mod.app,
+        items: [...filteredItems],
+      });
+    }
   }
 
-  return result;
+  return Array.from(appMap.values());
 }

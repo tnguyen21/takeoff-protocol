@@ -1,5 +1,5 @@
-import { describe, it, expect } from "bun:test";
-import { getContentForPlayer } from "./loader.js";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { getContentForPlayer, registerContent, _snapshotRegistry, _restoreRegistry } from "./loader.js";
 import { getBriefing } from "./briefings.js";
 import "./index.js";
 import { INITIAL_STATE } from "@takeoff/shared";
@@ -1366,5 +1366,82 @@ describe("INV-signal-unique-ids: all new Signal items have unique IDs", () => {
         idSet.add(item.id);
       }
     }
+  });
+});
+
+// ── Deduplication by app (INV-dedup) ──
+
+describe("getContentForPlayer dedup by app", () => {
+  let snapshot: ReturnType<typeof _snapshotRegistry>;
+
+  beforeEach(() => {
+    snapshot = _snapshotRegistry();
+    _restoreRegistry([]); // start with empty registry for isolation
+  });
+
+  afterEach(() => {
+    _restoreRegistry(snapshot);
+  });
+
+  const baseItem = (id: string) => ({
+    id,
+    type: "message" as const,
+    round: 1,
+    body: `body-${id}`,
+    timestamp: "2026-01-01T00:00:00Z",
+  });
+
+  const state = INITIAL_STATE;
+
+  it("INV-1: two registrations for same app produce exactly one AppContent entry", () => {
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [baseItem("item-a")] });
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [baseItem("item-b")] });
+
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", state);
+    const slackEntries = content.filter((ac) => ac.app === "slack");
+    expect(slackEntries.length).toBe(1);
+  });
+
+  it("INV-2: items from both registrations are present in the merged entry", () => {
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [baseItem("item-a")] });
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [baseItem("item-b")] });
+
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", state);
+    const slackItems = content.find((ac) => ac.app === "slack")!.items;
+    const ids = slackItems.map((i) => i.id);
+    expect(ids).toContain("item-a");
+    expect(ids).toContain("item-b");
+  });
+
+  it("INV-2: duplicate item IDs across registrations are included only once", () => {
+    const sharedItem = baseItem("shared-id");
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [sharedItem] });
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [sharedItem, baseItem("unique-id")] });
+
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", state);
+    const slackItems = content.find((ac) => ac.app === "slack")!.items;
+    const sharedCount = slackItems.filter((i) => i.id === "shared-id").length;
+    expect(sharedCount).toBe(1);
+    expect(slackItems.length).toBe(2); // shared-id once + unique-id once
+  });
+
+  it("INV-3: single registration produces unchanged output (no dedup side-effect)", () => {
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [baseItem("only-item")] });
+
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", state);
+    expect(content.length).toBe(1);
+    expect(content[0].app).toBe("slack");
+    expect(content[0].items.length).toBe(1);
+    expect(content[0].items[0].id).toBe("only-item");
+  });
+
+  it("INV-3: distinct apps from different registrations remain separate entries", () => {
+    registerContent({ faction: "openbrain", app: "slack", accumulate: false, items: [baseItem("slack-item")] });
+    registerContent({ faction: "openbrain", app: "email", accumulate: false, items: [baseItem("email-item")] });
+
+    const content = getContentForPlayer(1, "openbrain", "ob_ceo", state);
+    expect(content.length).toBe(2);
+    const apps = content.map((ac) => ac.app).sort();
+    expect(apps).toEqual(["email", "slack"]);
   });
 });
