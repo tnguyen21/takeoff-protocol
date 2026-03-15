@@ -2,6 +2,7 @@ import { useCallback, useRef, type ReactNode, type PointerEvent } from "react";
 import { useUIStore, type WindowState } from "../stores/ui.js";
 import { AppIcon } from "../apps/icons.js";
 import { soundManager } from "../sounds/index.js";
+import { ErrorBoundary } from "../components/ErrorBoundary.js";
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 200;
@@ -211,7 +212,9 @@ export function Window({ windowState: w, children }: WindowProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-neutral-900 overflow-auto">{children}</div>
+      <div className="flex-1 bg-neutral-900 overflow-auto">
+        <ErrorBoundary>{children}</ErrorBoundary>
+      </div>
     </div>
   );
 }
