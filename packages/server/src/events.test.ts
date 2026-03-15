@@ -475,6 +475,28 @@ describe("message:send — real handler", () => {
     expect((gmMsg!.data as Record<string, unknown>)._gmView).toBe(true);
   });
 
+  it("INV-1: GM not in sending faction still receives team message via echo", () => {
+    // GM has no faction (not in room.players), so they receive the explicit echo
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Faction update" });
+
+    const gmMsgs = (io.emits[MSG_GM_ID] ?? []).filter((e) => e.event === "message:receive");
+    expect(gmMsgs).toHaveLength(1);
+    expect((gmMsgs[0]!.data as Record<string, unknown>)._gmView).toBe(true);
+  });
+
+  it("INV-2: GM who is also a player in the sending faction receives message exactly once (no duplicate)", () => {
+    // Add GM as a player in the same faction as the sender (openbrain)
+    room.players[MSG_GM_ID] = makePlayer(MSG_GM_ID, { faction: "openbrain", role: "ob_ceo" });
+
+    fire(senderSocket.handlers, "message:send", { to: null, content: "Team secret" });
+
+    // GM receives exactly one message:receive (from faction broadcast, not the echo)
+    const gmMsgs = (io.emits[MSG_GM_ID] ?? []).filter((e) => e.event === "message:receive");
+    expect(gmMsgs).toHaveLength(1);
+    // Should NOT have _gmView since it came via the normal faction broadcast, not the explicit echo
+    expect((gmMsgs[0]!.data as Record<string, unknown>)._gmView).toBeUndefined();
+  });
+
   it("rejects DM to bot (real handler guards __bot_ prefix)", () => {
     const botId = "__bot_ob_cto";
     room.players[botId] = makePlayer(botId);
