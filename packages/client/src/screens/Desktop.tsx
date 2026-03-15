@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { useGameStore, getContentForApp } from "../stores/game.js";
+import { useEffect, useMemo } from "react";
+import { useGameStore } from "../stores/game.js";
+import type { ContentItem } from "@takeoff/shared";
 import { useUIStore } from "../stores/ui.js";
 import { FACTIONS } from "@takeoff/shared";
 import { MenuBar } from "../desktop/MenuBar.js";
@@ -34,7 +35,20 @@ const APP_LABELS: Record<string, string> = {
 };
 
 export function Desktop() {
-  const { selectedFaction, isGM, phase, content, reconnecting } = useGameStore();
+  const selectedFaction = useGameStore((s) => s.selectedFaction);
+  const isGM = useGameStore((s) => s.isGM);
+  const phase = useGameStore((s) => s.phase);
+  const content = useGameStore((s) => s.content);
+  const reconnecting = useGameStore((s) => s.reconnecting);
+
+  const contentByApp = useMemo(() => {
+    const map: Record<string, ContentItem[]> = {};
+    for (const appContent of content) {
+      if (!map[appContent.app]) map[appContent.app] = [];
+      map[appContent.app].push(...appContent.items);
+    }
+    return map;
+  }, [content]);
   const { windows, initWindows } = useUIStore();
 
   useEffect(() => {
@@ -80,7 +94,7 @@ export function Desktop() {
             return (
               <Window key={w.id} windowState={w}>
                 {AppComponent ? (
-                  <AppComponent content={getContentForApp(content, w.appId as AppId)} />
+                  <AppComponent content={contentByApp[w.appId as AppId] ?? []} />
                 ) : (
                   <div className="p-4 text-neutral-400 text-sm">
                     <p className="text-neutral-500">{w.title}</p>
