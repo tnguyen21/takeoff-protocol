@@ -6,36 +6,12 @@ See also: `STATUS.md` for current bug list and priority recommendations.
 
 ---
 
-## P0 — Fix Before First Playtest
-
-### Client: Double `game:publish` Handler
-**File:** `stores/game.ts` lines 485 + 527
-
-Both handlers fire on every publish event, causing double notification and double content append. Remove one.
-
-### Client: SlackApp Stale Closure
-**File:** `apps/SlackApp.tsx:88`
-
-`activeChannel` missing from `useCallback` dependency array. Message sent to wrong channel on rapid channel switch. Add `activeChannel` to deps.
-
-### Client: Error Boundaries
-**File:** entire app tree
-
-No error boundaries anywhere. Any throw during render kills the full game session. Wrap each Window's content in an ErrorBoundary at minimum.
-
-### Client: EmailApp Read State
-**File:** `apps/EmailApp.tsx:401-432`
-
-Read state keyed by array index. When `highRegulatory` becomes true, `REGULATORY_EMAIL` prepend shifts all indices. Key by stable identity (email subject or ID).
-
-### Server: Wire `updateStoryBible()` into Resolution
-**File:** `generation/context.ts:243`
-
-`updateStoryBible()` is defined (~70 lines) but never called. Story bible doesn't grow between rounds, limiting narrative coherence for generated content. Call it from `emitResolution()` after state changes.
-
----
-
 ## P1 — Fix Before Hosting
+
+### Server: Reconnect Replays Stale Content
+**Files:** `game.ts` (`replayPlayerState`)
+
+`replayPlayerState` calls `getBriefing`/`getContentForPlayer` directly, bypassing the generated-content merge path used by `emitBriefing`/`emitContent`. Reconnecting players see pre-authored content while other players see generated content. Fix by extracting a shared `getEffectiveContent()`/`emitBriefingTo()` helper used by both the normal and reconnect paths.
 
 ### Server: Fix `history[].stateAfter`
 **File:** `game.ts` ~line 237
@@ -110,8 +86,6 @@ Template-constrained decision generation. Pre-author decision templates (theme, 
 - Consolidate mixed inline styles and Tailwind usage
 
 ### Client Deduplication
-- `formatTime(ms)` duplicated in Decision.tsx:7 and GMDashboard.tsx:9 — extract to shared utility
-- `STATE_LABELS` duplicated in Ending.tsx and GMDashboard.tsx — move to `@takeoff/shared` or client constants
 - Faction display maps (`FACTION_NAMES`, `FACTION_COLORS`, etc.) scattered across 4+ files — consolidate
 
 ### WandBApp Content Integration

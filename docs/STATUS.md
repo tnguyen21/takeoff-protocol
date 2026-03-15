@@ -6,7 +6,7 @@ Last updated: 2026-03-15
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 750+ passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. Recent commits fixed the 3 most critical server bugs.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1189 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All P0 bugs are fixed.
 
 **Not yet done:** First real playtest, production deployment, generation quality validation, external role balancing.
 
@@ -35,21 +35,20 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 
 | Priority | Bug | Location | Notes |
 |----------|-----|----------|-------|
+| HIGH | `replayPlayerState` skips generated content on reconnect | game.ts | Calls `getBriefing`/`getContentForPlayer` directly, bypassing generated-content merge. Reconnecting players see pre-authored content while others see generated. Partially fixed (uses `getMergedContentForPlayer`) but generated briefings still not replayed. |
 | HIGH | `history[].stateAfter` records pre-penalty state | game.ts ~line 237 | Comment says "will be updated by resolution" but nothing updates it. Misleading for generation context and analysis. |
 | MEDIUM | Decision option IDs not validated on submit | events.ts:359 | Any string accepted and written to `room.decisions`. Only caught in `emitResolution`. |
 | MEDIUM | No room cleanup lifecycle | rooms.ts, game.ts:20, extendUses.ts | `rooms` Map, `phaseTimers` Map, and `extendUses` Map grow forever. Abandoned rooms never pruned. |
+| MEDIUM | `getContentForPlayer` doesn't dedup by app | content/loader.ts | Two registrations for the same `(faction, app)` pair produce duplicate content blocks. |
 | LOW | GM receives duplicate messages if also a player | events.ts:482 | Unconditional GM echo in team chat. |
 | LOW | `tweet:send` ID not UUID-safe | events.ts:635 | Uses `Date.now()` + 4-char socket suffix. Collision risk under concurrent sends. |
 | LOW | DMs to bot socket IDs silently fail | events.ts:296 | Socket.IO no-ops. No error returned. |
+| LOW | No input length guards on player messages | events.ts | `message:send` and `publish:submit` content is unlimited. Low risk for closed audience. |
 
 ### Client
 
 | Priority | Bug | Location | Notes |
 |----------|-----|----------|-------|
-| **CRITICAL** | Double `game:publish` handler | stores/game.ts lines 485 + 527 | Both fire on every publish event: double notification + double content append. Likely leftover from refactor. |
-| **HIGH** | SlackApp `sendMessage` stale closure | apps/SlackApp.tsx:88 | `activeChannel` missing from `useCallback` deps. Message sent to wrong channel on rapid channel switch. |
-| **HIGH** | EmailApp read state keyed by array index | apps/EmailApp.tsx:401-432 | When `highRegulatory` becomes true, `REGULATORY_EMAIL` prepended shifts all indices, invalidating read state. |
-| **HIGH** | No error boundaries | entire app | Any throw during render kills the full game session. Need `ErrorBoundary` around each Window's content at minimum. |
 | MEDIUM | Desktop subscribes to entire game store | screens/Desktop.tsx:37 | No selector — re-renders on every state change (GM decision status, timer ticks, etc). |
 | MEDIUM | `getContentForApp` called per-window per-render | screens/Desktop.tsx:82-83 | Filters entire content array for every visible window on every render. Memoize a `contentByApp` map. |
 | MEDIUM | Decision auto-submit stale closure | screens/Decision.tsx:135-139 | `handleSubmit` captures choice values at creation time. Timer fire after selection change submits stale values. |
@@ -62,22 +61,33 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 | LOW | Dead `notifications` field in UIStore | stores/ui.ts:20 | Shadows browser global. Actual system in `stores/notifications.ts`. |
 | LOW | `Ending.tsx` passthrough wrapper | screens/Ending.tsx:295-297 | Returns `<DebriefScreen />` with no logic. Dead indirection. |
 | LOW | Inline `<style>` injected on every render | Dock.tsx, MenuBar.tsx, Notifications.tsx, NewsApp.tsx | CSS animations as inline `<style>` elements. Move to global stylesheet. |
-| LOW | `formatTime` duplicated | Decision.tsx:7, GMDashboard.tsx:9 | Identical implementation. Extract to shared utility. |
-| LOW | `STATE_LABELS` duplicated | Ending.tsx:7-46, GMDashboard.tsx:37-76 | Identical constant. Move to `@takeoff/shared` or client constants. |
 | LOW | Faction display maps scattered | Lobby, Resolution, MenuBar, GMDashboard | 5 slightly different versions of faction-to-display mapping. Consolidate. |
+| LOW | MemoApp page lookup by mutable title | apps/MemoApp.tsx:238 | `allPages.find(p => p.title === effectiveTitle)` — if title changes between content deliveries, selected page changes silently. |
+| LOW | Suppressed `exhaustive-deps` ESLint warnings | Briefing.tsx:68, Resolution.tsx:114 | Behavior is correct today but conceals dependency chain from future readers. |
 
 ### Shared
 
 | Priority | Bug | Location | Notes |
 |----------|-----|----------|-------|
 | LOW | `globalMediaCycle` typed as `number` | types.ts:55 | Should be `0 \| 1 \| 2 \| 3 \| 4 \| 5` or a proper enum. Allows fractional mid-enum states. |
+| LOW | `resolveOpenSource` dead branch | endings.ts:255-256 | Explicit `if` condition and fallthrough both return 3. The `if` is dead code. |
+| LOW | `resolveAiRace` undocumented tie-break | endings.ts:143-146 | `chinaClose` checked before `promClosing` with no mutual exclusion guard. If both true, China parity silently wins. |
+| LOW | `SCALING_GUIDE` no fallback for out-of-range | constants.ts:148-156 | `SCALING_GUIDE[7]` is undefined. No guard or documented invariant. |
 
 ---
 
-## Bugs Fixed (Recent Commits)
+## Bugs Fixed
 
 | Bug | Fix | Commit |
 |-----|-----|--------|
+| Double `game:publish` handler (client) | Removed duplicate handler | (earlier) |
+| SlackApp `sendMessage` stale closure | Added `activeChannel` to deps | (earlier) |
+| EmailApp read state keyed by array index | Keyed by stable `email.id` | (earlier) |
+| No error boundaries in client | Per-window `ErrorBoundary` wrapping Window children | 1b39d28 |
+| `updateStoryBible()` never called | Implemented and wired into `emitResolution()` | a38ceee |
+| `formatTime` duplicated in Decision/GMDashboard | Extracted to `utils.ts` | (earlier) |
+| `STATE_LABELS` duplicated in Ending/GMDashboard | Extracted to `constants/labels.ts` | (earlier) |
+| `ROUND_DECISIONS` triplicated across 3 files | Single export in `content/decisions/rounds.ts` | (earlier) |
 | Race: double `advancePhase` from timer + GM manual advance | `clearPhaseTimer()` called before manual advance | a31da4e |
 | Activity penalty delta not clamped | `clampState()` called after `applyActivityPenalties()` | 5c49f1c |
 | `clampState` was 30-line manual enumeration | Refactored to loop over canonical `STATE_VARIABLE_RANGES` | fe66bf6 |
@@ -112,7 +122,6 @@ What exists:
 What's missing:
 - **Decision generation** — Phase D in GENERATIVE-CONTENT.md. Template-constrained generation with Monte Carlo validation. Not started.
 - **Resolution narrative generation** — described in design, not implemented.
-- **`updateStoryBible()` never called** — defined in context.ts (~70 lines) but not wired into resolution. Story bible doesn't grow between rounds, limiting narrative coherence across rounds.
 - **No live playtesting** — prompt quality, latency, and cost are untested with real API calls.
 - **GM preview/edit** — open question whether GM should see generated content before emission.
 - **Generation metrics not in game logs** — latency, validation failures, fallback rates not captured by the logging system.
@@ -213,14 +222,14 @@ Missing:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 751 pass, 2 skip, 0 fail across 22 test files
-- Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup + generation suite (3,000+ lines) + logger suite (400+ lines)
+- 1189 pass, 2 skip, 0 fail across 40 test files
+- Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,000+ lines) + logger suite (400+ lines)
+- Client: ErrorBoundary component tests + utility tests across all apps
 - Shared: resolution, fog, endings with property tests
 - Scripts: analyze-game tested with fixtures
 
 ### Remaining Gaps
 - `emitResolution` not exported from `game.ts` — no direct unit tests, covered indirectly
-- No client-side component tests
 - No end-to-end tests (real browser + server)
 
 ---
@@ -234,41 +243,40 @@ These are not bugs but would improve maintainability:
 | `checkThresholds` is a 350-line monolith (8 handlers) | game.ts:543-898 | Convert to descriptor array + dispatch loop |
 | GM authorization guard repeated 9+ times | events.ts | Extract `requireGMRoom(socket)` helper |
 | `game:phase` emit duplicated in 6 call sites | game.ts | Extract `emitPhase(io, room)` |
-| `STATE_LABELS` in server only used by `emitResolution` | game.ts:431-470 | Move to `@takeoff/shared` |
 | `isLeader` derivation triplicated | rooms.ts:92, events.ts:732,757 | Shared helper using `isLeaderRole()` |
 | `GMDashboard.tsx` is 700+ lines | screens/GMDashboard.tsx | Split into panel components |
 | Mixed inline styles and Tailwind | Decision.tsx, Resolution.tsx, Briefing.tsx, Ending.tsx | Pick one approach |
 | Socket listeners not teardown-friendly | stores/game.ts, stores/messages.ts | Fine for single-session, blocks future leave-room flows |
 | `use-sound` dependency unused | client/package.json | Remove (custom `soundManager` used instead) |
+| `initializeStoryBible` side-effect in `buildGenerationContext` | generation/context.ts | Surprising mutation in a read-like function. Move to explicit init at room creation. |
+| `injectNewsContent` and `publish:submit` near-duplicate | events.ts | Both build ContentItem + Publication + emit `game:publish`. Factor into shared helper. |
+| Migration scripts unarchived | scripts/ | `scale-deltas.ts`, `fix-directional-bias.ts`, `fix-gap-bias.ts`, `targeted-rebalance.ts` are one-shot tools with no tests. Delete or archive. |
 
 ---
 
 ## Priority Recommendations
 
 ### P0 — Fix Before First Playtest
-1. Fix double `game:publish` handler (client stores/game.ts)
-2. Fix SlackApp stale closure (client apps/SlackApp.tsx)
-3. Add error boundaries around Window content
-4. Fix EmailApp index-keyed read state
-5. Wire `updateStoryBible()` into resolution phase
+All P0 items are fixed. See "Bugs Fixed" table.
 
 ### P1 — Fix Before Hosting
-6. Fix `history[].stateAfter` to record post-penalty state
-7. Add room cleanup lifecycle (TTL pruning for rooms, timers, extendUses)
-8. Validate decision option IDs on submit
-9. Deploy to Fly.io and smoke test
-10. Run at least one full playtest with real humans
+1. Fix `replayPlayerState` to use generated briefings/content on reconnect
+2. Fix `history[].stateAfter` to record post-penalty state
+3. Add room cleanup lifecycle (TTL pruning for rooms, timers, extendUses)
+4. Validate decision option IDs on submit
+5. Deploy to Fly.io and smoke test
+6. Run at least one full playtest with real humans
 
 ### P2 — Enrich Gameplay
-11. Add external role individual decisions (NSA R2-5, VC board authority, diplomat negotiation)
-12. Make journalist publication impacts faction-specific (story angle system)
-13. Tune ending arc thresholds (alignment too easy, OB dominant unreachable)
-14. Implement decision generation (Phase D from GENERATIVE-CONTENT.md)
+7. Add external role individual decisions (NSA R2-5, VC board authority, diplomat negotiation)
+8. Make journalist publication impacts faction-specific (story angle system)
+9. Tune ending arc thresholds (alignment too easy, OB dominant unreachable)
+10. Implement decision generation (Phase D from GENERATIVE-CONTENT.md)
 
 ### P3 — Polish
-15. Desktop performance (Zustand selectors, memoize contentByApp)
-16. Fix `negotiation-pulse` CSS, notification timer, inline style cleanup
-17. Add client dwell-time tracking for activity reports
-18. Build `compare-games.ts` analysis script
-19. Twitter faction bubble system
-20. Real-time NPC responses (Slack Option B)
+11. Desktop performance (Zustand selectors, memoize contentByApp)
+12. Fix `negotiation-pulse` CSS, notification timer, inline style cleanup
+13. Add client dwell-time tracking for activity reports
+14. Build `compare-games.ts` analysis script
+15. Twitter faction bubble system
+16. Real-time NPC responses (Slack Option B)
