@@ -204,7 +204,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const key = variable as keyof StateVariables;
     const [min, max] = STATE_VARIABLE_RANGES[key];
     const oldVal = room.state[key];
-    room.state[key] = Math.max(min, Math.min(max, value));
+    (room.state as unknown as Record<string, number>)[key] = Math.max(min, Math.min(max, value));
 
     checkThresholds(io, room);
     emitStateViews(io, room);
@@ -558,13 +558,14 @@ export function registerGameEvents(io: Server, socket: Socket) {
         research: { publicAwareness: 15, publicSentiment: 5 },
       };
       const effects = STATE_EFFECTS[type];
+      const stateRec = room.state as unknown as Record<string, number>;
       for (const [key, delta] of Object.entries(effects) as [keyof StateVariables, number][]) {
         const current = room.state[key];
         // publicAwareness: clamp 0-100; publicSentiment: clamp -100 to 100
         if (key === "publicSentiment") {
-          room.state[key] = Math.max(-100, Math.min(100, current + delta));
+          stateRec[key] = Math.max(-100, Math.min(100, current + delta));
         } else {
-          room.state[key] = Math.max(0, Math.min(100, current + delta));
+          stateRec[key] = Math.max(0, Math.min(100, current + delta));
         }
       }
 

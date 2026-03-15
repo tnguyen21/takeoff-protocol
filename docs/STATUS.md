@@ -6,7 +6,7 @@ Last updated: 2026-03-15
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1212 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All P0 and P1 code bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1233 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All P0, P1, server, and shared bugs are fixed.
 
 **Not yet done:** First real playtest, production deployment, generation quality validation, external role balancing.
 
@@ -41,27 +41,18 @@ No known server bugs.
 |----------|-----|----------|-------|
 | MEDIUM | Desktop subscribes to entire game store | screens/Desktop.tsx:37 | No selector — re-renders on every state change (GM decision status, timer ticks, etc). |
 | MEDIUM | `getContentForApp` called per-window per-render | screens/Desktop.tsx:82-83 | Filters entire content array for every visible window on every render. Memoize a `contentByApp` map. |
-| MEDIUM | `negotiation-pulse` CSS class applied but never defined | desktop/Dock.tsx:95 | Signal icon produces no visual effect during Round 4 negotiation. Only `dock-pulse` is defined. |
 | MEDIUM | PublishNotificationBanner — only oldest notification auto-dismisses | components/PublishNotificationBanner.tsx:12-21 | Notifications 2 and 3 linger past 6-second target. |
 | MEDIUM | SignalApp O(n²) contact sort | apps/SignalApp.tsx:340-349 | Sort comparator calls `messages.filter(...)` twice per comparison. Pre-compute last timestamp per contact. |
 | MEDIUM | SignalApp unread counts in render body | apps/SignalApp.tsx:151-167 | Computed via loops on every render including every keystroke. Needs `useMemo`. |
-| MEDIUM | UIStore `openWindow`/`focusWindow` read `get()` outside updater | stores/ui.ts:113-135 | Race if two calls happen in same microtask. Use `set(s => ...)` pattern. |
 | LOW | WandBApp ignores `content` prop | apps/WandBApp.tsx:129 | Renders fully static data regardless of server content. |
-| LOW | Dead `notifications` field in UIStore | stores/ui.ts:20 | Shadows browser global. Actual system in `stores/notifications.ts`. |
-| LOW | `Ending.tsx` passthrough wrapper | screens/Ending.tsx:295-297 | Returns `<DebriefScreen />` with no logic. Dead indirection. |
-| LOW | Inline `<style>` injected on every render | Dock.tsx, MenuBar.tsx, Notifications.tsx, NewsApp.tsx | CSS animations as inline `<style>` elements. Move to global stylesheet. |
-| LOW | Faction display maps scattered | Lobby, Resolution, MenuBar, GMDashboard | 5 slightly different versions of faction-to-display mapping. Consolidate. |
+| LOW | `Ending.tsx` passthrough wrapper | screens/Ending.tsx:255 | `export const Ending = DebriefScreen` — dead indirection. |
+| LOW | Inline `<style>` injected on every render | Dock.tsx, MenuBar.tsx, Notifications.tsx, NewsApp.tsx, BloombergApp.tsx | CSS animations as inline `<style>` elements. Move to global stylesheet. |
 | LOW | MemoApp page lookup by mutable title | apps/MemoApp.tsx:238 | `allPages.find(p => p.title === effectiveTitle)` — if title changes between content deliveries, selected page changes silently. |
 | LOW | Suppressed `exhaustive-deps` ESLint warnings | Briefing.tsx:68, Resolution.tsx:114 | Behavior is correct today but conceals dependency chain from future readers. |
 
 ### Shared
 
-| Priority | Bug | Location | Notes |
-|----------|-----|----------|-------|
-| LOW | `globalMediaCycle` typed as `number` | types.ts:55 | Should be `0 \| 1 \| 2 \| 3 \| 4 \| 5` or a proper enum. Allows fractional mid-enum states. |
-| LOW | `resolveOpenSource` dead branch | endings.ts:255-256 | Explicit `if` condition and fallthrough both return 3. The `if` is dead code. |
-| LOW | `resolveAiRace` undocumented tie-break | endings.ts:143-146 | `chinaClose` checked before `promClosing` with no mutual exclusion guard. If both true, China parity silently wins. |
-| LOW | `SCALING_GUIDE` no fallback for out-of-range | constants.ts:148-156 | `SCALING_GUIDE[7]` is undefined. No guard or documented invariant. |
+No known shared bugs.
 
 ---
 
@@ -100,6 +91,14 @@ No known server bugs.
 | activity.test.ts tested local copy | Now imports real `applyActivityPenalties` | (earlier) |
 | Clamping bounds inconsistency (GM vs resolution) | Both use canonical `STATE_VARIABLE_RANGES` | fe66bf6 |
 | `analyze-bias.ts` referenced `decisions.collective` | Now checks `.team` with `.collective` fallback | (earlier) |
+| `globalMediaCycle` typed as `number` | Tightened to `MediaCycle` union type (`0\|1\|2\|3\|4\|5`) | 86ee23d |
+| `resolveOpenSource` dead branch | Removed redundant `if` (both paths returned 3) | 7df3c48 |
+| `resolveAiRace` undocumented tie-break | Added comment documenting China parity priority | 1b22db3 |
+| `SCALING_GUIDE` no fallback for out-of-range | Added `getScalingGuide()` helper with clamping | 4611654 |
+| `negotiation-pulse` CSS class undefined | Already defined in index.css lines 22-34 | (was false positive) |
+| UIStore `openWindow`/`focusWindow` race | Refactored to `set(s => ...)` pattern | 7df3c48 |
+| Dead `notifications` field in UIStore | Removed field and interface | 7df3c48 |
+| Faction display maps scattered | Already consolidated in `constants/factions.ts` | (was false positive) |
 
 ---
 
@@ -221,7 +220,7 @@ Missing:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1230 pass, 2 skip, 0 fail across 40 test files
+- 1233 pass, 2 skip, 0 fail across 40 test files
 - Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,000+ lines) + logger suite (400+ lines)
 - Client: ErrorBoundary component tests + utility tests across all apps
 - Shared: resolution, fog, endings with property tests

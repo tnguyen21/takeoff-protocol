@@ -1036,10 +1036,12 @@ describe("clampState", () => {
     // Build a state with every variable set to a huge out-of-range value
     const overflowState = { ...BASE_STATE } as unknown as StateVariables;
     const underflowState = { ...BASE_STATE } as unknown as StateVariables;
+    const overflowRec = overflowState as unknown as Record<string, number>;
+    const underflowRec = underflowState as unknown as Record<string, number>;
     for (const key of Object.keys(STATE_VARIABLE_RANGES) as (keyof StateVariables)[]) {
       const [min, max] = STATE_VARIABLE_RANGES[key];
-      overflowState[key] = max + 9999;
-      underflowState[key] = min - 9999;
+      overflowRec[key] = max + 9999;
+      underflowRec[key] = min - 9999;
     }
 
     clampState(overflowState);
