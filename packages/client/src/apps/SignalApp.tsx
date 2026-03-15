@@ -148,23 +148,56 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
   }, [selectedPlayerId, messages, playerId, npcContacts, contentContacts]);
 
   // Unread counts for NPC + real player contacts (subtracting read counts)
-  const unreadPerPlayer: Record<string, number> = {};
-  for (const m of messages) {
-    if (!m.isTeamChat && m.to === playerId) {
-      unreadPerPlayer[m.from] = (unreadPerPlayer[m.from] ?? 0) + 1;
+  const unreadPerPlayer = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const m of messages) {
+      if (!m.isTeamChat && m.to === playerId) {
+        result[m.from] = (result[m.from] ?? 0) + 1;
+      }
     }
-  }
-  for (const id of Object.keys(unreadPerPlayer)) {
-    const read = readCountsRef.current[id] ?? 0;
-    unreadPerPlayer[id] = Math.max(0, unreadPerPlayer[id] - read);
-  }
+    for (const id of Object.keys(result)) {
+      const read = readCountsRef.current[id] ?? 0;
+      result[id] = Math.max(0, result[id] - read);
+    }
+    return result;
+  }, [messages, playerId]);
 
   // Unread counts for content contacts
-  const unreadPerContent: Record<string, number> = {};
-  for (const cc of contentContacts) {
-    const read = readCountsRef.current[cc.id] ?? 0;
-    unreadPerContent[cc.id] = Math.max(0, cc.messages.length - read);
-  }
+  const unreadPerContent = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const cc of contentContacts) {
+      const read = readCountsRef.current[cc.id] ?? 0;
+      result[cc.id] = Math.max(0, cc.messages.length - read);
+    }
+    return result;
+  }, [contentContacts]);
+
+  // NPC contacts sorted by most recent message timestamp descending
+  const sortedNpcContacts = useMemo(
+    () => [...npcContacts].sort((a, b) => (b.messages.at(-1)?.timestamp ?? 0) - (a.messages.at(-1)?.timestamp ?? 0)),
+    [npcContacts]
+  );
+
+  // Pre-compute last timestamp + last message per player in a single O(K) pass,
+  // then sort real player contacts using O(1) lookups
+  const { sortedOtherPlayers, lastMessageByPlayer } = useMemo(() => {
+    const lastTimestampByPlayer = new Map<string, number>();
+    const lastMsgByPlayer = new Map<string, (typeof messages)[number]>();
+    for (const m of messages) {
+      if (!m.isTeamChat && (m.from === playerId || m.to === playerId)) {
+        const otherId = m.from === playerId ? m.to! : m.from;
+        const ts = m.timestamp ?? 0;
+        if (ts > (lastTimestampByPlayer.get(otherId) ?? 0)) {
+          lastTimestampByPlayer.set(otherId, ts);
+          lastMsgByPlayer.set(otherId, m);
+        }
+      }
+    }
+    const sorted = [...otherPlayers].sort(
+      (a, b) => (lastTimestampByPlayer.get(b.id) ?? 0) - (lastTimestampByPlayer.get(a.id) ?? 0)
+    );
+    return { sortedOtherPlayers: sorted, lastMessageByPlayer: lastMsgByPlayer };
+  }, [messages, playerId, otherPlayers]);
 
   // Auto-scroll
   useEffect(() => {
@@ -291,9 +324,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
           })}
 
           {/* NPC contacts — sorted by most recent message timestamp descending */}
-          {[...npcContacts]
-            .sort((a, b) => (b.messages.at(-1)?.timestamp ?? 0) - (a.messages.at(-1)?.timestamp ?? 0))
-            .map((npc) => {
+          {sortedNpcContacts.map((npc) => {
             const isActive = npc.id === selectedPlayerId;
             const lastMsg = npc.messages.at(-1);
             const unread = unreadPerPlayer[npc.id] ?? 0;
@@ -337,27 +368,11 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
           )}
 
           {/* Real player contacts — sorted by most recent message timestamp descending */}
-          {[...otherPlayers]
-            .sort((a, b) => {
-              const lastA = messages
-                .filter((m) => !m.isTeamChat && ((m.from === playerId && m.to === a.id) || (m.from === a.id && m.to === playerId)))
-                .at(-1)?.timestamp ?? 0;
-              const lastB = messages
-                .filter((m) => !m.isTeamChat && ((m.from === playerId && m.to === b.id) || (m.from === b.id && m.to === playerId)))
-                .at(-1)?.timestamp ?? 0;
-              return lastB - lastA;
-            })
-            .map((p) => {
+          {sortedOtherPlayers.map((p) => {
             const unread = unreadPerPlayer[p.id] ?? 0;
             const isActive = p.id === selectedPlayerId;
-            // Preview: last message in convo
-            const lastMsg = messages
-              .filter(
-                (m) =>
-                  !m.isTeamChat &&
-                  ((m.from === playerId && m.to === p.id) || (m.from === p.id && m.to === playerId))
-              )
-              .at(-1);
+            // Preview: last message in convo (pre-computed)
+            const lastMsg = lastMessageByPlayer.get(p.id);
             return (
               <div
                 key={p.id}
