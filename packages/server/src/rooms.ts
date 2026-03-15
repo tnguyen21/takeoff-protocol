@@ -5,6 +5,54 @@ import { createLoggerForRoom } from "./logger/registry.js";
 export const rooms = new Map<string, GameRoom>();
 export { getLoggerForRoom } from "./logger/registry.js";
 
+/**
+ * Tracks the timestamp (ms) when a room's last player disconnected.
+ * Cleared when any player reconnects. Used by pruneAbandonedRooms to
+ * enforce the TTL before removing fully-abandoned rooms.
+ */
+export const allDisconnectedAt = new Map<string, number>();
+
+/** Record that all players in a room are now disconnected. */
+export function recordAllDisconnected(code: string): void {
+  allDisconnectedAt.set(code, Date.now());
+}
+
+/** Clear the all-disconnected timestamp (called when any player reconnects). */
+export function clearAllDisconnected(code: string): void {
+  allDisconnectedAt.delete(code);
+}
+
+/** Remove a room and its disconnect timestamp from the maps. */
+export function deleteRoom(code: string): void {
+  rooms.delete(code);
+  allDisconnectedAt.delete(code);
+}
+
+/**
+ * Remove rooms that have been fully abandoned (all players disconnected)
+ * for longer than ttlMs milliseconds.
+ * Returns the list of room codes that were pruned.
+ * Rooms with any connected player are never pruned (INV-3).
+ */
+export function pruneAbandonedRooms(ttlMs: number): string[] {
+  const now = Date.now();
+  const pruned: string[] = [];
+  for (const [code, room] of rooms.entries()) {
+    const disconnectedSince = allDisconnectedAt.get(code);
+    if (!disconnectedSince) continue; // has connected players or was never abandoned
+    // Double-check: re-verify all players are still disconnected
+    const allStillDisconnected = Object.values(room.players).every((p) => !p.connected);
+    if (!allStillDisconnected) {
+      allDisconnectedAt.delete(code);
+      continue;
+    }
+    if (now - disconnectedSince >= ttlMs) {
+      pruned.push(code);
+    }
+  }
+  return pruned;
+}
+
 function generateRoomCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
   let code = "";

@@ -13,6 +13,7 @@ import { getNpcTriggersForRound } from "./content/npc/index.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { applyActivityPenalties } from "./activityPenalties.js";
 import { updateStoryBible } from "./generation/context.js";
+import { cleanupRoom } from "./extendUses.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
@@ -264,6 +265,7 @@ export function advancePhase(io: Server, room: GameRoom) {
           arcs,
         });
         void closeLoggerForRoom(room.code);
+        cleanupRoom(room.code);
 
         return;
       }

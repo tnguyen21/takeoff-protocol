@@ -10,3 +10,6 @@ export function cleanupRoom(code: string): void {
     if (key.startsWith(`${code}:`)) extendUses.delete(key);
   }
 }
+
+/** Alias for cleanupRoom — preferred name in cleanup/pruning contexts. */
+export const clearExtendUses = cleanupRoom;

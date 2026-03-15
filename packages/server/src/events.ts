@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
-import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages } from "./rooms.js";
+import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getRoundDecisions } from "./content/decisions/rounds.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
@@ -65,6 +65,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     socket.join(room.code);
     socket.data.roomCode = room.code;
+    clearAllDisconnected(room.code);
 
     const { player } = result;
 
@@ -828,6 +829,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (allDisconnected) {
       clearPhaseTimer(room);
       cleanupRoom(code);
+      recordAllDisconnected(code);
     }
   });
 }

@@ -3,8 +3,10 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Server as SocketIOServer } from "socket.io";
 import { registerGameEvents } from "./events.js";
-import { rooms } from "./rooms.js";
-import { closeAllLoggers } from "./logger/registry.js";
+import { rooms, pruneAbandonedRooms, deleteRoom } from "./rooms.js";
+import { closeAllLoggers, closeLoggerForRoom } from "./logger/registry.js";
+import { clearPhaseTimer } from "./game.js";
+import { clearExtendUses } from "./extendUses.js";
 
 const app = new Hono();
 
@@ -44,8 +46,25 @@ io.on("connection", (socket) => {
 
 console.log(`[server] listening on http://localhost:${port}`);
 
+// ── Periodic room pruning ──
+const ROOM_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const PRUNE_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes
+
+const pruneInterval = setInterval(() => {
+  const pruned = pruneAbandonedRooms(ROOM_TTL_MS);
+  for (const code of pruned) {
+    const room = rooms.get(code);
+    if (room) clearPhaseTimer(room);
+    clearExtendUses(code);
+    void closeLoggerForRoom(code);
+    deleteRoom(code);
+    console.log(`[prune] removed abandoned room ${code}`);
+  }
+}, PRUNE_INTERVAL_MS);
+
 async function shutdown(signal: string) {
   console.log(`[server] ${signal} received, flushing loggers...`);
+  clearInterval(pruneInterval);
   await closeAllLoggers();
   process.exit(0);
 }
