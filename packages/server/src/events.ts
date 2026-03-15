@@ -624,7 +624,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!trimmed || trimmed.length > 280) return;
 
     const tweet = {
-      id: crypto.randomUUID(),
+      id: `tweet_${crypto.randomUUID()}`,
       playerName: player.name,
       playerRole: player.role,
       playerFaction: player.faction,
