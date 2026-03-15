@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "bun:test";
 import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame, buildNameMap, personalizeText, personalizeContent } from "./game.js";
-import { INITIAL_STATE } from "@takeoff/shared";
+import { INITIAL_STATE, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
 import { setGeneratedContent } from "./generation/cache.js";
 import { getContentForPlayer } from "./content/loader.js";
@@ -1210,6 +1210,84 @@ describe("INV-2: advancePhase logs phase.changed at every transition", () => {
     expect(data.playerId).toBe("Player p2");
     expect(data.role).toBe("prom_scientist");
     expect(inactionCalls[0].ctx?.actorId).toBe("Player p2");
+  });
+});
+
+// ── history[].stateAfter correctness ──
+
+describe("emitResolution — history.stateAfter invariants", () => {
+  afterEach(() => _clearLoggers());
+
+  it("INV-3: stateBefore captures state before any mutation", () => {
+    // Verify stateBefore is a snapshot of the pre-resolution state, not affected by penalties
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "HIST_INV3",
+      phase: "decision",
+      round: 1,
+      players: { p1 },
+      state: { ...INITIAL_STATE, obInternalTrust: 50 },
+      playerActivity: {}, // penalty will fire: obInternalTrust −3
+    });
+
+    const { io } = createMockIo();
+    advancePhase(io, room); // decision → resolution
+
+    expect(room.history.length).toBe(1);
+    expect(room.history[0].stateBefore.obInternalTrust).toBe(50);
+  });
+
+  it("INV-1: stateAfter includes activity penalty delta when player skips primary app", () => {
+    // ob_ceo penalty: obInternalTrust −3 when email not opened this round
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "HIST_INV1",
+      phase: "decision",
+      round: 1,
+      players: { p1 },
+      state: { ...INITIAL_STATE, obInternalTrust: 50 },
+      playerActivity: {}, // p1 did not open email → penalty fires
+    });
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    expect(room.history.length).toBe(1);
+    // stateAfter must include the penalty: 50 − 3 = 47
+    expect(room.history[0].stateAfter.obInternalTrust).toBe(47);
+    // stateAfter and stateBefore must differ on the penalised variable
+    expect(room.history[0].stateAfter.obInternalTrust).not.toBe(
+      room.history[0].stateBefore.obInternalTrust,
+    );
+  });
+
+  it("INV-2: stateAfter is clamped when penalty would push a value below its minimum", () => {
+    // ob_ceo penalty is −3 on obInternalTrust; starting at 2 → raw result −1, clamped to 0
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "HIST_INV2",
+      phase: "decision",
+      round: 1,
+      players: { p1 },
+      state: { ...INITIAL_STATE, obInternalTrust: 2 },
+      playerActivity: {}, // penalty fires
+    });
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    expect(room.history.length).toBe(1);
+    const { stateAfter } = room.history[0];
+
+    // Specific: clamped to 0, not −1
+    expect(stateAfter.obInternalTrust).toBe(0);
+
+    // General: every variable in stateAfter must be within its declared range
+    for (const key of Object.keys(STATE_VARIABLE_RANGES) as (keyof StateVariables)[]) {
+      const [min, max] = STATE_VARIABLE_RANGES[key];
+      expect(stateAfter[key]).toBeGreaterThanOrEqual(min);
+      expect(stateAfter[key]).toBeLessThanOrEqual(max);
+    }
   });
 });
 
