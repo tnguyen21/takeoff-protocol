@@ -80,6 +80,8 @@
 │   ├── report-random.md
 │   ├── scale-deltas.ts
 │   ├── simulate-core.ts
+│   ├── simulate-generated.test.ts
+│   ├── simulate-generated.ts
 │   ├── simulate.test.ts
 │   ├── simulate.ts
 │   └── targeted-rebalance.ts
@@ -90,4 +92,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 69 files
+22 directories, 71 files

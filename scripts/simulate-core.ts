@@ -99,3 +99,18 @@ export function runTrial(heuristic: Heuristic): TrialResult {
 
   return { arcs: computeEndingArcs(state), finalState: state };
 }
+
+/**
+ * Run a single trial with a custom set of RoundDecisions instead of the static pre-authored set.
+ * Used by simulate-generated.ts to test the effect range of LLM-sampled decisions.
+ */
+export function runTrialWithDecisions(heuristic: Heuristic, rounds: RoundDecisions[]): TrialResult {
+  let state = { ...INITIAL_STATE };
+
+  for (const round of rounds) {
+    const chosen = getAllOptions(round, heuristic);
+    state = resolveDecisions(state, chosen);
+  }
+
+  return { arcs: computeEndingArcs(state), finalState: state };
+}
