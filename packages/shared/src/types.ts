@@ -132,6 +132,17 @@ export interface RoundDecisions {
   team: TeamDecision[];
 }
 
+// ── Decision Templates (for LLM generation) ──
+
+export interface DecisionTemplate {
+  round: number;
+  role?: Role;           // for individual decisions
+  faction?: Faction;     // for team decisions
+  theme: string;
+  variableScope: (keyof StateVariables)[];
+  archetypes: [string, string, string];
+}
+
 // ── Content ──
 
 export type AppId =
