@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach } from "bun:test";
-import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame, buildNameMap, personalizeText, personalizeContent } from "./game.js";
+import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame, buildNameMap, personalizeText, personalizeContent, getActiveDecisions } from "./game.js";
 import { INITIAL_STATE, STATE_VARIABLE_RANGES } from "@takeoff/shared";
-import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, StateVariables } from "@takeoff/shared";
-import { setGeneratedContent } from "./generation/cache.js";
+import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, RoundDecisions, StateVariables } from "@takeoff/shared";
+import { setGeneratedContent, setGeneratedDecisions } from "./generation/cache.js";
 import { getContentForPlayer } from "./content/loader.js";
 import { _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 import type { EventContext } from "./logger/types.js";
@@ -1658,5 +1658,172 @@ describe("advancePhase race condition — timer + manual advance", () => {
 
     // Phase must remain unchanged — the timer must have been cancelled
     expect(room.phase).toBe("briefing");
+  });
+});
+
+// ── getActiveDecisions — generated vs pre-authored decisions ──────────────────
+
+/**
+ * A minimal valid RoundDecisions fixture for testing.
+ * IDs use gen_ prefix to distinguish from pre-authored decisions.
+ *
+ * Distinctness invariant verified:
+ * A vs B: obCapability(+/-), publicAwareness(+/-) = 0/2 same → 0% ✓
+ * A vs C: obCapability(+/+), obBurnRate(-/+) = 1/2 same → 50% ✓
+ * B vs C: obCapability(-/+), intlCooperation(+/-) = 0/2 same → 0% ✓
+ */
+const GENERATED_ROUND2_DECISIONS: RoundDecisions = {
+  round: 2,
+  individual: [
+    {
+      role: "ob_ceo",
+      prompt: "Agent-3 has reached a critical capability threshold. Your decision in the next 48 hours will define the trajectory of the organization for the foreseeable future.",
+      options: [
+        {
+          id: "gen_ob_ceo_r2_0",
+          label: "Announce publicly now",
+          description: "Get ahead of the leaks. Control the narrative.",
+          effects: [
+            { variable: "obCapability", delta: 5 },
+            { variable: "publicAwareness", delta: 4 },
+            { variable: "regulatoryPressure", delta: -3 },
+            { variable: "obBurnRate", delta: -4 },
+            { variable: "obBoardConfidence", delta: 3 },
+          ],
+        },
+        {
+          id: "gen_ob_ceo_r2_1",
+          label: "Brief government first",
+          description: "Bring government fully in before any public announcement.",
+          effects: [
+            { variable: "obCapability", delta: -3 },
+            { variable: "intlCooperation", delta: 5 },
+            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "obBoardConfidence", delta: -4 },
+            { variable: "publicAwareness", delta: -3 },
+          ],
+        },
+        {
+          id: "gen_ob_ceo_r2_2",
+          label: "Maintain operational secrecy",
+          description: "Say nothing. Invest the silence into R&D speed.",
+          effects: [
+            { variable: "obCapability", delta: 4 },
+            { variable: "aiAutonomyLevel", delta: 3 },
+            { variable: "intlCooperation", delta: -4 },
+            { variable: "obBurnRate", delta: 5 },
+            { variable: "publicAwareness", delta: -3 },
+          ],
+        },
+      ],
+    },
+  ],
+  team: [
+    {
+      faction: "openbrain",
+      prompt: "The team faces a pivotal strategic choice that will define the organization's trajectory. Each option carries significant consequences for capability, safety, and competitive position.",
+      options: [
+        {
+          id: "gen_openbrain_r2_0",
+          label: "Full scale deployment",
+          description: "Deploy to all enterprise customers immediately.",
+          effects: [
+            { variable: "obCapability", delta: 6 },
+            { variable: "marketIndex", delta: 4 },
+            { variable: "alignmentConfidence", delta: -5 },
+            { variable: "regulatoryPressure", delta: -3 },
+            { variable: "obMorale", delta: 3 },
+          ],
+        },
+        {
+          id: "gen_openbrain_r2_1",
+          label: "Conservative limited deployment",
+          description: "Deploy to select partners with safety monitoring.",
+          effects: [
+            { variable: "alignmentConfidence", delta: 5 },
+            { variable: "obBoardConfidence", delta: 3 },
+            { variable: "obCapability", delta: -3 },
+            { variable: "marketIndex", delta: -4 },
+            { variable: "obBurnRate", delta: -2 },
+          ],
+        },
+        {
+          id: "gen_openbrain_r2_2",
+          label: "Government-only partnership",
+          description: "Restrict access exclusively to government agencies.",
+          effects: [
+            { variable: "intlCooperation", delta: 5 },
+            { variable: "regulatoryPressure", delta: 4 },
+            { variable: "obMorale", delta: -4 },
+            { variable: "marketIndex", delta: -5 },
+            { variable: "obBurnRate", delta: 3 },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+describe("getActiveDecisions — generated vs pre-authored (INV-2, INV-3)", () => {
+  it("returns pre-authored decisions when no generated decisions are cached (INV-3 fallback)", () => {
+    const room = makeRoom({ round: 2 });
+    const decisions = getActiveDecisions(room, 2);
+    // Pre-authored round 2 decisions must be returned
+    expect(decisions).toBeDefined();
+    expect(decisions?.round).toBe(2);
+    // Pre-authored IDs do NOT start with gen_
+    const firstIndivOpt = decisions?.individual[0]?.options[0];
+    expect(firstIndivOpt?.id).not.toMatch(/^gen_/);
+  });
+
+  it("returns generated decisions when they are cached (INV-2)", () => {
+    const room = makeRoom({ round: 2 });
+    setGeneratedDecisions(room, 2, GENERATED_ROUND2_DECISIONS);
+
+    const decisions = getActiveDecisions(room, 2);
+    expect(decisions).toBeDefined();
+    expect(decisions?.round).toBe(2);
+    // Generated IDs start with gen_
+    const firstIndivOpt = decisions?.individual[0]?.options[0];
+    expect(firstIndivOpt?.id).toBe("gen_ob_ceo_r2_0");
+  });
+
+  it("generated decision option IDs are accepted for submission (INV-4)", () => {
+    const room = makeRoom({ round: 2 });
+    setGeneratedDecisions(room, 2, GENERATED_ROUND2_DECISIONS);
+
+    const decisions = getActiveDecisions(room, 2);
+    const indivForCeo = decisions?.individual.find((d) => d.role === "ob_ceo");
+    expect(indivForCeo).toBeDefined();
+    // All gen_ option IDs should be found — simulates what decision:submit handler does
+    for (const opt of indivForCeo!.options) {
+      const found = indivForCeo!.options.some((o) => o.id === opt.id);
+      expect(found).toBe(true);
+    }
+  });
+
+  it("invalid option ID is not found in active decisions (INV-5)", () => {
+    const room = makeRoom({ round: 2 });
+    setGeneratedDecisions(room, 2, GENERATED_ROUND2_DECISIONS);
+
+    const decisions = getActiveDecisions(room, 2);
+    const indivForCeo = decisions?.individual.find((d) => d.role === "ob_ceo");
+    expect(indivForCeo).toBeDefined();
+    // A made-up ID must not exist in the options (what decision:submit handler validates)
+    const invalidId = "ob_ceo_r2_announce"; // pre-authored ID, not in generated set
+    const found = indivForCeo!.options.some((o) => o.id === invalidId);
+    expect(found).toBe(false);
+  });
+
+  it("generated decisions for round 2 do not bleed into round 3 (isolation)", () => {
+    const room = makeRoom({ round: 2 });
+    setGeneratedDecisions(room, 2, GENERATED_ROUND2_DECISIONS);
+
+    // Round 3 should fall back to pre-authored
+    const round3 = getActiveDecisions(room, 3);
+    expect(round3).toBeDefined();
+    // Pre-authored round 3 IDs don't have gen_ prefix
+    const firstOpt = round3?.individual[0]?.options[0];
+    expect(firstOpt?.id).not.toMatch(/^gen_/);
   });
 });

@@ -5,7 +5,7 @@ import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getContentForPlayer } from "./content/loader.js";
 import { getBriefing } from "./content/briefings.js";
-import { getGeneratedBriefing, getGeneratedContent, getGeneratedNpcTriggers } from "./generation/cache.js";
+import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers } from "./generation/cache.js";
 import { triggerGeneration } from "./generation/orchestrator.js";
 import "./content/index.js";
 import { getRoundDecisions } from "./content/decisions/rounds.js";
@@ -326,10 +326,24 @@ export function advancePhase(io: Server, room: GameRoom) {
 
 }
 
+/**
+ * Returns the active decisions for the given round — generated if available, pre-authored otherwise.
+ * Used by emitDecisions(), emitResolution(), reconnect replay, and event handlers.
+ */
+export function getActiveDecisions(room: GameRoom, round: number) {
+  const generated = getGeneratedDecisions(room, round);
+  if (generated) {
+    console.log(`[decisions] Using generated decisions for round ${round}`);
+    return generated;
+  }
+  console.log(`[decisions] Using pre-authored decisions for round ${round}`);
+  return getRoundDecisions(round);
+}
+
 export function emitDecisions(io: Server, room: GameRoom) {
   // Tutorial round has no real decisions
   if (room.round === 0) return;
-  const roundDecisions = getRoundDecisions(room.round);
+  const roundDecisions = getActiveDecisions(room, room.round);
   if (!roundDecisions) return;
 
   for (const [socketId, player] of Object.entries(room.players)) {
@@ -942,7 +956,7 @@ export function buildNarrative(
 }
 
 function emitResolution(io: Server, room: GameRoom) {
-  const roundDecisions = getRoundDecisions(room.round);
+  const roundDecisions = getActiveDecisions(room, room.round);
   const stateBefore = { ...room.state };
   const resLogger = getLoggerForRoom(room.code);
   resLogger.log(EVENT_NAMES.STATE_SNAPSHOT, {
@@ -1160,7 +1174,7 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
 
     // Decision options (if in decision phase)
     if (room.phase === "decision") {
-      const roundDecisions = getRoundDecisions(room.round);
+      const roundDecisions = getActiveDecisions(room, room.round);
       if (roundDecisions) {
         const individual = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role) ?? null;
         const team = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction) ?? null;

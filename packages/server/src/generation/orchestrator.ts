@@ -10,11 +10,14 @@ import {
 import { generateBriefingWithRetry } from "./briefing.js";
 import { APP_TYPE_MAP, generateContentWithRetry } from "./content.js";
 import { generateNpcMessagesWithRetry } from "./npc.js";
+import { generateDecisionsWithRetry } from "./decisions.js";
+import { getTemplatesForRound } from "./templates/decisions.js";
 import { buildGenerationContext } from "./context.js";
 import {
   getGenerationStatus,
   setGeneratedBriefing,
   setGeneratedContent,
+  setGeneratedDecisions,
   setGeneratedNpcTriggers,
   setGenerationStatus,
 } from "./cache.js";
@@ -58,6 +61,7 @@ export async function triggerGeneration(
   const briefingsEnabled = roomEnabled === true ? true : config.briefingsEnabled;
   const contentApps: AppId[] = Object.keys(APP_TYPE_MAP) as AppId[];
   const npcEnabled = roomEnabled === true ? true : config.npcEnabled;
+  const decisionsEnabled = roomEnabled === true ? true : config.decisionsEnabled;
 
   // ── Idempotency check ─────────────────────────────────────────────────────
   const existingStatus = getGenerationStatus(room, round);
@@ -153,8 +157,32 @@ export async function triggerGeneration(
       }
     }
 
+    // ── Decision generation ───────────────────────────────────────────────────
+    let decisionsOk = true;
+    if (decisionsEnabled) {
+      const templates = getTemplatesForRound(round);
+      if (templates.length > 0) {
+        const decisionsArtifact = "decisions";
+        const startTs = Date.now();
+        logGenerationStart(round, decisionsArtifact);
+
+        const decisionsResult = await generateDecisionsWithRetry(resolvedProvider, context, templates, round);
+
+        const durationMs = Date.now() - startTs;
+
+        if (decisionsResult === null) {
+          logGenerationFailure(round, decisionsArtifact, "generateDecisionsWithRetry returned null", durationMs);
+          logFallback(round, decisionsArtifact, "falling back to pre-authored decisions");
+          decisionsOk = false;
+        } else {
+          setGeneratedDecisions(room, round, decisionsResult);
+          logGenerationSuccess(round, decisionsArtifact, durationMs);
+        }
+      }
+    }
+
     // ── Final status ──────────────────────────────────────────────────────────
-    const allOk = briefingOk && contentOk && npcOk;
+    const allOk = briefingOk && contentOk && npcOk && decisionsOk;
     setGenerationStatus(room, round, allOk ? "ready" : "failed");
   } catch (err) {
     // INV-1: triggerGeneration must never throw — all errors result in fallback

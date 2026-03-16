@@ -7,13 +7,18 @@
  * - INV-3: triggerGeneration is a no-op for rounds <= 1 or > 5
  * - INV-4: emitBriefing falls back to getBriefing() when no generated briefing exists
  *          (tested indirectly: generated briefing is cached when generation succeeds)
+ *
+ * Decision generation invariants:
+ * - D-INV-1: When GEN_DECISIONS_ENABLED=false, decisions are NOT cached (kill switch)
+ * - D-INV-2: When generation succeeds, decisions ARE cached
+ * - D-INV-3: When generation fails, decisions are NOT cached (fallback to pre-authored)
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { triggerGeneration } from "./orchestrator.js";
-import { getGeneratedBriefing, getGenerationStatus } from "./cache.js";
+import { getGeneratedBriefing, getGeneratedDecisions, getGenerationStatus } from "./cache.js";
 import { MockProvider, GenerationParseError } from "./provider.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -278,6 +283,178 @@ describe("triggerGeneration — provider failure path", () => {
       await expect(triggerGeneration(room, 2, mockProvider)).resolves.toBeUndefined();
       expect(getGenerationStatus(room, 2)).toBe("failed");
       expect(getGeneratedBriefing(room, 2)).toBeUndefined();
+    }),
+  );
+});
+
+// ── Decision generation helpers ───────────────────────────────────────────────
+
+/**
+ * A valid SingleDecisionOutput fixture.
+ *
+ * Satisfies all hard validation constraints:
+ * - Exactly 3 options (A, B, C)
+ * - 5 effects per option (in [5, 8])
+ * - |delta| <= 8 for all effects
+ * - >= 2 positive AND >= 2 negative effects per option
+ * - No duplicate variables within an option
+ * - Distinctness: no pair has >= 60% same-sign on shared variables
+ *
+ * Distinctness verification:
+ * A vs B shared: obCapability(+/-), publicAwareness(+/-), regulatoryPressure(-/+), obBoardConfidence(+/-) = 0/4 same → 0% ✓
+ * A vs C shared: obCapability(+/+), publicAwareness(+/-), obBurnRate(-/+) = 1/3 same → 33% ✓
+ * B vs C shared: obCapability(-/+), intlCooperation(+/-), publicAwareness(-/-) = 1/3 same → 33% ✓
+ */
+const VALID_SINGLE_DECISION = {
+  prompt: "The situation has reached a critical inflection point. Your decision in the next 48 hours will define the trajectory of the organization for the foreseeable future.",
+  options: [
+    {
+      id: "A",
+      label: "Announce publicly now",
+      description: "Get ahead of the leaks. Control the narrative.",
+      effects: [
+        { variable: "obCapability", delta: 5 },
+        { variable: "publicAwareness", delta: 4 },
+        { variable: "regulatoryPressure", delta: -3 },
+        { variable: "obBurnRate", delta: -4 },
+        { variable: "obBoardConfidence", delta: 3 },
+      ],
+    },
+    {
+      id: "B",
+      label: "Brief government first",
+      description: "Bring government fully in before any public announcement.",
+      effects: [
+        { variable: "obCapability", delta: -3 },
+        { variable: "intlCooperation", delta: 5 },
+        { variable: "regulatoryPressure", delta: 4 },
+        { variable: "obBoardConfidence", delta: -4 },
+        { variable: "publicAwareness", delta: -3 },
+      ],
+    },
+    {
+      id: "C",
+      label: "Maintain operational secrecy",
+      description: "Say nothing. Invest the silence into R&D speed.",
+      effects: [
+        { variable: "obCapability", delta: 4 },
+        { variable: "aiAutonomyLevel", delta: 3 },
+        { variable: "intlCooperation", delta: -4 },
+        { variable: "obBurnRate", delta: 5 },
+        { variable: "publicAwareness", delta: -3 },
+      ],
+    },
+  ],
+};
+
+function withDecisionsEnabled(fn: () => Promise<void>): () => Promise<void> {
+  return async () => {
+    const saved = {
+      GEN_ENABLED: process.env.GEN_ENABLED,
+      GEN_DECISIONS_ENABLED: process.env.GEN_DECISIONS_ENABLED,
+    };
+    process.env.GEN_ENABLED = "true";
+    process.env.GEN_DECISIONS_ENABLED = "true";
+    try {
+      await fn();
+    } finally {
+      process.env.GEN_ENABLED = saved.GEN_ENABLED;
+      process.env.GEN_DECISIONS_ENABLED = saved.GEN_DECISIONS_ENABLED;
+    }
+  };
+}
+
+// ── D-INV-1: Kill switch — decisions not cached when disabled ─────────────────
+
+describe("triggerGeneration — decisions kill switch (D-INV-1)", () => {
+  it(
+    "does not cache decisions when GEN_DECISIONS_ENABLED is not set",
+    withGenEnabled(async () => {
+      // GEN_ENABLED=true but GEN_DECISIONS_ENABLED not set → decisions skipped
+      const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
+      const room = makeRoom();
+      await triggerGeneration(room, 2, mockProvider);
+      // Decisions must NOT be cached (kill switch respected)
+      expect(getGeneratedDecisions(room, 2)).toBeUndefined();
+    }),
+  );
+
+  it(
+    "does not cache decisions when GEN_DECISIONS_ENABLED=false",
+    withGenEnabled(async () => {
+      process.env.GEN_DECISIONS_ENABLED = "false";
+      const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
+      const room = makeRoom();
+      await triggerGeneration(room, 2, mockProvider);
+      expect(getGeneratedDecisions(room, 2)).toBeUndefined();
+    }),
+  );
+});
+
+// ── D-INV-2: Decisions cached on successful generation ────────────────────────
+
+describe("triggerGeneration — decisions cached on success (D-INV-2)", () => {
+  it(
+    "caches generated decisions for round 2 when enabled and provider returns valid data",
+    withDecisionsEnabled(async () => {
+      const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
+      const room = makeRoom();
+      await triggerGeneration(room, 2, mockProvider);
+
+      const cached = getGeneratedDecisions(room, 2);
+      expect(cached).toBeDefined();
+      expect(cached?.round).toBe(2);
+      // Round 2 templates include both individual and team decisions
+      expect(cached?.individual.length).toBeGreaterThan(0);
+      expect(cached?.team.length).toBeGreaterThan(0);
+    }),
+  );
+
+  it(
+    "generated option IDs use gen_ prefix to avoid collision with pre-authored IDs",
+    withDecisionsEnabled(async () => {
+      const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
+      const room = makeRoom();
+      await triggerGeneration(room, 2, mockProvider);
+
+      const cached = getGeneratedDecisions(room, 2);
+      expect(cached).toBeDefined();
+      for (const indiv of cached!.individual) {
+        for (const opt of indiv.options) {
+          expect(opt.id).toMatch(/^gen_/);
+        }
+      }
+      for (const team of cached!.team) {
+        for (const opt of team.options) {
+          expect(opt.id).toMatch(/^gen_/);
+        }
+      }
+    }),
+  );
+
+  it(
+    "does not populate round 3 decisions when generating round 2",
+    withDecisionsEnabled(async () => {
+      const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
+      const room = makeRoom();
+      await triggerGeneration(room, 2, mockProvider);
+      expect(getGeneratedDecisions(room, 3)).toBeUndefined();
+    }),
+  );
+});
+
+// ── D-INV-3: Provider failure → decisions not cached ─────────────────────────
+
+describe("triggerGeneration — decisions fallback on failure (D-INV-3)", () => {
+  it(
+    "does not cache decisions when provider returns unparseable data",
+    withDecisionsEnabled(async () => {
+      // MockProvider(null) throws GenerationParseError on generate()
+      const mockProvider = new MockProvider(null);
+      const room = makeRoom();
+      await expect(triggerGeneration(room, 2, mockProvider)).resolves.toBeUndefined();
+      // Decisions must NOT be cached — pre-authored fallback will be used
+      expect(getGeneratedDecisions(room, 2)).toBeUndefined();
     }),
   );
 });

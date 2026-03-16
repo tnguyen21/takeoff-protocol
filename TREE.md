@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 /Users/tau/projects/takeoff-protocol/.worktrees/worker-66da59ae7678
+=======
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-d3c467e6d088
+>>>>>>> 3613e01 (feat(generation): wire decision generation into game flow)
 ├── docs
 │   ├── BACKLOG.md
 │   ├── DECISION-GENERATION-PLAN.md

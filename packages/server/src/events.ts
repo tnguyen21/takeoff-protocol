@@ -2,8 +2,7 @@ import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected } from "./rooms.js";
-import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
-import { getRoundDecisions } from "./content/decisions/rounds.js";
+import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { getLoggerForRoom } from "./logger/registry.js";
 
@@ -356,7 +355,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     const player = room.players[socket.id];
     if (!player || !player.faction || !player.role) return;
-    const roundDecisions = getRoundDecisions(room.round);
+    const roundDecisions = getActiveDecisions(room, room.round);
     if (!roundDecisions) return;
 
     const indiv = roundDecisions.individual.find((d) => d.role === player.role);
@@ -408,7 +407,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     const player = room.players[socket.id];
     if (!player?.isLeader || !player.faction) return;
-    const roundDecisions = getRoundDecisions(room.round);
+    const roundDecisions = getActiveDecisions(room, room.round);
     if (!roundDecisions) return;
     const team = roundDecisions.team.find((d) => d.faction === player.faction);
     if (!team?.options.some((o) => o.id === teamDecision)) return;
