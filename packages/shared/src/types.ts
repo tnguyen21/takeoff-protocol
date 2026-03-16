@@ -401,6 +401,21 @@ export interface NpcTrigger {
   target: NpcTriggerTarget;
 }
 
+// ── Decision Generation ──
+
+/**
+ * Template used by the LLM to generate a decision for a given round/role/faction.
+ * Also used by validateDecisions() for scope checking (soft constraint).
+ */
+export interface DecisionTemplate {
+  round: number;
+  role?: Role;
+  faction?: Faction;
+  theme: string;
+  variableScope: (keyof StateVariables)[];
+  archetypes: [string, string, string];
+}
+
 // ── Ending Arcs ──
 
 export type EndingArcId =

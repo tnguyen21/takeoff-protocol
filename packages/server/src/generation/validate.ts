@@ -1,5 +1,5 @@
-import type { ContentItem, Faction, FogVariable, NpcTrigger, StateVariables } from "@takeoff/shared";
-import { computeFogView } from "@takeoff/shared";
+import type { ContentItem, DecisionTemplate, Faction, FogVariable, NpcTrigger, RoundDecisions, StateVariables } from "@takeoff/shared";
+import { computeFogView, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { getNpcPersona } from "../content/npcPersonas.js";
 
 // ── ValidationResult ──────────────────────────────────────────────────────────
@@ -299,4 +299,163 @@ export function validateBriefing(briefing: {
   }
 
   return { valid: errors.length === 0, errors, warnings: [] };
+}
+
+// ── Decision Validation ───────────────────────────────────────────────────────
+
+/**
+ * Validate a generated RoundDecisions object.
+ *
+ * Hard constraints (errors):
+ * - Each decision must have exactly 3 options
+ * - Each option must have 5-8 effects
+ * - Each effect delta: |delta| <= 8
+ * - No-free-lunch: each option must have >=2 positive effects AND >=2 negative effects
+ * - Variable existence: every effect.variable must be in STATE_VARIABLE_RANGES
+ * - No duplicate variables within the same option
+ * - Distinctness: for any option pair, <60% of shared variables may have same-sign deltas
+ * - Conditional multiplier in [0.5, 3.0] and condition.variable must exist in STATE_VARIABLE_RANGES
+ *
+ * Soft constraints (warnings):
+ * - Scope check (if templates provided): effect variables should be in template.variableScope
+ * - Net |delta| sum per option should be in [15, 35]
+ * - Option labels should be <60 characters
+ * - Decision prompts should be 50-300 words
+ */
+export function validateDecisions(
+  decisions: RoundDecisions,
+  templates?: DecisionTemplate[],
+): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  function validateDecision(
+    decisionId: string,
+    prompt: string,
+    options: RoundDecisions["individual"][number]["options"],
+    template?: DecisionTemplate,
+  ): void {
+    // Hard: exactly 3 options
+    if (options.length !== 3) {
+      errors.push(`${decisionId}: expected 3 options, got ${options.length}`);
+    }
+
+    // Soft: prompt word count 50-300
+    const promptWords = wordCount(prompt);
+    if (promptWords < 50 || promptWords > 300) {
+      warnings.push(`${decisionId}: prompt has ${promptWords} words (expected 50-300)`);
+    }
+
+    for (const opt of options) {
+      const optId = `${decisionId}/${opt.id}`;
+
+      // Soft: label length <60 characters
+      if (opt.label.length >= 60) {
+        warnings.push(`${optId}: label is ${opt.label.length} characters (expected <60)`);
+      }
+
+      // Hard: effect count 5-8
+      if (opt.effects.length < 5 || opt.effects.length > 8) {
+        errors.push(`${optId}: expected 5-8 effects, got ${opt.effects.length}`);
+      }
+
+      const seenVars = new Set<string>();
+      let posCount = 0;
+      let negCount = 0;
+      let netAbs = 0;
+
+      for (const effect of opt.effects) {
+        // Hard: variable existence
+        if (!(effect.variable in STATE_VARIABLE_RANGES)) {
+          errors.push(`${optId}: effect variable "${effect.variable}" does not exist in STATE_VARIABLE_RANGES`);
+        }
+
+        // Hard: no duplicate variables
+        if (seenVars.has(effect.variable)) {
+          errors.push(`${optId}: duplicate effect variable "${effect.variable}"`);
+        }
+        seenVars.add(effect.variable);
+
+        // Hard: delta magnitude
+        if (Math.abs(effect.delta) > 8) {
+          errors.push(`${optId}: effect "${effect.variable}" has |delta|=${Math.abs(effect.delta)} > 8`);
+        }
+
+        if (effect.delta > 0) posCount++;
+        if (effect.delta < 0) negCount++;
+        netAbs += Math.abs(effect.delta);
+
+        // Hard: conditional multiplier bounds
+        if (effect.condition) {
+          const { multiplier, variable: condVar } = effect.condition;
+          if (multiplier < 0.5 || multiplier > 3.0) {
+            errors.push(
+              `${optId}: effect "${effect.variable}" condition multiplier ${multiplier} out of [0.5, 3.0]`,
+            );
+          }
+          if (!(condVar in STATE_VARIABLE_RANGES)) {
+            errors.push(
+              `${optId}: effect "${effect.variable}" condition variable "${condVar}" does not exist in STATE_VARIABLE_RANGES`,
+            );
+          }
+        }
+
+        // Soft: scope check
+        if (template && !template.variableScope.includes(effect.variable)) {
+          warnings.push(`${optId}: effect variable "${effect.variable}" is outside template variableScope`);
+        }
+      }
+
+      // Hard: no-free-lunch
+      if (posCount < 2) {
+        errors.push(`${optId}: no-free-lunch violation — only ${posCount} positive effects (need ≥2)`);
+      }
+      if (negCount < 2) {
+        errors.push(`${optId}: no-free-lunch violation — only ${negCount} negative effects (need ≥2)`);
+      }
+
+      // Soft: net delta magnitude [15, 35]
+      if (netAbs < 15 || netAbs > 35) {
+        warnings.push(`${optId}: net |delta| sum is ${netAbs} (expected 15-35)`);
+      }
+    }
+
+    // Hard: distinctness check for each option pair
+    for (let i = 0; i < options.length; i++) {
+      for (let j = i + 1; j < options.length; j++) {
+        const optA = options[i]!;
+        const optB = options[j]!;
+
+        const signsA = new Map<string, number>();
+        for (const effect of optA.effects) signsA.set(effect.variable, Math.sign(effect.delta));
+        const signsB = new Map<string, number>();
+        for (const effect of optB.effects) signsB.set(effect.variable, Math.sign(effect.delta));
+
+        const sharedVars = [...signsA.keys()].filter((v) => signsB.has(v));
+        if (sharedVars.length > 0) {
+          const sameSignCount = sharedVars.filter((v) => signsA.get(v) === signsB.get(v)).length;
+          const ratio = sameSignCount / sharedVars.length;
+          if (ratio >= 0.6) {
+            errors.push(
+              `${decisionId}: options "${optA.id}" and "${optB.id}" are not distinct — ${sameSignCount}/${sharedVars.length} shared variables have same-sign deltas (≥60%)`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  for (const indiv of decisions.individual) {
+    const decisionId = `individual[${indiv.role}]`;
+    const template = templates?.find((t) => t.role === indiv.role);
+    validateDecision(decisionId, indiv.prompt, indiv.options, template);
+  }
+
+  for (const team of decisions.team) {
+    const decisionId = `team[${team.faction}]`;
+    const template = templates?.find((t) => t.faction === team.faction);
+    validateDecision(decisionId, team.prompt, team.options, template);
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
 }
