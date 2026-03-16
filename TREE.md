@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-cabdbe1e0783
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-66da59ae7678
 ├── docs
 │   ├── BACKLOG.md
 │   ├── DECISION-GENERATION-PLAN.md
