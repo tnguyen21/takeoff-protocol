@@ -34,6 +34,8 @@ afterEach(() => {
     "GEN_BRIEFING_MODEL",
     "GEN_CONTENT_MODEL",
     "GEN_TIMEOUT_MS",
+    "GEN_DECISIONS_ENABLED",
+    "GEN_DECISION_MODEL",
   ]) {
     delete process.env[key];
   }
@@ -195,6 +197,74 @@ describe("GEN_PROVIDER flag", () => {
     try {
       const config = getGenerationConfig();
       expect(config.providerType).toBe("anthropic");
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ── INV-1/INV-2: GEN_DECISIONS_ENABLED flag ───────────────────────────────────
+
+describe("GEN_DECISIONS_ENABLED flag (INV-1, INV-2)", () => {
+  it("INV-1: defaults to false when unset", () => {
+    const config = getGenerationConfig();
+    expect(config.decisionsEnabled).toBe(false);
+  });
+
+  it("INV-2: is true when set to 'true'", () => {
+    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "true" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionsEnabled).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("INV-2: is true when set to '1'", () => {
+    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "1" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionsEnabled).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("INV-1: is false for non-true value", () => {
+    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "yes" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionsEnabled).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ── INV-3: GEN_DECISION_MODEL defaults to briefingModel ───────────────────────
+
+describe("GEN_DECISION_MODEL (INV-3)", () => {
+  it("INV-3: defaults to briefingModel when GEN_DECISION_MODEL is unset", () => {
+    const config = getGenerationConfig();
+    expect(config.decisionModel).toBe(config.briefingModel);
+  });
+
+  it("INV-3: follows GEN_BRIEFING_MODEL when GEN_DECISION_MODEL is unset", () => {
+    const cleanup = withEnv({ GEN_BRIEFING_MODEL: "claude-opus-4-6", GEN_DECISION_MODEL: undefined });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionModel).toBe("claude-opus-4-6");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("can be overridden independently via GEN_DECISION_MODEL", () => {
+    const cleanup = withEnv({ GEN_DECISION_MODEL: "claude-haiku-4-5-20251001" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionModel).toBe("claude-haiku-4-5-20251001");
     } finally {
       cleanup();
     }

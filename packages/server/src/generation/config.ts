@@ -4,9 +4,11 @@ export interface GenerationConfig {
   enabled: boolean;           // GEN_ENABLED, default false
   briefingsEnabled: boolean;  // GEN_BRIEFINGS_ENABLED, default false
   npcEnabled: boolean;        // GEN_NPC_ENABLED, default false
+  decisionsEnabled: boolean;  // GEN_DECISIONS_ENABLED, default false
   providerType: "anthropic" | "mock"; // GEN_PROVIDER, default "anthropic"
   briefingModel: string;      // GEN_BRIEFING_MODEL, default "claude-sonnet-4-5-20250514"
   contentModel: string;       // GEN_CONTENT_MODEL, default "claude-haiku-4-5-20251001"
+  decisionModel: string;      // GEN_DECISION_MODEL, default same as briefingModel
   timeout: number;            // GEN_TIMEOUT_MS, default 30000
 }
 
@@ -24,6 +26,8 @@ export function getGenerationConfig(): GenerationConfig {
   const briefingsEnabled =
     env.GEN_BRIEFINGS_ENABLED === "true" || env.GEN_BRIEFINGS_ENABLED === "1";
   const npcEnabled = env.GEN_NPC_ENABLED === "true" || env.GEN_NPC_ENABLED === "1";
+  const decisionsEnabled =
+    env.GEN_DECISIONS_ENABLED === "true" || env.GEN_DECISIONS_ENABLED === "1";
 
   const rawProvider = env.GEN_PROVIDER ?? "anthropic";
   const providerType: "anthropic" | "mock" =
@@ -35,6 +39,9 @@ export function getGenerationConfig(): GenerationConfig {
   const contentModel =
     env.GEN_CONTENT_MODEL ?? "claude-haiku-4-5-20251001";
 
+  const decisionModel =
+    env.GEN_DECISION_MODEL ?? briefingModel;
+
   const rawTimeout = env.GEN_TIMEOUT_MS;
   const timeout =
     rawTimeout !== undefined && rawTimeout !== ""
@@ -45,9 +52,11 @@ export function getGenerationConfig(): GenerationConfig {
     enabled,
     briefingsEnabled,
     npcEnabled,
+    decisionsEnabled,
     providerType,
     briefingModel,
     contentModel,
+    decisionModel,
     timeout: Number.isFinite(timeout) ? timeout : 30000,
   };
 }

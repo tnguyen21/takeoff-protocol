@@ -338,6 +338,7 @@ export interface GeneratedRoundArtifacts {
   };
   content?: Partial<Record<Faction, AppContent[]>>;
   npcTriggers?: NpcTrigger[];
+  decisions?: RoundDecisions;
 }
 
 // ── Resolution ──

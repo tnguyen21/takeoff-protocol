@@ -1,4 +1,4 @@
-import type { AppContent, Faction, GameRoom, GeneratedRoundArtifacts, GenerationStatus, NpcTrigger } from "@takeoff/shared";
+import type { AppContent, Faction, GameRoom, GeneratedRoundArtifacts, GenerationStatus, NpcTrigger, RoundDecisions } from "@takeoff/shared";
 
 function ensureGeneratedRounds(room: GameRoom): Partial<Record<number, GeneratedRoundArtifacts>> {
   if (!room.generatedRounds) room.generatedRounds = {};
@@ -55,6 +55,16 @@ export function setGeneratedNpcTriggers(room: GameRoom, round: number, triggers:
 
 export function getGeneratedNpcTriggers(room: GameRoom, round: number): NpcTrigger[] | undefined {
   return room.generatedRounds?.[round]?.npcTriggers;
+}
+
+export function setGeneratedDecisions(room: GameRoom, round: number, decisions: RoundDecisions): void {
+  const rounds = ensureGeneratedRounds(room);
+  if (!rounds[round]) rounds[round] = {};
+  rounds[round]!.decisions = decisions;
+}
+
+export function getGeneratedDecisions(room: GameRoom, round: number): RoundDecisions | undefined {
+  return room.generatedRounds?.[round]?.decisions;
 }
 
 export function setGenerationStatus(room: GameRoom, round: number, status: GenerationStatus): void {

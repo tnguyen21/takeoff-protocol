@@ -8,14 +8,16 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import type { AppContent, GameRoom } from "@takeoff/shared";
+import type { AppContent, GameRoom, RoundDecisions } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import {
   getGeneratedBriefing,
   getGeneratedContent,
+  getGeneratedDecisions,
   getGenerationStatus,
   setGeneratedBriefing,
   setGeneratedContent,
+  setGeneratedDecisions,
   setGenerationStatus,
 } from "./cache.js";
 
@@ -51,6 +53,12 @@ const BRIEFING_R2 = {
 const CONTENT_OB: AppContent[] = [
   { faction: "openbrain", app: "slack", items: [{ id: "item-1", type: "message", round: 2, body: "msg", timestamp: "t1" }] },
 ];
+
+const DECISIONS_R2: RoundDecisions = {
+  round: 2,
+  individual: [],
+  team: [],
+};
 
 // ── INV-3: Empty cache returns undefined ──────────────────────────────────────
 
@@ -125,6 +133,42 @@ describe("setGeneratedContent / getGeneratedContent", () => {
     const room = makeRoom();
     setGeneratedContent(room, 2, "openbrain", CONTENT_OB);
     expect(room.generatedRounds).toBeDefined();
+  });
+});
+
+// ── INV-4 / INV-5: Decision cache ─────────────────────────────────────────────
+
+describe("getGeneratedDecisions — empty cache (INV-4)", () => {
+  it("returns undefined when generatedRounds is undefined", () => {
+    const room = makeRoom();
+    expect(getGeneratedDecisions(room, 2)).toBeUndefined();
+  });
+
+  it("returns undefined when round entry exists but has no decisions", () => {
+    const room = makeRoom({ generatedRounds: { 2: { briefing: BRIEFING_R2 } } });
+    expect(getGeneratedDecisions(room, 2)).toBeUndefined();
+  });
+});
+
+describe("setGeneratedDecisions / getGeneratedDecisions (INV-5)", () => {
+  it("set decisions → get returns same object", () => {
+    const room = makeRoom();
+    setGeneratedDecisions(room, 2, DECISIONS_R2);
+    expect(getGeneratedDecisions(room, 2)).toBe(DECISIONS_R2);
+  });
+
+  it("initializes generatedRounds when undefined before writing", () => {
+    const room = makeRoom();
+    expect(room.generatedRounds).toBeUndefined();
+    setGeneratedDecisions(room, 2, DECISIONS_R2);
+    expect(room.generatedRounds).toBeDefined();
+    expect(getGeneratedDecisions(room, 2)).toBe(DECISIONS_R2);
+  });
+
+  it("setting decisions for round 2 does not affect round 3", () => {
+    const room = makeRoom();
+    setGeneratedDecisions(room, 2, DECISIONS_R2);
+    expect(getGeneratedDecisions(room, 3)).toBeUndefined();
   });
 });
 
