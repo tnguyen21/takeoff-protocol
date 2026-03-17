@@ -154,14 +154,14 @@ function resolveAiRace(s: StateVariables): number {
 }
 
 function resolveAlignment(s: StateVariables): number {
-  // Doom clock near midnight overrides everything — misaligned
-  if (s.doomClockDistance < 2) return 0;
+  // Doom clock at zero overrides everything — misaligned
+  if (s.doomClockDistance <= 0) return 0;
   // Prometheus safety breakthrough + moderate alignment confidence + controlled autonomy
   if (s.promSafetyBreakthroughProgress >= 80 && s.alignmentConfidence >= 60 && s.aiAutonomyLevel <= 50) return 3;
   // High alignment confidence, low misalignment, autonomy still in check
-  if (s.alignmentConfidence >= 75 && s.misalignmentSeverity <= 15 && s.aiAutonomyLevel <= 60) return 3;
+  if (s.alignmentConfidence >= 65 && s.misalignmentSeverity <= 20 && s.aiAutonomyLevel <= 55) return 3;
   // Moderate alignment with AI autonomy not yet critical
-  if (s.alignmentConfidence >= 50 && s.misalignmentSeverity <= 35 && s.aiAutonomyLevel <= 70) return 2;
+  if (s.alignmentConfidence >= 45 && s.misalignmentSeverity <= 40 && s.aiAutonomyLevel <= 70) return 2;
   if (s.alignmentConfidence >= 25 || s.misalignmentSeverity <= 60) return 1;
   return 0;
 }
@@ -170,9 +170,9 @@ function resolveControl(s: StateVariables): number {
   // AI autonomy > 70 means the systems have outpaced human oversight
   if (s.aiAutonomyLevel > 70) return 1;
   // Distributed/democratic: strong cooperation + trust on both sides of the table
-  if (s.intlCooperation >= 60 && s.obInternalTrust >= 60 && s.obBoardConfidence >= 50 && s.promBoardConfidence >= 50) return 4;
+  if (s.intlCooperation >= 30 && s.obInternalTrust >= 50 && s.obBoardConfidence >= 40 && s.promBoardConfidence >= 40) return 4;
   // Government control: high security protocols OR strong regulatory pressure
-  if (s.securityLevelOB >= 4 || s.securityLevelProm >= 4 || s.regulatoryPressure >= 70) return 3;
+  if (s.securityLevelOB >= 5 || s.securityLevelProm >= 5 || s.regulatoryPressure >= 85) return 3;
   // Single company: US labs dominate, no cooperation, OB board entrenched
   if (s.obCapability - s.chinaCapability > 30 && s.intlCooperation < 30 && s.obBoardConfidence >= 60) return 2;
   // AI autonomous: low alignment confidence with capable systems
@@ -186,18 +186,18 @@ function resolveUsChinaRelations(s: StateVariables): number {
   // Weight theft near-complete + high tension → conflict
   if (s.chinaWeightTheftProgress > 80 && s.taiwanTension > 70) return 0;
   // Active conflict from extreme tension
-  if (s.taiwanTension > 75) return 0;
+  if (s.taiwanTension > 65) return 0;
   // Domestic chip progress > 60 reduces Taiwan strategic motivation, enabling cooperation
   const chipReducesTension = s.domesticChipProgress > 60;
-  const cooperationTensionCeiling = chipReducesTension ? 35 : 20;
-  if (s.intlCooperation >= 70 && s.taiwanTension <= cooperationTensionCeiling) return 4;
-  if (s.intlCooperation >= 50 && s.taiwanTension <= 40) return 3;
-  if (s.intlCooperation >= 30 && s.taiwanTension <= 60) return 2;
+  const cooperationTensionCeiling = chipReducesTension ? 40 : 25;
+  if (s.intlCooperation >= 60 && s.taiwanTension <= cooperationTensionCeiling) return 4;
+  if (s.intlCooperation >= 40 && s.taiwanTension <= 50) return 3;
+  if (s.intlCooperation >= 15 && s.taiwanTension <= 65) return 2;
   return 1; // Cold war — worst reachable without triggering active conflict
 }
 
 function resolvePublicReaction(s: StateVariables): number {
-  if (s.publicAwareness <= 20) return 4; // Unaware — transition happened invisibly
+  if (s.publicAwareness <= 12) return 4; // Unaware — transition happened invisibly
   // High regulatory pressure + negative sentiment → riots
   if (s.regulatoryPressure > 70 && s.publicSentiment < 0) return 0;
   // Positive sentiment → cautiously optimistic
@@ -212,9 +212,9 @@ function resolveEconomy(s: StateVariables): number {
   const burnPressure = (s.obBurnRate + s.promBurnRate) / 2;
   // adjustedDisruption: base disruption + burn rate pressure − market index bonus
   const adjustedDisruption = s.economicDisruption + burnPressure * 0.2 - (s.marketIndex - 50) * 0.3;
-  if (adjustedDisruption <= 25) return 3; // AI-driven boom
-  if (adjustedDisruption <= 50) return 2; // Disruption with adaptation
-  if (adjustedDisruption <= 70) return 1; // Painful transition
+  if (adjustedDisruption <= -5) return 3; // AI-driven boom
+  if (adjustedDisruption <= 20) return 2; // Disruption with adaptation
+  if (adjustedDisruption <= 50) return 1; // Painful transition
   return 0;                               // Collapse
 }
 

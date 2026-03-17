@@ -140,7 +140,8 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     theme: "alignment evaluation coverage",
     variableScope: [
       "alignmentConfidence", "chinaCapability", "ccpPatience", "misalignmentSeverity",
-      "promSafetyBreakthroughProgress",
+      "promSafetyBreakthroughProgress", "cdzComputeUtilization", "usChinaGap",
+      "aiAutonomyLevel", "doomClockDistance",
     ],
     archetypes: ["expand alignment evaluation coverage", "focus entirely on capability gap", "run parallel safety evals"],
   },

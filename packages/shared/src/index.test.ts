@@ -695,22 +695,25 @@ describe("computeEndingArcs", () => {
   });
 
   it("economic disruption maps correctly to economy arc", () => {
-    const lowDisruption: StateVariables = { ...BASE_STATE, economicDisruption: 20 };
+    // adjustedDisruption = disruption + burnPressure*0.2 - (marketIndex-50)*0.3
+    // With BASE_STATE: burnPressure = (20+20)/2 = 20, marketIndex = 50
+    // Low: 10 + 4 - 0 = 14 → adaptation (threshold for boom is <= -5)
+    const lowDisruption: StateVariables = { ...BASE_STATE, economicDisruption: 10 };
     const highDisruption: StateVariables = { ...BASE_STATE, economicDisruption: 80 };
 
     const low = computeEndingArcs(lowDisruption).find((a) => a.id === "economy")!;
     const high = computeEndingArcs(highDisruption).find((a) => a.id === "economy")!;
 
-    expect(low.result).toBe(3); // AI-driven boom
+    expect(low.result).toBe(2); // Disruption with adaptation
     expect(high.result).toBe(0); // Collapse
   });
 
-  it("doom clock < 2 forces misaligned outcome regardless of alignmentConfidence", () => {
+  it("doom clock at zero forces misaligned outcome regardless of alignmentConfidence", () => {
     const state: StateVariables = {
       ...BASE_STATE,
       alignmentConfidence: 90,
       misalignmentSeverity: 5,
-      doomClockDistance: 1,
+      doomClockDistance: 0,
     };
     const arcs = computeEndingArcs(state);
     const alignmentArc = arcs.find((a) => a.id === "alignment")!;
@@ -868,7 +871,7 @@ describe("computeEndingArcs", () => {
   });
 
   it("resolveControl: government controlled via high regulatoryPressure", () => {
-    const arcs = computeEndingArcs({ ...BASE_STATE, regulatoryPressure: 75 });
+    const arcs = computeEndingArcs({ ...BASE_STATE, regulatoryPressure: 85, intlCooperation: 20 });
     expect(arcs.find((a) => a.id === "control")!.result).toBe(3);
   });
 
@@ -877,22 +880,26 @@ describe("computeEndingArcs", () => {
       ...BASE_STATE,
       obCapability: 80,
       chinaCapability: 40,
-      intlCooperation: 20,
+      intlCooperation: 15,
       obBoardConfidence: 65,
+      obInternalTrust: 30,
+      securityLevelOB: 3,
+      securityLevelProm: 3,
+      regulatoryPressure: 10,
     });
     expect(arcs.find((a) => a.id === "control")!.result).toBe(2);
   });
 
   it("resolveControl: AI autonomous when low alignment + capable systems (no one controls)", () => {
-    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 20, obCapability: 75, aiAutonomyLevel: 50 });
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 20, obCapability: 75, aiAutonomyLevel: 50, intlCooperation: 10, securityLevelOB: 3, securityLevelProm: 3, regulatoryPressure: 10, obBoardConfidence: 50 });
     expect(arcs.find((a) => a.id === "control")!.result).toBe(1);
   });
 
   // ── resolveEconomy branch coverage ─────────────────────────────────────────
 
   it("resolveEconomy: AI-driven boom when low disruption + high market + low burn", () => {
-    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 10, marketIndex: 80 });
-    // adjustedDisruption = 10 + (20+20)/2*0.2 - (80-50)*0.3 = 10 + 4 - 9 = 5 → boom
+    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 5, marketIndex: 120, obBurnRate: 10, promBurnRate: 10 });
+    // adjustedDisruption = 5 + (10+10)/2*0.2 - (120-50)*0.3 = 5 + 2 - 21 = -14 → boom (threshold <= -5)
     expect(arcs.find((a) => a.id === "economy")!.result).toBe(3);
   });
 
@@ -903,8 +910,8 @@ describe("computeEndingArcs", () => {
   });
 
   it("resolveEconomy: disruption with adaptation when adjustedDisruption mid-range", () => {
-    // adjustedDisruption = 45 + 4 - 0 = 49 → result 2
-    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 45, marketIndex: 50 });
+    // adjustedDisruption = 10 + 4 - 0 = 14 → result 2 (threshold <= 20)
+    const arcs = computeEndingArcs({ ...BASE_STATE, economicDisruption: 10, marketIndex: 50 });
     expect(arcs.find((a) => a.id === "economy")!.result).toBe(2);
   });
 
@@ -938,14 +945,14 @@ describe("computeEndingArcs", () => {
     expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(3);
   });
 
-  it("resolveUsChinaRelations: cold war fallthrough when cooperation and tension both low", () => {
-    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 20, taiwanTension: 50 });
+  it("resolveUsChinaRelations: cold war fallthrough when cooperation very low and tension moderate", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 10, taiwanTension: 50 });
     expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(1);
   });
 
-  it("resolveUsChinaRelations: chipReducesTension raises cooperation ceiling to 35", () => {
-    // Without chip progress ceiling=20, so taiwanTension=30 would block result 4.
-    // With domesticChipProgress>60, ceiling=35, so taiwanTension=30 allows result 4.
+  it("resolveUsChinaRelations: chipReducesTension raises cooperation ceiling to 40", () => {
+    // Without chip progress ceiling=25, so taiwanTension=30 would block result 4.
+    // With domesticChipProgress>60, ceiling=40, so taiwanTension=30 allows result 4.
     const arcs = computeEndingArcs({ ...BASE_STATE, intlCooperation: 75, taiwanTension: 30, domesticChipProgress: 65 });
     expect(arcs.find((a) => a.id === "usChinaRelations")!.result).toBe(4);
   });
@@ -1006,8 +1013,8 @@ describe("computeEndingArcs", () => {
     expect(arcs.find((a) => a.id === "publicReaction")!.result).toBe(2);
   });
 
-  it("resolvePublicReaction: unaware when publicAwareness <= 20 regardless of sentiment", () => {
-    const arcs = computeEndingArcs({ ...BASE_STATE, publicAwareness: 15, publicSentiment: -80 });
+  it("resolvePublicReaction: unaware when publicAwareness <= 12 regardless of sentiment", () => {
+    const arcs = computeEndingArcs({ ...BASE_STATE, publicAwareness: 10, publicSentiment: -80 });
     expect(arcs.find((a) => a.id === "publicReaction")!.result).toBe(4);
   });
 });
