@@ -47,7 +47,7 @@ export const STATE_VARIABLE_RANGES: Readonly<Record<keyof StateVariables, [numbe
 
 // ── Faction Metadata ──
 
-export interface FactionConfig {
+interface FactionConfig {
   id: Faction;
   name: string;
   minPlayers: number;
@@ -123,7 +123,7 @@ export const FACTIONS: FactionConfig[] = [
 
 // ── Leader Roles ──
 
-export const LEADER_ROLES: readonly Role[] = FACTIONS.flatMap(f => f.roles).filter(r => r.isLeader).map(r => r.id);
+const LEADER_ROLES: readonly Role[] = FACTIONS.flatMap(f => f.roles).filter(r => r.isLeader).map(r => r.id);
 
 export function isLeaderRole(role: Role): boolean {
   return LEADER_ROLES.includes(role);
@@ -198,7 +198,7 @@ export const TOTAL_ROUNDS = 5;
 
 // ── Scaling Guide ──
 
-export type ScalingGuideEntry = Record<Faction, number>;
+type ScalingGuideEntry = Record<Faction, number>;
 
 export const SCALING_GUIDE: Record<number, ScalingGuideEntry> = {
   8:  { openbrain: 2, prometheus: 2, china: 2, external: 2 },
