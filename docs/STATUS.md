@@ -1,14 +1,16 @@
 # Project Status
 
-Last updated: 2026-03-15
+Last updated: 2026-03-17
 
 ---
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1242 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1337 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
 
-**Not yet done:** First real playtest, production deployment, generation quality validation, external role balancing.
+**Ready for first playtest.** The blocking items are: push to remote, deploy to Fly.io, schedule humans.
+
+**Not yet done:** First real playtest, production deployment, generation quality validation with real API calls, external role mechanical depth, monitoring/observability improvements.
 
 ---
 
@@ -19,12 +21,13 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 - **Desktop window manager** — draggable, resizable, z-ordered windows with dock + menubar + notifications
 - **Fog-of-war** — corrected noise formula, faction-based hash seeding, comprehensive property tests
 - **Decision/resolution engine** — effects with conditional multipliers, canonical clamping via `STATE_VARIABLE_RANGES`
-- **9 ending arcs** — all resolvers implemented, full branch coverage in tests
-- **Content generation** — briefing + app content + NPC trigger generation via Claude API, with retry/validation/fallback to pre-authored content
+- **9 ending arcs** — all resolvers implemented, thresholds tuned via 10K-trial Monte Carlo simulation, full branch coverage in tests
+- **Content generation** — briefing + app content + NPC trigger + **decision generation** via Claude API, with retry/validation/fallback to pre-authored content
+- **Decision templates** — 104 templates covering all 5 rounds, all 8 faction/role types, with hard/soft constraint validation and distinctness checks
 - **Logging** — buffered JSONL per-room, envelope validation, graceful shutdown on SIGINT/SIGTERM
 - **Dev tools** — URL bootstrap (`?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&botMode=all_roles`), GM state sliders, jump-to-phase, fog inspector, endings preview
 - **Bot system** — fills empty seats with auto-submitting bots for solo testing
-- **Simulation harness** — Monte Carlo with hawk/dove/chaotic/random heuristics, 10K-trial reports
+- **Simulation harness** — Monte Carlo with hawk/dove/chaotic/random heuristics, 10K-trial reports, percentile analysis
 - **Reconnection** — full state replay on rejoin (messages, content, phase, decisions)
 
 ---
@@ -104,37 +107,39 @@ No known shared bugs.
 
 ### Content Generation
 
-**Status: Infrastructure complete. Content quality untested in live play.**
+**Status: Decision generation implemented. Briefing/NPC generation implemented. Real API quality untested.**
 
 What exists:
-- Full generation pipeline: briefing + content (news/twitter/slack/email/memo/signal) + NPC triggers
+- Full generation pipeline: briefing + content (news/twitter/slack/email/memo/signal) + NPC triggers + **decisions**
+- 104 decision templates across all 5 rounds, all 8 faction/role types
+- Decision validation: hard constraints (3 options, 5-8 effects, no-free-lunch), soft constraints (variable scope, effect bounds), distinctness checks
 - Prompt system with faction voices, app voices, round arc templates
 - Validation: item budgets, classification distribution, schema conformance
 - Retry with error feedback, fallback to pre-authored content
-- Kill switches: `GEN_ENABLED`, `GEN_BRIEFINGS_ENABLED`, `GEN_NPC_ENABLED`, per-room toggle
+- Kill switches: `GEN_ENABLED`, `GEN_BRIEFINGS_ENABLED`, `GEN_NPC_ENABLED`, `GEN_DECISIONS_ENABLED`, per-room toggle
 - Provider abstraction (Anthropic Claude, with mock for tests)
-- 3,000+ lines of generation tests
+- 3,500+ lines of generation tests
 
 What's missing:
-- **Decision generation** — Phase D in GENERATIVE-CONTENT.md. Template-constrained generation with Monte Carlo validation. Not started.
-- **Resolution narrative generation** — described in design, not implemented.
+- **Resolution narrative generation** — described in GENERATIVE-CONTENT.md Phase C. Current resolution narrative is a generic template (~4 sentences), not LLM-generated reactive prose.
 - **No live playtesting** — prompt quality, latency, and cost are untested with real API calls.
+- **Decision quality validation** — no Monte Carlo simulation check before emitting generated decisions (structural validation only, no balance check).
 - **GM preview/edit** — open question whether GM should see generated content before emission.
-- **Generation metrics not in game logs** — latency, validation failures, fallback rates not captured by the logging system.
+- **Generation metrics not in game logs** — latency, token usage, validation failures, fallback rates not captured by the logging system (only logged to stdout).
 
 ### External Role Balancing
 
 **Status: Rich content, shallow mechanics. Full audit in EXTERNAL-ROLES-AUDIT.md.**
 
-All four external roles (NSA, Journalist, VC, Diplomat) have excellent thematic content but limited agency:
+All four external roles (NSA, Journalist, VC, Diplomat) have individual decisions in all 5 rounds and thematic content, but limited mechanical depth:
 
 **NSA Advisor:**
-- No individual decisions after Round 1
-- No emergency powers, security directives, or cross-faction negotiation mechanics
-- Proposed: Rounds 2-5 decisions (weight theft response, emergency powers, strategic posture)
+- Has individual decisions all 5 rounds (basic: recommend policy, allocate attention)
+- No emergency powers, security directives, or cross-faction enforcement mechanics
+- Proposed: weight theft response decisions, emergency powers invocation, lab security directives
 
 **Tech Journalist:**
-- Publication impacts are generic (all story types hit same variables same way)
+- Publication impacts are generic (all story types hit same variables: publicAwareness, publicSentiment)
 - No source cultivation/burnout, no faction-specific publication effects, no feedback loop
 - Proposed: Story angle system with asymmetric faction impacts, source mechanics
 
@@ -157,7 +162,7 @@ All four external roles (NSA, Journalist, VC, Diplomat) have excellent thematic 
 What exists:
 - Dockerfile: multi-stage build, properly structured
 - fly.toml: sjc region, 512MB RAM, auto-scale 0→N, persistent log volume, force_https
-- Health check endpoint: `/api/health` (returns room count)
+- Health check endpoint: `/api/health` (returns room count only)
 
 What's missing:
 - No actual Fly.io deployment done
@@ -169,42 +174,52 @@ What's missing:
 
 ### Diagnostics & Logging
 
-**Status: Logger implemented, analysis tools partially built.**
+**Status: Logger implemented with structured JSONL. Significant observability gaps.**
 
 What exists:
-- JSONL per-room logging with envelope validation
-- Events: phase changes, decisions, state deltas, thresholds, NPC triggers, messages, activity, penalties
+- JSONL per-room logging with envelope validation (sessionId, serverTime, eventId, schemaVersion)
+- Events: phase changes, decisions, state deltas/snapshots, thresholds, NPC triggers, messages, activity, penalties, GM overrides
 - `scripts/analyze-game.ts` (per-game summary) — tested with fixtures
 - Graceful shutdown: flushes on SIGINT/SIGTERM and room cleanup
+- Generation metrics logged to stdout (start/success/failure/fallback per artifact)
 
 What's missing:
-- Client activity reporting is basic (which apps opened, not dwell time or focus tracking)
-- No `compare-games.ts` (cross-session analysis)
-- Generation metrics not integrated into game logs
-- No real-time GM visibility into structured logs during a game
-- No replay capability from JSONL logs
+- **Generation metrics not in JSONL** — token usage, cost, retry counts, cache hit rates only on stdout
+- **No error events in JSONL** — exceptions go to stderr, not queryable/replayable
+- **Health endpoint minimal** — only room count; no memory, socket count, generation status, logger health
+- **GM has no generation visibility** — can't see if generation is pending/ready/failed for current round
+- **GM has no NPC/threshold log** — threshold.fired and npc_trigger.fired events exist but aren't surfaced in GM dashboard
+- **Client activity basic** — which apps opened per phase, no dwell time, no focus tracking, no interaction events
+- **No `compare-games.ts`** (cross-session analysis)
+- **No replay capability** from JSONL logs (events replayable, UI state not)
+- **No socket health tracking** — no disconnect reason, reconnection frequency, connection latency
+- **No phase transition latency** — no measurement of time from advancePhase to client receipt
 
 ### Game Balance
 
-**Status: Simulation reveals concerning outcome distributions.**
+**Status: Significantly improved after threshold tuning. Two arcs still skewed.**
 
-From 10,000 random-heuristic trials:
+From 10,000 random-heuristic trials (with generated decision templates):
 
-| Arc | Issue |
-|-----|-------|
-| AI Race | 0% OB dominant — **outcome is unreachable** |
-| Alignment | 86.9% genuinely aligned — **dominates, too easy** |
-| Control | 83.3% government controlled — **dominates** |
-| Economy | 86.7% disruption with adaptation — **dominates** |
-| US-China | Well-distributed (1.6%-36.7%) |
-| Public Reaction | Healthy balance (50.5% anxious, 48.8% optimistic) |
-| Taiwan | Well-distributed |
-| Open Source | Distributed |
+| Arc | Distribution | Status |
+|-----|-------------|--------|
+| AI Race | 63.8% stalemate, rest distributed | Stalemate dominates — structural (pre-authored decisions narrow) |
+| Alignment | Max outcome 44.0% | Well-distributed after tuning |
+| Control | Max outcome 53.6% (government) | Slightly high — structural ceiling (securityLevelOB caps at 5) |
+| Economy | Max outcome 45.7% | Acceptable after tuning |
+| US-China | Max outcome 45.1% | Well-distributed after tuning |
+| Public Reaction | Max outcome 42.8% | Healthy |
+| Taiwan | Distributed | Healthy |
+| Open Source | 58.1% irrelevant | Skewed — needs tuning |
+| Prometheus | Distributed | Healthy |
 
-Missing:
-- No hawk/dove mixed-heuristic simulation reports (most realistic scenario)
-- Balance tuning scripts (`scale-deltas.ts`, `fix-directional-bias.ts`, `fix-gap-bias.ts`) are one-shot tools with no tests — fragile to re-run
-- Ending arc threshold values need tuning based on simulation + playtesting
+Hawk/dove heuristic simulations confirm strategic play produces dramatically different outcomes (e.g., US-China: hawk 94.2% cold war vs dove 0.2%).
+
+Remaining concerns:
+- AI Race stalemate at 63.8% — may need pre-authored decision effect adjustments
+- Open Source irrelevant at 58.1% — threshold tuning or effect changes needed
+- Control government at 53.6% — close to acceptable; structural limitation from securityLevelOB ceiling
+- No hawk/dove mixed-heuristic simulation (most realistic scenario)
 
 ---
 
@@ -218,15 +233,34 @@ Missing:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1242 pass, 2 skip, 0 fail across 40 test files
-- Server: events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,000+ lines) + logger suite (400+ lines)
-- Client: ErrorBoundary component tests + utility tests across all apps
-- Shared: resolution, fog, endings with property tests
-- Scripts: analyze-game tested with fixtures
+- 1337 pass, 2 skip, 0 fail across 44 test files
+- Server (905 tests): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,500+ lines: validate, decisions, orchestrator, context, briefing, cache, provider, config, content, npc) + logger suite (400+ lines)
+- Client (340 tests): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + UI store
+- Shared (92 tests): resolution, fog, endings with property tests
 
-### Remaining Gaps
-- `emitResolution` not exported from `game.ts` — no direct unit tests, covered indirectly
+### Coverage Gaps
+
+**Critical (high risk, no tests):**
+- **Client stores: `game.ts`, `messages.ts`, `notifications.ts`** — all game state mutations (submitDecision, phase changes, session persistence, reconnection state) are untested
+- **Client socket integration (`socket.ts`)** — reconnection retry logic on client side untested
+- **Concurrent decision submission** — no test for race between two simultaneous `decision:submit` calls
+
+**High (moderate risk):**
+- **Desktop window manager** (`Window.tsx`, `MenuBar.tsx`, `Dock.tsx`) — drag, resize, z-order, bounds checking all untested
+- **Client screens** (`Desktop.tsx`, `Lobby.tsx`, `Ending.tsx`, `Resolution.tsx`, `GMDashboard.tsx`, `Briefing.tsx`) — no component tests
+- **Generation error paths** — timeout/parse/validation failures tested in isolation but not in full orchestration flow
+- **`emitResolution`** — not exported from `game.ts`, no direct unit tests, covered indirectly via advancePhase
+
+**Medium (lower risk):**
+- **17 app components** (EmailApp, SlackApp, etc.) — only utility functions tested, not React components
+- **`fog.ts` edge cases** — `applyNoise` and `hashString` only integration-tested, no unit tests
+- **`activityPenalties.ts` edge cases** — unknown roles, empty activity, round=0 not tested
+- **Simulation harness** — no tests for Monte Carlo or sampler logic itself
+- **51 content data files** — static data, lower risk but no schema validation at file level
+
+**Structural:**
 - No end-to-end tests (real browser + server)
+- `bun test` from repo root fails 36 client tests (happy-dom preload not picked up); `bun run test` works fine — confusing but not a real bug
 
 ---
 
@@ -252,23 +286,42 @@ These are not bugs but would improve maintainability:
 
 ## Priority Recommendations
 
-### P0 — Fix Before First Playtest
-All P0 items are fixed. See "Bugs Fixed" table.
+### P0 — Deploy & Playtest
+All code bugs are fixed. Next steps:
+1. Push to remote (2 unpushed commits on main)
+2. Deploy to Fly.io and smoke test
+3. Run first full playtest with real humans
 
-### P1 — Fix Before Hosting
-All P1 code bugs are fixed. Remaining:
-1. Deploy to Fly.io and smoke test
-2. Run at least one full playtest with real humans
+### P1 — Monitoring & Observability
+4. Add generation metrics to JSONL (token usage, cost, retry counts, fallback rates)
+5. Expand `/api/health` (memory, socket count, generation pipeline status, logger health)
+6. Add generation status visibility to GM dashboard (pending/ready/failed per artifact)
+7. Surface threshold/NPC trigger events in GM dashboard
+8. Add structured error events to JSONL (categorized by component: generation/game/socket/logger)
+9. Track socket health (disconnect reasons, reconnection frequency, latency)
 
-### P2 — Enrich Gameplay
-7. Add external role individual decisions (NSA R2-5, VC board authority, diplomat negotiation)
-8. Make journalist publication impacts faction-specific (story angle system)
-9. Tune ending arc thresholds (alignment too easy, OB dominant unreachable)
-10. Implement decision generation (Phase D from GENERATIVE-CONTENT.md)
+### P2 — Gameplay Enrichment
+10. Implement resolution narrative generation (Phase C — LLM-generated reactive prose)
+11. Implement publisher impact system (story angle → faction-specific variable effects)
+12. Add VC board authority mechanics (vote to block, capital withdrawal, merger brokering)
+13. Add diplomat negotiation mechanics (counter-offers, coalition durability, failure risk)
+14. Enhance NSA decisions (emergency powers, lab security directives, cross-faction enforcement)
+15. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
+16. Add decision generation quality checks (Monte Carlo simulation before emission)
 
-### P3 — Polish
-11. Add client dwell-time tracking for activity reports
-12. Build `compare-games.ts` analysis script
-13. Twitter faction bubble system
-14. Real-time NPC responses (Slack Option B)
-15. WandBApp content integration (currently static data in most tabs)
+### P3 — Testing Gaps
+17. Test client stores (`game.ts`, `messages.ts`, `notifications.ts`) — session persistence, state mutations, reconnection
+18. Test concurrent decision submission race conditions
+19. Test generation error paths in full orchestration (timeout → retry → fallback flow)
+20. Add desktop window manager tests (drag, resize, z-order, bounds)
+21. Add client screen component tests (at least GMDashboard, Decision, Ending)
+22. Fix root-level `bun test` to pick up client happy-dom preload
+
+### P4 — Polish
+23. Add client dwell-time tracking for activity reports
+24. Build `compare-games.ts` analysis script
+25. Twitter faction bubble system (per-faction tweet filtering)
+26. Real-time content streaming (stagger emissions during intel phase)
+27. WandBApp content integration (currently static data in most tabs)
+28. Clean up stale local branches (`add-biome-linter`, `feat/full-round-templates-threshold-tuning`, `update-types-bun-1.3.10`)
+29. Delete/archive one-shot migration scripts
