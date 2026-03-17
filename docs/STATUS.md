@@ -6,7 +6,7 @@ Last updated: 2026-03-17
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~15K LOC across server/client/shared with 1337 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~18K LOC of logic across server/client/shared (~21K additional static content data) with 1426 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
 
 **Ready for first playtest.** The blocking items are: push to remote, deploy to Fly.io, schedule humans.
 
@@ -85,6 +85,8 @@ No known shared bugs.
 | `analyze-bias.ts` referenced `decisions.collective` | Now checks `.team` with `.collective` fallback | (earlier) |
 | `globalMediaCycle` typed as `number` | Tightened to `MediaCycle` union type (`0\|1\|2\|3\|4\|5`) | 86ee23d |
 | `resolveOpenSource` dead branch | Removed redundant `if` (both paths returned 3) | 7df3c48 |
+| `resolveAlignment` OR made misaligned unreachable | Changed `\|\|` to `&&` with adjusted thresholds (conf>=10, sev<=65) | a966084 |
+| Dead exports in shared (`LEADER_ROLES`, `ScalingGuideEntry`, `FactionConfig`, unused role type aliases) | Removed `export` keywords | 8e43ad3 |
 | `resolveAiRace` undocumented tie-break | Added comment documenting China parity priority | 1b22db3 |
 | `SCALING_GUIDE` no fallback for out-of-range | Added `getScalingGuide()` helper with clamping | 4611654 |
 | `negotiation-pulse` CSS class undefined | Already defined in index.css lines 22-34 | (was false positive) |
@@ -204,7 +206,7 @@ From 10,000 random-heuristic trials (with generated decision templates):
 | Arc | Distribution | Status |
 |-----|-------------|--------|
 | AI Race | 63.8% stalemate, rest distributed | Stalemate dominates — structural (pre-authored decisions narrow) |
-| Alignment | Max outcome 44.0% | Well-distributed after tuning |
+| Alignment | Max outcome 43% (superficial) | Well-distributed after OR→AND fix (was 72% superficial) |
 | Control | Max outcome 53.6% (government) | Slightly high — structural ceiling (securityLevelOB caps at 5) |
 | Economy | Max outcome 45.7% | Acceptable after tuning |
 | US-China | Max outcome 45.1% | Well-distributed after tuning |
@@ -233,20 +235,17 @@ Remaining concerns:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1337 pass, 2 skip, 0 fail across 44 test files
-- Server (905 tests): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,500+ lines: validate, decisions, orchestrator, context, briefing, cache, provider, config, content, npc) + logger suite (400+ lines)
-- Client (340 tests): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + UI store
+- 1426 pass, 2 skip, 0 fail across 50 test files
+- Server (920 tests): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,500+ lines: validate, decisions, orchestrator, context, briefing, cache, provider, config, content, npc) + logger suite (400+ lines) + decision submission edge cases
+- Client (414 tests): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + **store tests** (game session persistence/phase resets, messages dedup/unread/replay, notifications queue/cap/dismiss, UI window management lifecycle)
 - Shared (92 tests): resolution, fog, endings with property tests
 
 ### Coverage Gaps
 
 **Critical (high risk, no tests):**
-- **Client stores: `game.ts`, `messages.ts`, `notifications.ts`** — all game state mutations (submitDecision, phase changes, session persistence, reconnection state) are untested
 - **Client socket integration (`socket.ts`)** — reconnection retry logic on client side untested
-- **Concurrent decision submission** — no test for race between two simultaneous `decision:submit` calls
 
 **High (moderate risk):**
-- **Desktop window manager** (`Window.tsx`, `MenuBar.tsx`, `Dock.tsx`) — drag, resize, z-order, bounds checking all untested
 - **Client screens** (`Desktop.tsx`, `Lobby.tsx`, `Ending.tsx`, `Resolution.tsx`, `GMDashboard.tsx`, `Briefing.tsx`) — no component tests
 - **Generation error paths** — timeout/parse/validation failures tested in isolation but not in full orchestration flow
 - **`emitResolution`** — not exported from `game.ts`, no direct unit tests, covered indirectly via advancePhase
@@ -288,7 +287,7 @@ These are not bugs but would improve maintainability:
 
 ### P0 — Deploy & Playtest
 All code bugs are fixed. Next steps:
-1. Push to remote (2 unpushed commits on main)
+1. Push to remote (11 unpushed commits on main)
 2. Deploy to Fly.io and smoke test
 3. Run first full playtest with real humans
 
@@ -310,10 +309,10 @@ All code bugs are fixed. Next steps:
 16. Add decision generation quality checks (Monte Carlo simulation before emission)
 
 ### P3 — Testing Gaps
-17. Test client stores (`game.ts`, `messages.ts`, `notifications.ts`) — session persistence, state mutations, reconnection
-18. Test concurrent decision submission race conditions
+17. ~~Test client stores (`game.ts`, `messages.ts`, `notifications.ts`)~~ — done (session persistence, phase resets, dedup, unread, replay, queue, dismiss)
+18. ~~Test concurrent decision submission race conditions~~ — done (edge cases in events.test.ts)
 19. Test generation error paths in full orchestration (timeout → retry → fallback flow)
-20. Add desktop window manager tests (drag, resize, z-order, bounds)
+20. ~~Add desktop window manager tests (drag, resize, z-order, bounds)~~ — done (ui.test.ts window lifecycle)
 21. Add client screen component tests (at least GMDashboard, Decision, Ending)
 22. Fix root-level `bun test` to pick up client happy-dom preload
 
