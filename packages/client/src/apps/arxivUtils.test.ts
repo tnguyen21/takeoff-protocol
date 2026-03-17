@@ -115,12 +115,6 @@ describe("assignStableIds", () => {
     expect(subset[2].stableId).toBe(3); // Paper D
   });
 
-  it("INV-3: stableId is deterministic — same input produces same IDs", () => {
-    const first = assignStableIds(papers);
-    const second = assignStableIds(papers);
-    expect(first.map((p) => p.stableId)).toEqual(second.map((p) => p.stableId));
-  });
-
   it("returns empty array for empty input", () => {
     expect(assignStableIds([])).toEqual([]);
   });

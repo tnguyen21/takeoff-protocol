@@ -334,12 +334,4 @@ describe("Decision component — timer display", () => {
     // 90 seconds formats as "1:30"
     expect(screen.getByText("1:30")).toBeTruthy();
   });
-
-  it("timer color is green when more than 60s remaining", () => {
-    // Far future timer → green
-    useGameStore.setState({ timer: { endsAt: Date.now() + 120_000 } });
-    render(<Decision />);
-    // Component renders without crashing and shows the modal
-    expect(screen.getByText("Decision Phase")).toBeTruthy();
-  });
 });

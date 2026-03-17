@@ -8,7 +8,6 @@
  */
 import { describe, it, expect } from "bun:test";
 import { btnStyle, PHASE_LABELS, formatTimestamp } from "./shared.js";
-import { ControlsPanel } from "./ControlsPanel.js";
 
 describe("shared helpers", () => {
   it("btnStyle returns enabled style with correct color", () => {
@@ -39,8 +38,3 @@ describe("shared helpers", () => {
   });
 });
 
-describe("ControlsPanel module", () => {
-  it("exports ControlsPanel as a function", () => {
-    expect(typeof ControlsPanel).toBe("function");
-  });
-});

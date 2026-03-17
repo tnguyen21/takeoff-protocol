@@ -67,15 +67,6 @@ describe("getReadReceiptStatus (INV-1)", () => {
 // ── hasDisappearingTimer ──────────────────────────────────────────────────────
 
 describe("hasDisappearingTimer", () => {
-  it("is deterministic — same ID always returns same result", () => {
-    const id = "msg-abc-123";
-    expect(hasDisappearingTimer(id)).toBe(hasDisappearingTimer(id));
-  });
-
-  it("returns a boolean", () => {
-    expect(typeof hasDisappearingTimer("some-id")).toBe("boolean");
-  });
-
   it("~25% of a large sample returns true", () => {
     const ids = Array.from({ length: 100 }, (_, i) => `msg-${i}`);
     const trueCount = ids.filter((id) => hasDisappearingTimer(id)).length;

@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-b74dca51cc10
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-d33cbe8955d9
 ├── docs
 │   ├── BACKLOG.md
 │   ├── COMPLEXITY-AUDIT.md

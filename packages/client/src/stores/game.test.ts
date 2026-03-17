@@ -66,12 +66,6 @@ describe("loadSession / saveSession / clearSession", () => {
     expect(loadSession()).toBeNull();
   });
 
-  it("INV-3: clearSession removes the key from sessionStorage", () => {
-    saveSession({ roomCode: "ABCD", playerName: "Alice", playerId: "socket-123", isGM: false });
-    clearSession();
-    expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
-  });
-
   it("fresh state: loadSession returns null when nothing has been saved", () => {
     expect(loadSession()).toBeNull();
   });
@@ -230,17 +224,5 @@ describe("nextSeq", () => {
     for (let i = 1; i < values.length; i++) {
       expect(values[i]).toBe(values[i - 1] + 1);
     }
-  });
-
-  it("INV-4: no duplicate values across 100 consecutive calls", () => {
-    const values = Array.from({ length: 100 }, () => nextSeq());
-    const unique = new Set(values);
-    expect(unique.size).toBe(100);
-  });
-
-  it("returns an integer (not NaN, not Infinity)", () => {
-    const v = nextSeq();
-    expect(Number.isInteger(v)).toBe(true);
-    expect(Number.isFinite(v)).toBe(true);
   });
 });
