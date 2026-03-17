@@ -1,7 +1,7 @@
 import { useGameStore } from "./stores/game.js";
 import { Lobby } from "./screens/Lobby.js";
 import { Desktop } from "./screens/Desktop.js";
-import { GMDashboard } from "./screens/GMDashboard.js";
+import { GMDashboard } from "./screens/gm/index.js";
 import { Ending } from "./screens/Ending.js";
 import { useDevMode } from "./hooks/useDevMode.js";
 

@@ -41,7 +41,7 @@ export function clearSession(): void {
   }
 }
 
-interface LobbyPlayer {
+export interface LobbyPlayer {
   id: string;
   name: string;
   faction: Faction | null;
