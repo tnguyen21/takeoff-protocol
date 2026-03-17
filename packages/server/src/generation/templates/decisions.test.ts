@@ -15,9 +15,11 @@ import { describe, it, expect } from "bun:test";
 import { STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import type { Role, Faction } from "@takeoff/shared";
 import { DECISION_TEMPLATES, getTemplatesForRound } from "./decisions.js";
+import { ROUND1_DECISIONS } from "../../content/decisions/round1.js";
 import { ROUND2_DECISIONS } from "../../content/decisions/round2.js";
 import { ROUND3_DECISIONS } from "../../content/decisions/round3.js";
 import { ROUND4_DECISIONS } from "../../content/decisions/round4.js";
+import { ROUND5_DECISIONS } from "../../content/decisions/round5.js";
 
 const ALL_VARIABLES = Object.keys(STATE_VARIABLE_RANGES) as (keyof typeof STATE_VARIABLE_RANGES)[];
 
@@ -33,7 +35,7 @@ const VALID_FACTIONS = new Set<string>([
 ]);
 
 describe("INV-1: every state variable covered per round", () => {
-  for (const round of [2, 3, 4]) {
+  for (const round of [1, 2, 3, 4, 5]) {
     it(`round ${round} covers all ${ALL_VARIABLES.length} state variables`, () => {
       const templates = getTemplatesForRound(round);
       const covered = new Set(templates.flatMap((t) => t.variableScope));
@@ -54,9 +56,11 @@ describe("INV-2: variableScope has 4–12 entries per template", () => {
 
 describe("INV-3: templates cover all pre-authored decision slots per round", () => {
   const preAuthored = [
+    { round: 1, decisions: ROUND1_DECISIONS },
     { round: 2, decisions: ROUND2_DECISIONS },
     { round: 3, decisions: ROUND3_DECISIONS },
     { round: 4, decisions: ROUND4_DECISIONS },
+    { round: 5, decisions: ROUND5_DECISIONS },
   ] as const;
 
   for (const { round, decisions } of preAuthored) {
@@ -141,17 +145,18 @@ describe("INV-6: all role/faction values are valid", () => {
 
 describe("getTemplatesForRound", () => {
   it("returns only templates for the requested round", () => {
-    for (const round of [2, 3, 4]) {
+    for (const round of [1, 2, 3, 4, 5]) {
       const templates = getTemplatesForRound(round);
       expect(templates.every((t) => t.round === round)).toBe(true);
       expect(templates.length).toBeGreaterThan(0);
     }
   });
 
-  it("returns 22 templates per round (15 individual + 7 team)", () => {
-    for (const round of [2, 3, 4]) {
-      const templates = getTemplatesForRound(round);
-      expect(templates.length).toBe(22);
+  it("returns the expected number of templates per round", () => {
+    const expected: Record<number, number> = { 1: 20, 2: 22, 3: 22, 4: 22, 5: 18 };
+    for (const [round, count] of Object.entries(expected)) {
+      const templates = getTemplatesForRound(Number(round));
+      expect(templates.length).toBe(count);
     }
   });
 });

@@ -102,14 +102,14 @@ describe("INV-2: simulation with sampled decisions completes without error", () 
   });
 
   it("sampleRoundDecisions returns the correct round number", () => {
-    for (const round of [2, 3, 4]) {
+    for (const round of [1, 2, 3, 4, 5]) {
       const rd = sampleRoundDecisions(round);
       expect(rd.round).toBe(round);
     }
   });
 
-  it("sampleRoundDecisions for rounds 2-4 produces decisions matching template counts", () => {
-    for (const round of [2, 3, 4]) {
+  it("sampleRoundDecisions for rounds 1-5 produces decisions matching template counts", () => {
+    for (const round of [1, 2, 3, 4, 5]) {
       const templates = DECISION_TEMPLATES.filter((t) => t.round === round);
       const indivTemplates = templates.filter((t) => t.role !== undefined);
       const teamTemplates = templates.filter((t) => t.faction !== undefined && t.role === undefined);

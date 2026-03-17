@@ -27,8 +27,6 @@ import {
   type DecisionTemplate,
 } from "../packages/shared/src/index.js";
 
-import { ROUND1_DECISIONS } from "../packages/server/src/content/decisions/round1.js";
-import { ROUND5_DECISIONS } from "../packages/server/src/content/decisions/round5.js";
 import { getTemplatesForRound } from "../packages/server/src/generation/templates/decisions.js";
 import { runTrial, runTrialWithDecisions, type Heuristic, type TrialResult } from "./simulate-core.js";
 
@@ -178,11 +176,11 @@ export function sampleRoundDecisions(round: number): RoundDecisions {
  */
 export function runGeneratedTrial(heuristic: Heuristic): TrialResult {
   const rounds: RoundDecisions[] = [
-    ROUND1_DECISIONS,
+    sampleRoundDecisions(1),
     sampleRoundDecisions(2),
     sampleRoundDecisions(3),
     sampleRoundDecisions(4),
-    ROUND5_DECISIONS,
+    sampleRoundDecisions(5),
   ];
   return runTrialWithDecisions(heuristic, rounds);
 }
@@ -249,8 +247,8 @@ function generateComparisonReport(
 
   lines.push(`# Generated Decision Simulation Report`);
   lines.push(``);
-  lines.push(`Compares pre-authored decisions (rounds 1–5) against sampled-from-template decisions (rounds 2–4).`);
-  lines.push(`Rounds 1 and 5 are always pre-authored.`);
+  lines.push(`Compares pre-authored decisions (rounds 1–5) against sampled-from-template decisions (rounds 1–5).`);
+  lines.push(`All 5 rounds sampled from templates.`);
   lines.push(``);
   lines.push(`- **Trials:** ${trials.toLocaleString()} per mode`);
   lines.push(`- **Heuristic:** ${heuristic}`);
@@ -260,7 +258,7 @@ function generateComparisonReport(
   // ── Arc outcome comparison
   lines.push(`## Ending Arc Distribution Comparison`);
   lines.push(``);
-  lines.push(`"Generated" = sampled random decisions for rounds 2–4. "Authored" = pre-authored decisions for all rounds.`);
+  lines.push(`"Generated" = sampled random decisions for rounds 1–5. "Authored" = pre-authored decisions for all rounds.`);
   lines.push(``);
 
   const arcIds = [...authoredArcs.keys()];

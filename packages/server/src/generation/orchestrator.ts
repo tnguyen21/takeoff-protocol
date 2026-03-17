@@ -47,7 +47,7 @@ export async function triggerGeneration(
   provider?: GenerationProvider,
 ): Promise<void> {
   // ── Round bounds (generation only for rounds 2-5) ─────────────────────────
-  if (round <= 1 || round > 5) {
+  if (round < 1 || round > 5) {
     return;
   }
 
