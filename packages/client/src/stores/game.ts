@@ -16,7 +16,7 @@ interface StoredSession {
   isGM: boolean;
 }
 
-function loadSession(): StoredSession | null {
+export function loadSession(): StoredSession | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? (JSON.parse(raw) as StoredSession) : null;
@@ -25,7 +25,7 @@ function loadSession(): StoredSession | null {
   }
 }
 
-function saveSession(data: StoredSession): void {
+export function saveSession(data: StoredSession): void {
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
   } catch {
@@ -33,7 +33,7 @@ function saveSession(data: StoredSession): void {
   }
 }
 
-function clearSession(): void {
+export function clearSession(): void {
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch {
