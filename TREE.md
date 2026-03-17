@@ -1,6 +1,7 @@
-/Users/tau/projects/takeoff-protocol
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-216ad20b921e
 ├── docs
 │   ├── BACKLOG.md
+│   ├── COMPLEXITY-AUDIT.md
 │   ├── DECISION-GENERATION-PLAN.md
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
@@ -93,4 +94,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 72 files
+22 directories, 73 files
