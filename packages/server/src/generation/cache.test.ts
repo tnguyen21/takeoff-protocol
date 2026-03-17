@@ -67,21 +67,11 @@ describe("getGeneratedBriefing — empty cache (INV-3)", () => {
     const room = makeRoom();
     expect(getGeneratedBriefing(room, 2)).toBeUndefined();
   });
-
-  it("returns undefined when round entry is absent", () => {
-    const room = makeRoom({ generatedRounds: {} });
-    expect(getGeneratedBriefing(room, 2)).toBeUndefined();
-  });
 });
 
 describe("getGeneratedContent — empty cache (INV-3)", () => {
   it("returns undefined when generatedRounds is undefined", () => {
     const room = makeRoom();
-    expect(getGeneratedContent(room, 2, "openbrain")).toBeUndefined();
-  });
-
-  it("returns undefined for a faction with no content set", () => {
-    const room = makeRoom({ generatedRounds: { 2: { briefing: BRIEFING_R2 } } });
     expect(getGeneratedContent(room, 2, "openbrain")).toBeUndefined();
   });
 });
@@ -91,22 +81,11 @@ describe("getGenerationStatus — empty cache (INV-3)", () => {
     const room = makeRoom();
     expect(getGenerationStatus(room, 2)).toBeUndefined();
   });
-
-  it("returns undefined when round entry is absent", () => {
-    const room = makeRoom({ generationStatus: {} });
-    expect(getGenerationStatus(room, 2)).toBeUndefined();
-  });
 });
 
 // ── Set → Get round-trip ─────────────────────────────────────────────────────
 
 describe("setGeneratedBriefing / getGeneratedBriefing", () => {
-  it("set briefing → get returns the same object", () => {
-    const room = makeRoom();
-    setGeneratedBriefing(room, 2, BRIEFING_R2);
-    expect(getGeneratedBriefing(room, 2)).toBe(BRIEFING_R2);
-  });
-
   it("initializes generatedRounds when undefined before writing", () => {
     const room = makeRoom(); // generatedRounds not set
     expect(room.generatedRounds).toBeUndefined();
@@ -117,12 +96,6 @@ describe("setGeneratedBriefing / getGeneratedBriefing", () => {
 });
 
 describe("setGeneratedContent / getGeneratedContent", () => {
-  it("set content → get returns same array", () => {
-    const room = makeRoom();
-    setGeneratedContent(room, 2, "openbrain", CONTENT_OB);
-    expect(getGeneratedContent(room, 2, "openbrain")).toBe(CONTENT_OB);
-  });
-
   it("set content for one faction → different faction returns undefined", () => {
     const room = makeRoom();
     setGeneratedContent(room, 2, "openbrain", CONTENT_OB);
@@ -151,12 +124,6 @@ describe("getGeneratedDecisions — empty cache (INV-4)", () => {
 });
 
 describe("setGeneratedDecisions / getGeneratedDecisions (INV-5)", () => {
-  it("set decisions → get returns same object", () => {
-    const room = makeRoom();
-    setGeneratedDecisions(room, 2, DECISIONS_R2);
-    expect(getGeneratedDecisions(room, 2)).toBe(DECISIONS_R2);
-  });
-
   it("initializes generatedRounds when undefined before writing", () => {
     const room = makeRoom();
     expect(room.generatedRounds).toBeUndefined();

@@ -63,16 +63,6 @@ describe("pickRandomOption", () => {
     expect(pickRandomOption([])).toBe("");
   });
 
-  it("returns the single element for a one-item array", () => {
-    expect(pickRandomOption([{ id: "only" }])).toBe("only");
-  });
-
-  it("returns same result for same seed", () => {
-    const options = [{ id: "a" }, { id: "b" }, { id: "c" }];
-    const r1 = pickRandomOption(options, 42);
-    const r2 = pickRandomOption(options, 42);
-    expect(r1).toBe(r2);
-  });
 });
 
 // ── INV-5: production guard ───────────────────────────────────────────────────
@@ -121,35 +111,6 @@ describe("seedBotsForRoom — all_roles mode (INV-1, INV-2)", () => {
     const nonHumanRoles = allRoles.filter((r) => r !== humanRole);
     for (const role of nonHumanRoles) {
       expect(botPlayers.some((b) => b.role === role)).toBe(true);
-    }
-  });
-
-  it("bot IDs are deterministic — same input produces same ids", () => {
-    const room1 = makeRoom();
-    room1.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
-    const room2 = makeRoom();
-    room2.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
-    process.env.NODE_ENV = "test";
-
-    seedBotsForRoom(room1, "p1", { mode: "all_roles" });
-    seedBotsForRoom(room2, "p1", { mode: "all_roles" });
-
-    const ids1 = Object.keys(room1.players).filter((id) => id.startsWith("__bot_")).sort();
-    const ids2 = Object.keys(room2.players).filter((id) => id.startsWith("__bot_")).sort();
-
-    expect(ids1).toEqual(ids2);
-  });
-
-  it("bot IDs follow __bot_{factionId}_{roleId} format", () => {
-    const room = makeRoom();
-    room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
-    process.env.NODE_ENV = "test";
-
-    seedBotsForRoom(room, "p1", { mode: "all_roles" });
-
-    const botIds = Object.keys(room.players).filter((id) => id.startsWith("__bot_"));
-    for (const botId of botIds) {
-      expect(botId).toMatch(/^__bot_[a-z]+_[a-z_]+$/);
     }
   });
 

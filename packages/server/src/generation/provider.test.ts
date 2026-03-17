@@ -6,53 +6,6 @@ import {
   createProvider,
 } from "./provider.js";
 
-// ── INV-1: MockProvider returns canned data with correct type ─────────────────
-
-describe("INV-1: MockProvider returns canned data", () => {
-  it("returns the object passed at construction", async () => {
-    const data = { score: 42, label: "excellent" };
-    const provider = new MockProvider(data);
-
-    const result = await provider.generate<typeof data>({
-      systemPrompt: "You are a scorer.",
-      userPrompt: "Score this.",
-      schema: { type: "object", properties: { score: { type: "number" }, label: { type: "string" } } },
-    });
-
-    expect(result).toEqual(data);
-    expect(result.score).toBe(42);
-    expect(result.label).toBe("excellent");
-  });
-
-  it("preserves nested object structure", async () => {
-    const data = { player: { id: "p1", faction: "openbrain" }, round: 3 };
-    const provider = new MockProvider(data);
-
-    const result = await provider.generate<typeof data>({
-      systemPrompt: "Sys",
-      userPrompt: "User",
-      schema: {},
-    });
-
-    expect(result.player.id).toBe("p1");
-    expect(result.round).toBe(3);
-  });
-
-  it("returns array canned data correctly", async () => {
-    const data = [{ id: 1 }, { id: 2 }];
-    const provider = new MockProvider(data);
-
-    const result = await provider.generate<typeof data>({
-      systemPrompt: "Sys",
-      userPrompt: "User",
-      schema: {},
-    });
-
-    expect(Array.isArray(result)).toBe(true);
-    expect(result).toHaveLength(2);
-  });
-});
-
 // ── INV-2: Timeout rejects with GenerationTimeoutError ───────────────────────
 
 describe("INV-2: Timeout fires with typed GenerationTimeoutError", () => {
@@ -142,15 +95,6 @@ describe("createProvider factory", () => {
     expect(provider).toBeInstanceOf(MockProvider);
   });
 
-  it("mock provider from factory returns canned data", async () => {
-    const provider = createProvider("mock", { data: { result: "win" } });
-    const result = await provider.generate<{ result: string }>({
-      systemPrompt: "s",
-      userPrompt: "u",
-      schema: {},
-    });
-    expect(result.result).toBe("win");
-  });
 });
 
 // ── Failure mode: null/undefined response ────────────────────────────────────

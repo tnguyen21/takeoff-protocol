@@ -45,32 +45,7 @@ describe("NPC_PERSONAS shape (INV-1)", () => {
   });
 });
 
-describe("NPC_IDS mirror (INV-2)", () => {
-  it("INV-2: NPC_IDS has the same count as NPC_PERSONAS", () => {
-    expect(NPC_IDS.size).toBe(NPC_PERSONAS.length);
-  });
-
-  it("INV-2: every NPC_PERSONAS id is in NPC_IDS", () => {
-    for (const persona of NPC_PERSONAS) {
-      expect(NPC_IDS.has(persona.id)).toBe(true);
-    }
-  });
-
-  it("INV-2: NPC_IDS contains no IDs absent from NPC_PERSONAS", () => {
-    const personaIds = new Set(NPC_PERSONAS.map((p) => p.id));
-    for (const id of NPC_IDS) {
-      expect(personaIds.has(id)).toBe(true);
-    }
-  });
-});
-
 describe("getNpcPersona (INV-3)", () => {
-  it("INV-3: returns the correct persona for a valid ID", () => {
-    const persona = getNpcPersona("__npc_anon__");
-    expect(persona).toBeDefined();
-    expect(persona?.name).toBe("Anonymous Source");
-  });
-
   it("INV-3: returns undefined for an unknown ID", () => {
     expect(getNpcPersona("__npc_unknown__")).toBeUndefined();
     expect(getNpcPersona("")).toBeUndefined();

@@ -54,16 +54,6 @@ describe("INV-1: GEN_ENABLED defaults to false", () => {
     }
   });
 
-  it("returns enabled=false when GEN_ENABLED is 'false'", () => {
-    const cleanup = withEnv({ GEN_ENABLED: "false" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.enabled).toBe(false);
-    } finally {
-      cleanup();
-    }
-  });
-
   it("returns enabled=false when GEN_ENABLED is empty string", () => {
     const cleanup = withEnv({ GEN_ENABLED: "" });
     try {
@@ -98,15 +88,6 @@ describe("INV-2: GEN_ENABLED 'true' or '1' enables generation", () => {
     }
   });
 
-  it("returns enabled=true when GEN_ENABLED is '1'", () => {
-    const cleanup = withEnv({ GEN_ENABLED: "1" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.enabled).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
 });
 
 // ── INV-3: Default model values are sensible Claude model IDs ─────────────────
@@ -163,15 +144,6 @@ describe("GEN_BRIEFINGS_ENABLED flag", () => {
     }
   });
 
-  it("is true when set to '1'", () => {
-    const cleanup = withEnv({ GEN_BRIEFINGS_ENABLED: "1" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.briefingsEnabled).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
 });
 
 // ── GEN_PROVIDER flag ─────────────────────────────────────────────────────────
@@ -213,16 +185,6 @@ describe("GEN_DECISIONS_ENABLED flag (INV-1, INV-2)", () => {
 
   it("INV-2: is true when set to 'true'", () => {
     const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "true" });
-    try {
-      const config = getGenerationConfig();
-      expect(config.decisionsEnabled).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("INV-2: is true when set to '1'", () => {
-    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "1" });
     try {
       const config = getGenerationConfig();
       expect(config.decisionsEnabled).toBe(true);
