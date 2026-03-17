@@ -10,6 +10,10 @@
  * - INV-3: decision:submit with valid option ID records in room.decisions
  * - INV-4: decision:submit with invalid option ID does not record
  * - INV-5: message:send to null routes to team channel (same-faction only)
+ * - INV-6: decision:submit second call from same player overwrites first
+ * - INV-7: decision:submit outside "decision" phase is silently dropped
+ * - INV-8: decision:leader-submit records team decision in room.teamDecisions
+ * - INV-9: non-leader calling decision:leader-submit is rejected
  */
 
 // Disable logging to avoid file I/O and setInterval timers during tests
@@ -384,6 +388,212 @@ describe("decision:submit — real handler", () => {
     fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
 
     expect(room.decisions[DEC_PLAYER_ID]).toBeUndefined();
+  });
+});
+
+// ── decision:submit — edge cases ──────────────────────────────────────────────
+
+// Round 1, ob_cto valid individual IDs: ob_cto_push, ob_cto_audit, ob_cto_safety_compute
+// Round 1, ob_ceo valid individual IDs: ob_ceo_fundraise, ob_ceo_gov, ob_ceo_silence
+// Round 1, openbrain valid team IDs: ob_team_allincap, ob_team_balanced, ob_team_safety
+
+const DEC_EDGE_GM_ID = "gm-dec-edge-1";
+const DEC_EDGE_PLAYER_A = "player-dec-edge-a";
+const DEC_EDGE_PLAYER_B = "player-dec-edge-b";
+const DEC_EDGE_ROOM = "DECE";
+
+describe("decision:submit — edge cases", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let playerSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(DEC_EDGE_GM_ID, DEC_EDGE_ROOM);
+    room.phase = "decision";
+    room.round = 1;
+    room.timer = { endsAt: Date.now() + 60_000 };
+    room.players[DEC_EDGE_PLAYER_A] = makePlayer(DEC_EDGE_PLAYER_A, {
+      faction: "openbrain",
+      role: "ob_cto",
+    });
+
+    playerSocket = createSocket(DEC_EDGE_PLAYER_A);
+    playerSocket.data.roomCode = DEC_EDGE_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      playerSocket as unknown as import("socket.io").Socket,
+    );
+  });
+
+  afterEach(() => {
+    rooms.delete(DEC_EDGE_ROOM);
+  });
+
+  it("INV-1: second submission from same player overwrites first", () => {
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBe("ob_cto_push");
+
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_audit" });
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBe("ob_cto_audit");
+  });
+
+  it("INV-2: submission during 'briefing' phase is silently dropped — no write, no GM notify", () => {
+    room.phase = "briefing";
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBeUndefined();
+    expect((io.emits[DEC_EDGE_GM_ID] ?? []).some((e) => e.event === "gm:decision-status")).toBe(false);
+  });
+
+  it("INV-2: submission during 'resolution' phase is silently dropped — no write, no GM notify", () => {
+    room.phase = "resolution";
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBeUndefined();
+    expect((io.emits[DEC_EDGE_GM_ID] ?? []).some((e) => e.event === "gm:decision-status")).toBe(false);
+  });
+
+  it("INV-5: GM gm:decision-status lists all submitted player IDs after each submission", () => {
+    room.players[DEC_EDGE_PLAYER_B] = makePlayer(DEC_EDGE_PLAYER_B, {
+      faction: "openbrain",
+      role: "ob_ceo",
+    });
+    const socketB = createSocket(DEC_EDGE_PLAYER_B);
+    socketB.data.roomCode = DEC_EDGE_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, socketB as unknown as import("socket.io").Socket);
+
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+    fire(socketB.handlers, "decision:submit", { individual: "ob_ceo_fundraise" });
+
+    const gmEmits = io.emits[DEC_EDGE_GM_ID] ?? [];
+    const statusEmits = gmEmits.filter((e) => e.event === "gm:decision-status");
+    expect(statusEmits).toHaveLength(2);
+
+    // After both submissions, the latest status reflects both players
+    const lastStatus = statusEmits[1]!.data as { submitted: string[] };
+    expect(lastStatus.submitted).toContain(DEC_EDGE_PLAYER_A);
+    expect(lastStatus.submitted).toContain(DEC_EDGE_PLAYER_B);
+  });
+
+  it("valid individual + invalid teamVote: individual recorded, team vote ignored", () => {
+    fire(playerSocket.handlers, "decision:submit", {
+      individual: "ob_cto_push",
+      teamVote: "not_a_valid_team_option",
+    });
+
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBe("ob_cto_push");
+    expect(room.teamVotes["openbrain"]?.[DEC_EDGE_PLAYER_A]).toBeUndefined();
+  });
+
+  it("empty string optionId is rejected — no write to room.decisions", () => {
+    fire(playerSocket.handlers, "decision:submit", { individual: "" });
+
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBeUndefined();
+  });
+
+  it("two different players both recorded under their own socket IDs", () => {
+    room.players[DEC_EDGE_PLAYER_B] = makePlayer(DEC_EDGE_PLAYER_B, {
+      faction: "openbrain",
+      role: "ob_ceo",
+    });
+    const socketB = createSocket(DEC_EDGE_PLAYER_B);
+    socketB.data.roomCode = DEC_EDGE_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, socketB as unknown as import("socket.io").Socket);
+
+    fire(playerSocket.handlers, "decision:submit", { individual: "ob_cto_push" });
+    fire(socketB.handlers, "decision:submit", { individual: "ob_ceo_fundraise" });
+
+    expect(room.decisions[DEC_EDGE_PLAYER_A]).toBe("ob_cto_push");
+    expect(room.decisions[DEC_EDGE_PLAYER_B]).toBe("ob_ceo_fundraise");
+  });
+});
+
+// ── decision:leader-submit ────────────────────────────────────────────────────
+
+const DEC_LEAD_GM_ID = "gm-dec-lead-1";
+const DEC_LEAD_LEADER = "player-dec-lead-leader";
+const DEC_LEAD_NON_LEADER = "player-dec-lead-nonleader";
+const DEC_LEAD_ROOM = "DECL";
+
+describe("decision:leader-submit — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let leaderSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(DEC_LEAD_GM_ID, DEC_LEAD_ROOM);
+    room.phase = "decision";
+    room.round = 1;
+    room.timer = { endsAt: Date.now() + 60_000 };
+    room.players[DEC_LEAD_LEADER] = makePlayer(DEC_LEAD_LEADER, {
+      faction: "openbrain",
+      role: "ob_ceo",
+      isLeader: true,
+    });
+
+    leaderSocket = createSocket(DEC_LEAD_LEADER);
+    leaderSocket.data.roomCode = DEC_LEAD_ROOM;
+    registerGameEvents(
+      io as unknown as import("socket.io").Server,
+      leaderSocket as unknown as import("socket.io").Socket,
+    );
+  });
+
+  afterEach(() => {
+    rooms.delete(DEC_LEAD_ROOM);
+  });
+
+  it("INV-3: valid team decision recorded in room.teamDecisions[faction]", () => {
+    fire(leaderSocket.handlers, "decision:leader-submit", { teamDecision: "ob_team_allincap" });
+
+    expect(room.teamDecisions["openbrain"]).toBe("ob_team_allincap");
+  });
+
+  it("INV-4: non-leader calling decision:leader-submit is rejected — no write to teamDecisions", () => {
+    room.players[DEC_LEAD_NON_LEADER] = makePlayer(DEC_LEAD_NON_LEADER, {
+      faction: "openbrain",
+      role: "ob_cto",
+      isLeader: false,
+    });
+    const nonLeaderSocket = createSocket(DEC_LEAD_NON_LEADER);
+    nonLeaderSocket.data.roomCode = DEC_LEAD_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, nonLeaderSocket as unknown as import("socket.io").Socket);
+
+    fire(nonLeaderSocket.handlers, "decision:leader-submit", { teamDecision: "ob_team_allincap" });
+
+    expect(room.teamDecisions["openbrain"]).toBeUndefined();
+  });
+
+  it("leader re-lock: second team submission overwrites first", () => {
+    fire(leaderSocket.handlers, "decision:leader-submit", { teamDecision: "ob_team_allincap" });
+    expect(room.teamDecisions["openbrain"]).toBe("ob_team_allincap");
+
+    fire(leaderSocket.handlers, "decision:leader-submit", { teamDecision: "ob_team_safety" });
+    expect(room.teamDecisions["openbrain"]).toBe("ob_team_safety");
+  });
+
+  it("invalid team option is rejected — no write to teamDecisions", () => {
+    fire(leaderSocket.handlers, "decision:leader-submit", { teamDecision: "invalid_team_option" });
+
+    expect(room.teamDecisions["openbrain"]).toBeUndefined();
+  });
+
+  it("decision:team-locked emitted to room after valid leader submission", () => {
+    fire(leaderSocket.handlers, "decision:leader-submit", { teamDecision: "ob_team_balanced" });
+
+    const roomEmits = io.emits[DEC_LEAD_ROOM] ?? [];
+    const teamLocked = roomEmits.find((e) => e.event === "decision:team-locked");
+    expect(teamLocked).toBeDefined();
+    expect((teamLocked!.data as { faction: string }).faction).toBe("openbrain");
+  });
+
+  it("leader submit outside decision phase is silently dropped", () => {
+    room.phase = "briefing";
+    fire(leaderSocket.handlers, "decision:leader-submit", { teamDecision: "ob_team_allincap" });
+
+    expect(room.teamDecisions["openbrain"]).toBeUndefined();
   });
 });
 
