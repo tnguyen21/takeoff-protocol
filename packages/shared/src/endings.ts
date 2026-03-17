@@ -162,7 +162,8 @@ function resolveAlignment(s: StateVariables): number {
   if (s.alignmentConfidence >= 65 && s.misalignmentSeverity <= 20 && s.aiAutonomyLevel <= 55) return 3;
   // Moderate alignment with AI autonomy not yet critical
   if (s.alignmentConfidence >= 45 && s.misalignmentSeverity <= 40 && s.aiAutonomyLevel <= 70) return 2;
-  if (s.alignmentConfidence >= 25 || s.misalignmentSeverity <= 60) return 1;
+  // Superficial alignment: some confidence AND severity not extreme
+  if (s.alignmentConfidence >= 10 && s.misalignmentSeverity <= 65) return 1;
   return 0;
 }
 
