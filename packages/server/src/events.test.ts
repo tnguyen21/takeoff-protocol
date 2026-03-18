@@ -1177,7 +1177,7 @@ describe("gm:set-state — real handler", () => {
     expect(gmEmits.some((e) => e.event === "game:state")).toBe(true);
   });
 
-  it("logs state.gm_override with variable, oldValue, newValue, and gm actorId", () => {
+  it("logs state.gm_override with variable, oldValue, newValue, gmId, and gm actorId", () => {
     const oldVal = room.state.publicAwareness;
     fire(gmSocket.handlers, "gm:set-state", { variable: "publicAwareness", value: 75 });
     const log = spy.calls.find((c) => c.event === "state.gm_override");
@@ -1186,6 +1186,7 @@ describe("gm:set-state — real handler", () => {
     expect(d.variable).toBe("publicAwareness");
     expect(d.oldValue).toBe(oldVal);
     expect(d.newValue).toBe(75);
+    expect(d.gmId).toBe(SS_GM_ID);
     expect(log!.ctx?.actorId).toBe("gm");
   });
 });
@@ -1326,6 +1327,16 @@ describe("gm:extend — real handler", () => {
     fire(gmSocket.handlers, "gm:extend");
     expect(extendUses.has(`${EXTEND_ROOM}:1:briefing`)).toBe(false);
     expect(extendUses.get(`${EXTEND_ROOM}:1:intel`)).toBe(1);
+  });
+
+  it("logs phase.extended with extendCount and newDuration (remaining ms after extension)", () => {
+    fire(gmSocket.handlers, "gm:extend");
+    const log = spy.calls.find((c) => c.event === "phase.extended");
+    expect(log).toBeDefined();
+    const d = log!.data as Record<string, unknown>;
+    expect(d.extendCount).toBe(1);
+    expect(typeof d.newDuration).toBe("number");
+    expect(d.newDuration as number).toBeGreaterThan(0);
   });
 });
 

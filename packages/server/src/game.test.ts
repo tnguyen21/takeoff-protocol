@@ -1279,6 +1279,33 @@ describe("INV-3: emitResolution logs state.snapshot and state.delta", () => {
     expect(Array.isArray(delta.changes)).toBe(true);
   });
 
+  it("state.delta changes include cause field set to 'resolution'", () => {
+    const spy = new SpyLogger();
+    const p1 = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      code: "LOG3CAUSE",
+      phase: "decision",
+      round: 1,
+      players: { p1 },
+      decisions: {},
+      teamDecisions: {},
+      // Force a state change during resolution so changes is non-empty
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100 },
+    });
+    _setLoggerForRoom("LOG3CAUSE", spy);
+
+    const { io } = createMockIo();
+    advancePhase(io, room);
+
+    const deltas = spy.calls.filter(c => c.event === "state.delta");
+    expect(deltas.length).toBeGreaterThan(0);
+    const delta = deltas[0].data as { changes: Array<{ variable: string; cause: string }> };
+    expect(delta.changes.length).toBeGreaterThan(0);
+    for (const change of delta.changes) {
+      expect(change.cause).toBe("resolution");
+    }
+  });
+
   it("state.delta captures correct before/after values when a threshold fires during resolution", () => {
     const spy = new SpyLogger();
     const ob = makePlayer("p1", "openbrain", "ob_ceo");

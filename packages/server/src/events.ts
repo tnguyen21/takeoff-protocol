@@ -205,7 +205,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     checkThresholds(io, room);
     emitStateViews(io, room);
     console.log(`[gm:set-state] ${variable} = ${room.state[key]}`);
-    getLoggerForRoom(room.code).log("state.gm_override", { variable, oldValue: oldVal, newValue: room.state[key] }, { actorId: "gm", round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log("state.gm_override", { variable, oldValue: oldVal, newValue: room.state[key], gmId: socket.id }, { actorId: "gm", round: room.round, phase: room.phase });
   });
 
   socket.on("gm:set-generation", ({ enabled }: { enabled: boolean }, callback?: (res: { ok: boolean; error?: string }) => void) => {
@@ -253,7 +253,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     }
     room.timer.endsAt += 60_000;
     syncPhaseTimer(io, room);
-    getLoggerForRoom(code).log("phase.extended", { round: room.round, phase: room.phase, extendCount: uses + 1 }, { actorId: "gm", round: room.round, phase: room.phase });
+    getLoggerForRoom(code).log("phase.extended", { round: room.round, phase: room.phase, extendCount: uses + 1, newDuration: room.timer.endsAt - Date.now() }, { actorId: "gm", round: room.round, phase: room.phase });
 
     io.to(code).emit("game:phase", {
       phase: room.phase,

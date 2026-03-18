@@ -892,7 +892,7 @@ function emitResolution(io: Server, room: GameRoom) {
     round: room.round,
     changes: (Object.keys(room.state) as (keyof StateVariables)[])
       .filter(k => room.state[k] !== stateBefore[k])
-      .map(k => ({ variable: k as string, before: stateBefore[k], after: room.state[k] })),
+      .map(k => ({ variable: k as string, before: stateBefore[k], after: room.state[k], cause: "resolution" })),
   }, { round: room.round, phase: room.phase, actorId: "system" });
   resLogger.log(EVENT_NAMES.STATE_SNAPSHOT, {
     round: room.round,
