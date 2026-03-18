@@ -6,11 +6,11 @@ Last updated: 2026-03-18
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,169 passing tests** (0 failures). LLM generation is the sole content path (pre-authored content removed). **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,143 passing tests** (0 failures, 47 test files). LLM generation is the sole content path (no pre-authored fallback by design). **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
 
 **Ready for first playtest.** The blocking item is: schedule humans.
 
-**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth, monitoring/observability improvements.
+**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth, logger event coverage sweep.
 
 ---
 
@@ -22,9 +22,9 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 - **Fog-of-war** — corrected noise formula, faction-based hash seeding, comprehensive property tests
 - **Decision/resolution engine** — effects with conditional multipliers, canonical clamping via `STATE_VARIABLE_RANGES`
 - **9 ending arcs** — all resolvers implemented, thresholds tuned via 10K-trial Monte Carlo simulation, full branch coverage in tests
-- **Content generation** — briefing + app content + NPC trigger + decision generation via Claude API, with retry/validation. LLM generation is the sole content path (no pre-authored fallback).
+- **Content generation** — briefing + app content + NPC trigger + decision generation via Claude API, with retry/validation, fog-safety validation, generation metrics in JSONL, client degradation toast. Model selection: Sonnet for briefings/decisions, Haiku for content/NPC. No pre-authored fallback by design.
 - **Decision templates** — 104 templates covering all 5 rounds, all 8 faction/role types, with hard/soft constraint validation and distinctness checks
-- **Logging** — buffered JSONL per-room, envelope validation, graceful shutdown on SIGINT/SIGTERM
+- **Logging** — buffered JSONL per-room, envelope validation, graceful shutdown on SIGINT/SIGTERM, generation metrics, `scripts/analyze-game.ts` for post-game analysis
 - **Dev tools** — URL bootstrap (`?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&botMode=all_roles`), GM state sliders, jump-to-phase, fog inspector, endings preview
 - **Bot system** — fills empty seats with auto-submitting bots for solo testing
 - **Simulation harness** — Monte Carlo with hawk/dove/chaotic/random heuristics, 10K-trial reports, percentile analysis
