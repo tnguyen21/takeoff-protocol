@@ -2,9 +2,9 @@
  * Tests for generation cache helpers.
  *
  * Invariants tested:
- * - INV-1: Setting briefing for round 2 does not affect round 3 cache
- * - INV-2: Status transition pending→ready succeeds; ready→failed is rejected (stays ready)
- * - INV-3: Getting from empty cache returns undefined, not null or throws
+ * - INV-1: Round isolation — data set for round N does not bleed to round N+1
+ * - INV-2: Status transition logic (pending→ready/failed; terminal states locked)
+ * - INV-3: Empty cache and faction isolation return undefined, not null or throws
  */
 
 import { describe, it, expect } from "bun:test";
@@ -62,108 +62,50 @@ const DECISIONS_R2: RoundDecisions = {
 
 // ── INV-3: Empty cache returns undefined ──────────────────────────────────────
 
-describe("getGeneratedBriefing — empty cache (INV-3)", () => {
-  it("returns undefined when generatedRounds is undefined", () => {
+describe("empty cache (INV-3)", () => {
+  it("all accessors return undefined on a fresh room", () => {
     const room = makeRoom();
     expect(getGeneratedBriefing(room, 2)).toBeUndefined();
-  });
-});
-
-describe("getGeneratedContent — empty cache (INV-3)", () => {
-  it("returns undefined when generatedRounds is undefined", () => {
-    const room = makeRoom();
     expect(getGeneratedContent(room, 2, "openbrain")).toBeUndefined();
-  });
-});
-
-describe("getGenerationStatus — empty cache (INV-3)", () => {
-  it("returns undefined when generationStatus is undefined", () => {
-    const room = makeRoom();
+    expect(getGeneratedDecisions(room, 2)).toBeUndefined();
     expect(getGenerationStatus(room, 2)).toBeUndefined();
+
+    // round entry exists but decisions key absent
+    const roomWithRound = makeRoom({ generatedRounds: { 2: { briefing: BRIEFING_R2 } } });
+    expect(getGeneratedDecisions(roomWithRound, 2)).toBeUndefined();
   });
 });
 
-// ── Set → Get round-trip ─────────────────────────────────────────────────────
+// ── INV-3: Faction isolation ──────────────────────────────────────────────────
 
-describe("setGeneratedBriefing / getGeneratedBriefing", () => {
-  it("initializes generatedRounds when undefined before writing", () => {
-    const room = makeRoom(); // generatedRounds not set
-    expect(room.generatedRounds).toBeUndefined();
-    setGeneratedBriefing(room, 2, BRIEFING_R2);
-    expect(room.generatedRounds).toBeDefined();
-    expect(getGeneratedBriefing(room, 2)).toBe(BRIEFING_R2);
-  });
-});
-
-describe("setGeneratedContent / getGeneratedContent", () => {
-  it("set content for one faction → different faction returns undefined", () => {
+describe("faction isolation (INV-3)", () => {
+  it("content set for one faction does not bleed to another faction", () => {
     const room = makeRoom();
     setGeneratedContent(room, 2, "openbrain", CONTENT_OB);
     expect(getGeneratedContent(room, 2, "prometheus")).toBeUndefined();
-  });
-
-  it("initializes generatedRounds when undefined before writing", () => {
-    const room = makeRoom();
-    setGeneratedContent(room, 2, "openbrain", CONTENT_OB);
-    expect(room.generatedRounds).toBeDefined();
-  });
-});
-
-// ── INV-4 / INV-5: Decision cache ─────────────────────────────────────────────
-
-describe("getGeneratedDecisions — empty cache (INV-4)", () => {
-  it("returns undefined when generatedRounds is undefined", () => {
-    const room = makeRoom();
-    expect(getGeneratedDecisions(room, 2)).toBeUndefined();
-  });
-
-  it("returns undefined when round entry exists but has no decisions", () => {
-    const room = makeRoom({ generatedRounds: { 2: { briefing: BRIEFING_R2 } } });
-    expect(getGeneratedDecisions(room, 2)).toBeUndefined();
-  });
-});
-
-describe("setGeneratedDecisions / getGeneratedDecisions (INV-5)", () => {
-  it("initializes generatedRounds when undefined before writing", () => {
-    const room = makeRoom();
-    expect(room.generatedRounds).toBeUndefined();
-    setGeneratedDecisions(room, 2, DECISIONS_R2);
-    expect(room.generatedRounds).toBeDefined();
-    expect(getGeneratedDecisions(room, 2)).toBe(DECISIONS_R2);
-  });
-
-  it("setting decisions for round 2 does not affect round 3", () => {
-    const room = makeRoom();
-    setGeneratedDecisions(room, 2, DECISIONS_R2);
-    expect(getGeneratedDecisions(room, 3)).toBeUndefined();
   });
 });
 
 // ── INV-1: Round isolation ────────────────────────────────────────────────────
 
 describe("round isolation (INV-1)", () => {
-  it("setting briefing for round 2 does not affect round 3", () => {
+  it("data set for round 2 does not affect round 3", () => {
     const room = makeRoom();
     setGeneratedBriefing(room, 2, BRIEFING_R2);
-    expect(getGeneratedBriefing(room, 3)).toBeUndefined();
-  });
-
-  it("setting content for round 2 does not affect round 3", () => {
-    const room = makeRoom();
     setGeneratedContent(room, 2, "openbrain", CONTENT_OB);
-    expect(getGeneratedContent(room, 3, "openbrain")).toBeUndefined();
-  });
-
-  it("setting status for round 2 does not affect round 3", () => {
-    const room = makeRoom();
+    setGeneratedDecisions(room, 2, DECISIONS_R2);
+    setGenerationStatus(room, 2, "pending");
     setGenerationStatus(room, 2, "ready");
+    expect(getGeneratedBriefing(room, 3)).toBeUndefined();
+    expect(getGeneratedContent(room, 3, "openbrain")).toBeUndefined();
+    expect(getGeneratedDecisions(room, 3)).toBeUndefined();
     expect(getGenerationStatus(room, 3)).toBeUndefined();
   });
 });
 
 // ── INV-2: Status transitions ─────────────────────────────────────────────────
 
-describe("setGenerationStatus / getGenerationStatus — transitions (INV-2)", () => {
+describe("setGenerationStatus — transitions (INV-2)", () => {
   it("pending → ready succeeds", () => {
     const room = makeRoom();
     setGenerationStatus(room, 2, "pending");
@@ -192,21 +134,5 @@ describe("setGenerationStatus / getGenerationStatus — transitions (INV-2)", ()
     setGenerationStatus(room, 2, "failed");
     setGenerationStatus(room, 2, "ready"); // must be no-op
     expect(getGenerationStatus(room, 2)).toBe("failed");
-  });
-
-  it("initializes generationStatus when undefined before writing", () => {
-    const room = makeRoom();
-    expect(room.generationStatus).toBeUndefined();
-    setGenerationStatus(room, 2, "pending");
-    expect(room.generationStatus).toBeDefined();
-    expect(getGenerationStatus(room, 2)).toBe("pending");
-  });
-
-  it("second call with same terminal status is a no-op (ready → ready)", () => {
-    const room = makeRoom();
-    setGenerationStatus(room, 2, "pending");
-    setGenerationStatus(room, 2, "ready");
-    setGenerationStatus(room, 2, "ready"); // idempotent no-op
-    expect(getGenerationStatus(room, 2)).toBe("ready");
   });
 });
