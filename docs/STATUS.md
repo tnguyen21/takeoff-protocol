@@ -1,12 +1,12 @@
 # Project Status
 
-Last updated: 2026-03-17
+Last updated: 2026-03-18
 
 ---
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~18K LOC of logic across server/client/shared (~21K additional static content data) with 1426 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is ~18K LOC of logic across server/client/shared (~21K additional static content data) with 1401 passing tests (0 failures). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
 
 **Ready for first playtest.** The blocking items are: push to remote, deploy to Fly.io, schedule humans.
 
@@ -235,9 +235,9 @@ Remaining concerns:
 - Ending arc tests → 41 new tests covering all 9 resolver branches
 
 ### Current Coverage
-- 1426 pass, 2 skip, 0 fail across 50 test files
-- Server (920 tests): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,500+ lines: validate, decisions, orchestrator, context, briefing, cache, provider, config, content, npc) + logger suite (400+ lines) + decision submission edge cases
-- Client (414 tests): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + **store tests** (game session persistence/phase resets, messages dedup/unread/replay, notifications queue/cap/dismiss, UI window management lifecycle)
+- 1401 pass, 2 skip, 0 fail across 48 test files (down from 1426 after removing ~25 wasteful/tautological tests)
+- Server (898 tests): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite (3,500+ lines: validate, decisions, orchestrator, context, briefing, cache, provider, config, content, npc) + logger suite (400+ lines) + decision submission edge cases
+- Client (411 tests): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + **store tests** (game session persistence/phase resets, messages dedup/unread/replay, notifications queue/cap/dismiss, UI window management lifecycle) + GM ControlsPanel export tests
 - Shared (92 tests): resolution, fog, endings with property tests
 
 ### Coverage Gaps
@@ -246,7 +246,7 @@ Remaining concerns:
 - **Client socket integration (`socket.ts`)** — reconnection retry logic on client side untested
 
 **High (moderate risk):**
-- **Client screens** (`Desktop.tsx`, `Lobby.tsx`, `Ending.tsx`, `Resolution.tsx`, `GMDashboard.tsx`, `Briefing.tsx`) — no component tests
+- **Client screens** (`Desktop.tsx`, `Lobby.tsx`, `Ending.tsx`, `Resolution.tsx`, `screens/gm/`, `Briefing.tsx`) — no component render tests (GM ControlsPanel has export tests only)
 - **Generation error paths** — timeout/parse/validation failures tested in isolation but not in full orchestration flow
 - **`emitResolution`** — not exported from `game.ts`, no direct unit tests, covered indirectly via advancePhase
 
@@ -273,7 +273,7 @@ These are not bugs but would improve maintainability:
 | GM authorization guard repeated 9+ times | events.ts | Extract `requireGMRoom(socket)` helper |
 | `game:phase` emit duplicated in 6 call sites | game.ts | Extract `emitPhase(io, room)` |
 | `isLeader` derivation triplicated | rooms.ts:92, events.ts:732,757 | Shared helper using `isLeaderRole()` |
-| `GMDashboard.tsx` is 700+ lines | screens/GMDashboard.tsx | Split into panel components |
+| ~~`GMDashboard.tsx` is 700+ lines~~ | ~~screens/GMDashboard.tsx~~ | Done — split into `screens/gm/` module (8 files) |
 | Mixed inline styles and Tailwind | Decision.tsx, Resolution.tsx, Briefing.tsx, Ending.tsx | Pick one approach |
 | Socket listeners not teardown-friendly | stores/game.ts, stores/messages.ts | Fine for single-session, blocks future leave-room flows |
 | `use-sound` dependency unused | client/package.json | Remove (custom `soundManager` used instead) |
@@ -287,7 +287,7 @@ These are not bugs but would improve maintainability:
 
 ### P0 — Deploy & Playtest
 All code bugs are fixed. Next steps:
-1. Push to remote (11 unpushed commits on main)
+1. Push to remote (1 unpushed commit on main)
 2. Deploy to Fly.io and smoke test
 3. Run first full playtest with real humans
 
@@ -313,7 +313,7 @@ All code bugs are fixed. Next steps:
 18. ~~Test concurrent decision submission race conditions~~ — done (edge cases in events.test.ts)
 19. Test generation error paths in full orchestration (timeout → retry → fallback flow)
 20. ~~Add desktop window manager tests (drag, resize, z-order, bounds)~~ — done (ui.test.ts window lifecycle)
-21. Add client screen component tests (at least GMDashboard, Decision, Ending)
+21. Add client screen component tests (at least GM panels, Decision, Ending)
 22. Fix root-level `bun test` to pick up client happy-dom preload
 
 ### P4 — Polish
