@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
-import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
+import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, STATE_VARIABLE_RANGES, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers } from "./generation/cache.js";
@@ -413,6 +413,154 @@ export function emitContent(io: Server, room: GameRoom) {
 
 // ── Threshold Events ──
 
+// ── Threshold Registry Types ─────────────────────────────────────────────────
+
+interface ThresholdEffect {
+  variable: keyof StateVariables;
+  delta: number;
+}
+
+type ThresholdNotify =
+  | { target: "faction"; faction: Faction; message: string }
+  | { target: "all"; message: string };
+
+interface ThresholdNews {
+  headline: string;
+  body: string;
+  source: string;
+  publishedBy: Role;
+}
+
+interface ThresholdDef {
+  id: string;
+  condition: (s: StateVariables) => boolean;
+  /** Variable name used for logging the trigger value */
+  triggerVariable: keyof StateVariables;
+  effects?: ThresholdEffect[];
+  /** Room-level boolean flag to set to true on fire */
+  roomFlag?: keyof Pick<GameRoom, "uiDegradationActive">;
+  news?: ThresholdNews;
+  notify?: ThresholdNotify;
+  gmMessage: string;
+}
+
+// ── Threshold Registry ───────────────────────────────────────────────────────
+
+const THRESHOLD_REGISTRY: ThresholdDef[] = [
+  {
+    id: "china_weight_theft",
+    condition: (s) => s.chinaWeightTheftProgress >= 100,
+    triggerVariable: "chinaWeightTheftProgress",
+    effects: [
+      { variable: "chinaCapability", delta: 25 },
+      { variable: "taiwanTension", delta: 15 },
+    ],
+    notify: {
+      target: "faction",
+      faction: "openbrain",
+      message: "SECURITY CRISIS: Intelligence confirms Chinese operatives have successfully exfiltrated OpenBrain model weights. Emergency lockdown initiated.",
+    },
+    news: {
+      headline: "China's DeepCent AI Surges After Suspected US Lab Breach",
+      body: "DeepCent AI has demonstrated a sudden and dramatic capability jump. Intelligence sources point to a successful exfiltration of proprietary OpenBrain model weights. Taiwan Strait activity has increased sharply.",
+      source: "Breaking News Network",
+      publishedBy: "china_intel",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: China Weight Theft — chinaCapability+25, taiwanTension+15",
+  },
+  {
+    id: "whistleblower_autoleak",
+    condition: (s) => s.whistleblowerPressure >= 80,
+    triggerVariable: "whistleblowerPressure",
+    effects: [
+      { variable: "publicAwareness", delta: 25 },
+      { variable: "publicSentiment", delta: -15 },
+      { variable: "obInternalTrust", delta: -20 },
+    ],
+    notify: {
+      target: "faction",
+      faction: "openbrain",
+      message: "MEMO LEAKED: Whistleblower protections have triggered an automatic leak of safety concerns. The memo is now public.",
+    },
+    news: {
+      headline: "LEAKED: OpenBrain Internal Memo Reveals Suppressed Safety Concerns",
+      body: "An internal OpenBrain memo has been leaked, revealing that senior safety staff flagged serious alignment concerns that were overruled by leadership. The leak appears to have been triggered by internal whistleblower protocols.",
+      source: "Anonymous Source",
+      publishedBy: "ob_safety",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Whistleblower Auto-Leak — publicAwareness+25, publicSentiment-15, obInternalTrust-20",
+  },
+  {
+    id: "ob_board_revolt",
+    condition: (s) => s.obBoardConfidence < 30,
+    triggerVariable: "obBoardConfidence",
+    effects: [{ variable: "obInternalTrust", delta: -10 }],
+    notify: {
+      target: "faction",
+      faction: "openbrain",
+      message: "BOARD REVOLT: The OpenBrain board has lost confidence in current leadership. They are demanding a leadership change before the next decision phase.",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: OB Board Revolt — obInternalTrust-10, leadership change demanded",
+  },
+  {
+    id: "ccp_military_mandate",
+    condition: (s) => s.ccpPatience < 20,
+    triggerVariable: "ccpPatience",
+    notify: {
+      target: "faction",
+      faction: "china",
+      message: "MILITARY MANDATE: CCP leadership has exhausted patience with civilian caution. Military options are now mandatory — not optional — in the next decision phase.",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: CCP Military Mandate — China military options become mandatory",
+  },
+  {
+    id: "prom_alignment_breakthrough",
+    condition: (s) => s.promSafetyBreakthroughProgress >= 80,
+    triggerVariable: "promSafetyBreakthroughProgress",
+    effects: [{ variable: "alignmentConfidence", delta: 15 }],
+    notify: {
+      target: "faction",
+      faction: "prometheus",
+      message: "BREAKTHROUGH: Your safety team has achieved a major alignment breakthrough. Interpretability results are unprecedented. This changes everything.",
+    },
+    news: {
+      headline: "Prometheus Reports Major Alignment Breakthrough in Preprint",
+      body: "Prometheus AI has published a preprint claiming a significant advance in AI alignment and interpretability. Independent researchers are calling the results 'remarkable' and 'potentially transformative for AI safety.'",
+      source: "Prometheus AI Research",
+      publishedBy: "prom_scientist",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Prometheus Alignment Breakthrough — alignmentConfidence+15",
+  },
+  {
+    id: "regulatory_emergency_powers",
+    condition: (s) => s.regulatoryPressure >= 70,
+    triggerVariable: "regulatoryPressure",
+    notify: {
+      target: "faction",
+      faction: "external",
+      message: "EMERGENCY POWERS: Regulatory pressure has reached critical levels. You now have expanded authority including DPA invocation and potential lab nationalization options.",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Regulatory Emergency Powers — NSA gets expanded decision options",
+  },
+  {
+    id: "point_of_no_return",
+    condition: (s) => s.doomClockDistance <= 1,
+    triggerVariable: "doomClockDistance",
+    gmMessage: "[GM] THRESHOLD FIRED: Point of No Return — doom clock at critical level. Shift briefing tone to urgent.",
+  },
+  {
+    id: "ui_degradation",
+    condition: (s) => s.aiAutonomyLevel >= 60 && s.alignmentConfidence < 40,
+    triggerVariable: "aiAutonomyLevel",
+    roomFlag: "uiDegradationActive",
+    notify: {
+      target: "all",
+      message: "SYSTEM INSTABILITY: AI systems are exhibiting unexpected autonomous behaviors. You may experience interface anomalies.",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: UI Degradation active — aiAutonomyLevel≥60 & alignmentConfidence<40",
+  },
+];
+
 /**
  * Helper: inject a news headline and tweet to all players and GM.
  * Uses the game:publish socket event which clients use to append content.
@@ -498,265 +646,56 @@ export function checkThresholds(io: Server, room: GameRoom): void {
     }
   };
 
-  // ── T1: China Weight Theft ──────────────────────────────────────────────────
-  if (!fired.has("china_weight_theft") && s.chinaWeightTheftProgress >= 100) {
-    fired.add("china_weight_theft");
+  // ── Threshold Registry Loop ──────────────────────────────────────────────────
+  for (const def of THRESHOLD_REGISTRY) {
+    if (fired.has(def.id) || !def.condition(s)) continue;
+    fired.add(def.id);
 
-    s.chinaCapability = Math.min(100, s.chinaCapability + 25);
-    s.taiwanTension = Math.min(100, s.taiwanTension + 15);
+    // Apply state effects with clamping from canonical ranges
+    for (const effect of def.effects ?? []) {
+      const [min, max] = STATE_VARIABLE_RANGES[effect.variable];
+      (s[effect.variable] as number) = Math.min(max, Math.max(min, (s[effect.variable] as number) + effect.delta));
+    }
 
-    notify(
-      factionSockets("openbrain"),
-      "china_weight_theft",
-      "SECURITY CRISIS: Intelligence confirms Chinese operatives have successfully exfiltrated OpenBrain model weights. Emergency lockdown initiated.",
-    );
+    // Set room flag if specified
+    if (def.roomFlag) {
+      room[def.roomFlag] = true;
+    }
 
-    injectNewsContent(
-      io, room, "china_weight_theft",
-      "China's DeepCent AI Surges After Suspected US Lab Breach",
-      "DeepCent AI has demonstrated a sudden and dramatic capability jump. Intelligence sources point to a successful exfiltration of proprietary OpenBrain model weights. Taiwan Strait activity has increased sharply.",
-      "Breaking News Network",
-      "china_intel",
-      now,
-    );
+    // Player notification
+    if (def.notify) {
+      if (def.notify.target === "faction") {
+        notify(factionSockets(def.notify.faction), def.id, def.notify.message);
+      } else {
+        // target === "all"
+        for (const socketId of Object.keys(room.players)) {
+          io.to(socketId).emit("game:notification", { id: def.id, summary: def.notify.message, from: "system", timestamp: now });
+        }
+      }
+    }
 
+    // News injection
+    if (def.news) {
+      injectNewsContent(io, room, def.id, def.news.headline, def.news.body, def.news.source, def.news.publishedBy, now);
+    }
+
+    // GM notification
     if (room.gmId) {
       io.to(room.gmId).emit("game:notification", {
-        id: "gm_china_weight_theft",
-        summary: "[GM] THRESHOLD FIRED: China Weight Theft — chinaCapability+25, taiwanTension+15",
+        id: `gm_${def.id}`,
+        summary: def.gmMessage,
         from: "system",
         timestamp: now,
       });
     }
-    console.log(`[threshold] china_weight_theft fired (room ${room.code})`);
+
+    console.log(`[threshold] ${def.id} fired (room ${room.code})`);
     threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "china_weight_theft",
+      thresholdId: def.id,
       round: room.round,
       phase: room.phase,
-      triggerVariable: "chinaWeightTheftProgress",
-      triggerValue: s.chinaWeightTheftProgress,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T2: Whistleblower Auto-Leak ─────────────────────────────────────────────
-  if (!fired.has("whistleblower_autoleak") && s.whistleblowerPressure >= 80) {
-    fired.add("whistleblower_autoleak");
-
-    s.publicAwareness = Math.min(100, s.publicAwareness + 25);
-    s.publicSentiment = Math.max(-100, s.publicSentiment - 15);
-    s.obInternalTrust = Math.max(0, s.obInternalTrust - 20);
-
-    notify(
-      factionSockets("openbrain"),
-      "whistleblower_autoleak",
-      "MEMO LEAKED: Whistleblower protections have triggered an automatic leak of safety concerns. The memo is now public.",
-    );
-
-    injectNewsContent(
-      io, room, "whistleblower_autoleak",
-      "LEAKED: OpenBrain Internal Memo Reveals Suppressed Safety Concerns",
-      "An internal OpenBrain memo has been leaked, revealing that senior safety staff flagged serious alignment concerns that were overruled by leadership. The leak appears to have been triggered by internal whistleblower protocols.",
-      "Anonymous Source",
-      "ob_safety",
-      now,
-    );
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_whistleblower_autoleak",
-        summary: "[GM] THRESHOLD FIRED: Whistleblower Auto-Leak — publicAwareness+25, publicSentiment-15, obInternalTrust-20",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] whistleblower_autoleak fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "whistleblower_autoleak",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "whistleblowerPressure",
-      triggerValue: s.whistleblowerPressure,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T3: OB Board Revolt ─────────────────────────────────────────────────────
-  if (!fired.has("ob_board_revolt") && s.obBoardConfidence < 30) {
-    fired.add("ob_board_revolt");
-
-    // obMorale maps to obInternalTrust (closest equivalent in StateVariables)
-    s.obInternalTrust = Math.max(0, s.obInternalTrust - 10);
-
-    notify(
-      factionSockets("openbrain"),
-      "ob_board_revolt",
-      "BOARD REVOLT: The OpenBrain board has lost confidence in current leadership. They are demanding a leadership change before the next decision phase.",
-    );
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_ob_board_revolt",
-        summary: "[GM] THRESHOLD FIRED: OB Board Revolt — obInternalTrust-10, leadership change demanded",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] ob_board_revolt fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "ob_board_revolt",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "obBoardConfidence",
-      triggerValue: s.obBoardConfidence,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T4: CCP Military Mandate ────────────────────────────────────────────────
-  if (!fired.has("ccp_military_mandate") && s.ccpPatience < 20) {
-    fired.add("ccp_military_mandate");
-
-    notify(
-      factionSockets("china"),
-      "ccp_military_mandate",
-      "MILITARY MANDATE: CCP leadership has exhausted patience with civilian caution. Military options are now mandatory — not optional — in the next decision phase.",
-    );
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_ccp_military_mandate",
-        summary: "[GM] THRESHOLD FIRED: CCP Military Mandate — China military options become mandatory",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] ccp_military_mandate fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "ccp_military_mandate",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "ccpPatience",
-      triggerValue: s.ccpPatience,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T5: Prometheus Alignment Breakthrough ───────────────────────────────────
-  if (!fired.has("prom_alignment_breakthrough") && s.promSafetyBreakthroughProgress >= 80) {
-    fired.add("prom_alignment_breakthrough");
-
-    s.alignmentConfidence = Math.min(100, s.alignmentConfidence + 15);
-
-    notify(
-      factionSockets("prometheus"),
-      "prom_alignment_breakthrough",
-      "BREAKTHROUGH: Your safety team has achieved a major alignment breakthrough. Interpretability results are unprecedented. This changes everything.",
-    );
-
-    injectNewsContent(
-      io, room, "prom_alignment_breakthrough",
-      "Prometheus Reports Major Alignment Breakthrough in Preprint",
-      "Prometheus AI has published a preprint claiming a significant advance in AI alignment and interpretability. Independent researchers are calling the results 'remarkable' and 'potentially transformative for AI safety.'",
-      "Prometheus AI Research",
-      "prom_scientist",
-      now,
-    );
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_prom_alignment_breakthrough",
-        summary: "[GM] THRESHOLD FIRED: Prometheus Alignment Breakthrough — alignmentConfidence+15",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] prom_alignment_breakthrough fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "prom_alignment_breakthrough",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "promSafetyBreakthroughProgress",
-      triggerValue: s.promSafetyBreakthroughProgress,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T6: Regulatory Emergency Powers ─────────────────────────────────────────
-  if (!fired.has("regulatory_emergency_powers") && s.regulatoryPressure >= 70) {
-    fired.add("regulatory_emergency_powers");
-
-    notify(
-      factionSockets("external"),
-      "regulatory_emergency_powers",
-      "EMERGENCY POWERS: Regulatory pressure has reached critical levels. You now have expanded authority including DPA invocation and potential lab nationalization options.",
-    );
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_regulatory_emergency_powers",
-        summary: "[GM] THRESHOLD FIRED: Regulatory Emergency Powers — NSA gets expanded decision options",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] regulatory_emergency_powers fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "regulatory_emergency_powers",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "regulatoryPressure",
-      triggerValue: s.regulatoryPressure,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T7: Point of No Return (Doom Clock) ─────────────────────────────────────
-  if (!fired.has("point_of_no_return") && s.doomClockDistance <= 1) {
-    fired.add("point_of_no_return");
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_point_of_no_return",
-        summary: "[GM] THRESHOLD FIRED: Point of No Return — doom clock at critical level. Shift briefing tone to urgent.",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] point_of_no_return fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "point_of_no_return",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "doomClockDistance",
-      triggerValue: s.doomClockDistance,
-    }, { round: room.round, phase: room.phase, actorId: "system" });
-  }
-
-  // ── T8: AI Autonomy / UX Degradation ────────────────────────────────────────
-  if (!fired.has("ui_degradation") && s.aiAutonomyLevel >= 60 && s.alignmentConfidence < 40) {
-    fired.add("ui_degradation");
-
-    room.uiDegradationActive = true;
-
-    for (const socketId of Object.keys(room.players)) {
-      io.to(socketId).emit("game:notification", {
-        id: "ui_degradation",
-        summary: "SYSTEM INSTABILITY: AI systems are exhibiting unexpected autonomous behaviors. You may experience interface anomalies.",
-        from: "system",
-        timestamp: now,
-      });
-    }
-
-    if (room.gmId) {
-      io.to(room.gmId).emit("game:notification", {
-        id: "gm_ui_degradation",
-        summary: "[GM] THRESHOLD FIRED: UI Degradation active — aiAutonomyLevel≥60 & alignmentConfidence<40",
-        from: "system",
-        timestamp: now,
-      });
-    }
-    console.log(`[threshold] ui_degradation fired (room ${room.code})`);
-    threshLogger.log(EVENT_NAMES.THRESHOLD_FIRED, {
-      thresholdId: "ui_degradation",
-      round: room.round,
-      phase: room.phase,
-      triggerVariable: "aiAutonomyLevel",
-      triggerValue: s.aiAutonomyLevel,
+      triggerVariable: def.triggerVariable,
+      triggerValue: s[def.triggerVariable],
     }, { round: room.round, phase: room.phase, actorId: "system" });
   }
 
