@@ -1,3 +1,4 @@
+import type { Server } from "socket.io";
 import type { AppId, Faction, GameRoom } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
@@ -21,7 +22,9 @@ import {
   setGenerationStatus,
 } from "./cache.js";
 import { AnthropicProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
-import { validateBriefing } from "./validate.js";
+import { validateBriefing, validateFogSafety } from "./validate.js";
+import { getLoggerForRoom } from "../logger/registry.js";
+import { EVENT_NAMES } from "../logger/types.js";
 
 // ── Factions for content generation ───────────────────────────────────────────
 
@@ -44,6 +47,7 @@ export async function triggerGeneration(
   room: GameRoom,
   round: number,
   provider?: GenerationProvider,
+  io?: Server,
 ): Promise<void> {
   // ── Round bounds (generation only for rounds 2-5) ─────────────────────────
   if (round < 1 || round > 5) {
@@ -75,6 +79,7 @@ export async function triggerGeneration(
   }
 
   setGenerationStatus(room, round, "pending");
+  const logger = getLoggerForRoom(room.code);
 
   try {
     // ── Provider ────────────────────────────────────────────────────────────
@@ -92,6 +97,7 @@ export async function triggerGeneration(
       const briefingArtifact = "briefing";
       const startTs = Date.now();
       logGenerationStart(round, briefingArtifact);
+      logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: briefingArtifact }, { round, actorId: "system" });
 
       const briefingResult = await generateBriefingWithRetry(resolvedProvider, context, briefingOptions);
 
@@ -99,16 +105,19 @@ export async function triggerGeneration(
 
       if (briefingResult === null) {
         logGenerationFailure(round, briefingArtifact, "generateBriefingWithRetry returned null", durationMs);
+        logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: briefingArtifact, reason: "generateBriefingWithRetry returned null", durationMs }, { round, actorId: "system" });
         briefingOk = false;
       } else {
         const validation = validateBriefing(briefingResult);
         if (!validation.valid) {
           // Should not happen — generateBriefingWithRetry only returns on valid — but guard anyway
           logValidationFailure(round, briefingArtifact, validation.errors);
+          logger.log(EVENT_NAMES.GENERATION_VALIDATION_FAILURE, { artifact: briefingArtifact, errors: validation.errors }, { round, actorId: "system" });
           briefingOk = false;
         } else {
           setGeneratedBriefing(room, round, briefingResult);
           logGenerationSuccess(round, briefingArtifact, durationMs);
+          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: briefingArtifact, durationMs }, { round, actorId: "system" });
         }
       }
     }
@@ -119,6 +128,7 @@ export async function triggerGeneration(
         const contentArtifact = `content:${faction}`;
         const startTs = Date.now();
         logGenerationStart(round, contentArtifact);
+        logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
 
         const contentResult = await generateContentWithRetry(
           resolvedProvider,
@@ -132,10 +142,18 @@ export async function triggerGeneration(
 
         if (contentResult === null) {
           logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
+          logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: contentArtifact, reason: "generateContentWithRetry returned null", durationMs }, { round, actorId: "system" });
           contentOk = false;
         } else {
+          // Log fog-safety warnings (non-blocking — heuristic may have false positives)
+          const allItems = contentResult.flatMap(ac => ac.items);
+          const fogResult = validateFogSafety(allItems, room.state, faction);
+          if (fogResult.warnings.length > 0) {
+            logValidationFailure(round, `fog-safety:${faction}`, fogResult.warnings);
+          }
           setGeneratedContent(room, round, faction, contentResult);
           logGenerationSuccess(round, contentArtifact, durationMs);
+          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: contentArtifact, durationMs }, { round, actorId: "system" });
         }
       }
     }
@@ -145,6 +163,7 @@ export async function triggerGeneration(
       const npcArtifact = "npc";
       const startTs = Date.now();
       logGenerationStart(round, npcArtifact);
+      logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: npcArtifact }, { round, actorId: "system" });
 
       const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context, npcOptions);
 
@@ -152,10 +171,12 @@ export async function triggerGeneration(
 
       if (npcResult === null) {
         logGenerationFailure(round, npcArtifact, "generateNpcMessagesWithRetry returned null", durationMs);
+        logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: npcArtifact, reason: "generateNpcMessagesWithRetry returned null", durationMs }, { round, actorId: "system" });
         npcOk = false;
       } else {
         setGeneratedNpcTriggers(room, round, npcResult);
         logGenerationSuccess(round, npcArtifact, durationMs);
+        logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: npcArtifact, durationMs }, { round, actorId: "system" });
       }
     }
 
@@ -167,6 +188,7 @@ export async function triggerGeneration(
         const decisionsArtifact = "decisions";
         const startTs = Date.now();
         logGenerationStart(round, decisionsArtifact);
+        logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: decisionsArtifact }, { round, actorId: "system" });
 
         const decisionsResult = await generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
 
@@ -174,10 +196,12 @@ export async function triggerGeneration(
 
         if (decisionsResult === null) {
           logGenerationFailure(round, decisionsArtifact, "generateDecisionsWithRetry returned null", durationMs);
+          logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: decisionsArtifact, reason: "generateDecisionsWithRetry returned null", durationMs }, { round, actorId: "system" });
           decisionsOk = false;
         } else {
           setGeneratedDecisions(room, round, decisionsResult);
           logGenerationSuccess(round, decisionsArtifact, durationMs);
+          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: decisionsArtifact, durationMs }, { round, actorId: "system" });
         }
       }
     }
@@ -185,9 +209,23 @@ export async function triggerGeneration(
     // ── Final status ──────────────────────────────────────────────────────────
     const allOk = briefingOk && contentOk && npcOk && decisionsOk;
     setGenerationStatus(room, round, allOk ? "ready" : "failed");
+    if (io && !allOk) {
+      io.to(room.code).emit("game:generation-status", {
+        round,
+        status: "degraded",
+        message: "Some content may be unavailable due to API issues",
+      });
+    }
   } catch (err) {
     // INV-1: triggerGeneration must never throw — all errors result in fallback
     console.error(`[generation] Unexpected error for round ${round} in room ${room.code}:`, err);
     setGenerationStatus(room, round, "failed");
+    if (io) {
+      io.to(room.code).emit("game:generation-status", {
+        round,
+        status: "degraded",
+        message: "Content generation failed — fallback content will be used",
+      });
+    }
   }
 }

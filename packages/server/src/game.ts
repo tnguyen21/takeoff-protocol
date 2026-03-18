@@ -112,7 +112,7 @@ export function startGame(io: Server, room: GameRoom) {
   room.teamDecisions = {};
   room.teamVotes = {};
   setPhaseTimer(io, room);
-  void triggerGeneration(room, 1);
+  void triggerGeneration(room, 1, undefined, io);
 
   // Emit phase change
   io.to(room.code).emit("game:phase", {
@@ -179,7 +179,7 @@ export function endTutorial(io: Server, room: GameRoom) {
   room.playerActivity = {};
 
   setPhaseTimer(io, room);
-  void triggerGeneration(room, 1);
+  void triggerGeneration(room, 1, undefined, io);
 
   io.to(room.code).emit("game:phase", {
     phase: room.phase,
@@ -885,7 +885,7 @@ function emitResolution(io: Server, room: GameRoom) {
   }
 
   // Trigger async generation for next round — fire-and-forget, never blocks resolution
-  void triggerGeneration(room, room.round + 1);
+  void triggerGeneration(room, room.round + 1, undefined, io);
 
   // Log state delta (decisions + penalties + thresholds) and final snapshot
   resLogger.log(EVENT_NAMES.STATE_DELTA, {

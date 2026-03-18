@@ -43,6 +43,10 @@ export const EVENT_NAMES = {
   THRESHOLD_FIRED: "threshold.fired",
   NPC_TRIGGER_FIRED: "npc_trigger.fired",
   PUBLISH_SUBMITTED: "publish.submitted",
+  GENERATION_STARTED: "generation.started",
+  GENERATION_SUCCESS: "generation.success",
+  GENERATION_FAILURE: "generation.failure",
+  GENERATION_VALIDATION_FAILURE: "generation.validation_failure",
 } as const;
 
 type EventName = (typeof EVENT_NAMES)[keyof typeof EVENT_NAMES];

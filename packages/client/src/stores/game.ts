@@ -555,6 +555,16 @@ if (loadSession()) {
   socket.connect();
 }
 
+socket.on("game:generation-status", (data: { round: number; status: string; message: string }) => {
+  if (data.status === "degraded") {
+    useNotificationsStore.getState().addNotification({
+      appId: "system",
+      title: "Content Generation",
+      body: data.message,
+    });
+  }
+});
+
 socket.on("gm:activity", (data: { playerId: string; opened: string[] }) => {
   useGameStore.setState((s) => ({
     gmPlayerActivity: { ...s.gmPlayerActivity, [data.playerId]: data.opened },
