@@ -22,7 +22,7 @@ process.env.LOG_ENABLED = "false";
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
-import { rooms } from "./rooms.js";
+import { rooms, deleteRoom, MAX_CONCURRENT_ROOMS, isAtRoomCap } from "./rooms.js";
 import { registerGameEvents } from "./events.js";
 import { clearPhaseTimer } from "./game.js";
 import { extendUses, cleanupRoom } from "./extendUses.js";
@@ -1549,5 +1549,55 @@ describe("tweet:send — real handler", () => {
     const ev = (io.emits[TWEET_PLAYER_A] ?? []).find((e) => e.event === "tweet:receive");
     expect(ev).toBeDefined();
     expect((ev!.data as Record<string, unknown>).text).toBe(exact);
+  });
+});
+
+// ── Room cap enforcement ──────────────────────────────────────────────────────
+
+describe("room:create — room cap enforcement", () => {
+  let io: ReturnType<typeof createIo>;
+
+  beforeEach(() => {
+    rooms.clear();
+    io = createIo();
+    _clearLoggers();
+  });
+
+  afterEach(() => {
+    rooms.clear();
+    _clearLoggers();
+  });
+
+  it("blocks room creation when at capacity", () => {
+    for (let i = 0; i < MAX_CONCURRENT_ROOMS; i++) {
+      makeTestRoom(`gm-${i}`, `CAP${i}`);
+    }
+
+    const gmSocket = createSocket("gm-cap-test");
+    registerGameEvents(io as any, gmSocket as any);
+
+    let result: any;
+    fire(gmSocket.handlers, "room:create", { gmName: "GM" }, (res: any) => { result = res; });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("capacity");
+  });
+
+  it("allows room creation after a room is deleted", () => {
+    for (let i = 0; i < MAX_CONCURRENT_ROOMS; i++) {
+      makeTestRoom(`gm-${i}`, `DEL${i}`);
+    }
+
+    // Delete one room to make space
+    deleteRoom("DEL0");
+
+    const gmSocket = createSocket("gm-del-test");
+    registerGameEvents(io as any, gmSocket as any);
+
+    let result: any;
+    fire(gmSocket.handlers, "room:create", { gmName: "GM" }, (res: any) => { result = res; });
+
+    expect(result.ok).toBe(true);
+    expect(result.code).toBeDefined();
   });
 });

@@ -2,7 +2,10 @@ import { INITIAL_STATE, isLeaderRole } from "@takeoff/shared";
 import type { Faction, GameMessage, GamePhase, GameRoom, Player, Role, StateVariables } from "@takeoff/shared";
 import { createLoggerForRoom } from "./logger/registry.js";
 
+export const MAX_CONCURRENT_ROOMS = parseInt(process.env.MAX_CONCURRENT_ROOMS || "5", 10);
+
 export const rooms = new Map<string, GameRoom>();
+export const roomCreatedAt = new Map<string, number>();
 /**
  * Tracks the timestamp (ms) when a room's last player disconnected.
  * Cleared when any player reconnects. Used by pruneAbandonedRooms to
@@ -24,6 +27,11 @@ export function clearAllDisconnected(code: string): void {
 export function deleteRoom(code: string): void {
   rooms.delete(code);
   allDisconnectedAt.delete(code);
+  roomCreatedAt.delete(code);
+}
+
+export function isAtRoomCap(): boolean {
+  return rooms.size >= MAX_CONCURRENT_ROOMS;
 }
 
 /**
@@ -86,6 +94,7 @@ export function createRoom(gmSocketId: string): GameRoom {
   };
 
   rooms.set(code, room);
+  roomCreatedAt.set(code, Date.now());
   createLoggerForRoom(code, { logDir: process.env.LOG_DIR || "logs" });
   return room;
 }

@@ -9,4 +9,11 @@ export const socket: Socket = io(URL, {
   reconnectionAttempts: 15,
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
+  withCredentials: true,
+});
+
+socket.on("connect_error", (err) => {
+  if (err.message === "Unauthorized") {
+    window.location.reload();
+  }
 });

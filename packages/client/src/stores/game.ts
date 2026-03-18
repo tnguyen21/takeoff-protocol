@@ -101,6 +101,10 @@ interface GameStore {
   publications: Publication[];
   notifications: GameNotification[];
 
+  // Lobby errors
+  lobbyError: string | null;
+  clearLobbyError: () => void;
+
   // Actions
   setPlayerName: (name: string) => void;
   publishArticle: (payload: { type: PublicationType; title: string; content: string; source: string }) => void;
@@ -158,6 +162,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   endingPlayers: {},
   publications: [],
   notifications: [],
+  lobbyError: null,
+
+  clearLobbyError: () => set({ lobbyError: null }),
 
   setPlayerName: (name) => set({ playerName: name }),
 
@@ -173,12 +180,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     new Promise((resolve) => {
       const doCreate = () => {
         const gmName = get().playerName ?? "GM";
-        socket.emit("room:create", { gmName }, (res: { ok: boolean; code?: string }) => {
+        socket.emit("room:create", { gmName }, (res: { ok: boolean; code?: string; error?: string }) => {
           if (res.ok && res.code) {
             set({ roomCode: res.code, isGM: true, playerId: socket.id });
             saveSession({ roomCode: res.code, playerName: gmName, playerId: socket.id!, isGM: true });
             resolve(res.code);
           } else {
+            set({ lobbyError: res.error || "Failed to create room" });
             resolve(null);
           }
         });

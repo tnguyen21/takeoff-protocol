@@ -294,6 +294,8 @@
 │   │   │   ├── logger
 │   │   │   ├── activity.test.ts
 │   │   │   ├── activityPenalties.ts
+│   │   │   ├── auth.test.ts
+│   │   │   ├── auth.ts
 │   │   │   ├── cleanup.test.ts
 │   │   │   ├── decision-cycle.test.ts
 │   │   │   ├── devBots.test.ts
@@ -346,4 +348,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 324 files
+23 directories, 326 files

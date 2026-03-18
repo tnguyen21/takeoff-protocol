@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, GameRoom, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
-import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected } from "./rooms.js";
+import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected, isAtRoomCap, MAX_CONCURRENT_ROOMS } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { getLoggerForRoom } from "./logger/registry.js";
@@ -31,6 +31,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Room Management ──
 
   socket.on("room:create", ({ gmName }: { gmName: string }, callback) => {
+    if (isAtRoomCap()) {
+      callback({ ok: false, error: "Server is at capacity (max " + MAX_CONCURRENT_ROOMS + " rooms). Try again later." });
+      return;
+    }
     const room = createRoom(socket.id);
     socket.join(room.code);
     socket.data.roomCode = room.code;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../stores/game.js";
-import { FactionGrid, PlayerList } from "./lobby/index.js";
+import { FactionGrid, PlayerList, RoomBrowser } from "./lobby/index.js";
 
 export function Lobby() {
   const {
@@ -11,8 +11,6 @@ export function Lobby() {
     selectedFaction,
     selectedRole,
     setPlayerName,
-    createRoom,
-    joinRoom,
     startGame,
     startTutorial,
     gmGenerationEnabled,
@@ -20,7 +18,6 @@ export function Lobby() {
     devFillBots,
   } = useGameStore();
 
-  const [joinCode, setJoinCode] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [allowOverride, setAllowOverride] = useState(false);
 
@@ -63,42 +60,10 @@ export function Lobby() {
           <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Takeoff Protocol</h1>
           <p className="text-neutral-400 text-base">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
         </div>
-        <div className="bg-neutral-900 rounded-xl p-8 w-96 shadow-2xl border border-neutral-800">
-          <p className="text-neutral-300 font-medium mb-6">
-            Welcome, <span className="text-white">{playerName}</span>
-          </p>
-
-          <button
-            onClick={async () => { await createRoom(); }}
-            className="w-full bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg py-3 font-medium mb-4 transition-colors border border-neutral-600 hover:border-neutral-500"
-          >
-            Create Room <span className="text-neutral-400 text-sm">(Game Master)</span>
-          </button>
-
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-neutral-800" />
-            <span className="text-neutral-600 text-xs uppercase tracking-widest">or join</span>
-            <div className="flex-1 h-px bg-neutral-800" />
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="ROOM"
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              maxLength={4}
-              className="flex-1 bg-neutral-800 text-white rounded-lg px-4 py-3 outline-none border border-neutral-700 focus:border-neutral-500 transition-colors tracking-[0.3em] text-center font-mono text-lg placeholder:text-neutral-700 placeholder:tracking-normal"
-            />
-            <button
-              onClick={async () => { await joinRoom(joinCode); }}
-              disabled={joinCode.length !== 4}
-              className="bg-neutral-700 hover:bg-neutral-600 disabled:bg-neutral-800 disabled:text-neutral-600 text-white rounded-lg px-6 py-3 font-medium transition-colors border border-neutral-600 hover:border-neutral-500 disabled:border-neutral-800"
-            >
-              Join
-            </button>
-          </div>
-        </div>
+        <p className="text-neutral-300 font-medium mb-6">
+          Welcome, <span className="text-white">{playerName}</span>
+        </p>
+        <RoomBrowser />
       </div>
     );
   }
