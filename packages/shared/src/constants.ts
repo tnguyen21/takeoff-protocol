@@ -123,10 +123,8 @@ export const FACTIONS: FactionConfig[] = [
 
 // ── Leader Roles ──
 
-const LEADER_ROLES: readonly Role[] = FACTIONS.flatMap(f => f.roles).filter(r => r.isLeader).map(r => r.id);
-
 export function isLeaderRole(role: Role): boolean {
-  return LEADER_ROLES.includes(role);
+  return FACTIONS.flatMap(f => f.roles).some(r => r.isLeader && r.id === role);
 }
 
 // ── Phase Durations (seconds) ──
@@ -196,29 +194,3 @@ export const INITIAL_STATE: StateVariables = {
 
 export const TOTAL_ROUNDS = 5;
 
-// ── Scaling Guide ──
-
-type ScalingGuideEntry = Record<Faction, number>;
-
-export const SCALING_GUIDE: Record<number, ScalingGuideEntry> = {
-  8:  { openbrain: 2, prometheus: 2, china: 2, external: 2 },
-  9:  { openbrain: 2, prometheus: 2, china: 2, external: 3 },
-  10: { openbrain: 3, prometheus: 3, china: 2, external: 2 },
-  11: { openbrain: 3, prometheus: 3, china: 2, external: 3 },
-  12: { openbrain: 3, prometheus: 3, china: 3, external: 3 },
-  13: { openbrain: 4, prometheus: 3, china: 3, external: 3 },
-  14: { openbrain: 4, prometheus: 3, china: 3, external: 4 },
-};
-
-/**
- * Safe accessor for SCALING_GUIDE. Clamps out-of-range player counts to [8, 14]
- * so callers never receive undefined.
- */
-export function getScalingGuide(playerCount: number): ScalingGuideEntry {
-  const entry = SCALING_GUIDE[playerCount];
-  if (!entry) {
-    const clamped = Math.min(14, Math.max(8, playerCount));
-    return SCALING_GUIDE[clamped]!;
-  }
-  return entry;
-}

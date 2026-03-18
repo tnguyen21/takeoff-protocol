@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { resolveDecisions, clampState } from "./resolution.js";
-import { STATE_VARIABLE_RANGES, SCALING_GUIDE, getScalingGuide } from "./constants.js";
+import { STATE_VARIABLE_RANGES } from "./constants.js";
 import { computeFogView } from "./fog.js";
 import { computeEndingArcs } from "./endings.js";
 import type { DecisionOption, Faction, GameMessage, NpcPersona, NpcTrigger, StateVariables } from "./types.js";
@@ -1094,25 +1094,3 @@ describe("clampState", () => {
   });
 });
 
-// ── getScalingGuide ────────────────────────────────────────────────────────────
-
-describe("getScalingGuide", () => {
-  it("INV-1: returns valid entries for all counts 8-14", () => {
-    for (let n = 8; n <= 14; n++) {
-      const entry = getScalingGuide(n);
-      expect(entry).toBeDefined();
-      expect(entry).toEqual(SCALING_GUIDE[n]);
-    }
-  });
-
-  it("INV-2: clamps count below 8 to entry for 8", () => {
-    expect(getScalingGuide(7)).toEqual(SCALING_GUIDE[8]);
-    expect(getScalingGuide(0)).toEqual(SCALING_GUIDE[8]);
-    expect(getScalingGuide(-1)).toEqual(SCALING_GUIDE[8]);
-  });
-
-  it("INV-3: clamps count above 14 to entry for 14", () => {
-    expect(getScalingGuide(15)).toEqual(SCALING_GUIDE[14]);
-    expect(getScalingGuide(100)).toEqual(SCALING_GUIDE[14]);
-  });
-});
