@@ -8,7 +8,6 @@
 │   ├── EXTERNAL-ROLES-AUDIT.md
 │   ├── GAME-LOGGING.md
 │   ├── GENERATIVE-CONTENT.md
-│   ├── IMPLEMENTATION.md
 │   └── STATUS.md
 ├── packages
 │   ├── client
@@ -349,4 +348,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 327 files
+23 directories, 326 files

@@ -860,6 +860,23 @@ People building the future — AI researchers, engineers, founders, investors, a
 - Content types: Slack messages, DMs, tweets, headlines, briefing docs, charts, memos, spreadsheet data
 - One "median" scenario path for v1 (no branching); add 2-3 branches in v2
 
+### Key Technical Decisions
+
+**Why Zustand over Redux/Context?**
+The game has two distinct state domains: server-authoritative game state (arrives via sockets) and client-only UI state (window positions, which app is focused). Zustand handles both cleanly with separate stores, no provider nesting, and trivial socket integration (`socket.on('game:state', (data) => useGameStore.setState(data))`).
+
+**Why in-memory state, no database?**
+Game sessions last ~2 hours and are ephemeral. There's no user accounts, no persistence between games, no login. A `Map<string, GameRoom>` in server memory is the right level of complexity. If we want game replays later, we append to a log file per room.
+
+**Why hand-authored content over LLM-generated?**
+Quality control. The content IS the game — every Slack message, memo, and headline needs to feel real and carry the right signals. LLM generation is a v2 feature for branching content and replayability.
+
+**Why a custom window manager over a library?**
+Existing React window manager libraries (react-rnd, react-mosaic) optimize for either developer tooling or tiling layouts. We need something that feels like a real macOS desktop: overlapping windows, a dock, a menu bar, notification toasts. The custom implementation is ~200 lines for the core (drag, resize, z-order) and gives us full control over the feel.
+
+**Why not canvas for windows?**
+Our "windows" contain rich interactive content (scrollable text, clickable links, form inputs for DMs). Canvas can't do that without reimplementing the browser. The DOM already handles text rendering, scrolling, input, and accessibility. We just need to manage z-index, position, and resize — CSS `transform: translate3d()` for GPU-accelerated positioning.
+
 ### MVP Scope
 
 1. Desktop UI with working apps (text-based content, simplified charts)
