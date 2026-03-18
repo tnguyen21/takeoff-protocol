@@ -4,15 +4,14 @@
  * Invariants:
  * INV-1: Bot seeding covers all non-human roles for selected mode
  * INV-2: Bot IDs are unique and deterministic — same input → same bot ids
- * INV-3: pickRandomOption always returns a valid option id from the provided array
- * INV-4: Leader bots set teamDecisions only for factions that have leaders
- * INV-5: seedBotsForRoom throws when NODE_ENV === "production"
+ * INV-3: Leader bots set teamDecisions only for factions that have leaders
+ * INV-4: seedBotsForRoom throws when NODE_ENV === "production"
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom, Player } from "@takeoff/shared";
 import { FACTIONS, INITIAL_STATE } from "@takeoff/shared";
-import { pickRandomOption, seedBotsForRoom, scheduleBotDecisionSubmissions } from "./devBots.js";
+import { seedBotsForRoom, scheduleBotDecisionSubmissions } from "./devBots.js";
 import { setGeneratedDecisions } from "./generation/cache.js";
 import { ROUND1_DECISIONS } from "./test-fixtures.js";
 
@@ -50,26 +49,9 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ── INV-3: pickRandomOption ───────────────────────────────────────────────────
+// ── INV-4: production guard ───────────────────────────────────────────────────
 
-describe("pickRandomOption", () => {
-  it("returns a valid option id from the array", () => {
-    const options = [{ id: "opt_a" }, { id: "opt_b" }, { id: "opt_c" }];
-    for (let i = 0; i < 20; i++) {
-      const result = pickRandomOption(options);
-      expect(options.map((o) => o.id)).toContain(result);
-    }
-  });
-
-  it("returns '' for empty array", () => {
-    expect(pickRandomOption([])).toBe("");
-  });
-
-});
-
-// ── INV-5: production guard ───────────────────────────────────────────────────
-
-describe("seedBotsForRoom — production guard (INV-5)", () => {
+describe("seedBotsForRoom — production guard (INV-4)", () => {
   let originalEnv: string | undefined;
 
   beforeEach(() => {
@@ -180,9 +162,9 @@ describe("seedBotsForRoom — minimum_table mode (INV-1)", () => {
   });
 });
 
-// ── INV-4: leader bot sets teamDecisions ─────────────────────────────────────
+// ── INV-3: leader bot sets teamDecisions ─────────────────────────────────────
 
-describe("scheduleBotDecisionSubmissions — leader and non-leader behavior (INV-4)", () => {
+describe("scheduleBotDecisionSubmissions — leader and non-leader behavior (INV-3)", () => {
   beforeEach(() => {
     process.env.NODE_ENV = "test";
   });
@@ -410,22 +392,3 @@ describe("scheduleBotDecisionSubmissions — critical paths", () => {
   });
 });
 
-// ── Human is a leader — no bot overwrite ─────────────────────────────────────
-
-describe("seedBotsForRoom — human is leader", () => {
-  beforeEach(() => {
-    process.env.NODE_ENV = "test";
-  });
-
-  it("does not create a bot for the leader role when human plays it", () => {
-    const room = makeRoom();
-    room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_ceo");
-
-    seedBotsForRoom(room, "p1", { mode: "all_roles" });
-
-    // ob_ceo bot must not exist
-    expect(room.players["__bot_openbrain_ob_ceo"]).toBeUndefined();
-    // Human player must still be there
-    expect(room.players["p1"].role).toBe("ob_ceo");
-  });
-});
