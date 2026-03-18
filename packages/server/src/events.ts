@@ -7,6 +7,7 @@ import { getNpcPersona } from "./content/npcPersonas.js";
 import { getLoggerForRoom } from "./logger/registry.js";
 
 import { extendUses, cleanupRoom } from "./extendUses.js";
+import { EVENT_NAMES } from "./logger/index.js";
 
 // ── Input length limits ────────────────────────────────────────────────────────
 const MAX_CHAT_LENGTH = 2000;
@@ -104,7 +105,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     console.log(`[room] ${isGMRejoin ? "GM" : player!.name} rejoined ${room.code} (${oldSocketId} → ${socket.id})`);
     if (player) {
-      getLoggerForRoom(room.code).log("player.reconnected", { playerName: player.name, oldSocketId, newSocketId: socket.id }, { actorId: player.name, round: room.round, phase: room.phase });
+      getLoggerForRoom(room.code).log(EVENT_NAMES.PLAYER_RECONNECTED, { playerName: player.name, oldSocketId, newSocketId: socket.id }, { actorId: player.name, round: room.round, phase: room.phase });
     }
 
     callback?.({
@@ -125,7 +126,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     const player = room.players[socket.id];
     if (player) {
-      getLoggerForRoom(room.code).log("player.role_selected", { playerName: player.name, faction, role }, { actorId: player.name });
+      getLoggerForRoom(room.code).log(EVENT_NAMES.PLAYER_ROLE_SELECTED, { playerName: player.name, faction, role }, { actorId: player.name });
     }
     io.to(room.code).emit("room:state", getLobbyState(room));
     callback({ ok: true });
@@ -302,7 +303,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       };
 
       room.messages.push(message);
-      getLoggerForRoom(room.code).log("message.npc", { npcId, npcName: persona.name, targetPlayerName: targetPlayer.name, targetFaction: targetPlayer.faction, contentLength: content.length }, { actorId: "gm", round: room.round, phase: room.phase });
+      getLoggerForRoom(room.code).log(EVENT_NAMES.MESSAGE_NPC, { npcId, npcName: persona.name, targetPlayerName: targetPlayer.name, targetFaction: targetPlayer.faction, contentLength: content.length }, { actorId: "gm", round: room.round, phase: room.phase });
 
       io.to(targetPlayerId).emit("message:receive", message);
       io.to(socket.id).emit("message:receive", { ...message, _gmView: true });
@@ -392,7 +393,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!team?.options.some((o) => o.id === teamDecision)) return;
 
     room.teamDecisions[player.faction] = teamDecision;
-    getLoggerForRoom(room.code).log("decision.team_locked", { faction: player.faction, optionId: teamDecision, leaderName: player.name }, { actorId: player.name, round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log(EVENT_NAMES.DECISION_TEAM_LOCKED, { faction: player.faction, optionId: teamDecision, leaderName: player.name }, { actorId: player.name, round: room.round, phase: room.phase });
     io.to(room.code).emit("decision:team-locked", {
       faction: player.faction,
     });
@@ -417,7 +418,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     content = content.slice(0, MAX_CHAT_LENGTH);
 
     const targetName = to ? room.players[to]?.name ?? to : null;
-    getLoggerForRoom(room.code).log("message.sent", { from: sender.name, toName: targetName, faction: sender.faction, contentLength: content.length, isTeamChat: to === null }, { actorId: sender.name, round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log(EVENT_NAMES.MESSAGE_SENT, { from: sender.name, toName: targetName, faction: sender.faction, contentLength: content.length, isTeamChat: to === null }, { actorId: sender.name, round: room.round, phase: room.phase });
 
     const message = {
       id: crypto.randomUUID(),
@@ -481,7 +482,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       title = title.slice(0, MAX_PUBLISH_TITLE_LENGTH);
       content = content.slice(0, MAX_PUBLISH_CONTENT_LENGTH);
 
-      getLoggerForRoom(room.code).log("publish.submitted", { playerName: player.name, role: player.role, type, title }, { actorId: player.name, round: room.round, phase: room.phase });
+      getLoggerForRoom(room.code).log(EVENT_NAMES.PUBLISH_SUBMITTED, { playerName: player.name, role: player.role, type, title }, { actorId: player.name, round: room.round, phase: room.phase });
 
       const timestamp = new Date().toISOString();
       const pubId = crypto.randomUUID();
@@ -800,7 +801,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (player) {
       player.connected = false;
       io.to(code).emit("room:state", getLobbyState(room));
-      getLoggerForRoom(code).log("player.disconnected", { playerName: player.name, faction: player.faction, role: player.role }, { actorId: player.name, round: room.round, phase: room.phase });
+      getLoggerForRoom(code).log(EVENT_NAMES.PLAYER_DISCONNECTED, { playerName: player.name, faction: player.faction, role: player.role }, { actorId: player.name, round: room.round, phase: room.phase });
     }
 
     // If all players are now disconnected, clear the phase timer and extend uses
