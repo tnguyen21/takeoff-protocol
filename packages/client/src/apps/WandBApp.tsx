@@ -304,7 +304,7 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
                     : "text-neutral-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: active ? "#3b82f6" : "#444" }} />
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? "bg-blue-500" : "bg-neutral-600"}`} />
                 {label}
               </div>
             );
@@ -472,11 +472,8 @@ export const WandBApp = React.memo(function WandBApp({ content }: AppProps) {
                       </div>
                       <div className="flex-1 bg-white/5 rounded-sm h-2 overflow-hidden">
                         <div
-                          className="h-full rounded-sm transition-all duration-500"
-                          style={{
-                            width: `${gpu.utilization}%`,
-                            background: gpu.utilization > 90 ? "#ef4444" : "#eab308",
-                          }}
+                          className={`h-full rounded-sm transition-all duration-500 ${gpu.utilization > 90 ? "bg-red-500" : "bg-yellow-500"}`}
+                          style={{ width: `${gpu.utilization}%` }}
                         />
                       </div>
                       <span className="text-neutral-400 w-8 text-right tabular-nums text-[10px]">{gpu.utilization}%</span>

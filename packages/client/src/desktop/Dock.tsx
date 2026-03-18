@@ -46,23 +46,12 @@ export function Dock() {
   };
 
   return (
-    <div
-      className="absolute left-0 right-0 flex justify-center"
-      style={{ bottom: "8px", pointerEvents: "none", zIndex: 5000 }}
-    >
+    <div className="absolute left-0 right-0 flex justify-center bottom-2 pointer-events-none z-[5000]">
       <div
+        className="flex items-center gap-1 px-[10px] py-[6px] bg-[rgba(28,28,30,0.68)] backdrop-blur-[40px] backdrop-saturate-[180%] rounded-[14px] border border-white/[0.14] pointer-events-auto"
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: `${ICON_GAP}px`,
-          padding: "6px 10px",
-          background: "rgba(28, 28, 30, 0.68)",
-          backdropFilter: "blur(40px) saturate(180%)",
           WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          borderRadius: "14px",
-          border: "1px solid rgba(255,255,255,0.14)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.06) inset",
-          pointerEvents: "all",
         }}
       >
         {windows.map((w) => {
@@ -80,18 +69,8 @@ export function Dock() {
               onClick={() => handleClick(w)}
               onMouseEnter={() => setHoveredId(w.id)}
               onMouseLeave={() => setHoveredId(null)}
-              className={isSignalPulsing ? "negotiation-pulse" : undefined}
+              className={`relative w-11 h-11 shrink-0 flex items-center justify-center rounded-[10px] border-none cursor-pointer transition-[background,color] duration-150 ${isSignalPulsing ? "negotiation-pulse" : ""}`}
               style={{
-                position: "relative",
-                width: `${ICON_SIZE}px`,
-                height: `${ICON_SIZE}px`,
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "10px",
-                border: "none",
-                cursor: "pointer",
                 background: isHovered
                   ? "rgba(255,255,255,0.18)"
                   : w.isOpen && !w.isMinimized
@@ -100,7 +79,6 @@ export function Dock() {
                 color: isHovered || (w.isOpen && !w.isMinimized)
                   ? "rgba(255,255,255,0.95)"
                   : "rgba(255,255,255,0.50)",
-                transition: "background 0.15s, color 0.15s",
               }}
             >
               <AppIcon appId={w.appId} size={ICON_DISPLAY_SIZE} />
@@ -108,24 +86,8 @@ export function Dock() {
               {/* Tooltip */}
               {isHovered && (
                 <span
-                  style={{
-                    position: "absolute",
-                    bottom: "calc(100% + 8px)",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    whiteSpace: "nowrap",
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-                    color: "rgba(255,255,255,0.9)",
-                    background: "rgba(30, 30, 32, 0.85)",
-                    backdropFilter: "blur(12px)",
-                    padding: "4px 10px",
-                    borderRadius: "6px",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                    pointerEvents: "none",
-                  }}
+                  className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-medium text-white/90 bg-[rgba(30,30,32,0.85)] backdrop-blur-[12px] py-1 px-[10px] rounded-[6px] border border-white/[0.12] pointer-events-none"
+                  style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}
                 >
                   {w.title}
                 </span>
@@ -133,25 +95,7 @@ export function Dock() {
 
               {/* Unread badge */}
               {unread > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-4px",
-                    right: "-4px",
-                    background: "#ff3b30",
-                    color: "white",
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    borderRadius: "999px",
-                    minWidth: "16px",
-                    height: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "0 3px",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-                  }}
-                >
+                <span className="absolute -top-1 -right-1 bg-[#ff3b30] text-white text-[10px] font-bold rounded-full min-w-4 h-4 flex items-center justify-center px-[3px]">
                   {unread > 9 ? "9+" : unread}
                 </span>
               )}
@@ -159,35 +103,13 @@ export function Dock() {
               {/* Primary app nudge dot */}
               {needsAttention && (
                 <span
-                  className="dock-primary-dot"
-                  style={{
-                    position: "absolute",
-                    top: "-4px",
-                    left: "-4px",
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: "#f59e0b",
-                    border: "1.5px solid rgba(0,0,0,0.5)",
-                    pointerEvents: "none",
-                  }}
+                  className="dock-primary-dot absolute -top-1 -left-1 w-2 h-2 rounded-full bg-amber-500 border-[1.5px] border-black/50 pointer-events-none"
                 />
               )}
 
               {/* Open indicator dot */}
               {w.isOpen && !w.isMinimized && (
-                <span
-                  style={{
-                    position: "absolute",
-                    bottom: "-5px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,0.70)",
-                  }}
-                />
+                <span className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white/70" />
               )}
             </button>
           );

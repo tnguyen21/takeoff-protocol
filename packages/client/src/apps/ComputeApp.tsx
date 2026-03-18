@@ -322,7 +322,7 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5">
                           {/* Disclosure chevron */}
-                          <span className={`text-neutral-500 text-[10px] transition-transform ${isExpanded ? "rotate-90" : ""}`} style={{ display: "inline-block" }}>
+                          <span className={`text-neutral-500 text-[10px] transition-transform inline-block ${isExpanded ? "rotate-90" : ""}`}>
                             ▶
                           </span>
                           <span className="font-semibold text-xs text-neutral-200">{c.name}</span>
@@ -442,7 +442,7 @@ export const ComputeApp = React.memo(function ComputeApp({ content }: AppProps) 
           {/* Event log — terminal-style */}
           <div>
             <div className="text-xs text-neutral-500 font-semibold mb-2 uppercase tracking-wider">Event Log</div>
-            <div className="bg-[#080808] border border-white/10 rounded p-2 overflow-y-auto" style={{ maxHeight: "110px" }}>
+            <div className="bg-[#080808] border border-white/10 rounded p-2 overflow-y-auto max-h-[110px]">
               {EVENT_LOG.map((line, i) => (
                 <div key={i} className="font-mono text-[11px] text-neutral-400 leading-relaxed hover:text-neutral-200 transition-colors">
                   {line}

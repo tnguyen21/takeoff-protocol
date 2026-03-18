@@ -118,7 +118,7 @@ const SPARKLINE_STROKE: Record<Accuracy, string> = {
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 
 function Sparkline({ data, accuracy }: { data: Array<{ v: number | null }>; accuracy: Accuracy }) {
-  if (!data.length) return <div style={{ width: 48, height: 20 }} />;
+  if (!data.length) return <div className="w-12 h-5" />;
   return (
     <LineChart width={48} height={20} data={data}>
       <Line

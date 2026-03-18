@@ -299,11 +299,8 @@ export const NewsApp = React.memo(function NewsApp({ content }: AppProps) {
       {/* Ticker bar */}
       <div className="border-t border-neutral-700 bg-neutral-900 py-1 overflow-hidden shrink-0">
         <div
-          className="whitespace-nowrap text-[11px] font-mono text-yellow-400 will-change-transform"
-          style={{
-            display: "inline-block",
-            animation: "newsTickerScroll 90s linear infinite",
-          }}
+          className="whitespace-nowrap text-[11px] font-mono text-yellow-400 will-change-transform inline-block"
+          style={{ animation: "newsTickerScroll 90s linear infinite" }}
         >
           {tickerText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{tickerText}
         </div>

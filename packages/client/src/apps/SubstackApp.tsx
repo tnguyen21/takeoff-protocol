@@ -167,7 +167,7 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
           {selected && (
             <div className="max-w-2xl mx-auto px-8 py-8">
               {/* Article title — large serif */}
-              <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: "1.75rem", fontWeight: 700, lineHeight: 1.2, color: "#111", marginBottom: "1rem" }}>
+              <h1 className="font-serif text-[1.75rem] font-bold leading-[1.2] text-neutral-900 mb-4">
                 {selected.title}
               </h1>
 
@@ -188,12 +188,7 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
 
               {/* Markdown-rendered article body */}
               <div
-                className="text-neutral-800 leading-relaxed"
-                style={{
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                  fontSize: "1rem",
-                  lineHeight: 1.7,
-                }}
+                className="text-neutral-800 font-serif text-base leading-[1.7]"
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body) }}
               />
 

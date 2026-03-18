@@ -44,80 +44,35 @@ function Toast({ notif, index }: { notif: ToastNotification; index: number }) {
   return (
     <div
       onClick={handleClick}
+      className="absolute right-3 w-80 bg-[rgba(28,28,32,0.88)] backdrop-blur-[24px] backdrop-saturate-[180%] border border-white/10 rounded-[13px] py-3 px-[14px] cursor-pointer z-[9000] flex items-start gap-[10px]"
       style={{
-        position: "absolute",
         top: `${top}px`,
-        right: "12px",
-        width: "320px",
-        background: "rgba(28, 28, 32, 0.88)",
-        backdropFilter: "blur(24px) saturate(180%)",
         WebkitBackdropFilter: "blur(24px) saturate(180%)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        borderRadius: "13px",
         boxShadow: "0 4px 24px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.4)",
-        padding: "12px 14px",
-        cursor: "pointer",
-        zIndex: 9000,
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "10px",
         animation: "toast-slide-in 0.28s cubic-bezier(0.34,1.2,0.64,1) both",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
       }}
     >
       {/* App icon */}
-      <div
-        style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "8px",
-          background: "rgba(255,255,255,0.07)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          border: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
+      <div className="w-9 h-9 rounded-lg bg-white/[0.07] flex items-center justify-center shrink-0 border border-white/[0.08]">
         <AppIcon appId={notif.appId} size={18} color="rgba(255,255,255,0.75)" />
       </div>
 
       {/* Text content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
-          <span
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "rgba(255,255,255,0.92)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-baseline gap-2">
+          <span className="text-[13px] font-semibold text-white/[0.92] overflow-hidden text-ellipsis whitespace-nowrap">
             {notif.title}
           </span>
-          <span
-            style={{
-              fontSize: "11px",
-              color: "rgba(255,255,255,0.35)",
-              flexShrink: 0,
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
+          <span className="text-[11px] text-white/35 shrink-0 tabular-nums">
             {formatTime(notif.timestamp)}
           </span>
         </div>
         <p
+          className="mt-0.5 text-xs text-white/55 overflow-hidden leading-[1.4]"
           style={{
-            margin: "2px 0 0",
-            fontSize: "12px",
-            color: "rgba(255,255,255,0.55)",
-            overflow: "hidden",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
-            lineHeight: "1.4",
           }}
         >
           {notif.body}

@@ -86,7 +86,7 @@ export function Desktop() {
       <MenuBar />
 
       {/* Windows layer */}
-      <div className="absolute inset-0" style={{ top: "var(--menubar-height)", bottom: "var(--dock-height)" }}>
+      <div className="absolute inset-0 top-[var(--menubar-height)] bottom-[var(--dock-height)]">
         {windows
           .filter((w) => w.isOpen && !w.isMinimized)
           .map((w) => {
@@ -131,10 +131,7 @@ export function Desktop() {
             bottom: "var(--dock-height)",
           }}
         >
-          <span
-            className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse"
-            style={{ boxShadow: "0 0 6px rgba(250,200,0,0.8)" }}
-          />
+          <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 animate-pulse shadow-[0_0_6px_rgba(250,200,0,0.8)]" />
           Connection lost — reconnecting…
         </div>
       )}
