@@ -10,10 +10,13 @@
  * the exclusion and tighten the threshold.
  */
 
-import { describe, it, expect, beforeAll } from "bun:test";
-import { runTrial, pickOption, ROUNDS, type TrialResult } from "./simulate-core.js";
+import { describe, it, expect, beforeAll, setDefaultTimeout } from "bun:test";
+import { runTrial, pickOption, sampleAllRounds, type TrialResult } from "./simulate-core.js";
 import { INITIAL_STATE } from "../packages/shared/src/index.js";
 import type { StateVariables } from "../packages/shared/src/index.js";
+
+// Template-sampled trials are slower than pre-authored; raise default timeout
+setDefaultTimeout(30_000);
 
 const TRIAL_COUNT = 5000;
 
@@ -50,7 +53,8 @@ function pearsonCorrelation(xs: number[], ys: number[]): number {
 
 describe("INV-1: arc outcome reachability", () => {
   /**
-   * Outcomes known to be structurally unreachable under random play.
+   * Outcomes known to be structurally unreachable under random play with
+   * template-sampled decisions.
    *
    * These are not bugs — they are design constraints of the current decision space.
    * Each is documented with the reason it cannot be reached under random heuristic.
@@ -62,38 +66,8 @@ describe("INV-1: arc outcome reachability", () => {
    */
   const KNOWN_UNREACHABLE = new Set<string>([
     // openSource[0] "Everything leaked": requires chinaWeightTheftProgress >= 100.
-    // The variable starts at 0 and decision deltas never drive it to 100 under random play.
+    // Template-sampled deltas (|delta| <= 8) cannot drive this from 0 to 100 under random play.
     "openSource:0",
-
-    // control[0] "No one controls it": fallback state requiring all positive conditions to fail.
-    // Under random play, at least one condition (securityLevelOB >= 4, regulatoryPressure >= 70,
-    // or intlCooperation >= 60) is almost always satisfied by round 5.
-    "control:0",
-
-    // control[1] "AI outpaced oversight": requires aiAutonomyLevel > 70.
-    // Decisions don't accumulate enough autonomy delta under random play.
-    "control:1",
-
-    // control[2] "Single company": requires obCapability - chinaCapability > 30
-    // AND intlCooperation < 30 AND obBoardConfidence >= 60.
-    // Random decisions generally increase intlCooperation above 30.
-    "control:2",
-
-    // publicReaction[1] "Sustained protest": requires publicSentiment in [-40, 0).
-    // Random play tends toward neutral/positive sentiment (initial = 30).
-    "publicReaction:1",
-
-    // publicReaction[4] "Unaware": requires publicAwareness <= 20.
-    // Awareness consistently increases through gameplay decisions.
-    "publicReaction:4",
-
-    // economy[0] "Collapse": requires adjustedDisruption > 70.
-    // marketIndex starts high (140) providing strong downward pressure on adjustedDisruption.
-    "economy:0",
-
-    // prometheusFate[2] "Merged": requires obPromGap in [2,5] AND promMorale < 60.
-    // This narrow gap window rarely aligns with low morale under random play.
-    "prometheusFate:2",
   ]);
 
   it("every non-constrained outcome is reachable in 5000 random trials", () => {
@@ -140,17 +114,8 @@ describe("INV-2: no state variable saturation", () => {
    * Format: "varName:ceiling|floor" where ceiling/floor is the bound value being hit.
    */
   const KNOWN_SATURATING = new Set<string>([
-    // securityLevelOB saturates at 5 (ceiling) in ~96% of trials.
-    // Security decisions consistently raise it; no decision lowers it.
-    "securityLevelOB:5",
-
-    // globalMediaCycle saturates at 5 (ceiling) in ~96% of trials.
-    // Media cycle decisions consistently increase it; no decision reduces it.
-    "globalMediaCycle:5",
-
-    // doomClockDistance saturates at 5 (ceiling) in ~98% of trials.
-    // The variable starts at 5 and no decision applies meaningful downward pressure.
-    "doomClockDistance:5",
+    // These may need updating for template-sampled decisions.
+    // Kept as-is initially — if new saturations appear, add them here with documentation.
   ]);
 
   // Ceiling and floor for each state variable (mirrors clampState in resolution.ts).
@@ -285,18 +250,20 @@ describe("INV-4: arc independence", () => {
 // ── INV-5: No dominated options ───────────────────────────────────────────
 
 describe("INV-5: no dominated options", () => {
-  it("every option in every decision is selectable by random heuristic", () => {
-    // For each decision, verify all option indices are reached within a sample of picks.
+  it("every option in every sampled decision is selectable by random heuristic", () => {
+    // Sample all 5 rounds from templates and verify all option indices are reached.
     // 200 picks per decision far exceeds what's needed to see all options with high probability
     // (worst case: 2 options → P(miss) = (1/2)^200 ≈ 0).
     const PICKS_PER_DECISION = 200;
     const dominated: string[] = [];
 
-    for (const round of ROUNDS) {
+    const rounds = sampleAllRounds();
+    for (const round of rounds) {
       const allDecisions = [...round.individual, ...round.team];
       for (const decision of allDecisions) {
+        const decisionLabel = decision.prompt ?? `round ${round.round}`;
         if (decision.options.length === 0) {
-          dominated.push(`${decision.id}: empty options array`);
+          dominated.push(`${decisionLabel}: empty options array`);
           continue;
         }
         const seen = new Set<number>();
@@ -307,7 +274,7 @@ describe("INV-5: no dominated options", () => {
         }
         for (let i = 0; i < decision.options.length; i++) {
           if (!seen.has(i)) {
-            dominated.push(`${decision.id} option[${i}] never selected in ${PICKS_PER_DECISION} picks`);
+            dominated.push(`${decisionLabel} option[${i}] never selected in ${PICKS_PER_DECISION} picks`);
           }
         }
       }

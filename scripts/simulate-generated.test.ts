@@ -10,7 +10,8 @@ import { describe, it, expect } from "bun:test";
 
 import { validateDecisions } from "../packages/server/src/generation/validate.js";
 import { DECISION_TEMPLATES } from "../packages/server/src/generation/templates/decisions.js";
-import { sampleRandomDecision, sampleRoundDecisions, runGeneratedTrial } from "./simulate-generated.js";
+import { sampleRandomDecision, sampleRoundDecisions } from "./simulate-core.js";
+import { runGeneratedTrial } from "./simulate-generated.js";
 import type { IndividualDecision, TeamDecision, RoundDecisions } from "../packages/shared/src/index.js";
 
 // ── INV-1: sampleRandomDecision() always produces valid decisions ─────────────

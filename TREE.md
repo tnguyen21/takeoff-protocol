@@ -322,12 +322,9 @@
 ├── scripts
 │   ├── fixtures
 │   │   └── sample-game.jsonl
-│   ├── analyze-bias.ts
 │   ├── analyze-game.test.ts
 │   ├── analyze-game.ts
 │   ├── analyze-percentiles.ts
-│   ├── fix-directional-bias.ts
-│   ├── fix-gap-bias.ts
 │   ├── gen-tree.sh
 │   ├── report-chaotic.md
 │   ├── report-dove.md
@@ -338,8 +335,7 @@
 │   ├── simulate-generated.test.ts
 │   ├── simulate-generated.ts
 │   ├── simulate.test.ts
-│   ├── simulate.ts
-│   └── targeted-rebalance.ts
+│   └── simulate.ts
 ├── Dockerfile
 ├── fly.toml
 ├── package.json
@@ -347,4 +343,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 325 files
+23 directories, 321 files
