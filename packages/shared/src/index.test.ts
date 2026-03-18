@@ -851,6 +851,23 @@ describe("computeEndingArcs", () => {
     expect(arcs.find((a) => a.id === "alignment")!.result).toBe(0);
   });
 
+  // Regression test for the OR→AND fix (commit a966084).
+  // With the old `alignmentConfidence >= 25 || misalignmentSeverity <= 60` the condition would
+  // be TRUE here (conf=30 >= 25), returning 1 (superficial). The AND gate prevents a high
+  // confidence score from masking severe misalignment — both conditions must hold.
+  it("resolveAlignment OR→AND regression: high severity blocks superficial despite moderate confidence", () => {
+    // conf=30 would satisfy the old >=25 threshold alone, but severity=70 exceeds <=65 cutoff
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 30, misalignmentSeverity: 70 });
+    expect(arcs.find((a) => a.id === "alignment")!.result).toBe(0);
+  });
+
+  it("resolveAlignment OR→AND regression: low confidence means misaligned even with benign severity", () => {
+    // Under old OR: sev=40 <= 60 would have returned 1 (superficial) regardless of conf
+    // Under AND: conf=5 < 10 threshold → fails the AND, falls through to misaligned
+    const arcs = computeEndingArcs({ ...BASE_STATE, alignmentConfidence: 5, misalignmentSeverity: 40 });
+    expect(arcs.find((a) => a.id === "alignment")!.result).toBe(0);
+  });
+
   // ── resolveControl branch coverage ─────────────────────────────────────────
 
   it("resolveControl: distributed/democratic when cooperation+trust both high", () => {
