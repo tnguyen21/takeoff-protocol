@@ -109,14 +109,17 @@ What exists:
 - Prompt system with faction voices, app voices, round arc templates
 - Retry with error feedback (max 2 attempts per artifact)
 - Kill switches: `GEN_ENABLED`, `GEN_BRIEFINGS_ENABLED`, `GEN_NPC_ENABLED`, `GEN_DECISIONS_ENABLED`, per-room toggle
-- Provider abstraction (Anthropic Claude, with mock for tests)
+- Provider abstraction (Anthropic Claude, with mock for tests). Model selection: Sonnet for briefings/decisions, Haiku for content/NPC.
 - Generation is idempotent per room-round (can't re-trigger same round)
+- Fog-safety validation — heuristic scan of generated content for leaked hidden state values
+- Generation metrics emitted to JSONL game logger (started/success/failure/validation events)
+- Client degradation toast — notifies players via macOS-style notification when generation partially fails
+- No pre-authored fallback by design — if API is down, content is simply missing
 
 What's missing:
-- **No cost controls** — no concurrent request throttling, no per-room budget, no daily spend cap. ~14 API calls/round/room, ~$6.64/round. 100 concurrent rooms = $3,300+.
+- **No cost controls** — no concurrent request throttle, no per-room budget, no daily spend cap. ~14 API calls/round/room, ~$6.64/round. 100 concurrent rooms = $3,300+.
 - **Resolution narrative generation** — described in GENERATIVE-CONTENT.md Phase C. Current resolution narrative is a generic template, not LLM-generated.
 - **No live playtesting** — prompt quality, latency, and cost are untested with real API calls.
-- **Generation metrics not in game logs** — latency, token usage, validation failures only logged to stdout.
 
 ### External Role Balancing
 
@@ -174,10 +177,10 @@ WandBApp (`apps/WandBApp.tsx`) ignores its `content` prop entirely — renders f
 ## Test Quality
 
 ### Current Coverage
-- 1,169 pass, 2 skip, 0 fail across 46 test files
-- Server (667 tests): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite + logger suite + decision submission edge cases
-- Client (411 tests): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + store tests (game, messages, notifications, UI) + GM ControlsPanel export tests
-- Shared (91 tests): resolution, fog, endings with property tests
+- 1,143 pass, 2 skip, 0 fail across 47 test files
+- Server (641 tests / 25 files): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite + logger suite + auth + decision submission edge cases
+- Client (411 tests / 21 files): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + store tests (game, messages, notifications, UI) + GM ControlsPanel export tests
+- Shared (91 tests / 1 file): resolution, fog, endings with property tests
 
 ### Coverage Gaps
 
@@ -225,7 +228,7 @@ Before enabling generation in production:
 6. Add generation status visibility to GM dashboard (pending/ready/failed)
 
 ### P2 — Monitoring & Observability
-7. Generation metrics in JSONL (token usage, cost, retry counts)
+7. Logger event coverage sweep — emit 18 missing event types across events.ts and game.ts
 8. Expand `/api/health` (memory, socket count, generation pipeline status)
 9. Surface threshold/NPC trigger events in GM dashboard
 
