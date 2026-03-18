@@ -11,6 +11,7 @@
     "build": "bun run --filter '*' build",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter '*' test",
+    "knip": "bunx knip",
     "prepare": "husky"
   },
   "devDependencies": {
