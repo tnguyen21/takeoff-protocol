@@ -53,6 +53,20 @@ cd packages/shared && bun test
 cd packages/server && bun test
 ```
 
+## Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SITE_PASSWORD` | _(unset)_ | Shared passphrase to gate access. When unset, no auth is required. |
+| `MAX_CONCURRENT_ROOMS` | `5` | Maximum simultaneous rooms. Limits LLM generation costs. |
+
+When `SITE_PASSWORD` is set, unauthenticated users see a password page. A valid password sets an HMAC-signed HttpOnly cookie (24h TTL). Rate limited to 5 attempts per IP per minute.
+
+```sh
+# Local dev with auth enabled
+SITE_PASSWORD="playtest-2027" bun run dev
+```
+
 ## Playing
 
 1. Open `http://localhost:5173`, enter your name, click **Create Room**

@@ -87,6 +87,20 @@ The mount is already configured in `fly.toml`:
 
 Secrets are injected as environment variables at runtime. They're encrypted at rest and never visible in logs.
 
+### Site password (recommended)
+
+Gate the site behind a shared passphrase to prevent unauthorized access and token waste. When set, unauthenticated requests get a password page. Valid password sets an HMAC-signed HttpOnly cookie (24h TTL). Rate limited to 5 attempts per IP per minute.
+
+```bash
+fly secrets set SITE_PASSWORD="your-playtest-passphrase"
+```
+
+Changing the password invalidates all existing cookies (HMAC key rotates). To disable the gate, unset the secret:
+
+```bash
+fly secrets unset SITE_PASSWORD
+```
+
 ### Required (if using LLM generation)
 
 ```bash
@@ -142,6 +156,8 @@ These are non-sensitive and already in `fly.toml` `[env]`:
 | `GEN_CONTENT_MODEL` | `claude-haiku-4-5-20251001` | No | Model for app content |
 | `GEN_TIMEOUT_MS` | `30000` | No | Generation request timeout (ms) |
 | `ANTHROPIC_API_KEY` | — | If `GEN_ENABLED=true` | Anthropic API key |
+| `SITE_PASSWORD` | _(unset)_ | No | Shared passphrase for site-wide access gate. Unset = no auth. |
+| `MAX_CONCURRENT_ROOMS` | `5` | No | Max simultaneous rooms (limits LLM cost runaway) |
 
 ## 7. Deploy
 
@@ -306,6 +322,9 @@ fly apps destroy takeoff-protocol
 | Logs directory empty | Verify volume mount: `fly ssh console` → `ls /data/logs/` → check `LOG_DIR` env |
 | Cold start too slow | Set `min_machines_running = 1` in fly.toml |
 | Machine keeps stopping | Check `auto_stop_machines` in fly.toml; ensure health check passes |
+| Password gate not showing | Confirm `SITE_PASSWORD` is set: `fly secrets list` |
+| "Too many attempts" on password | Rate limit: 5 attempts/IP/min. Wait 60s or redeploy to reset. |
+| Can't create rooms | Room cap hit. Check `/api/rooms` or increase `MAX_CONCURRENT_ROOMS`. |
 
 ---
 
