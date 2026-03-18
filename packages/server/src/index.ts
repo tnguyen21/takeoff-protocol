@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
+import { join, extname } from "node:path";
 import { Server as SocketIOServer } from "socket.io";
 import { registerGameEvents } from "./events.js";
 import { rooms, pruneAbandonedRooms, deleteRoom, MAX_CONCURRENT_ROOMS } from "./rooms.js";
@@ -74,7 +74,9 @@ app.get("/api/rooms", (c) => {
   return c.json({ rooms: roomList, maxRooms: MAX_CONCURRENT_ROOMS });
 });
 
-if (process.env.NODE_ENV === "production") {
+const isProduction = process.env["NODE_ENV"] === "production";
+
+if (isProduction) {
   // Auth middleware for production (before static serving)
   if (isAuthEnabled()) {
     app.use("/*", async (c, next) => {
@@ -93,17 +95,57 @@ if (process.env.NODE_ENV === "production") {
     });
   }
 
-  // Serve built client assets
-  app.use("/*", serveStatic({ root: "./client-dist" }));
+  // Serve built client assets (Bun-native, no adapter needed)
+  // In Docker, CWD is /app and client assets are at /app/client-dist.
+  // Locally, fall back to packages/client/dist relative to repo root.
+  const candidates = [
+    join(process.cwd(), "client-dist"),
+    join(process.cwd(), "packages", "client", "dist"),
+  ];
+  const clientDir = candidates.find((d) => {
+    try { return Bun.file(join(d, "index.html")).size > 0; } catch { return false; }
+  }) ?? candidates[0];
+
+  const MIME_TYPES: Record<string, string> = {
+    ".html": "text/html; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".json": "application/json",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".woff2": "font/woff2",
+    ".woff": "font/woff",
+    ".ico": "image/x-icon",
+  };
+
+  app.use("/*", async (c, next) => {
+    const reqPath = new URL(c.req.url).pathname;
+    if (reqPath.startsWith("/api/") || reqPath.startsWith("/socket.io")) return next();
+
+    const filePath = join(clientDir, reqPath);
+    const file = Bun.file(filePath);
+    if (await file.exists() && file.size > 0) {
+      const ext = extname(filePath);
+      const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
+      return new Response(file, { headers: { "content-type": contentType } });
+    }
+    return next();
+  });
+
   // SPA fallback: serve index.html for non-asset routes
-  app.get("*", serveStatic({ root: "./client-dist", path: "index.html" }));
+  app.get("*", async (c) => {
+    const indexFile = Bun.file(join(clientDir, "index.html"));
+    if (await indexFile.exists()) {
+      return new Response(indexFile, { headers: { "content-type": "text/html; charset=utf-8" } });
+    }
+    return c.text("Client assets not found", 500);
+  });
 }
 
 const port = parseInt(process.env.PORT || "3001");
 
 const server = serve({ fetch: app.fetch, port });
-
-const isProduction = process.env.NODE_ENV === "production";
 
 const io = new SocketIOServer(server as any, {
   ...(isProduction

@@ -1,24 +1,29 @@
-app = "takeoff-protocol"
-primary_region = "sjc"
+# fly.toml app configuration file generated for takeoff-protocol on 2026-03-18T19:31:31+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'takeoff-protocol'
+primary_region = 'sjc'
 
 [build]
 
 [env]
-  NODE_ENV = "production"
-  LOG_DIR = "/data/logs"
-  PORT = "8080"
+  LOG_DIR = '/data/logs'
+  NODE_ENV = 'production'
+  PORT = '8080'
+
+[[mounts]]
+  source = 'game_logs'
+  destination = '/data/logs'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 0
-
-[mounts]
-  source = "game_logs"
-  destination = "/data/logs"
+  min_machines_running = 1
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
