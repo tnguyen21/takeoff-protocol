@@ -221,7 +221,7 @@ export function postProcessNpcTriggers(raw: RawNpcOutput, targetRound: number): 
  * Calls the provider and returns post-processed NpcTrigger[].
  * Does NOT retry or validate — callers should use generateNpcMessagesWithRetry.
  */
-export async function generateNpcMessages(
+async function generateNpcMessages(
   provider: GenerationProvider,
   context: GenerationContext,
   validationErrors?: string[],

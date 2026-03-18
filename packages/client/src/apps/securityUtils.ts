@@ -15,7 +15,7 @@ export interface SecurityAlert {
 }
 
 // Filter pill label → severity key
-export const FILTER_TO_SEV: Record<string, string> = {
+const FILTER_TO_SEV: Record<string, string> = {
   CRIT: "critical",
   HIGH: "high",
   MED: "medium",

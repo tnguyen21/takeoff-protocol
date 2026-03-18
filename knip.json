@@ -6,7 +6,6 @@
       "project": ["scripts/**/*.ts"]
     },
     "packages/client": {
-      "entry": ["src/main.tsx"],
       "project": ["src/**/*.{ts,tsx}"]
     },
     "packages/server": {
@@ -18,6 +17,6 @@
       "project": ["src/**/*.ts"]
     }
   },
-  "ignore": ["**/dist/**"],
-  "ignoreDependencies": ["autoprefixer", "postcss", "tailwindcss"]
+  "ignore": [],
+  "ignoreDependencies": ["autoprefixer", "postcss"]
 }

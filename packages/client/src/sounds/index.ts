@@ -10,7 +10,7 @@ import {
 
 const MUTE_KEY = "takeoff:muted";
 
-export type SoundName =
+type SoundName =
   | "notification-chime"
   | "pop"
   | "timer-warning"

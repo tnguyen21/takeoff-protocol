@@ -4,7 +4,7 @@ import { FACTION_COLORS } from "../../constants/factions.js";
 import { formatTimestamp } from "./shared.js";
 import type { LobbyPlayer } from "../../stores/game.js";
 
-export interface MessageFeedProps {
+interface MessageFeedProps {
   messages: GameMessage[];
   phase: string | null;
   gmDecisionStatus: string[];

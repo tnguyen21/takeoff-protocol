@@ -5,7 +5,7 @@
 
 import type { FogVariable } from "@takeoff/shared";
 
-export type FogVar = FogVariable;
+type FogVar = FogVariable;
 
 /** Format a single fog variable value for display. Returns "CLASSIFIED" when hidden. */
 export function formatFogValue(v: FogVar, key: string): string {

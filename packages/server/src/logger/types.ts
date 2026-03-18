@@ -45,4 +45,4 @@ export const EVENT_NAMES = {
   PUBLISH_SUBMITTED: "publish.submitted",
 } as const;
 
-export type EventName = (typeof EVENT_NAMES)[keyof typeof EVENT_NAMES];
+type EventName = (typeof EVENT_NAMES)[keyof typeof EVENT_NAMES];

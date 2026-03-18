@@ -3,7 +3,7 @@ import type { Faction } from "@takeoff/shared";
 import { FACTION_COLORS } from "../../constants/factions.js";
 import type { LobbyPlayer } from "../../stores/game.js";
 
-export interface PlayerRosterProps {
+interface PlayerRosterProps {
   lobbyPlayers: LobbyPlayer[];
   phase: string | null;
   roomCode: string | null;

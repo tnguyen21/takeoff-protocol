@@ -24,7 +24,7 @@ export class GenerationParseError extends Error {
   }
 }
 
-export class GenerationApiError extends Error {
+class GenerationApiError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
     super(message);
     this.name = "GenerationApiError";

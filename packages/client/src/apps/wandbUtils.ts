@@ -19,7 +19,7 @@ export function getRunStatusColor(status: string): string {
   }
 }
 
-export type CapDataPoint = {
+type CapDataPoint = {
   round: number;
   ob: number | null;
   prom: number | null;
@@ -32,7 +32,7 @@ export type CapDataPoint = {
   chinaBandH: number | null;
 };
 
-export type CapData = {
+type CapData = {
   data: CapDataPoint[];
   obAcc: string;
   promAcc: string;
@@ -41,13 +41,13 @@ export type CapData = {
 
 // ── System data types ────────────────────────────────────────────────────────
 
-export type GpuEntry = {
+type GpuEntry = {
   label: string;
   utilization: number; // 0-100
   sparkData: { v: number }[];
 };
 
-export type SystemData = {
+type SystemData = {
   clusterStatus: "NOMINAL" | "THERMAL WARNING" | "CAPACITY LIMIT";
   baseUtilization: number; // 0-100
   gpus: GpuEntry[];
@@ -140,7 +140,7 @@ export interface SweepProbe {
   lastRun: string;           // ISO timestamp
 }
 
-export interface SweepData {
+interface SweepData {
   probes: SweepProbe[];
   accessDenied: boolean;
 }
@@ -327,9 +327,9 @@ export function buildCapData(
 
 // ── Run entries ───────────────────────────────────────────────────────────────
 
-export type RunStatus = "running" | "finished" | "crashed" | "failed" | "queued";
+type RunStatus = "running" | "finished" | "crashed" | "failed" | "queued";
 
-export type RunEntry = {
+type RunEntry = {
   name: string;
   status: RunStatus;
   loss: string;
@@ -559,7 +559,7 @@ export interface ArtifactEntry {
   breachAffected?: boolean;
 }
 
-export interface ArtifactResult {
+interface ArtifactResult {
   artifacts: ArtifactEntry[];
   /** chinaWeightTheftProgress > 60 */
   breachWarning: boolean;

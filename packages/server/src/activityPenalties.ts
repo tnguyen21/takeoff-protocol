@@ -1,6 +1,6 @@
 import type { AppId, GameRoom, Role, StateVariables } from "@takeoff/shared";
 
-export interface ActivityPenalty {
+interface ActivityPenalty {
   app: AppId;
   variable: keyof StateVariables;
   delta: number;
@@ -17,7 +17,7 @@ export const PRIMARY_APP_PENALTIES: Partial<Record<Role, ActivityPenalty>> = {
   ext_vc:         { app: "bloomberg", variable: "economicDisruption",   delta: 2  },
 };
 
-export interface AppliedActivityPenalty {
+interface AppliedActivityPenalty {
   playerId: string;
   role: Role;
   primaryApp: AppId;

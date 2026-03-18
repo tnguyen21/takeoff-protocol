@@ -11,7 +11,7 @@ import type { Faction, GameRoom, Player, Role } from "@takeoff/shared";
 import { FACTIONS } from "@takeoff/shared";
 import { getActiveDecisions } from "./game.js";
 
-export interface DevBotOptions {
+interface DevBotOptions {
   mode: "all_roles" | "minimum_table";
   seed?: number;
   submitJitterMs?: [number, number]; // default [200, 2200]

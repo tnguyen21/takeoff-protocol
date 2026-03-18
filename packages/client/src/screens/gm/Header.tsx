@@ -1,6 +1,6 @@
 import { PHASE_LABELS } from "./shared.js";
 
-export interface HeaderProps {
+interface HeaderProps {
   roomCode: string | null;
   round: number;
   phase: string | null;

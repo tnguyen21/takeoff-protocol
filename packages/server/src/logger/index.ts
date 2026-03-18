@@ -3,7 +3,6 @@ import { appendFile } from "fs/promises";
 import type { EventContext } from "./types.js";
 import { buildEnvelope, validateEnvelope } from "./validation.js";
 
-export type { GameEventEnvelope, EventContext, EventName } from "./types.js";
 export { EVENT_NAMES } from "./types.js";
 export { validateEnvelope } from "./validation.js";
 

@@ -1,6 +1,6 @@
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface GenerationConfig {
+interface GenerationConfig {
   enabled: boolean;           // GEN_ENABLED, default true
   briefingsEnabled: boolean;  // GEN_BRIEFINGS_ENABLED, default true
   npcEnabled: boolean;        // GEN_NPC_ENABLED, default true

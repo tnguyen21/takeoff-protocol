@@ -16,7 +16,7 @@ export const VALID_SLACK_CHANNELS = [
   "#random",
 ] as const;
 
-export type ValidSlackChannel = (typeof VALID_SLACK_CHANNELS)[number];
+type ValidSlackChannel = (typeof VALID_SLACK_CHANNELS)[number];
 
 // ── App → ContentItemType mapping ─────────────────────────────────────────────
 

@@ -3,8 +3,6 @@ import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
 import { computeThreatCon, getTaiwanSituation, getPrcNavalMovements, getPrecedenceLabel } from "./militaryUtils.js";
 
-export { computeThreatCon, getTaiwanSituation, getPrcNavalMovements, getPrecedenceLabel } from "./militaryUtils.js";
-
 // ── Static data ───────────────────────────────────────────────────────────────
 
 const FORCE_STATUS = [

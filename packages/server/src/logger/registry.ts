@@ -2,7 +2,7 @@ import type { EventContext } from "./types.js";
 import { GameLogger, NullLogger } from "./index.js";
 import type { GameLoggerOptions } from "./index.js";
 
-export interface LoggerLike {
+interface LoggerLike {
   log(event: string, data: unknown, ctx?: EventContext): void;
   flush(): Promise<void>;
   close(): Promise<void>;

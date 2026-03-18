@@ -4,7 +4,7 @@ import { getNpcPersona } from "../content/npcPersonas.js";
 
 // ── ValidationResult ──────────────────────────────────────────────────────────
 
-export interface ValidationResult {
+interface ValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];

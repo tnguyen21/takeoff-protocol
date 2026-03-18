@@ -1,6 +1,6 @@
 import type { GameEventEnvelope } from "./types.js";
 
-export interface ValidationResult {
+interface ValidationResult {
   valid: boolean;
   errors: string[];
 }

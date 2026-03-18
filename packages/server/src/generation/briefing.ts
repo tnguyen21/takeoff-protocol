@@ -7,7 +7,7 @@ import { validateBriefing } from "./validate.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type BriefingOutput = {
+type BriefingOutput = {
   common: string;
   factionVariants: Record<Faction, string>;
 };
@@ -94,7 +94,7 @@ function buildBriefingUserPrompt(context: GenerationContext, validationErrors?: 
  *
  * Does NOT retry or validate — callers should use generateBriefingWithRetry.
  */
-export async function generateBriefing(
+async function generateBriefing(
   provider: GenerationProvider,
   context: GenerationContext,
   validationErrors?: string[],

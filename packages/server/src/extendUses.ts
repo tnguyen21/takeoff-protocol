@@ -11,5 +11,3 @@ export function cleanupRoom(code: string): void {
   }
 }
 
-/** Alias for cleanupRoom — preferred name in cleanup/pruning contexts. */
-export const clearExtendUses = cleanupRoom;

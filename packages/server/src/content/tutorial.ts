@@ -1,6 +1,6 @@
 import type { AppContent, ContentItem } from "@takeoff/shared";
 
-export const SHARED_CLASSIFICATION_TUTORIAL: ContentItem[] = [
+const SHARED_CLASSIFICATION_TUTORIAL: ContentItem[] = [
     {
       id: "tut-shared-classification-1",
       type: "message",
@@ -13,7 +13,7 @@ export const SHARED_CLASSIFICATION_TUTORIAL: ContentItem[] = [
     },
 ];
 
-export const OB_GAMESTATE: ContentItem[] = [
+const OB_GAMESTATE: ContentItem[] = [
     {
       id: "tut-ob-state-1",
       type: "message",
@@ -26,7 +26,7 @@ export const OB_GAMESTATE: ContentItem[] = [
     },
 ];
 
-export const PROM_GAMESTATE: ContentItem[] = [
+const PROM_GAMESTATE: ContentItem[] = [
     {
       id: "tut-prom-state-1",
       type: "message",
@@ -39,7 +39,7 @@ export const PROM_GAMESTATE: ContentItem[] = [
     },
 ];
 
-export const CHINA_GAMESTATE: ContentItem[] = [
+const CHINA_GAMESTATE: ContentItem[] = [
     {
       id: "tut-china-state-1",
       type: "message",
@@ -52,7 +52,7 @@ export const CHINA_GAMESTATE: ContentItem[] = [
     },
 ];
 
-export const EXT_GAMESTATE: ContentItem[] = [
+const EXT_GAMESTATE: ContentItem[] = [
     {
       id: "tut-ext-state-1",
       type: "message",

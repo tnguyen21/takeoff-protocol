@@ -6,7 +6,7 @@ import { registerGameEvents } from "./events.js";
 import { rooms, pruneAbandonedRooms, deleteRoom } from "./rooms.js";
 import { closeAllLoggers, closeLoggerForRoom } from "./logger/registry.js";
 import { clearPhaseTimer } from "./game.js";
-import { clearExtendUses } from "./extendUses.js";
+import { cleanupRoom } from "./extendUses.js";
 
 const app = new Hono();
 
@@ -55,7 +55,7 @@ const pruneInterval = setInterval(() => {
   for (const code of pruned) {
     const room = rooms.get(code);
     if (room) clearPhaseTimer(room);
-    clearExtendUses(code);
+    cleanupRoom(code);
     void closeLoggerForRoom(code);
     deleteRoom(code);
     console.log(`[prune] removed abandoned room ${code}`);

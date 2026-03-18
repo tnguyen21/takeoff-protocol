@@ -4,9 +4,6 @@ import { useGameStore } from "../stores/game.js";
 import { computeSecLevel, filterAlerts, toggleAlertExpand } from "./securityUtils.js";
 import type { SecurityAlert } from "./securityUtils.js";
 
-// Re-export helpers so external tests can also import from SecurityApp
-export { computeSecLevel, filterAlerts, toggleAlertExpand } from "./securityUtils.js";
-
 // ── Static Alerts ──
 
 const STATIC_ALERTS: SecurityAlert[] = [

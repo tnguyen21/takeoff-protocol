@@ -8,7 +8,7 @@ import type { GameMessage } from "@takeoff/shared";
 
 // ── Read Receipts ───────────────────────────────────────────────────────────
 
-export type ReadReceiptStatus = "sent" | "delivered" | "read";
+type ReadReceiptStatus = "sent" | "delivered" | "read";
 
 /**
  * Returns the read-receipt status for a sent message based on its age.
@@ -37,13 +37,13 @@ export function hasDisappearingTimer(msgId: string): boolean {
 
 // ── NPC Contacts ─────────────────────────────────────────────────────────────
 
-export interface NpcMessage {
+interface NpcMessage {
   id: string;
   content: string;
   timestamp: number;
 }
 
-export interface NpcContact {
+interface NpcContact {
   id: string;
   name: string;
   subtitle: string;
@@ -139,14 +139,14 @@ export const NPC_IDS = new Set<string>(Object.keys(NPC_METADATA));
 
 // ── Content Contacts (seeded signal items grouped by sender) ────────────────
 
-export interface ContentMessage {
+interface ContentMessage {
   id: string;
   body: string;
   timestamp: string;
   sender?: string;
 }
 
-export interface ContentContact {
+interface ContentContact {
   id: string;
   name: string;
   subtitle: string;

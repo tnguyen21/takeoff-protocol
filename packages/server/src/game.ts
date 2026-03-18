@@ -364,7 +364,7 @@ export function emitStateViews(io: Server, room: GameRoom) {
  * Returns a placeholder if generation hasn't completed yet.
  * Applies name personalization.
  */
-export function getBriefingTextForPlayer(room: GameRoom, player: Player, nameMap: Map<string, string>): string {
+function getBriefingTextForPlayer(room: GameRoom, player: Player, nameMap: Map<string, string>): string {
   const generated = getGeneratedBriefing(room, room.round);
   if (!generated) return "Content generation in progress...";
   const { common, factionVariants } = generated;

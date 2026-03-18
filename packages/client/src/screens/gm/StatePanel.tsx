@@ -295,7 +295,7 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
 
 // ── StatePanel ────────────────────────────────────────────────────────────────
 
-export interface StatePanelProps {
+interface StatePanelProps {
   gmRawState: StateVariables | null;
   round: number;
   gmSetState: (variable: keyof StateVariables, value: number) => void;

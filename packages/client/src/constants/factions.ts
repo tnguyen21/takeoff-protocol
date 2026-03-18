@@ -36,7 +36,7 @@ export const FACTION_IDENTITIES: Record<Faction, string> = {
   external: "Influence without control — government officials, VCs, journalists, diplomats shaping the environment.",
 };
 
-export interface FactionTheme {
+interface FactionTheme {
   cardBorder: string;
   cardBorderSelected: string;
   cardBg: string;

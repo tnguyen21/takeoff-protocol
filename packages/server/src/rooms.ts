@@ -3,8 +3,6 @@ import type { Faction, GameMessage, GamePhase, GameRoom, Player, Role, StateVari
 import { createLoggerForRoom } from "./logger/registry.js";
 
 export const rooms = new Map<string, GameRoom>();
-export { getLoggerForRoom } from "./logger/registry.js";
-
 /**
  * Tracks the timestamp (ms) when a room's last player disconnected.
  * Cleared when any player reconnects. Used by pruneAbandonedRooms to
