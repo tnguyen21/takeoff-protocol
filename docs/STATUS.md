@@ -135,10 +135,12 @@ All four external roles (NSA, Journalist, VC, Diplomat) have individual decision
 **Status: Logger implemented with structured JSONL. Observability gaps remain.**
 
 What's missing:
-- **Generation metrics not in JSONL** — token usage, cost, retry counts only on stdout
+- **Event coverage gaps** — 10 of 22 spec'd event types not yet emitted (see below)
 - **Health endpoint minimal** — only room count; no memory, socket count, generation status
 - **GM has no generation visibility** — can't see if generation is pending/ready/failed
 - **No cost instrumentation** — no tracking of actual API spend
+
+Missing event emissions: `player.role_selected`, `player.disconnected`, `player.reconnected`, `phase.paused`, `phase.resumed`, `phase.extended`, `phase.gm_advanced`, `decision.team_locked`, `decision.inaction`, `state.snapshot`, `state.delta`, `state.gm_override`, `threshold.fired`, `npc_trigger.fired`, `publish.submitted`, `message.sent`, `message.npc`, `activity.penalty`
 
 ### Game Balance
 
@@ -166,7 +168,6 @@ WandBApp (`apps/WandBApp.tsx`) ignores its `content` prop entirely — renders f
 
 - `Dock.tsx:95` — `negotiation-pulse` CSS class undefined (Signal icon has no visual effect during Round 4)
 - Faction display maps (`FACTION_NAMES`, `FACTION_COLORS`) scattered across 4+ files — consolidate
-- `activity:report` only tracks open/close — needs per-app dwell time, focus transitions, cumulative time per phase
 
 ---
 
@@ -238,8 +239,6 @@ Before enabling generation in production:
 14. Inline style → Tailwind migration (in progress)
 15. WandBApp content integration (currently ignores `content` prop)
 16. Add client screen component tests
-17. Client activity tracking enhancements (dwell time, focus transitions)
-18. Cross-game analysis script (`scripts/compare-games.ts`)
 
 ### Future (Post-Launch)
 19. Twitter faction bubble system (per-faction algorithmic feed)
