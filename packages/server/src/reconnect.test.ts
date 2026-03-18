@@ -21,8 +21,9 @@ import type { GameMessage, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { rooms } from "./rooms.js";
 import { registerGameEvents } from "./events.js";
-import { setGeneratedBriefing } from "./generation/cache.js";
+import { setGeneratedBriefing, setGeneratedContent, setGeneratedDecisions } from "./generation/cache.js";
 import { emitBriefing } from "./game.js";
+import { ROUND1_DECISIONS } from "./test-fixtures.js";
 
 // ── Minimal mocks (same pattern as events.test.ts) ───────────────────────────
 
@@ -144,6 +145,10 @@ describe("room:rejoin — basic rejoin flow", () => {
     io = createIo();
     room = makeRoom(ROOM_CODE, GM_ID, { phase: "decision", round: 1 });
     room.players[OLD_SOCKET] = makePlayer(OLD_SOCKET);
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
+    setGeneratedContent(room, 1, "openbrain", [
+      { faction: "openbrain", app: "slack", items: [{ id: "test-slack-1", type: "message", round: 1, body: "Test content", timestamp: "2027-01-01T00:00:00Z", classification: "context" }] },
+    ]);
 
     newSocket = createSocket(NEW_SOCKET);
     registerGameEvents(
@@ -503,6 +508,7 @@ describe("room:rejoin — mid-decision rejoin", () => {
     io = createIo();
     room = makeRoom(MID_ROOM, MID_GM, { phase: "decision", round: 1 });
     room.players[MID_OLD] = makePlayer(MID_OLD, { faction: "openbrain", role: "ob_ceo", isLeader: true });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     newSocket = createSocket(MID_NEW);
     registerGameEvents(
@@ -617,7 +623,7 @@ describe("room:rejoin — briefing replay", () => {
     expect(text).not.toContain("It's November 2026");
   });
 
-  it("INV-2: emits pre-authored briefing when no generated briefing exists", () => {
+  it("INV-2: emits placeholder briefing when no generated briefing exists", () => {
     // No setGeneratedBriefing call — room.generatedRounds is unset
 
     fire(newSocket.handlers, "room:rejoin", { code: BRF_ROOM, playerId: BRF_OLD }, () => {});
@@ -625,8 +631,8 @@ describe("room:rejoin — briefing replay", () => {
     const briefingEmit = newSocket.selfEmits.find((e) => e.event === "game:briefing");
     expect(briefingEmit).toBeDefined();
     const text = (briefingEmit!.data as { text: string }).text;
-    // Pre-authored round 1 briefing contains this string
-    expect(text).toContain("It's November 2026");
+    // Placeholder text is emitted when no generated briefing exists
+    expect(text).toContain("Content generation in progress");
   });
 
   it("INV-3: replayPlayerState emits same text as emitBriefing for the same player", () => {

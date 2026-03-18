@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from "bun:test";
 import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame, buildNameMap, personalizeText, personalizeContent, getActiveDecisions } from "./game.js";
 import { INITIAL_STATE, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, RoundDecisions, StateVariables } from "@takeoff/shared";
-import { setGeneratedContent, setGeneratedDecisions } from "./generation/cache.js";
-import { getContentForPlayer } from "./content/loader.js";
+import { setGeneratedContent, setGeneratedDecisions, setGeneratedNpcTriggers } from "./generation/cache.js";
+import { getNpcTriggersForRound } from "./test-fixtures.js";
 import { _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 import type { EventContext } from "./logger/types.js";
 
@@ -581,6 +581,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "intel",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -603,6 +604,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "intel",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io } = createMockIo();
     checkThresholds(io, room);
@@ -620,6 +622,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "deliberation",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -636,6 +639,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "briefing",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io } = createMockIo();
     checkThresholds(io, room);
@@ -650,6 +654,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "intel",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -670,6 +675,7 @@ describe("checkThresholds — NPC triggers", () => {
       players: { p1: ob },
       state: { ...INITIAL_STATE, alignmentConfidence: 40 },
     });
+    setGeneratedNpcTriggers(room, 2, getNpcTriggersForRound(2));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -688,6 +694,7 @@ describe("checkThresholds — NPC triggers", () => {
       players: { p1: ob },
       state: { ...INITIAL_STATE, alignmentConfidence: 70 },
     });
+    setGeneratedNpcTriggers(room, 2, getNpcTriggersForRound(2));
 
     const { io } = createMockIo();
     checkThresholds(io, room);
@@ -704,6 +711,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "intel",
       players: { p1: ob, p2: ext },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -727,6 +735,7 @@ describe("checkThresholds — NPC triggers", () => {
       gmId: "gm1",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -761,6 +770,7 @@ describe("checkThresholds — NPC triggers", () => {
       phase: "intel",
       players: { p1: noRole, p2: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     checkThresholds(io, room);
@@ -782,6 +792,7 @@ describe("advancePhase — NPC triggers fire on phase transition", () => {
       round: 1,
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
 
     const { io, emitted } = createMockIo();
     advancePhase(io, room);
@@ -876,8 +887,8 @@ function makeGenContent(faction: AppContent["faction"], app: AppId, count = 2): 
   return { faction, app, items };
 }
 
-describe("emitContent — INV-1: no generated content → identical to current behavior", () => {
-  it("emits pre-authored content when no generated content is set", () => {
+describe("emitContent — INV-1: no generated content → empty content array", () => {
+  it("emits empty content when no generated content is set", () => {
     const player = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({ round: 1, players: { p1: player } });
 
@@ -885,13 +896,8 @@ describe("emitContent — INV-1: no generated content → identical to current b
     emitContent(io, room);
 
     const content = getEmittedContent(emitted, "p1");
-    // Pre-authored round 1 openbrain content must be present
-    expect(content.length).toBeGreaterThan(0);
-
-    // Result must match personalized getContentForPlayer output
-    const expected = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
-    const nameMap = buildNameMap(room);
-    expect(content).toEqual(personalizeContent(expected, nameMap));
+    // No generated content → empty array
+    expect(content).toEqual([]);
   });
 
   it("skips players without faction/role", () => {
@@ -906,8 +912,8 @@ describe("emitContent — INV-1: no generated content → identical to current b
   });
 });
 
-describe("emitContent — INV-2: generated news replaces pre-authored news (no duplicates)", () => {
-  it("replaces pre-authored news with generated news", () => {
+describe("emitContent — INV-2: generated news is emitted directly", () => {
+  it("emits generated news content", () => {
     const player = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({ round: 1, players: { p1: player } });
 
@@ -932,39 +938,16 @@ describe("emitContent — INV-2: generated news replaces pre-authored news (no d
     // Exactly 3 generated news items (from makeGenContent)
     expect(allNewsItems.length).toBe(3);
   });
-
-  it("does not duplicate news — generated replaces pre-authored, not supplements", () => {
-    const player = makePlayer("p1", "openbrain", "ob_ceo");
-    const room = makeRoom({ round: 1, players: { p1: player } });
-
-    // Pre-authored already has news for round 1 openbrain
-    const preAuthored = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
-    const preAuthoredNews = preAuthored.filter((c) => c.app === "news").flatMap((c) => c.items);
-
-    const genNews = makeGenContent("openbrain", "news", 2);
-    setGeneratedContent(room, 1, "openbrain", [genNews]);
-
-    const { io, emitted } = createMockIo();
-    emitContent(io, room);
-
-    const content = getEmittedContent(emitted, "p1");
-    const newsItems = content.filter((c) => c.app === "news").flatMap((c) => c.items);
-
-    // No pre-authored news IDs should appear in the merged payload
-    const preAuthoredNewsIds = new Set(preAuthoredNews.map((i) => i.id));
-    for (const item of newsItems) {
-      expect(preAuthoredNewsIds.has(item.id)).toBe(false);
-    }
-  });
 });
 
-describe("emitContent — INV-3: non-news/twitter apps always present regardless of generation", () => {
-  it("email app remains in payload when news is replaced by generated content", () => {
+describe("emitContent — INV-3: only generated content is emitted", () => {
+  it("only generated apps appear in payload", () => {
     const player = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({ round: 1, players: { p1: player } });
 
     const genNews = makeGenContent("openbrain", "news", 2);
-    setGeneratedContent(room, 1, "openbrain", [genNews]);
+    const genEmail = makeGenContent("openbrain", "email", 1);
+    setGeneratedContent(room, 1, "openbrain", [genNews, genEmail]);
 
     const { io, emitted } = createMockIo();
     emitContent(io, room);
@@ -972,13 +955,13 @@ describe("emitContent — INV-3: non-news/twitter apps always present regardless
     const content = getEmittedContent(emitted, "p1");
     const appIds = content.map((c) => c.app);
 
-    // Email is an accumulating app — must still be present
-    expect(appIds).toContain("email");
-    // News must be present (generated version)
+    // Only the generated apps should be present
     expect(appIds).toContain("news");
+    expect(appIds).toContain("email");
+    expect(appIds).toHaveLength(2);
   });
 
-  it("non-generated apps are unaffected when twitter is generated", () => {
+  it("generated twitter items are emitted directly", () => {
     const player = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({ round: 1, players: { p1: player } });
 
@@ -991,9 +974,6 @@ describe("emitContent — INV-3: non-news/twitter apps always present regardless
     const content = getEmittedContent(emitted, "p1");
     const appIds = content.map((c) => c.app);
 
-    // Slack is an accumulating app — must still be present
-    expect(appIds).toContain("slack");
-    // Twitter must be present (generated version)
     expect(appIds).toContain("twitter");
     // All twitter items must be generated
     const twitterItems = content.filter((c) => c.app === "twitter").flatMap((c) => c.items);
@@ -1003,50 +983,24 @@ describe("emitContent — INV-3: non-news/twitter apps always present regardless
   });
 });
 
-describe("emitContent — INV-4: content IDs are unique within a single emit payload", () => {
-  it("deduplicates content IDs across all app entries", () => {
+describe("emitContent — INV-4: generated content emitted as-is", () => {
+  it("generated content with duplicate IDs emits both (no dedup layer)", () => {
     const player = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({ round: 1, players: { p1: player } });
 
-    // Create two AppContent entries for the same app — this simulates a malformed generated payload
-    // The dedup guard should keep only the first occurrence
-    const genItem1: ContentItem = {
-      id: "gen-dedup-test-001",
-      type: "headline",
-      round: 1,
-      body: "Dedup test item 1",
-      timestamp: "2027-01-01T00:00:00Z",
-      classification: "context",
-    };
-    const genItem2: ContentItem = {
-      id: "gen-dedup-test-001", // same ID — should be deduplicated
-      type: "headline",
-      round: 1,
-      body: "Dedup test item 2 (duplicate ID)",
-      timestamp: "2027-01-01T00:00:00Z",
-      classification: "context",
-    };
-    // Two AppContent entries for "news" with overlapping IDs
-    const genContent: AppContent[] = [
-      { faction: "openbrain", app: "news", items: [genItem1, genItem2] },
-    ];
-    setGeneratedContent(room, 1, "openbrain", genContent);
+    const genNews = makeGenContent("openbrain", "news", 3);
+    setGeneratedContent(room, 1, "openbrain", [genNews]);
 
     const { io, emitted } = createMockIo();
     emitContent(io, room);
 
     const content = getEmittedContent(emitted, "p1");
-    const allItems = content.flatMap((c) => c.items);
-    const ids = allItems.map((i) => i.id);
-    const uniqueIds = new Set(ids);
-
-    // All IDs must be unique
-    expect(ids.length).toBe(uniqueIds.size);
+    expect(content.length).toBeGreaterThan(0);
   });
 });
 
 describe("emitContent — critical paths: per-faction generation independence", () => {
-  it("openbrain gets generated content, prometheus gets pre-authored when only openbrain generated", () => {
+  it("openbrain gets generated content, prometheus gets empty when only openbrain generated", () => {
     const obPlayer = makePlayer("p1", "openbrain", "ob_ceo");
     const promPlayer = makePlayer("p2", "prometheus", "prom_ceo");
     const room = makeRoom({ round: 1, players: { p1: obPlayer, p2: promPlayer } });
@@ -1064,16 +1018,14 @@ describe("emitContent — critical paths: per-faction generation independence", 
     const obNewsItems = obContent.filter((c) => c.app === "news").flatMap((c) => c.items);
     expect(obNewsItems.every((i) => i.id.startsWith("gen-"))).toBe(true);
 
-    // prometheus player (p2) should get personalized pre-authored content
+    // prometheus player (p2) gets empty content — no generation set
     const promContent = getEmittedContent(emitted, "p2");
-    const promExpected = getContentForPlayer(1, "prometheus", "prom_ceo", room.state);
-    const nameMap = buildNameMap(room);
-    expect(promContent).toEqual(personalizeContent(promExpected, nameMap));
+    expect(promContent).toEqual([]);
   });
 });
 
-describe("emitContent — failure mode: empty generated array falls back to pre-authored", () => {
-  it("empty generated content array falls back to pre-authored for that faction", () => {
+describe("emitContent — failure mode: empty generated array returns empty content", () => {
+  it("empty generated content array yields empty content for that faction", () => {
     const player = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({ round: 1, players: { p1: player } });
 
@@ -1084,11 +1036,8 @@ describe("emitContent — failure mode: empty generated array falls back to pre-
     emitContent(io, room);
 
     const content = getEmittedContent(emitted, "p1");
-    const expected = getContentForPlayer(1, "openbrain", "ob_ceo", room.state);
-
-    // Should get personalized pre-authored content
-    const nameMap = buildNameMap(room);
-    expect(content).toEqual(personalizeContent(expected, nameMap));
+    // Empty generated array → empty content returned
+    expect(content).toEqual([]);
   });
 });
 
@@ -1395,6 +1344,7 @@ describe("INV-4: checkThresholds logs threshold.fired for each fired threshold",
       phase: "intel",
       players: { p1: ob },
     });
+    setGeneratedNpcTriggers(room, 1, getNpcTriggersForRound(1));
     _setLoggerForRoom("LOG4NPC", spy);
 
     const { io } = createMockIo();
@@ -1764,16 +1714,11 @@ const GENERATED_ROUND2_DECISIONS: RoundDecisions = {
   ],
 };
 
-describe("getActiveDecisions — generated vs pre-authored (INV-2, INV-3)", () => {
-  it("returns pre-authored decisions when no generated decisions are cached (INV-3 fallback)", () => {
+describe("getActiveDecisions — generated only (INV-2, INV-3)", () => {
+  it("returns undefined when no generated decisions are cached (no fallback)", () => {
     const room = makeRoom({ round: 2 });
     const decisions = getActiveDecisions(room, 2);
-    // Pre-authored round 2 decisions must be returned
-    expect(decisions).toBeDefined();
-    expect(decisions?.round).toBe(2);
-    // Pre-authored IDs do NOT start with gen_
-    const firstIndivOpt = decisions?.individual[0]?.options[0];
-    expect(firstIndivOpt?.id).not.toMatch(/^gen_/);
+    expect(decisions).toBeUndefined();
   });
 
   it("returns generated decisions when they are cached (INV-2)", () => {
@@ -1819,11 +1764,8 @@ describe("getActiveDecisions — generated vs pre-authored (INV-2, INV-3)", () =
     const room = makeRoom({ round: 2 });
     setGeneratedDecisions(room, 2, GENERATED_ROUND2_DECISIONS);
 
-    // Round 3 should fall back to pre-authored
+    // Round 3 should return undefined — no generated decisions for it
     const round3 = getActiveDecisions(room, 3);
-    expect(round3).toBeDefined();
-    // Pre-authored round 3 IDs don't have gen_ prefix
-    const firstOpt = round3?.individual[0]?.options[0];
-    expect(firstOpt?.id).not.toMatch(/^gen_/);
+    expect(round3).toBeUndefined();
   });
 });

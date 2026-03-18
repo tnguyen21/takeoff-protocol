@@ -1,5 +1,4 @@
-import type { ContentItem } from "@takeoff/shared";
-import { registerContent } from "./loader.js";
+import type { AppContent, ContentItem } from "@takeoff/shared";
 
 export const SHARED_CLASSIFICATION_TUTORIAL: ContentItem[] = [
     {
@@ -14,11 +13,6 @@ export const SHARED_CLASSIFICATION_TUTORIAL: ContentItem[] = [
     },
 ];
 
-registerContent({ faction: "openbrain", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
-registerContent({ faction: "prometheus", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
-registerContent({ faction: "china", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
-registerContent({ faction: "external", app: "gamestate", accumulate: false, items: SHARED_CLASSIFICATION_TUTORIAL });
-
 export const OB_GAMESTATE: ContentItem[] = [
     {
       id: "tut-ob-state-1",
@@ -31,8 +25,6 @@ export const OB_GAMESTATE: ContentItem[] = [
       classification: "context",
     },
 ];
-
-registerContent({ faction: "openbrain", app: "gamestate", accumulate: false, items: OB_GAMESTATE });
 
 export const PROM_GAMESTATE: ContentItem[] = [
     {
@@ -47,8 +39,6 @@ export const PROM_GAMESTATE: ContentItem[] = [
     },
 ];
 
-registerContent({ faction: "prometheus", app: "gamestate", accumulate: false, items: PROM_GAMESTATE });
-
 export const CHINA_GAMESTATE: ContentItem[] = [
     {
       id: "tut-china-state-1",
@@ -61,8 +51,6 @@ export const CHINA_GAMESTATE: ContentItem[] = [
       classification: "context",
     },
 ];
-
-registerContent({ faction: "china", app: "gamestate", accumulate: false, items: CHINA_GAMESTATE });
 
 export const EXT_GAMESTATE: ContentItem[] = [
     {
@@ -77,4 +65,9 @@ export const EXT_GAMESTATE: ContentItem[] = [
     },
 ];
 
-registerContent({ faction: "external", app: "gamestate", accumulate: false, items: EXT_GAMESTATE });
+export const TUTORIAL_CONTENT: AppContent[] = [
+  { faction: "openbrain", app: "gamestate", items: [...SHARED_CLASSIFICATION_TUTORIAL, ...OB_GAMESTATE] },
+  { faction: "prometheus", app: "gamestate", items: [...SHARED_CLASSIFICATION_TUTORIAL, ...PROM_GAMESTATE] },
+  { faction: "china", app: "gamestate", items: [...SHARED_CLASSIFICATION_TUTORIAL, ...CHINA_GAMESTATE] },
+  { faction: "external", app: "gamestate", items: [...SHARED_CLASSIFICATION_TUTORIAL, ...EXT_GAMESTATE] },
+];

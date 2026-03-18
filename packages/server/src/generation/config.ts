@@ -1,10 +1,10 @@
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface GenerationConfig {
-  enabled: boolean;           // GEN_ENABLED, default false
-  briefingsEnabled: boolean;  // GEN_BRIEFINGS_ENABLED, default false
-  npcEnabled: boolean;        // GEN_NPC_ENABLED, default false
-  decisionsEnabled: boolean;  // GEN_DECISIONS_ENABLED, default false
+  enabled: boolean;           // GEN_ENABLED, default true
+  briefingsEnabled: boolean;  // GEN_BRIEFINGS_ENABLED, default true
+  npcEnabled: boolean;        // GEN_NPC_ENABLED, default true
+  decisionsEnabled: boolean;  // GEN_DECISIONS_ENABLED, default true
   providerType: "anthropic" | "mock"; // GEN_PROVIDER, default "anthropic"
   briefingModel: string;      // GEN_BRIEFING_MODEL, default "claude-sonnet-4-5-20250514"
   contentModel: string;       // GEN_CONTENT_MODEL, default "claude-haiku-4-5-20251001"
@@ -22,12 +22,12 @@ export interface GenerationConfig {
 export function getGenerationConfig(): GenerationConfig {
   const env = process.env;
 
-  const enabled = env.GEN_ENABLED === "true" || env.GEN_ENABLED === "1";
+  const enabled = env.GEN_ENABLED !== "false" && env.GEN_ENABLED !== "0";
   const briefingsEnabled =
-    env.GEN_BRIEFINGS_ENABLED === "true" || env.GEN_BRIEFINGS_ENABLED === "1";
-  const npcEnabled = env.GEN_NPC_ENABLED === "true" || env.GEN_NPC_ENABLED === "1";
+    env.GEN_BRIEFINGS_ENABLED !== "false" && env.GEN_BRIEFINGS_ENABLED !== "0";
+  const npcEnabled = env.GEN_NPC_ENABLED !== "false" && env.GEN_NPC_ENABLED !== "0";
   const decisionsEnabled =
-    env.GEN_DECISIONS_ENABLED === "true" || env.GEN_DECISIONS_ENABLED === "1";
+    env.GEN_DECISIONS_ENABLED !== "false" && env.GEN_DECISIONS_ENABLED !== "0";
 
   const rawProvider = env.GEN_PROVIDER ?? "anthropic";
   const providerType: "anthropic" | "mock" =

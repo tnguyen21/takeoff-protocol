@@ -12,7 +12,7 @@ import type {
 } from "@takeoff/shared";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 import { FACTION_IDENTITIES, FACTION_VOICES } from "./prompts/voices.js";
-import { getRoundDecisions } from "../content/decisions/rounds.js";
+import { getGeneratedDecisions } from "./cache.js";
 
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -225,7 +225,7 @@ export function updateStoryBible(room: GameRoom): void {
     return;
   }
 
-  const roundDecisions = getRoundDecisions(round);
+  const roundDecisions = getGeneratedDecisions(room, round);
 
   // a) Record team decisions (major weight)
   for (const [faction, optionId] of Object.entries(room.teamDecisions)) {

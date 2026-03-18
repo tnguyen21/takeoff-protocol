@@ -27,6 +27,8 @@ import { registerGameEvents } from "./events.js";
 import { clearPhaseTimer } from "./game.js";
 import { extendUses, cleanupRoom } from "./extendUses.js";
 import { NPC_PERSONAS } from "./content/npcPersonas.js";
+import { setGeneratedDecisions } from "./generation/cache.js";
+import { ROUND1_DECISIONS } from "./test-fixtures.js";
 import { getLoggerForRoom, _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 import type { EventContext } from "./logger/types.js";
 
@@ -333,6 +335,7 @@ describe("decision:submit — real handler", () => {
       faction: "openbrain",
       role: "ob_cto",
     });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     playerSocket = createSocket(DEC_PLAYER_ID);
     playerSocket.data.roomCode = DEC_ROOM;
@@ -417,6 +420,7 @@ describe("decision:submit — edge cases", () => {
       faction: "openbrain",
       role: "ob_cto",
     });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     playerSocket = createSocket(DEC_EDGE_PLAYER_A);
     playerSocket.data.roomCode = DEC_EDGE_ROOM;
@@ -532,6 +536,7 @@ describe("decision:leader-submit — real handler", () => {
       role: "ob_ceo",
       isLeader: true,
     });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     leaderSocket = createSocket(DEC_LEAD_LEADER);
     leaderSocket.data.roomCode = DEC_LEAD_ROOM;
@@ -883,6 +888,7 @@ describe("structured logging — real handlers produce expected log entries", ()
       faction: "openbrain",
       role: "ob_cto",
     });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
     _setLoggerForRoom(LOG_ROOM, spy);
   });
 

@@ -21,6 +21,8 @@ import { rooms } from "./rooms.js";
 import { registerGameEvents } from "./events.js";
 import { emitDecisions, advancePhase, clearPhaseTimer } from "./game.js";
 import { _clearLoggers } from "./logger/registry.js";
+import { setGeneratedDecisions } from "./generation/cache.js";
+import { ROUND1_DECISIONS } from "./test-fixtures.js";
 
 // ── Minimal mock infrastructure ─────────────────────────────────────────────
 
@@ -115,6 +117,9 @@ describe("Full decision cycle", () => {
     room.players[S_PROM_CEO] = makePlayer(S_PROM_CEO, { faction: "prometheus", role: "prom_ceo", isLeader: true });
     room.players[S_CHINA] = makePlayer(S_CHINA, { faction: "china",    role: "china_director",  isLeader: true });
     room.players[S_JOUR]  = makePlayer(S_JOUR,  { faction: "external", role: "ext_journalist" });
+
+    // Seed generated decisions for round 1 (no pre-authored fallback)
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     // All players open their primary app → no activity penalties
     room.playerActivity = {
@@ -338,6 +343,9 @@ describe("Inaction handling", () => {
     room.players[S_B] = makePlayer(S_B, { faction: "prometheus", role: "prom_scientist" });
     room.players[S_C] = makePlayer(S_C, { faction: "china",      role: "china_director", isLeader: true });
 
+    // Seed generated decisions for round 1
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
+
     // Open all primary apps so penalties don't confound assertions
     room.playerActivity = {
       [S_A]: ["wandb"],
@@ -405,6 +413,8 @@ describe("INV-5: Activity penalties applied at resolution", () => {
     room.players[S_OB_CTO] = makePlayer(S_OB_CTO, { faction: "openbrain", role: "ob_cto" });
     // playerActivity starts empty (no apps opened)
     room.playerActivity = {};
+    // Seed generated decisions for round 1
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
     rooms.set(PEN_ROOM, room);
   });
 
@@ -473,6 +483,9 @@ describe("INV-6: Team decisions require leader lock", () => {
     room.teamVotes["openbrain"] = { [S_VOTER]: "ob_team_allincap" };
     // room.teamDecisions is empty — no leader locked it
 
+    // Seed generated decisions for round 1
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
+
     rooms.set(NOLOCK_ROOM, room);
   });
 
@@ -525,6 +538,8 @@ describe("INV-1: State immutability through resolution", () => {
     room = makeRoom(INV1_ROOM);
     room.players["s-cto"] = makePlayer("s-cto", { faction: "openbrain", role: "ob_cto" });
     room.playerActivity = { "s-cto": ["wandb"] }; // avoid penalty noise
+    // Seed generated decisions for round 1
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
     rooms.set(INV1_ROOM, room);
   });
 
@@ -573,6 +588,8 @@ describe("INV-3: History entry accuracy", () => {
     room.players["s-cto"] = makePlayer("s-cto", { faction: "openbrain", role: "ob_cto" });
     room.players["s-prom"] = makePlayer("s-prom", { faction: "prometheus", role: "prom_ceo", isLeader: true });
     room.playerActivity = { "s-cto": ["wandb"], "s-prom": ["email"] };
+    // Seed generated decisions for round 1
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
     rooms.set(INV3_ROOM, room);
   });
 

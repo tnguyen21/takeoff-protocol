@@ -1,7 +1,6 @@
 import type { AppId, Faction, GameRoom } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
-  logFallback,
   logGenerationFailure,
   logGenerationStart,
   logGenerationSuccess,
@@ -94,14 +93,12 @@ export async function triggerGeneration(
 
       if (briefingResult === null) {
         logGenerationFailure(round, briefingArtifact, "generateBriefingWithRetry returned null", durationMs);
-        logFallback(round, briefingArtifact, "falling back to pre-authored briefing");
         briefingOk = false;
       } else {
         const validation = validateBriefing(briefingResult);
         if (!validation.valid) {
           // Should not happen — generateBriefingWithRetry only returns on valid — but guard anyway
           logValidationFailure(round, briefingArtifact, validation.errors);
-          logFallback(round, briefingArtifact, "validation failed after retry — falling back");
           briefingOk = false;
         } else {
           setGeneratedBriefing(room, round, briefingResult);
@@ -128,7 +125,6 @@ export async function triggerGeneration(
 
         if (contentResult === null) {
           logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
-          logFallback(round, contentArtifact, "falling back to pre-authored content");
           contentOk = false;
         } else {
           setGeneratedContent(room, round, faction, contentResult);
@@ -149,7 +145,6 @@ export async function triggerGeneration(
 
       if (npcResult === null) {
         logGenerationFailure(round, npcArtifact, "generateNpcMessagesWithRetry returned null", durationMs);
-        logFallback(round, npcArtifact, "falling back to pre-authored NPC triggers");
         npcOk = false;
       } else {
         setGeneratedNpcTriggers(room, round, npcResult);
@@ -172,7 +167,6 @@ export async function triggerGeneration(
 
         if (decisionsResult === null) {
           logGenerationFailure(round, decisionsArtifact, "generateDecisionsWithRetry returned null", durationMs);
-          logFallback(round, decisionsArtifact, "falling back to pre-authored decisions");
           decisionsOk = false;
         } else {
           setGeneratedDecisions(room, round, decisionsResult);

@@ -12,11 +12,13 @@ import { describe, it, expect } from "bun:test";
 import type { GameRoom, Player, Publication } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { updateStoryBible, initializeStoryBible } from "./context.js";
+import { setGeneratedDecisions } from "./cache.js";
+import { ROUND1_DECISIONS } from "../test-fixtures.js";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 function makeRoom(overrides: Partial<GameRoom> = {}): GameRoom {
-  return {
+  const room: GameRoom = {
     code: "TEST",
     phase: "resolution",
     round: 1,
@@ -32,6 +34,9 @@ function makeRoom(overrides: Partial<GameRoom> = {}): GameRoom {
     messages: [],
     ...overrides,
   };
+  // Seed round 1 decisions so updateStoryBible can resolve option IDs
+  setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
+  return room;
 }
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
@@ -98,7 +103,8 @@ describe("updateStoryBible — INV-1: events accumulate", () => {
 
     // Simulate round 2 decisions
     room.round = 2;
-    room.teamDecisions = { prometheus: "prom_team_r2_accelerate" };
+    setGeneratedDecisions(room, 2, { ...ROUND1_DECISIONS, round: 2 });
+    room.teamDecisions = { prometheus: "prom_team_accelerate" };
     room.decisions = {};
     updateStoryBible(room);
     // Events should have grown, not been replaced

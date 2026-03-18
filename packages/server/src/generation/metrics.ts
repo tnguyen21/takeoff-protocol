@@ -38,11 +38,3 @@ export function logValidationFailure(
 ): void {
   emit({ event: "validation_failure", round, artifact: artifactType, errors });
 }
-
-export function logFallback(
-  round: number,
-  artifactType: string,
-  reason: string,
-): void {
-  emit({ event: "fallback", round, artifact: artifactType, reason });
-}

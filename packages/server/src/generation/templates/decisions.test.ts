@@ -13,13 +13,7 @@
 
 import { describe, it, expect } from "bun:test";
 import { STATE_VARIABLE_RANGES } from "@takeoff/shared";
-import type { Role, Faction } from "@takeoff/shared";
 import { DECISION_TEMPLATES, getTemplatesForRound } from "./decisions.js";
-import { ROUND1_DECISIONS } from "../../content/decisions/round1.js";
-import { ROUND2_DECISIONS } from "../../content/decisions/round2.js";
-import { ROUND3_DECISIONS } from "../../content/decisions/round3.js";
-import { ROUND4_DECISIONS } from "../../content/decisions/round4.js";
-import { ROUND5_DECISIONS } from "../../content/decisions/round5.js";
 
 const ALL_VARIABLES = Object.keys(STATE_VARIABLE_RANGES) as (keyof typeof STATE_VARIABLE_RANGES)[];
 
@@ -52,44 +46,6 @@ describe("INV-2: variableScope has 4–12 entries per template", () => {
     ).map((t) => ({ round: t.round, role: t.role, faction: t.faction, count: t.variableScope.length }));
     expect(violations).toEqual([]);
   });
-});
-
-describe("INV-3: templates cover all pre-authored decision slots per round", () => {
-  const preAuthored = [
-    { round: 1, decisions: ROUND1_DECISIONS },
-    { round: 2, decisions: ROUND2_DECISIONS },
-    { round: 3, decisions: ROUND3_DECISIONS },
-    { round: 4, decisions: ROUND4_DECISIONS },
-    { round: 5, decisions: ROUND5_DECISIONS },
-  ] as const;
-
-  for (const { round, decisions } of preAuthored) {
-    it(`round ${round}: all individual roles have at least one template`, () => {
-      const templates = getTemplatesForRound(round);
-      const missingRoles = decisions.individual.map((d) => d.role).filter(
-        (role) => !templates.some((t) => t.role === role),
-      );
-      expect(missingRoles).toEqual([]);
-    });
-
-    it(`round ${round}: all team factions have templates matching pre-authored count`, () => {
-      const templates = getTemplatesForRound(round);
-      // For each faction, count how many team decisions exist in pre-authored
-      const factionCounts = new Map<Faction, number>();
-      for (const d of decisions.team) {
-        factionCounts.set(d.faction, (factionCounts.get(d.faction) ?? 0) + 1);
-      }
-      // Each faction's template count must be >= pre-authored count
-      const violations: string[] = [];
-      for (const [faction, count] of factionCounts) {
-        const templateCount = templates.filter((t) => t.faction === faction).length;
-        if (templateCount < count) {
-          violations.push(`faction=${faction}: need ${count}, have ${templateCount}`);
-        }
-      }
-      expect(violations).toEqual([]);
-    });
-  }
 });
 
 describe("INV-4: all variableScope entries are valid STATE_VARIABLE_RANGES keys", () => {

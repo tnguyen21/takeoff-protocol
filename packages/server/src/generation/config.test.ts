@@ -41,21 +41,41 @@ afterEach(() => {
   }
 });
 
-// ── INV-1: GEN_ENABLED false by default ───────────────────────────────────────
+// ── INV-1: GEN_ENABLED true by default ────────────────────────────────────────
 
-describe("INV-1: GEN_ENABLED defaults to false", () => {
-  it("returns enabled=false when GEN_ENABLED is unset", () => {
+describe("INV-1: GEN_ENABLED defaults to true", () => {
+  it("returns enabled=true when GEN_ENABLED is unset", () => {
     const cleanup = withEnv({ GEN_ENABLED: undefined });
     try {
       const config = getGenerationConfig();
-      expect(config.enabled).toBe(false);
+      expect(config.enabled).toBe(true);
     } finally {
       cleanup();
     }
   });
 
-  it("returns enabled=false when GEN_ENABLED is empty string", () => {
+  it("returns enabled=true when GEN_ENABLED is empty string", () => {
     const cleanup = withEnv({ GEN_ENABLED: "" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.enabled).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns enabled=true when GEN_ENABLED is an unrecognized value", () => {
+    const cleanup = withEnv({ GEN_ENABLED: "yes" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.enabled).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns enabled=false when GEN_ENABLED is 'false'", () => {
+    const cleanup = withEnv({ GEN_ENABLED: "false" });
     try {
       const config = getGenerationConfig();
       expect(config.enabled).toBe(false);
@@ -64,8 +84,8 @@ describe("INV-1: GEN_ENABLED defaults to false", () => {
     }
   });
 
-  it("returns enabled=false when GEN_ENABLED is an unrecognized value", () => {
-    const cleanup = withEnv({ GEN_ENABLED: "yes" });
+  it("returns enabled=false when GEN_ENABLED is '0'", () => {
+    const cleanup = withEnv({ GEN_ENABLED: "0" });
     try {
       const config = getGenerationConfig();
       expect(config.enabled).toBe(false);
@@ -129,9 +149,9 @@ describe("INV-3: default model values are sensible Claude model IDs", () => {
 // ── GEN_BRIEFINGS_ENABLED flag ────────────────────────────────────────────────
 
 describe("GEN_BRIEFINGS_ENABLED flag", () => {
-  it("defaults to false when unset", () => {
+  it("defaults to true when unset", () => {
     const config = getGenerationConfig();
-    expect(config.briefingsEnabled).toBe(false);
+    expect(config.briefingsEnabled).toBe(true);
   });
 
   it("is true when set to 'true'", () => {
@@ -178,9 +198,9 @@ describe("GEN_PROVIDER flag", () => {
 // ── INV-1/INV-2: GEN_DECISIONS_ENABLED flag ───────────────────────────────────
 
 describe("GEN_DECISIONS_ENABLED flag (INV-1, INV-2)", () => {
-  it("INV-1: defaults to false when unset", () => {
+  it("INV-1: defaults to true when unset", () => {
     const config = getGenerationConfig();
-    expect(config.decisionsEnabled).toBe(false);
+    expect(config.decisionsEnabled).toBe(true);
   });
 
   it("INV-2: is true when set to 'true'", () => {
@@ -193,11 +213,31 @@ describe("GEN_DECISIONS_ENABLED flag (INV-1, INV-2)", () => {
     }
   });
 
-  it("INV-1: is false for non-true value", () => {
-    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "yes" });
+  it("INV-1: is false when set to 'false'", () => {
+    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "false" });
     try {
       const config = getGenerationConfig();
       expect(config.decisionsEnabled).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("INV-1: is false when set to '0'", () => {
+    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "0" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionsEnabled).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("INV-1: is true for unrecognized value", () => {
+    const cleanup = withEnv({ GEN_DECISIONS_ENABLED: "yes" });
+    try {
+      const config = getGenerationConfig();
+      expect(config.decisionsEnabled).toBe(true);
     } finally {
       cleanup();
     }

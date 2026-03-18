@@ -9,7 +9,7 @@
 import type { Server } from "socket.io";
 import type { Faction, GameRoom, Player, Role } from "@takeoff/shared";
 import { FACTIONS } from "@takeoff/shared";
-import { getRoundDecisions } from "./content/decisions/rounds.js";
+import { getActiveDecisions } from "./game.js";
 
 export interface DevBotOptions {
   mode: "all_roles" | "minimum_table";
@@ -98,7 +98,7 @@ export function scheduleBotDecisionSubmissions(io: Server, room: GameRoom, opts:
   // Tutorial round has no decisions
   if (room.round === 0) return;
 
-  const roundDecisions = getRoundDecisions(room.round);
+  const roundDecisions = getActiveDecisions(room, room.round);
   if (!roundDecisions) return;
 
   const jitterMin = opts.submitJitterMs?.[0] ?? 200;

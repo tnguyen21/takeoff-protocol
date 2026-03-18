@@ -13,6 +13,8 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom, Player } from "@takeoff/shared";
 import { FACTIONS, INITIAL_STATE } from "@takeoff/shared";
 import { pickRandomOption, seedBotsForRoom, scheduleBotDecisionSubmissions } from "./devBots.js";
+import { setGeneratedDecisions } from "./generation/cache.js";
+import { ROUND1_DECISIONS } from "./test-fixtures.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -189,6 +191,7 @@ describe("scheduleBotDecisionSubmissions — leader and non-leader behavior (INV
     const room = makeRoom({ phase: "decision", round: 1 });
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
     seedBotsForRoom(room, "p1", { mode: "all_roles" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     // Find a leader bot (ob_ceo is leader)
     const leaderBot = Object.values(room.players).find(
@@ -213,6 +216,7 @@ describe("scheduleBotDecisionSubmissions — leader and non-leader behavior (INV
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_ceo");
     (room.players["p1"] as Player).isLeader = true;
     seedBotsForRoom(room, "p1", { mode: "minimum_table" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     const io = createMockIo();
     // Only seed bots for openbrain non-leaders
@@ -234,6 +238,7 @@ describe("scheduleBotDecisionSubmissions — leader and non-leader behavior (INV
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
     process.env.NODE_ENV = "test";
     seedBotsForRoom(room, "p1", { mode: "all_roles" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     const io = createMockIo();
     scheduleBotDecisionSubmissions(io, room, { mode: "all_roles", submitJitterMs: [5, 10] });
@@ -256,6 +261,7 @@ describe("scheduleBotDecisionSubmissions — critical paths", () => {
     const room = makeRoom({ phase: "decision", round: 1 });
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
     seedBotsForRoom(room, "p1", { mode: "all_roles" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     const botIds = Object.keys(room.players).filter((id) => id.startsWith("__bot_"));
 
@@ -310,6 +316,7 @@ describe("scheduleBotDecisionSubmissions — critical paths", () => {
   it("bot skips gracefully when round has no decision mapping for its role", async () => {
     // Use a round with known decisions but inject a bot with a role that has no individual decision
     const room = makeRoom({ phase: "decision", round: 1 });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
     // Add a bot with an unusual role that round 1 might not have a decision for
     // We'll just verify the bot that has no individual decision doesn't crash
     const fakeBotId = "__bot_external_ext_vc";
@@ -335,6 +342,7 @@ describe("scheduleBotDecisionSubmissions — critical paths", () => {
     const room = makeRoom({ phase: "decision", round: 1 });
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
     seedBotsForRoom(room, "p1", { mode: "all_roles" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     const io = createMockIo();
     // Schedule with a delay that allows us to change phase before timers fire
@@ -353,6 +361,7 @@ describe("scheduleBotDecisionSubmissions — critical paths", () => {
     const room = makeRoom({ phase: "decision", round: 1 });
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
     seedBotsForRoom(room, "p1", { mode: "all_roles" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     const leaderBots = Object.values(room.players).filter(
       (p) => p.id.startsWith("__bot_") && p.isLeader,
@@ -380,6 +389,7 @@ describe("scheduleBotDecisionSubmissions — critical paths", () => {
     const room = makeRoom({ phase: "decision", round: 1 });
     room.players["p1"] = makeHumanPlayer("p1", "openbrain", "ob_cto");
     seedBotsForRoom(room, "p1", { mode: "all_roles" });
+    setGeneratedDecisions(room, 1, ROUND1_DECISIONS);
 
     const nonLeaderBots = Object.values(room.players).filter(
       (p) => p.id.startsWith("__bot_") && !p.isLeader,

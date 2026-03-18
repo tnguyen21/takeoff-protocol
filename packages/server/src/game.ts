@@ -3,13 +3,9 @@ import type { AppContent, AppId, ContentItem, DecisionOption, Faction, GameMessa
 import { FACTIONS, PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
-import { getContentForPlayer } from "./content/loader.js";
-import { getBriefing } from "./content/briefings.js";
 import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers } from "./generation/cache.js";
 import { triggerGeneration } from "./generation/orchestrator.js";
-import "./content/index.js";
-import { getRoundDecisions } from "./content/decisions/rounds.js";
-import { getNpcTriggersForRound } from "./content/npc/index.js";
+import { TUTORIAL_CONTENT } from "./content/tutorial.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { applyActivityPenalties } from "./activityPenalties.js";
 import { updateStoryBible } from "./generation/context.js";
@@ -116,6 +112,7 @@ export function startGame(io: Server, room: GameRoom) {
   room.teamDecisions = {};
   room.teamVotes = {};
   setPhaseTimer(io, room);
+  void triggerGeneration(room, 1);
 
   // Emit phase change
   io.to(room.code).emit("game:phase", {
@@ -182,6 +179,7 @@ export function endTutorial(io: Server, room: GameRoom) {
   room.playerActivity = {};
 
   setPhaseTimer(io, room);
+  void triggerGeneration(room, 1);
 
   io.to(room.code).emit("game:phase", {
     phase: room.phase,
@@ -331,13 +329,7 @@ export function advancePhase(io: Server, room: GameRoom) {
  * Used by emitDecisions(), emitResolution(), reconnect replay, and event handlers.
  */
 export function getActiveDecisions(room: GameRoom, round: number) {
-  const generated = getGeneratedDecisions(room, round);
-  if (generated) {
-    console.log(`[decisions] Using generated decisions for round ${round}`);
-    return generated;
-  }
-  console.log(`[decisions] Using pre-authored decisions for round ${round}`);
-  return getRoundDecisions(round);
+  return getGeneratedDecisions(room, round);
 }
 
 export function emitDecisions(io: Server, room: GameRoom) {
@@ -368,13 +360,14 @@ export function emitStateViews(io: Server, room: GameRoom) {
 }
 
 /**
- * Resolve the briefing text for a specific player, using generated content if available,
- * falling back to pre-authored. Applies name personalization.
+ * Resolve the briefing text for a specific player from generated content.
+ * Returns a placeholder if generation hasn't completed yet.
+ * Applies name personalization.
  */
 export function getBriefingTextForPlayer(room: GameRoom, player: Player, nameMap: Map<string, string>): string {
   const generated = getGeneratedBriefing(room, room.round);
-  const briefing = generated ?? getBriefing(room.round);
-  const { common, factionVariants } = briefing;
+  if (!generated) return "Content generation in progress...";
+  const { common, factionVariants } = generated;
   const variant = factionVariants?.[player.faction!];
   const combined = variant ? `${common}\n\n${variant}` : common;
   return personalizeText(combined, nameMap);
@@ -393,67 +386,28 @@ export function emitBriefing(io: Server, room: GameRoom) {
     // GM gets the common briefing (unmodified — no player name context needed)
     if (room.gmId) {
       const generated = getGeneratedBriefing(room, room.round);
-      const { common } = generated ?? getBriefing(room.round);
-      io.to(room.gmId).emit("game:briefing", { text: common });
+      const text = generated?.common ?? "Content generation in progress...";
+      io.to(room.gmId).emit("game:briefing", { text });
     }
   } catch (err) {
     console.warn(`[briefing] No briefing content for round ${room.round}:`, err);
   }
 }
 
-const ACCUMULATING_APPS: ReadonlySet<string> = new Set([
-  "slack", "email", "memo", "security", "intel", "military", "arxiv", "signal", "briefing",
-]);
-
-function getMergedContentForPlayer(room: GameRoom, player: Player): AppContent[] {
-  const preAuthored = getContentForPlayer(room.round, player.faction!, player.role!, room.state);
-
-  const generatedContent = getGeneratedContent(room, room.round, player.faction!);
-  if (!generatedContent || generatedContent.length === 0) return preAuthored;
-
-  const generatedByApp = new Map(generatedContent.map((c) => [c.app, c]));
-  const merged: AppContent[] = [];
-
-  for (const preApp of preAuthored) {
-    const genApp = generatedByApp.get(preApp.app);
-    if (!genApp) {
-      merged.push(preApp);
-    } else if (ACCUMULATING_APPS.has(preApp.app)) {
-      merged.push({ ...preApp, items: [...preApp.items, ...genApp.items] });
-      generatedByApp.delete(preApp.app);
-    } else {
-      merged.push(genApp);
-      generatedByApp.delete(preApp.app);
-    }
+function getContentForPlayer(room: GameRoom, player: Player): AppContent[] {
+  if (room.round === 0) {
+    return TUTORIAL_CONTENT.filter((c) => c.faction === player.faction!);
   }
-
-  for (const genApp of generatedByApp.values()) {
-    merged.push(genApp);
-  }
-
-  const seenIds = new Set<string>();
-  return merged.map((appContent) => ({
-    ...appContent,
-    items: appContent.items.filter((item) => {
-      if (seenIds.has(item.id)) return false;
-      seenIds.add(item.id);
-      return true;
-    }),
-  }));
+  return getGeneratedContent(room, room.round, player.faction!) ?? [];
 }
 
 export function emitContent(io: Server, room: GameRoom) {
   const nameMap = buildNameMap(room);
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
-    try {
-      const content = getMergedContentForPlayer(room, player);
-      const personalized = personalizeContent(content, nameMap);
-      io.to(socketId).emit("game:content", { content: personalized });
-    } catch (err) {
-      // Round content file may not exist yet (future rounds) — silently skip
-      console.warn(`[content] No content for round ${room.round}:`, err);
-    }
+    const content = getContentForPlayer(room, player);
+    const personalized = personalizeContent(content, nameMap);
+    io.to(socketId).emit("game:content", { content: personalized });
   }
 }
 
@@ -862,9 +816,7 @@ export function checkThresholds(io: Server, room: GameRoom): void {
       return true;
     });
 
-  const npcTriggers = getNpcTriggersForRound(room.round);
-  const generatedNpcTriggers = getGeneratedNpcTriggers(room, room.round) ?? [];
-  const allTriggers = [...npcTriggers, ...generatedNpcTriggers];
+  const allTriggers = getGeneratedNpcTriggers(room, room.round) ?? [];
 
   for (const trigger of allTriggers) {
     if (fired.has(trigger.id)) continue;
@@ -1156,12 +1108,10 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
     socket.emit("game:state", { view });
 
     // Current round content (intel phase onwards — content persists)
-    try {
-      const content = getMergedContentForPlayer(room, player);
+    {
+      const content = getContentForPlayer(room, player);
       const personalized = personalizeContent(content, nameMap);
       socket.emit("game:content", { content: personalized });
-    } catch {
-      // No content for this round yet
     }
 
     // Briefing text (relevant in briefing phase but also good to replay for context)

@@ -111,22 +111,25 @@ describe("triggerGeneration — kill switch (INV-2)", () => {
 
   beforeEach(() => {
     savedEnabled = process.env.GEN_ENABLED;
-    delete process.env.GEN_ENABLED;
   });
 
   afterEach(() => {
-    process.env.GEN_ENABLED = savedEnabled;
-  });
-
-  it("is a no-op when GEN_ENABLED is not set", async () => {
-    const room = makeRoom();
-    await triggerGeneration(room, 2);
-    // status must remain unset (no-op)
-    expect(getGenerationStatus(room, 2)).toBeUndefined();
+    if (savedEnabled === undefined) {
+      delete process.env.GEN_ENABLED;
+    } else {
+      process.env.GEN_ENABLED = savedEnabled;
+    }
   });
 
   it("is a no-op when GEN_ENABLED is 'false'", async () => {
     process.env.GEN_ENABLED = "false";
+    const room = makeRoom();
+    await triggerGeneration(room, 2);
+    expect(getGenerationStatus(room, 2)).toBeUndefined();
+  });
+
+  it("is a no-op when GEN_ENABLED is '0'", async () => {
+    process.env.GEN_ENABLED = "0";
     const room = makeRoom();
     await triggerGeneration(room, 2);
     expect(getGenerationStatus(room, 2)).toBeUndefined();
@@ -140,12 +143,6 @@ describe("triggerGeneration — round bounds (INV-3)", () => {
     const room = makeRoom();
     await triggerGeneration(room, 0);
     expect(getGenerationStatus(room, 0)).toBeUndefined();
-  });
-
-  it("is a no-op for round 1", async () => {
-    const room = makeRoom();
-    await triggerGeneration(room, 1);
-    expect(getGenerationStatus(room, 1)).toBeUndefined();
   });
 
   it("is a no-op for round 6", async () => {
@@ -368,21 +365,20 @@ function withDecisionsEnabled(fn: () => Promise<void>): () => Promise<void> {
 
 describe("triggerGeneration — decisions kill switch (D-INV-1)", () => {
   it(
-    "does not cache decisions when GEN_DECISIONS_ENABLED is not set",
+    "does not cache decisions when GEN_DECISIONS_ENABLED=false",
     withGenEnabled(async () => {
-      // GEN_ENABLED=true but GEN_DECISIONS_ENABLED not set → decisions skipped
+      process.env.GEN_DECISIONS_ENABLED = "false";
       const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
       const room = makeRoom();
       await triggerGeneration(room, 2, mockProvider);
-      // Decisions must NOT be cached (kill switch respected)
       expect(getGeneratedDecisions(room, 2)).toBeUndefined();
     }),
   );
 
   it(
-    "does not cache decisions when GEN_DECISIONS_ENABLED=false",
+    "does not cache decisions when GEN_DECISIONS_ENABLED='0'",
     withGenEnabled(async () => {
-      process.env.GEN_DECISIONS_ENABLED = "false";
+      process.env.GEN_DECISIONS_ENABLED = "0";
       const mockProvider = new MockProvider(VALID_SINGLE_DECISION);
       const room = makeRoom();
       await triggerGeneration(room, 2, mockProvider);

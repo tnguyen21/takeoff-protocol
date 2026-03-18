@@ -305,7 +305,8 @@
 │   │   │   ├── index.ts
 │   │   │   ├── reconnect.test.ts
 │   │   │   ├── rooms.test.ts
-│   │   │   └── rooms.ts
+│   │   │   ├── rooms.ts
+│   │   │   └── test-fixtures.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   └── shared
@@ -343,4 +344,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 321 files
+23 directories, 322 files
