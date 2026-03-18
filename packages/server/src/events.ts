@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
+import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, GameRoom, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
@@ -13,6 +13,19 @@ const MAX_CHAT_LENGTH = 2000;
 const MAX_PUBLISH_TITLE_LENGTH = 200;
 const MAX_PUBLISH_CONTENT_LENGTH = 5000;
 const MAX_TWEET_LENGTH = 280;
+
+// ── Room validation helpers ────────────────────────────────────────────────────
+function getSocketRoom(socket: Socket): GameRoom | null {
+  const code = socket.data.roomCode;
+  if (!code) return null;
+  return getRoom(code) ?? null;
+}
+
+function getGmRoom(socket: Socket): GameRoom | null {
+  const room = getSocketRoom(socket);
+  if (!room || room.gmId !== socket.id) return null;
+  return room;
+}
 
 export function registerGameEvents(io: Server, socket: Socket) {
   // ── Room Management ──
@@ -97,59 +110,44 @@ export function registerGameEvents(io: Server, socket: Socket) {
   });
 
   socket.on("room:select-role", ({ faction, role }: { faction: Faction; role: Role }, callback) => {
-    const code = socket.data.roomCode;
-    if (!code) { callback({ ok: false, error: "Not in a room" }); return; }
+    const room = getSocketRoom(socket);
+    if (!room) { callback({ ok: false, error: "Not in a room" }); return; }
 
-    const success = selectRole(code, socket.id, faction, role);
+    const success = selectRole(room.code, socket.id, faction, role);
     if (!success) {
       callback({ ok: false, error: "Role already taken" });
       return;
     }
 
-    const room = getRoom(code)!;
     const player = room.players[socket.id];
     if (player) {
-      getLoggerForRoom(code).log("player.role_selected", { playerName: player.name, faction, role }, { actorId: player.name });
+      getLoggerForRoom(room.code).log("player.role_selected", { playerName: player.name, faction, role }, { actorId: player.name });
     }
-    io.to(code).emit("room:state", getLobbyState(room));
+    io.to(room.code).emit("room:state", getLobbyState(room));
     callback({ ok: true });
   });
 
   // ── Game Flow ──
 
   socket.on("game:start", (_, callback) => {
-    const code = socket.data.roomCode;
-    if (!code) { callback({ ok: false, error: "Not in a room" }); return; }
-
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) {
-      callback({ ok: false, error: "Only GM can start the game" });
-      return;
-    }
+    const room = getGmRoom(socket);
+    if (!room) { callback({ ok: false, error: "Only GM can start the game" }); return; }
 
     startGame(io, room);
     callback({ ok: true });
   });
 
   socket.on("gm:start-tutorial", (_, callback: (res: { ok: boolean; error?: string }) => void) => {
-    const code = socket.data.roomCode;
-    if (!code) { callback({ ok: false, error: "Not in a room" }); return; }
-
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) {
-      callback({ ok: false, error: "Only GM can start the tutorial" });
-      return;
-    }
+    const room = getGmRoom(socket);
+    if (!room) { callback({ ok: false, error: "Only GM can start the tutorial" }); return; }
 
     startTutorial(io, room);
     callback({ ok: true });
   });
 
   socket.on("gm:end-tutorial", () => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
+    const room = getGmRoom(socket);
+    if (!room) return;
     if (room.round !== 0) return;
     endTutorial(io, room);
   });
@@ -157,20 +155,16 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── GM Controls ──
 
   socket.on("gm:advance", () => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
-    getLoggerForRoom(code).log("phase.gm_advanced", { round: room.round, phase: room.phase }, { actorId: "gm", round: room.round, phase: room.phase });
+    const room = getGmRoom(socket);
+    if (!room) return;
+    getLoggerForRoom(room.code).log("phase.gm_advanced", { round: room.round, phase: room.phase }, { actorId: "gm", round: room.round, phase: room.phase });
     clearPhaseTimer(room);
     advancePhase(io, room);
   });
 
   socket.on("gm:pause", () => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
+    const room = getGmRoom(socket);
+    if (!room) return;
 
     const wasPaused = !!room.timer.pausedAt;
     if (room.timer.pausedAt) {
@@ -183,9 +177,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
     }
     syncPhaseTimer(io, room);
     const remainingMs = room.timer.endsAt - Date.now();
-    getLoggerForRoom(code).log(wasPaused ? "phase.resumed" : "phase.paused", { round: room.round, phase: room.phase, remainingMs }, { actorId: "gm", round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log(wasPaused ? "phase.resumed" : "phase.paused", { round: room.round, phase: room.phase, remainingMs }, { actorId: "gm", round: room.round, phase: room.phase });
 
-    io.to(code).emit("game:phase", {
+    io.to(room.code).emit("game:phase", {
       phase: room.phase,
       round: room.round,
       timer: room.timer,
@@ -194,10 +188,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
   socket.on("gm:set-state", ({ variable, value }: { variable: string; value: number }) => {
     if (process.env.NODE_ENV === "production") return;
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
+    const room = getGmRoom(socket);
+    if (!room) return;
 
     if (!(variable in STATE_VARIABLE_RANGES)) return;
     const key = variable as keyof StateVariables;
@@ -208,27 +200,23 @@ export function registerGameEvents(io: Server, socket: Socket) {
     checkThresholds(io, room);
     emitStateViews(io, room);
     console.log(`[gm:set-state] ${variable} = ${room.state[key]}`);
-    getLoggerForRoom(code).log("state.gm_override", { variable, oldValue: oldVal, newValue: room.state[key] }, { actorId: "gm", round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log("state.gm_override", { variable, oldValue: oldVal, newValue: room.state[key] }, { actorId: "gm", round: room.round, phase: room.phase });
   });
 
   socket.on("gm:set-generation", ({ enabled }: { enabled: boolean }, callback?: (res: { ok: boolean; error?: string }) => void) => {
-    const code = socket.data.roomCode;
-    if (!code) { callback?.({ ok: false, error: "Not in a room" }); return; }
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) { callback?.({ ok: false, error: "Only GM can toggle generation" }); return; }
+    const room = getGmRoom(socket);
+    if (!room) { callback?.({ ok: false, error: "Only GM can toggle generation" }); return; }
     if (room.phase !== "lobby") { callback?.({ ok: false, error: "Can only toggle generation in lobby" }); return; }
 
     room.generationEnabled = enabled;
     socket.emit("gm:generation-updated", { enabled: room.generationEnabled });
-    console.log(`[gm:set-generation] ${enabled ? "enabled" : "disabled"} for room ${code}`);
+    console.log(`[gm:set-generation] ${enabled ? "enabled" : "disabled"} for room ${room.code}`);
     callback?.({ ok: true });
   });
 
   socket.on("gm:set-timers", (overrides: Partial<Record<GamePhase, number>>) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
+    const room = getGmRoom(socket);
+    if (!room) return;
 
     const validPhases: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
     if (!room.timerOverrides) room.timerOverrides = {};
@@ -245,10 +233,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
   });
 
   socket.on("gm:extend", () => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
-    if (!room || room.gmId !== socket.id) return;
+    const room = getGmRoom(socket);
+    if (!room) return;
+    const { code } = room;
 
     const key = `${code}:${room.round}:${room.phase}`;
     const uses = extendUses.get(key) ?? 0;
@@ -279,14 +266,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
       { npcId, content, targetPlayerId }: { npcId: string; content: string; targetPlayerId: string },
       callback: (res: { ok: boolean; error?: string }) => void,
     ) => {
-      const code = socket.data.roomCode;
-      if (!code) { callback({ ok: false, error: "Not in a room" }); return; }
-
-      const room = getRoom(code);
-      if (!room || room.gmId !== socket.id) {
-        callback({ ok: false, error: "Only GM can send NPC messages" });
-        return;
-      }
+      const room = getGmRoom(socket);
+      if (!room) { callback({ ok: false, error: "Only GM can send NPC messages" }); return; }
 
       const persona = getNpcPersona(npcId);
       if (!persona) {
@@ -317,7 +298,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       };
 
       room.messages.push(message);
-      getLoggerForRoom(code).log("message.npc", { npcId, npcName: persona.name, targetPlayerName: targetPlayer.name, targetFaction: targetPlayer.faction, contentLength: content.length }, { actorId: "gm", round: room.round, phase: room.phase });
+      getLoggerForRoom(room.code).log("message.npc", { npcId, npcName: persona.name, targetPlayerName: targetPlayer.name, targetFaction: targetPlayer.faction, contentLength: content.length }, { actorId: "gm", round: room.round, phase: room.phase });
 
       io.to(targetPlayerId).emit("message:receive", message);
       io.to(socket.id).emit("message:receive", { ...message, _gmView: true });
@@ -333,10 +314,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
     const VALID_JUMP_PHASES: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 
     socket.on("gm:jump", ({ round, phase }: { round: number; phase: GamePhase }) => {
-      const code = socket.data.roomCode;
-      if (!code) return;
-      const room = getRoom(code);
-      if (!room || room.gmId !== socket.id) return;
+      const room = getGmRoom(socket);
+      if (!room) return;
 
       if (!Number.isInteger(round) || round < 1 || round > 5) return;
       if (!VALID_JUMP_PHASES.includes(phase)) return;
@@ -348,9 +327,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Decisions ──
 
   socket.on("decision:submit", ({ individual, teamVote }: { individual: string; teamVote?: string }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
+    const room = getSocketRoom(socket);
     if (!room || room.phase !== "decision") return;
 
     const player = room.players[socket.id];
@@ -371,7 +348,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     // Log decisions
     const timeRemainingMs = room.timer.endsAt - Date.now();
-    const logger = getLoggerForRoom(code);
+    const logger = getLoggerForRoom(room.code);
     if (validIndividual) logger.log("decision.individual_submitted", { playerName: player.name, role: player.role, optionId: validIndividual, timeRemainingMs }, { actorId: player.name, round: room.round, phase: room.phase });
     if (validTeamVote) logger.log("decision.team_vote", { playerName: player.name, faction: player.faction, optionId: validTeamVote }, { actorId: player.name, round: room.round, phase: room.phase });
 
@@ -400,9 +377,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
   });
 
   socket.on("decision:leader-submit", ({ teamDecision }: { teamDecision: string }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
+    const room = getSocketRoom(socket);
     if (!room || room.phase !== "decision") return;
 
     const player = room.players[socket.id];
@@ -413,8 +388,8 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (!team?.options.some((o) => o.id === teamDecision)) return;
 
     room.teamDecisions[player.faction] = teamDecision;
-    getLoggerForRoom(code).log("decision.team_locked", { faction: player.faction, optionId: teamDecision, leaderName: player.name }, { actorId: player.name, round: room.round, phase: room.phase });
-    io.to(code).emit("decision:team-locked", {
+    getLoggerForRoom(room.code).log("decision.team_locked", { faction: player.faction, optionId: teamDecision, leaderName: player.name }, { actorId: player.name, round: room.round, phase: room.phase });
+    io.to(room.code).emit("decision:team-locked", {
       faction: player.faction,
     });
   });
@@ -422,9 +397,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Messaging ──
 
   socket.on("message:send", ({ to, content, channel }: { to: string | null; content: string; channel?: string }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
+    const room = getSocketRoom(socket);
     if (!room) return;
 
     const sender = room.players[socket.id];
@@ -440,7 +413,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     content = content.slice(0, MAX_CHAT_LENGTH);
 
     const targetName = to ? room.players[to]?.name ?? to : null;
-    getLoggerForRoom(code).log("message.sent", { from: sender.name, toName: targetName, faction: sender.faction, contentLength: content.length, isTeamChat: to === null }, { actorId: sender.name, round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log("message.sent", { from: sender.name, toName: targetName, faction: sender.faction, contentLength: content.length, isTeamChat: to === null }, { actorId: sender.name, round: room.round, phase: room.phase });
 
     const message = {
       id: crypto.randomUUID(),
@@ -488,9 +461,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
   socket.on(
     "publish:submit",
     ({ type, title, content, source }: { type: PublicationType; title: string; content: string; source: string }) => {
-      const code = socket.data.roomCode;
-      if (!code) return;
-      const room = getRoom(code);
+      const room = getSocketRoom(socket);
       if (!room) return;
 
       const player = room.players[socket.id];
@@ -506,7 +477,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       title = title.slice(0, MAX_PUBLISH_TITLE_LENGTH);
       content = content.slice(0, MAX_PUBLISH_CONTENT_LENGTH);
 
-      getLoggerForRoom(code).log("publish.submitted", { playerName: player.name, role: player.role, type, title }, { actorId: player.name, round: room.round, phase: room.phase });
+      getLoggerForRoom(room.code).log("publish.submitted", { playerName: player.name, role: player.role, type, title }, { actorId: player.name, round: room.round, phase: room.phase });
 
       const timestamp = new Date().toISOString();
       const pubId = crypto.randomUUID();
@@ -626,9 +597,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Tweet Broadcasting ──
 
   socket.on("tweet:send", ({ text }: { text: string }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
+    const room = getSocketRoom(socket);
     if (!room) return;
     const player = room.players[socket.id];
     if (!player) return;
@@ -658,16 +627,14 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Activity Tracking ──
 
   socket.on("activity:report", ({ opened }: { opened: string[] }) => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
+    const room = getSocketRoom(socket);
     if (!room) return;
     const player = room.players[socket.id];
     if (!player) return;
 
     if (!room.playerActivity) room.playerActivity = {};
     room.playerActivity[socket.id] = opened;
-    getLoggerForRoom(code).log("activity.report", { playerName: player.name, appsOpened: opened }, { actorId: player.name, round: room.round, phase: room.phase });
+    getLoggerForRoom(room.code).log("activity.report", { playerName: player.name, appsOpened: opened }, { actorId: player.name, round: room.round, phase: room.phase });
 
     // Forward to GM for real-time visibility
     if (room.gmId) {
@@ -679,17 +646,14 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
   if (process.env.NODE_ENV !== "production") {
     socket.on("dev:fill-bots", async (callback: (res: { ok: boolean; error?: string }) => void) => {
-      const code = socket.data.roomCode;
-      if (!code) return callback({ ok: false, error: "Not in a room" });
-      const room = getRoom(code);
-      if (!room) return callback({ ok: false, error: "Room not found" });
-      if (room.gmId !== socket.id) return callback({ ok: false, error: "Only GM can fill bots" });
+      const room = getGmRoom(socket);
+      if (!room) return callback({ ok: false, error: "Only GM can fill bots" });
 
       const { seedBotsForRoom } = await import("./devBots.js");
       seedBotsForRoom(room, socket.id, { mode: "minimum_table" });
 
       // Broadcast updated lobby to all clients so player list reflects bots
-      io.to(code).emit("room:state", getLobbyState(room));
+      io.to(room.code).emit("room:state", getLobbyState(room));
 
       callback({ ok: true });
     });
@@ -824,10 +788,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Disconnect ──
 
   socket.on("disconnect", () => {
-    const code = socket.data.roomCode;
-    if (!code) return;
-    const room = getRoom(code);
+    const room = getSocketRoom(socket);
     if (!room) return;
+    const { code } = room;
 
     const player = room.players[socket.id];
     if (player) {
