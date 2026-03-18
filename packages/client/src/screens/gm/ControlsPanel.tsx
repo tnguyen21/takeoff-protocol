@@ -32,10 +32,18 @@ function TimerDisplay({
     return () => clearInterval(id);
   }, [endsAt, pausedAt, isPaused]);
 
-  const color = remaining <= 30_000 ? "#ef4444" : remaining <= 60_000 ? "#f59e0b" : "#34d399";
+  const color =
+    remaining <= 30_000
+      ? "var(--color-status-danger)"
+      : remaining <= 60_000
+        ? "var(--color-status-warning)"
+        : "var(--color-status-success)";
 
   return (
-    <div style={{ fontFamily: "monospace", fontSize: "56px", fontWeight: 700, color, lineHeight: 1, letterSpacing: "-2px", minWidth: "3ch", fontVariantNumeric: "tabular-nums" }}>
+    <div
+      className="font-mono text-[56px] font-bold leading-none tracking-[-2px] min-w-[3ch] tabular-nums"
+      style={{ color }}
+    >
       {formatTime(remaining)}
     </div>
   );
@@ -53,76 +61,44 @@ function outcomeColor(index: number, total: number): string {
 
 function EndingsPreview({ arcs }: { arcs: EndingArc[] }) {
   return (
-    <div
-      style={{
-        marginTop: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-      }}
-    >
+    <div className="mt-4 flex flex-col gap-3">
       {arcs.map((arc) => (
         <div
           key={arc.id}
-          style={{
-            borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.02)",
-            overflow: "hidden",
-          }}
+          className="rounded-lg border border-white/[0.08] bg-white/[0.02] overflow-hidden"
         >
           {/* Arc header */}
-          <div
-            style={{
-              padding: "8px 12px",
-              background: "rgba(255,255,255,0.04)",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "#c4b5fd",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}
-          >
+          <div className="py-2 px-3 bg-white/[0.04] border-b border-white/[0.06] text-[11px] font-bold text-accent-light tracking-[0.06em] uppercase">
             {arc.label}
           </div>
           {/* Outcome spectrum */}
-          <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div className="py-2 px-3 flex flex-col gap-1">
             {arc.spectrum.map((outcome, i) => {
               const isSelected = i === arc.result;
               const color = outcomeColor(i, arc.spectrum.length);
               return (
                 <div
                   key={i}
+                  className="flex items-start gap-2 rounded-md transition-all"
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "8px",
                     padding: isSelected ? "6px 8px" : "4px 8px",
-                    borderRadius: "6px",
                     background: isSelected ? `${color}18` : "transparent",
                     border: isSelected ? `1px solid ${color}55` : "1px solid transparent",
-                    transition: "all 0.2s",
                   }}
                 >
                   {/* Indicator dot */}
                   <div
+                    className="w-[7px] h-[7px] rounded-full shrink-0 mt-1"
                     style={{
-                      width: "7px",
-                      height: "7px",
-                      borderRadius: "50%",
                       background: isSelected ? color : "rgba(255,255,255,0.12)",
-                      flexShrink: 0,
-                      marginTop: "4px",
                       boxShadow: isSelected ? `0 0 6px ${color}88` : "none",
                     }}
                   />
                   <span
+                    className="text-[11px] leading-[1.4]"
                     style={{
-                      fontSize: "11px",
-                      color: isSelected ? color : "#6b7280",
+                      color: isSelected ? color : "var(--color-text-muted)",
                       fontWeight: isSelected ? 600 : 400,
-                      lineHeight: 1.4,
                     }}
                   >
                     {outcome}
@@ -150,46 +126,23 @@ function DevJumpPanel({ currentRound, currentPhase }: { currentRound: number; cu
     gmJump(targetRound, targetPhase);
   }, [gmJump, targetRound, targetPhase]);
 
-  const selectStyle: React.CSSProperties = {
-    background: "#111827",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: "6px",
-    color: "#e5e7eb",
-    fontSize: "12px",
-    padding: "5px 8px",
-    cursor: "pointer",
-    flex: 1,
-  };
-
   return (
-    <div
-      style={{
-        padding: "12px",
-        borderRadius: "8px",
-        background: "rgba(234,179,8,0.06)",
-        border: "1px solid rgba(234,179,8,0.25)",
-      }}
-    >
-      <div
-        style={{
-          color: "#ca8a04",
-          fontSize: "9px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          marginBottom: "8px",
-        }}
-      >
+    <div className="p-3 rounded-lg bg-yellow-500/[0.06] border border-yellow-500/25">
+      <div className="text-yellow-600 text-[9px] font-bold uppercase tracking-widest mb-2">
         Dev — Jump To
       </div>
 
-      <div style={{ color: "#6b7280", fontSize: "10px", marginBottom: "8px" }}>
-        Current: Round <strong style={{ color: "#9ca3af" }}>{currentRound}</strong>{" "}
-        <strong style={{ color: "#9ca3af" }}>{currentPhase ?? "—"}</strong>
+      <div className="text-text-muted text-[10px] mb-2">
+        Current: Round <strong className="text-text-secondary">{currentRound}</strong>{" "}
+        <strong className="text-text-secondary">{currentPhase ?? "—"}</strong>
       </div>
 
-      <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
-        <select value={targetRound} onChange={(e) => setTargetRound(Number(e.target.value))} style={selectStyle}>
+      <div className="flex gap-1.5 mb-2">
+        <select
+          value={targetRound}
+          onChange={(e) => setTargetRound(Number(e.target.value))}
+          className="bg-surface-elevated border border-white/[0.12] rounded-md text-text-primary text-xs py-[5px] px-2 cursor-pointer flex-1"
+        >
           {[1, 2, 3, 4, 5].map((r) => (
             <option key={r} value={r}>
               Round {r}
@@ -197,7 +150,11 @@ function DevJumpPanel({ currentRound, currentPhase }: { currentRound: number; cu
           ))}
         </select>
 
-        <select value={targetPhase} onChange={(e) => setTargetPhase(e.target.value)} style={selectStyle}>
+        <select
+          value={targetPhase}
+          onChange={(e) => setTargetPhase(e.target.value)}
+          className="bg-surface-elevated border border-white/[0.12] rounded-md text-text-primary text-xs py-[5px] px-2 cursor-pointer flex-1"
+        >
           {JUMP_PHASES.map((p) => (
             <option key={p} value={p}>
               {PHASE_LABELS[p] ?? p}
@@ -257,28 +214,12 @@ function TimerSettingsPanel({
   const hasDraft = Object.keys(draft).length > 0;
 
   return (
-    <div
-      style={{
-        padding: "12px",
-        borderRadius: "8px",
-        background: "rgba(6,182,212,0.05)",
-        border: "1px solid rgba(6,182,212,0.2)",
-      }}
-    >
-      <div
-        style={{
-          color: "#06b6d4",
-          fontSize: "9px",
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          marginBottom: "10px",
-        }}
-      >
+    <div className="p-3 rounded-lg bg-cyan-500/[0.05] border border-cyan-500/20">
+      <div className="text-cyan-500 text-[9px] font-bold uppercase tracking-widest mb-2.5">
         Timer Settings
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "10px" }}>
+      <div className="flex flex-col gap-2 mb-2.5">
         {TIMER_PHASES.map(({ phase, label }) => {
           const value = getEffective(phase);
           const r4Value = ROUND4_PHASE_DURATIONS[phase];
@@ -287,40 +228,26 @@ function TimerSettingsPanel({
 
           return (
             <div key={phase}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                <span style={{ color: "#9ca3af", fontSize: "11px" }}>{label}</span>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <div className="flex justify-between mb-1">
+                <span className="text-text-secondary text-[11px]">{label}</span>
+                <div className="flex items-center gap-1">
                   {r4Value && r4Value !== defaultVal && (
-                    <span style={{ color: "#6b7280", fontSize: "9px", fontStyle: "italic" }}>
+                    <span className="text-text-muted text-[9px] italic">
                       R4:{formatSeconds(r4Value)}
                     </span>
                   )}
                   <span
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      color: isOverridden ? "#22d3ee" : "#6b7280",
-                    }}
+                    className="font-mono text-xs font-bold"
+                    style={{ color: isOverridden ? "#22d3ee" : "var(--color-text-muted)" }}
                   >
                     {formatSeconds(value)}
                   </span>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+              <div className="flex gap-1 items-center">
                 <button
                   onClick={() => step(phase, -30)}
-                  style={{
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    background: "rgba(255,255,255,0.05)",
-                    color: "#9ca3af",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
+                  className="py-[3px] px-2 rounded border border-border bg-white/5 text-text-secondary text-xs cursor-pointer font-bold leading-none"
                 >
                   −
                 </button>
@@ -334,32 +261,11 @@ function TimerSettingsPanel({
                     const v = Math.max(30, Math.min(3600, Number(e.target.value)));
                     setDraft((prev) => ({ ...prev, [phase]: v }));
                   }}
-                  style={{
-                    flex: 1,
-                    padding: "3px 6px",
-                    borderRadius: "4px",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "#e5e7eb",
-                    fontSize: "12px",
-                    fontFamily: "monospace",
-                    textAlign: "center",
-                    outline: "none",
-                  }}
+                  className="flex-1 py-[3px] px-1.5 rounded border border-white/[0.12] bg-white/[0.06] text-text-primary text-xs font-mono text-center outline-none"
                 />
                 <button
                   onClick={() => step(phase, 30)}
-                  style={{
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    background: "rgba(255,255,255,0.05)",
-                    color: "#9ca3af",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
+                  className="py-[3px] px-2 rounded border border-border bg-white/5 text-text-secondary text-xs cursor-pointer font-bold leading-none"
                 >
                   +
                 </button>
@@ -377,16 +283,7 @@ function TimerSettingsPanel({
                       gmSetTimers(next);
                     }}
                     title="Reset to default"
-                    style={{
-                      padding: "3px 6px",
-                      borderRadius: "4px",
-                      border: "1px solid rgba(239,68,68,0.2)",
-                      background: "rgba(239,68,68,0.08)",
-                      color: "#f87171",
-                      fontSize: "10px",
-                      cursor: "pointer",
-                      fontWeight: 700,
-                    }}
+                    className="py-[3px] px-1.5 rounded border border-red-500/20 bg-red-500/[0.08] text-red-400 text-[10px] cursor-pointer font-bold"
                   >
                     ↩
                   </button>
@@ -397,19 +294,15 @@ function TimerSettingsPanel({
         })}
       </div>
 
-      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+      <div className="flex gap-1.5 items-center">
         <button
           onClick={save}
           disabled={!hasDraft}
+          className="flex-1 py-1.5 px-2.5 rounded-md text-xs font-semibold"
           style={{
-            flex: 1,
-            padding: "6px 10px",
-            borderRadius: "6px",
             border: hasDraft ? "1px solid rgba(6,182,212,0.4)" : "1px solid rgba(255,255,255,0.08)",
             background: hasDraft ? "rgba(6,182,212,0.12)" : "rgba(255,255,255,0.03)",
-            color: hasDraft ? "#22d3ee" : "#4b5563",
-            fontSize: "12px",
-            fontWeight: 600,
+            color: hasDraft ? "#22d3ee" : "var(--color-text-muted)",
             cursor: hasDraft ? "pointer" : "not-allowed",
           }}
         >
@@ -417,7 +310,7 @@ function TimerSettingsPanel({
         </button>
       </div>
 
-      <div style={{ color: "#4b5563", fontSize: "10px", marginTop: "8px", lineHeight: 1.4 }}>
+      <div className="text-gray-600 text-[10px] mt-2 leading-[1.4]">
         Takes effect on next phase. Round 4 deliberation uses its own 7:00 default unless overridden.
       </div>
     </div>
@@ -459,33 +352,23 @@ export function ControlsPanel({
   return (
     <>
       <div>
-        <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+        <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-3">
           Phase Timer
         </div>
         <TimerDisplay endsAt={timer.endsAt} pausedAt={timer.pausedAt} isPaused={isPaused} />
         {isPaused && (
-          <div style={{ marginTop: "8px", color: "#f59e0b", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div className="mt-2 text-status-warning text-[11px] font-semibold uppercase tracking-[0.05em]">
             ⏸ Paused
           </div>
         )}
       </div>
 
       {/* Timer controls */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div className="flex flex-col gap-2">
         {round === 0 ? (
           /* Tutorial mode: show End Tutorial button prominently */
           <>
-            <div
-              style={{
-                padding: "8px 12px",
-                borderRadius: "6px",
-                background: "rgba(234,179,8,0.08)",
-                border: "1px solid rgba(234,179,8,0.3)",
-                color: "#fbbf24",
-                fontSize: "11px",
-                lineHeight: 1.5,
-              }}
-            >
+            <div className="py-2 px-3 rounded-md bg-yellow-500/[0.08] border border-yellow-500/30 text-amber-400 text-[11px] leading-normal">
               Tutorial mode active. Players are exploring the desktop with practice content. When ready, end the tutorial to start Round 1.
             </div>
             <button
@@ -518,14 +401,10 @@ export function ControlsPanel({
             >
               +60s Extend
               <span
+                className="ml-2 text-[10px] font-semibold py-px px-[5px] rounded"
                 style={{
-                  marginLeft: "8px",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  padding: "1px 5px",
-                  borderRadius: "4px",
                   background: gmExtendUsesRemaining > 0 ? "rgba(96,165,250,0.2)" : "rgba(255,255,255,0.05)",
-                  color: gmExtendUsesRemaining > 0 ? "#93c5fd" : "#4b5563",
+                  color: gmExtendUsesRemaining > 0 ? "#93c5fd" : "var(--color-text-muted)",
                 }}
               >
                 {gmExtendUsesRemaining} left
@@ -554,7 +433,7 @@ export function ControlsPanel({
       {/* Endings Preview Panel */}
       {import.meta.env.DEV && showEndings && gmRawState && (
         <div>
-          <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
+          <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-2">
             Ending Arc Preview
           </div>
           <EndingsPreview arcs={computeEndingArcs(gmRawState)} />

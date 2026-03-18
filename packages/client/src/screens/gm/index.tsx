@@ -32,16 +32,8 @@ export function GMDashboard() {
 
   return (
     <div
-      style={{
-        height: "100vh",
-        width: "100vw",
-        background: "linear-gradient(160deg, #0a0a14 0%, #0d1117 50%, #060912 100%)",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        color: "#e5e7eb",
-        overflow: "hidden",
-      }}
+      className="h-screen w-screen flex flex-col overflow-hidden text-text-primary"
+      style={{ background: "linear-gradient(160deg, #0a0a14 0%, #0d1117 50%, #060912 100%)" }}
     >
       <Header
         roomCode={roomCode}
@@ -51,31 +43,9 @@ export function GMDashboard() {
         totalPlayers={lobbyPlayers.length}
       />
 
-      <div
-        style={{
-          flex: 1,
-          display: "grid",
-          gridTemplateColumns: "300px 1fr 280px",
-          gridTemplateRows: "auto 1fr",
-          gap: "1px",
-          background: "rgba(255,255,255,0.06)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="flex-1 grid grid-cols-[300px_1fr_280px] grid-rows-[auto_1fr] gap-px bg-white/[0.06] overflow-hidden">
         {/* Left column: Controls + Players */}
-        <div
-          style={{
-            gridColumn: "1",
-            gridRow: "1 / 3",
-            background: "#0a0a14",
-            padding: "24px 20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-            borderRight: "1px solid rgba(255,255,255,0.06)",
-            overflow: "auto",
-          }}
-        >
+        <div className="col-start-1 row-span-2 bg-surface py-6 px-5 flex flex-col gap-5 border-r border-white/[0.06] overflow-auto">
           <ControlsPanel
             round={round}
             phase={phase}

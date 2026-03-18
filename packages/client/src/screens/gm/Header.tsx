@@ -10,91 +10,43 @@ interface HeaderProps {
 
 export function Header({ roomCode, round, phase, connectedCount, totalPlayers }: HeaderProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "24px",
-        padding: "12px 24px",
-        background: "rgba(255,255,255,0.03)",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
-        flexShrink: 0,
-      }}
-    >
+    <div className="flex items-center gap-6 py-3 px-6 bg-white/[0.03] border-b border-white/[0.08] shrink-0">
       {/* GM badge */}
-      <div
-        style={{
-          padding: "3px 10px",
-          borderRadius: "6px",
-          background: "rgba(239,68,68,0.15)",
-          border: "1px solid rgba(239,68,68,0.4)",
-          color: "#f87171",
-          fontSize: "11px",
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-        }}
-      >
+      <div className="py-[3px] px-2.5 rounded-md bg-red-500/15 border border-red-500/40 text-red-400 text-[11px] font-bold tracking-widest uppercase">
         GM
       </div>
 
       {/* Room code */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span style={{ color: "#6b7280", fontSize: "12px" }}>Room</span>
-        <span style={{ fontFamily: "monospace", fontSize: "18px", fontWeight: 700, letterSpacing: "0.15em", color: "#e5e7eb" }}>
+      <div className="flex items-center gap-2">
+        <span className="text-text-muted text-xs">Room</span>
+        <span className="font-mono text-lg font-bold tracking-[0.15em] text-text-primary">
           {roomCode ?? "—"}
         </span>
       </div>
 
-      <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.1)" }} />
+      <div className="w-px h-5 bg-border" />
 
       {/* Round + Phase */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <span style={{ color: "#9ca3af", fontSize: "13px" }}>
-          Round <strong style={{ color: "#e5e7eb" }}>{round === 0 ? "Tutorial" : round}</strong>
+      <div className="flex items-center gap-3">
+        <span className="text-text-secondary text-[13px]">
+          Round <strong className="text-text-primary">{round === 0 ? "Tutorial" : round}</strong>
         </span>
-        <span
-          style={{
-            padding: "2px 10px",
-            borderRadius: "20px",
-            background: "rgba(139,92,246,0.15)",
-            border: "1px solid rgba(139,92,246,0.35)",
-            color: "#c4b5fd",
-            fontSize: "12px",
-            fontWeight: 600,
-          }}
-        >
+        <span className="py-0.5 px-2.5 rounded-[20px] bg-accent-bg border border-accent-border text-accent-light text-xs font-semibold">
           {PHASE_LABELS[phase ?? ""] ?? phase ?? "—"}
         </span>
         {round === 0 && (
-          <span
-            style={{
-              padding: "2px 10px",
-              borderRadius: "20px",
-              background: "rgba(234,179,8,0.15)",
-              border: "1px solid rgba(234,179,8,0.4)",
-              color: "#fbbf24",
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
+          <span className="py-0.5 px-2.5 rounded-[20px] bg-yellow-500/15 border border-yellow-500/40 text-amber-400 text-[11px] font-bold tracking-[0.08em] uppercase">
             TUTORIAL MODE
           </span>
         )}
       </div>
 
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+      <div className="ml-auto flex items-center gap-2">
         <div
-          style={{
-            width: "7px",
-            height: "7px",
-            borderRadius: "50%",
-            background: connectedCount > 0 ? "#34d399" : "#6b7280",
-          }}
+          className="w-[7px] h-[7px] rounded-full"
+          style={{ background: connectedCount > 0 ? "var(--color-status-success)" : "var(--color-text-muted)" }}
         />
-        <span style={{ color: "#9ca3af", fontSize: "12px" }}>
+        <span className="text-text-secondary text-xs">
           {connectedCount} / {totalPlayers} connected
         </span>
       </div>

@@ -18,16 +18,16 @@ function barColor(key: keyof StateVariables, value: number): string {
 
   if (danger.includes(key)) {
     const pct = barPct(key, value);
-    if (pct > 66) return "#ef4444";
-    if (pct > 33) return "#f59e0b";
-    return "#34d399";
+    if (pct > 66) return "var(--color-status-danger)";
+    if (pct > 33) return "var(--color-status-warning)";
+    return "var(--color-status-success)";
   }
   if (neutral.includes(key)) return "#60a5fa";
   // Default: high is good
   const pct = barPct(key, value);
-  if (pct > 66) return "#34d399";
-  if (pct > 33) return "#f59e0b";
-  return "#ef4444";
+  if (pct > 66) return "var(--color-status-success)";
+  if (pct > 33) return "var(--color-status-warning)";
+  return "var(--color-status-danger)";
 }
 
 // ── Dev State Panel (DEV only) ────────────────────────────────────────────────
@@ -44,36 +44,17 @@ function DevStatePanel({
   const getValue = (key: keyof StateVariables) => pending[key] ?? gmRawState[key];
 
   return (
-    <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid rgba(239,68,68,0.25)" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          marginBottom: "14px",
-        }}
-      >
-        <div
-          style={{
-            padding: "2px 7px",
-            borderRadius: "4px",
-            background: "rgba(239,68,68,0.15)",
-            border: "1px solid rgba(239,68,68,0.4)",
-            color: "#f87171",
-            fontSize: "9px",
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
-        >
+    <div className="mt-6 pt-5 border-t border-red-500/25">
+      <div className="flex items-center gap-2 mb-3.5">
+        <div className="py-0.5 px-[7px] rounded bg-red-500/15 border border-red-500/40 text-red-400 text-[9px] font-bold tracking-[0.12em] uppercase">
           DEV
         </div>
-        <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+        <span className="text-text-muted text-[10px] font-semibold uppercase tracking-widest">
           State Overrides
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div className="flex flex-col gap-3">
         {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
           const [min, max] = STATE_VARIABLE_RANGES[key];
           const value = getValue(key);
@@ -81,20 +62,16 @@ function DevStatePanel({
 
           return (
             <div key={key}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
-                <span style={{ color: "#9ca3af", fontSize: "11px" }}>{STATE_LABELS[key]}</span>
+              <div className="flex justify-between items-baseline mb-1">
+                <span className="text-text-secondary text-[11px]">{STATE_LABELS[key]}</span>
                 <span
-                  style={{
-                    fontFamily: "monospace",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    color: hasPending ? "#f59e0b" : "#6b7280",
-                  }}
+                  className="font-mono text-xs font-bold"
+                  style={{ color: hasPending ? "var(--color-status-warning)" : "var(--color-text-muted)" }}
                 >
                   {value}
                 </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div className="flex items-center gap-1.5">
                 <input
                   type="range"
                   min={min}
@@ -102,7 +79,8 @@ function DevStatePanel({
                   step={1}
                   value={value}
                   onChange={(e) => setPending((prev) => ({ ...prev, [key]: Number(e.target.value) }))}
-                  style={{ flex: 1, accentColor: "#8b5cf6", cursor: "pointer" }}
+                  className="flex-1 cursor-pointer"
+                  style={{ accentColor: "var(--color-accent)" }}
                 />
                 <button
                   onClick={() => {
@@ -113,17 +91,7 @@ function DevStatePanel({
                       return next;
                     });
                   }}
-                  style={{
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    border: "1px solid rgba(139,92,246,0.4)",
-                    background: "rgba(139,92,246,0.15)",
-                    color: "#c4b5fd",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
+                  className="py-0.5 px-2 rounded border border-accent-border bg-accent-bg text-accent-light text-[11px] font-semibold cursor-pointer shrink-0"
                 >
                   Set
                 </button>
@@ -152,40 +120,37 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
 
   const fogView: StateView = computeFogView(gmRawState, selectedFaction, round);
 
-  const dropdownStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: "6px",
-    color: "#e5e7eb",
-    fontSize: "12px",
-    padding: "5px 8px",
-    cursor: "pointer",
-    outline: "none",
-  };
-
   return (
-    <div style={{ marginTop: "24px" }}>
-      <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+    <div className="mt-6">
+      <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-3">
         Fog Inspector
       </div>
 
       {/* Selectors */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <label style={{ color: "#6b7280", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Faction</label>
-          <select value={selectedFaction} onChange={(e) => handleFactionChange(e.target.value as Faction)} style={dropdownStyle}>
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex flex-col gap-1">
+          <label className="text-text-muted text-[10px] uppercase tracking-[0.08em]">Faction</label>
+          <select
+            value={selectedFaction}
+            onChange={(e) => handleFactionChange(e.target.value as Faction)}
+            className="bg-white/[0.06] border border-white/[0.12] rounded-md text-text-primary text-xs py-[5px] px-2 cursor-pointer outline-none"
+          >
             {FACTIONS.map((f) => (
-              <option key={f.id} value={f.id} style={{ background: "#0a0a14" }}>
+              <option key={f.id} value={f.id} className="bg-surface">
                 {f.name}
               </option>
             ))}
           </select>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <label style={{ color: "#6b7280", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Role</label>
-          <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value as Role)} style={dropdownStyle}>
+        <div className="flex flex-col gap-1">
+          <label className="text-text-muted text-[10px] uppercase tracking-[0.08em]">Role</label>
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value as Role)}
+            className="bg-white/[0.06] border border-white/[0.12] rounded-md text-text-primary text-xs py-[5px] px-2 cursor-pointer outline-none"
+          >
             {factionConfig.roles.map((r) => (
-              <option key={r.id} value={r.id} style={{ background: "#0a0a14" }}>
+              <option key={r.id} value={r.id} className="bg-surface">
                 {r.label}
               </option>
             ))}
@@ -194,29 +159,18 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
       </div>
 
       {/* Side-by-side comparison */}
-      <div style={{ overflowX: "auto" }}>
+      <div className="overflow-x-auto">
         {/* Header */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 90px 130px",
-            gap: "4px",
-            padding: "4px 8px",
-            borderRadius: "4px 4px 0 0",
-            background: "rgba(255,255,255,0.04)",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            marginBottom: "2px",
-          }}
-        >
-          <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Variable</span>
-          <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "right" }}>True</span>
-          <span style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "right" }}>
+        <div className="grid grid-cols-[1fr_90px_130px] gap-1 py-1 px-2 rounded-t bg-white/[0.04] border-b border-white/[0.08] mb-0.5">
+          <span className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.08em]">Variable</span>
+          <span className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.08em] text-right">True</span>
+          <span className="text-text-muted text-[10px] font-semibold uppercase tracking-[0.08em] text-right">
             {FACTIONS.find((f) => f.id === selectedFaction)?.name ?? selectedFaction} sees
           </span>
         </div>
 
         {/* Rows */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+        <div className="flex flex-col gap-px">
           {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
             const trueVal = gmRawState[key];
             const fogVar = fogView[key];
@@ -226,46 +180,32 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
             let fogColor: string;
             if (accuracy === "exact") {
               fogDisplay = String(fogVar.value);
-              fogColor = "#34d399"; // green
+              fogColor = "var(--color-status-success)";
             } else if (accuracy === "estimate") {
               fogDisplay = `~${fogVar.value} ±${fogVar.confidence ?? "?"}`;
-              fogColor = "#f59e0b"; // yellow
+              fogColor = "var(--color-status-warning)";
             } else {
               fogDisplay = "HIDDEN";
-              fogColor = "#4b5563"; // gray
+              fogColor = "#4b5563";
             }
 
             return (
               <div
                 key={key}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 90px 130px",
-                  gap: "4px",
-                  padding: "5px 8px",
-                  borderRadius: "4px",
-                  background: "rgba(255,255,255,0.02)",
-                  alignItems: "center",
-                }}
+                className="grid grid-cols-[1fr_90px_130px] gap-1 py-[5px] px-2 rounded bg-white/[0.02] items-center"
               >
-                <span style={{ color: "#9ca3af", fontSize: "11px" }}>{STATE_LABELS[key]}</span>
-                <span style={{ fontFamily: "monospace", fontSize: "12px", fontWeight: 700, color: "#e5e7eb", textAlign: "right" }}>{trueVal}</span>
+                <span className="text-text-secondary text-[11px]">{STATE_LABELS[key]}</span>
+                <span className="font-mono text-xs font-bold text-text-primary text-right">{trueVal}</span>
                 <span
+                  className={`font-mono text-xs font-bold text-right py-px px-1.5 rounded${accuracy === "hidden" ? " italic" : ""}`}
                   style={{
-                    fontFamily: "monospace",
-                    fontSize: "12px",
-                    fontWeight: 700,
                     color: fogColor,
-                    textAlign: "right",
-                    padding: "1px 6px",
-                    borderRadius: "4px",
                     background:
                       accuracy === "exact"
                         ? "rgba(52,211,153,0.08)"
                         : accuracy === "estimate"
                           ? "rgba(245,158,11,0.08)"
                           : "rgba(75,85,99,0.12)",
-                    fontStyle: accuracy === "hidden" ? "italic" : "normal",
                   }}
                 >
                   {fogDisplay}
@@ -276,15 +216,15 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
         </div>
 
         {/* Legend */}
-        <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
+        <div className="flex gap-4 mt-3 flex-wrap">
           {[
             { color: "#34d399", bg: "rgba(52,211,153,0.08)", label: "Exact" },
             { color: "#f59e0b", bg: "rgba(245,158,11,0.08)", label: "Estimate ±N" },
             { color: "#4b5563", bg: "rgba(75,85,99,0.12)", label: "Hidden" },
           ].map(({ color, bg, label }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "28px", height: "14px", borderRadius: "3px", background: bg, border: `1px solid ${color}44` }} />
-              <span style={{ color: "#6b7280", fontSize: "10px" }}>{label}</span>
+            <div key={label} className="flex items-center gap-1.5">
+              <div className="w-7 h-3.5 rounded-[3px]" style={{ background: bg, border: `1px solid ${color}44` }} />
+              <span className="text-text-muted text-[10px]">{label}</span>
             </div>
           ))}
         </div>
@@ -303,23 +243,14 @@ interface StatePanelProps {
 
 export function StatePanel({ gmRawState, round, gmSetState }: StatePanelProps) {
   return (
-    <div
-      style={{
-        gridColumn: "2",
-        gridRow: "1 / 3",
-        background: "#0a0a14",
-        padding: "20px 24px",
-        overflow: "auto",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "16px" }}>
+    <div className="col-start-2 row-span-2 bg-surface py-5 px-6 overflow-auto border-r border-white/[0.06]">
+      <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-4">
         World State (True Values — GM Only)
       </div>
 
       {gmRawState ? (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div className="flex flex-col gap-2.5">
             {(Object.keys(STATE_LABELS) as (keyof StateVariables)[]).map((key) => {
               const value = gmRawState[key];
               const pct = barPct(key, value);
@@ -327,17 +258,16 @@ export function StatePanel({ gmRawState, round, gmSetState }: StatePanelProps) {
 
               return (
                 <div key={key}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
-                    <span style={{ color: "#9ca3af", fontSize: "12px" }}>{STATE_LABELS[key]}</span>
-                    <span style={{ fontFamily: "monospace", fontSize: "13px", fontWeight: 700, color }}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-text-secondary text-xs">{STATE_LABELS[key]}</span>
+                    <span className="font-mono text-[13px] font-bold" style={{ color }}>
                       {value}
                     </span>
                   </div>
-                  <div style={{ height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.07)" }}>
+                  <div className="h-1 rounded-[2px] bg-white/[0.07]">
                     <div
+                      className="h-full rounded-[2px]"
                       style={{
-                        height: "100%",
-                        borderRadius: "2px",
                         background: color,
                         width: `${pct}%`,
                         transition: "width 0.4s ease, background 0.4s ease",
@@ -351,13 +281,13 @@ export function StatePanel({ gmRawState, round, gmSetState }: StatePanelProps) {
 
           {import.meta.env.DEV && (
             <>
-              <div style={{ height: "1px", background: "rgba(255,255,255,0.06)", margin: "8px 0" }} />
+              <div className="h-px bg-white/[0.06] my-2" />
               <FogInspector gmRawState={gmRawState} round={round ?? 1} />
             </>
           )}
         </>
       ) : (
-        <div style={{ color: "#4b5563", fontSize: "13px", fontStyle: "italic" }}>
+        <div className="text-gray-600 text-[13px] italic">
           Waiting for game state…
         </div>
       )}

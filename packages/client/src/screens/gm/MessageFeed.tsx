@@ -22,27 +22,18 @@ export function MessageFeed({ messages, phase, gmDecisionStatus, lobbyPlayers }:
   }, [messages.length]);
 
   return (
-    <div
-      style={{
-        gridColumn: "3",
-        gridRow: "1 / 3",
-        background: "#0a0a14",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
-        <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+    <div className="col-start-3 row-span-2 bg-surface flex flex-col overflow-hidden">
+      <div className="pt-5 px-4 pb-3 border-b border-white/[0.06] shrink-0">
+        <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest">
           All Messages
         </div>
         {phase === "decision" && (
-          <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <div style={{ color: "#9ca3af", fontSize: "11px" }}>
+          <div className="mt-2 flex items-center gap-1.5">
+            <div className="text-text-secondary text-[11px]">
               Decisions submitted:{" "}
-              <strong style={{ color: "#e5e7eb" }}>{gmDecisionStatus.length}</strong>
+              <strong className="text-text-primary">{gmDecisionStatus.length}</strong>
               {" / "}
-              <strong style={{ color: "#e5e7eb" }}>{lobbyPlayers.length}</strong>
+              <strong className="text-text-primary">{lobbyPlayers.length}</strong>
             </div>
           </div>
         )}
@@ -50,17 +41,10 @@ export function MessageFeed({ messages, phase, gmDecisionStatus, lobbyPlayers }:
 
       <div
         ref={feedRef}
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "12px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-        }}
+        className="flex-1 overflow-y-auto py-3 px-4 flex flex-col gap-2"
       >
         {messages.length === 0 ? (
-          <div style={{ color: "#4b5563", fontSize: "12px", fontStyle: "italic", textAlign: "center", marginTop: "20px" }}>
+          <div className="text-gray-600 text-xs italic text-center mt-5">
             No messages yet
           </div>
         ) : (
@@ -72,26 +56,20 @@ export function MessageFeed({ messages, phase, gmDecisionStatus, lobbyPlayers }:
             return (
               <div
                 key={msg.id}
-                style={{
-                  padding: "8px 10px",
-                  borderRadius: "6px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  fontSize: "12px",
-                }}
+                className="py-2 px-2.5 rounded-md bg-white/[0.03] border border-border-subtle text-xs"
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
-                  <span style={{ color: "#4b5563", fontSize: "10px", fontFamily: "monospace" }}>
+                <div className="flex items-center gap-1.5 mb-[3px]">
+                  <span className="text-gray-600 text-[10px] font-mono">
                     {formatTimestamp(msg.timestamp)}
                   </span>
-                  <span style={{ color: factionColor, fontWeight: 700, fontSize: "11px" }}>
+                  <span className="font-bold text-[11px]" style={{ color: factionColor }}>
                     {msg.fromName}
                   </span>
-                  <span style={{ color: "#4b5563", fontSize: "10px" }}>
+                  <span className="text-gray-600 text-[10px]">
                     → {msg.isTeamChat ? "team chat" : "DM"}
                   </span>
                 </div>
-                <div style={{ color: "#d1d5db", lineHeight: 1.4 }}>{msg.content}</div>
+                <div className="text-gray-300 leading-[1.4]">{msg.content}</div>
               </div>
             );
           })

@@ -14,7 +14,7 @@ interface PlayerRosterProps {
 export function PlayerRoster({ lobbyPlayers, phase, roomCode, gmDecisionStatus, gmPlayerActivity }: PlayerRosterProps) {
   return (
     <div>
-      <div style={{ color: "#6b7280", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+      <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-3">
         Players
       </div>
 
@@ -23,20 +23,14 @@ export function PlayerRoster({ lobbyPlayers, phase, roomCode, gmDecisionStatus, 
         if (factionPlayers.length === 0) return null;
 
         return (
-          <div key={faction.id} style={{ marginBottom: "16px" }}>
+          <div key={faction.id} className="mb-4">
             <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                color: FACTION_COLORS[faction.id as Faction] ?? "#9ca3af",
-                marginBottom: "6px",
-                textTransform: "uppercase",
-                letterSpacing: "0.07em",
-              }}
+              className="text-[11px] font-bold mb-1.5 uppercase tracking-[0.07em]"
+              style={{ color: FACTION_COLORS[faction.id as Faction] ?? "#9ca3af" }}
             >
               {faction.name}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div className="flex flex-col gap-1">
               {factionPlayers.map((p) => {
                 const roleConfig = faction.roles.find((r) => r.id === p.role);
                 const hasSubmitted = gmDecisionStatus.includes(p.id);
@@ -47,35 +41,22 @@ export function PlayerRoster({ lobbyPlayers, phase, roomCode, gmDecisionStatus, 
                 return (
                   <div
                     key={p.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      padding: "6px 8px",
-                      borderRadius: "6px",
-                      background: "rgba(255,255,255,0.03)",
-                      border: "1px solid rgba(255,255,255,0.05)",
-                    }}
+                    className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-white/[0.03] border border-border-subtle"
                   >
                     {/* Connection dot */}
                     <div
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: p.connected ? "#34d399" : "#ef4444",
-                        flexShrink: 0,
-                      }}
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: p.connected ? "var(--color-status-success)" : "var(--color-status-danger)" }}
                     />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "12px", fontWeight: 600, color: "#e5e7eb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-                      <div style={{ fontSize: "10px", color: "#6b7280" }}>{roleConfig?.label ?? p.role}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-text-primary overflow-hidden text-ellipsis whitespace-nowrap">{p.name}</div>
+                      <div className="text-[10px] text-text-muted">{roleConfig?.label ?? p.role}</div>
                     </div>
                     {/* Primary app missed indicator */}
                     {phase !== "lobby" && phase !== "briefing" && missedPrimary && (
                       <span
                         title={`Hasn't checked: ${primaryApps.filter((a) => !playerOpened.includes(a)).join(", ")}`}
-                        style={{ fontSize: "11px", flexShrink: 0, color: "#f59e0b" }}
+                        className="text-[11px] shrink-0 text-status-warning"
                       >
                         ⚠
                       </span>
@@ -83,14 +64,10 @@ export function PlayerRoster({ lobbyPlayers, phase, roomCode, gmDecisionStatus, 
                     {/* Decision submitted indicator */}
                     {phase === "decision" && (
                       <div
+                        className="text-[10px] font-semibold py-px px-[5px] rounded shrink-0"
                         style={{
-                          fontSize: "10px",
-                          fontWeight: 600,
-                          padding: "1px 5px",
-                          borderRadius: "4px",
                           background: hasSubmitted ? "rgba(52,211,153,0.15)" : "rgba(107,114,128,0.15)",
-                          color: hasSubmitted ? "#34d399" : "#6b7280",
-                          flexShrink: 0,
+                          color: hasSubmitted ? "var(--color-status-success)" : "var(--color-text-muted)",
                         }}
                       >
                         {hasSubmitted ? "✓" : "…"}
@@ -103,17 +80,7 @@ export function PlayerRoster({ lobbyPlayers, phase, roomCode, gmDecisionStatus, 
                         target="_blank"
                         rel="noopener noreferrer"
                         title={`Open ${roleConfig?.label ?? p.role} view in new tab`}
-                        style={{
-                          fontSize: "10px",
-                          color: "#6b7280",
-                          textDecoration: "none",
-                          flexShrink: 0,
-                          padding: "1px 4px",
-                          borderRadius: "3px",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "#e5e7eb"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+                        className="text-[10px] text-text-muted no-underline shrink-0 py-px px-1 rounded-[3px] border border-white/[0.08] hover:text-text-primary hover:border-white/20"
                       >
                         view
                       </a>
