@@ -6,7 +6,7 @@ Date: 2026-03-17 (updated 2026-03-18)
 
 ## TL;DR
 
-The codebase is **~18K LOC** across 3 packages. The architecture is sound but has accumulated some complexity debt. Tests are plentiful (1,168) but many are marginal or tautological.
+The codebase is **~23K source LOC** across 3 packages. The architecture is sound with two server hot spots worth refactoring. Tests are plentiful (1,169) but many are marginal or tautological.
 
 ---
 
@@ -14,46 +14,42 @@ The codebase is **~18K LOC** across 3 packages. The architecture is sound but ha
 
 | Package | Source LOC | Test LOC | What It Is |
 |---------|-----------|----------|------------|
-| **shared** | 1,137 | ~1,100 | Types, constants, resolution, fog, endings |
-| **server** | 7,600 | ~13,400 | Game loop, events, generation pipeline, logger |
-| **client** | 9,200 | ~2,400 | React UI: stores, screens, 17 apps, desktop WM |
-| **Total** | **~17,937** | **~16,900** | |
+| **shared** | 1,153 | ~1,100 | Types, constants, resolution, fog, endings |
+| **server** | 7,341 | ~11,845 | Game loop, events, generation pipeline, logger |
+| **client** | 14,362 | ~4,160 | React UI: stores, screens, 17 apps, desktop WM |
+| **Total** | **~22,856** | **~17,105** | |
 
 ---
 
 ## Package Assessments
 
-### shared (1,137 LOC) — Clean
+### shared (1,153 LOC) — Clean
 
 5 files. Well-organized. Types, game constants, resolution engine, fog-of-war, ending arc resolvers.
 
-**Issues found:**
-- **Dead exports in constants.ts:** `SCALING_GUIDE`, `getScalingGuide()`, `LEADER_ROLES`, `ScalingGuideEntry`, `FactionConfig` — all defined, none imported anywhere.
-- **Dead type exports in types.ts:** `OpenBrainRole`, `PrometheusRole`, `ChinaRole`, `ExternalRole`, `EndingArcId`, `MediaCycle` — individual role union members exported but never imported standalone.
-- **Questionable logic in endings.ts:** `resolveAlignment()` has `if (s.alignmentConfidence >= 25 || s.misalignmentSeverity <= 60) return 1` — the OR makes this almost always true given value ranges (0-100). Likely should be AND.
+**Minor issues:**
 - **Magic thresholds:** Ending arc resolvers have numeric thresholds (65, 70, 80, 85) with no inline rationale.
 
-**Verdict:** Low complexity. Delete the dead exports. Check the alignment OR condition.
+**Verdict:** Low complexity. No action needed.
 
 ---
 
-### server (7,600 LOC) — Moderate Complexity, 2 Hot Spots
+### server (7,341 LOC) — Moderate Complexity, 2 Hot Spots
 
 **Good:**
 - Generation pipeline (orchestrator → generators → provider → validation) is well-structured
 - Logger system is appropriately scoped (not over-engineered)
 - Room management is simple
 - No circular dependencies
+- Dead code is clean (`bun run knip` passes)
 
 **Hot spots:**
 
 1. **`game.ts` — `checkThresholds()` (358 LOC)**
    The worst function in the codebase. 8 threshold handlers copy-pasted with the same pattern: check fired set → check state → mutate state → create notification → inject news → log. Should be a declarative data structure + loop. ~100 LOC reduction possible.
 
-2. **`events.ts` — `registerGameEvents()` (830 LOC)**
+2. **`events.ts` — `registerGameEvents()` (848 LOC)**
    40+ socket.on() handlers in one function. Each handler repeats the same room/code validation boilerplate (~15 times). Extract a `requireRoom(socket)` helper. Not urgent but noisy.
-
-**Dead code:** Tracked by `bun run knip`. See knip output for current list.
 
 **Generation pipeline — over-engineered?**
 Partially. The 4 generators (briefing, content, npc, decisions) follow identical patterns: prompt builder → provider call → validation → retry. Could extract a common `generateWithRetry<T>()` wrapper to eliminate ~400 LOC of duplication. But each has domain-specific schemas and validation, so the current separation is defensible.
@@ -62,7 +58,7 @@ Partially. The 4 generators (briefing, content, npc, decisions) follow identical
 
 ---
 
-### client (9,200 LOC) — Fine
+### client (14,362 LOC) — Fine
 
 **Good:**
 - 4 Zustand stores with clear separation (game, messages, notifications, ui)
@@ -116,10 +112,9 @@ Partially. The 4 generators (briefing, content, npc, decisions) follow identical
 
 ### Critical Test Gaps
 
-1. **Client stores (game.ts, messages.ts, notifications.ts)** — All game state mutations untested. Session persistence, phase resets, reconnection state — zero coverage.
-2. **Concurrent decision submission** — Server handles simultaneous submits from different players but never tested.
-3. **Generation error orchestration** — Individual generator retry is tested, but partial artifact failure (briefing fails, content succeeds → status should be "failed") is not.
-4. **Desktop window manager** — Drag, resize, z-order, auto-minimize — all untested.
+1. **Concurrent decision submission** — Server handles simultaneous submits from different players but never tested.
+2. **Generation error orchestration** — Individual generator retry is tested, but partial artifact failure (briefing fails, content succeeds → status should be "failed") is not.
+3. **Desktop window manager** — Drag, resize, z-order, auto-minimize — all untested.
 
 ---
 
@@ -160,19 +155,13 @@ Partially. The 4 generators (briefing, content, npc, decisions) follow identical
 
 ## Recommendations
 
-### Do Now (Before Next Feature Work)
-
-1. **Dead code cleanup** — Run `bun run knip` and fix all findings. Unused exports, deps, and types across the codebase.
-2. **Check `resolveAlignment` OR → AND** — The `||` in endings.ts makes the condition almost always true. Likely should be AND. Verify with simulation.
-
 ### Do Soon (High ROI Refactors)
 
-3. **Refactor `checkThresholds()`** to declarative registry — eliminates 358 LOC monolith.
-4. **Extract `requireRoom()` helper** in events.ts — removes 15× boilerplate.
+1. **Refactor `checkThresholds()`** to declarative registry — eliminates 358 LOC monolith.
+2. **Extract `requireRoom()` helper** in events.ts — removes 15× boilerplate.
 
 ### Don't Do (Traps)
 
 - **Don't add more tests for trivial utilities** — The wasteful tests already prove this doesn't help.
 - **Don't split the 17 app components** — They're appropriately scoped.
 - **Don't abstract the generation pipeline further** — 4 generators sharing a pattern is fine; a generic wrapper adds indirection without real benefit.
-- **Don't over-test client stores** — Focus tests on the game.ts store (it matters) and skip notifications.ts (56 LOC of trivial queue logic).
