@@ -6,7 +6,7 @@ Date: 2026-03-17 (updated 2026-03-18)
 
 ## TL;DR
 
-The codebase is **~23K source LOC** across 3 packages. The architecture is sound with two server hot spots worth refactoring. Tests are plentiful (1,169) but many are marginal or tautological.
+The codebase is **~23K source LOC** across 3 packages. The architecture is sound. Tests are plentiful (1,169) but many are marginal or tautological.
 
 ---
 
@@ -34,7 +34,7 @@ The codebase is **~23K source LOC** across 3 packages. The architecture is sound
 
 ---
 
-### server (7,341 LOC) — Moderate Complexity, 2 Hot Spots
+### server (7,341 LOC) — Clean
 
 **Good:**
 - Generation pipeline (orchestrator → generators → provider → validation) is well-structured
@@ -42,19 +42,10 @@ The codebase is **~23K source LOC** across 3 packages. The architecture is sound
 - Room management is simple
 - No circular dependencies
 - Dead code is clean (`bun run knip` passes)
+- `checkThresholds()` uses a declarative `THRESHOLD_REGISTRY` + loop (8 thresholds)
+- `events.ts` uses `getSocketRoom()`/`getGmRoom()` helpers — no repeated validation boilerplate
 
-**Hot spots:**
-
-1. **`game.ts` — `checkThresholds()` (358 LOC)**
-   The worst function in the codebase. 8 threshold handlers copy-pasted with the same pattern: check fired set → check state → mutate state → create notification → inject news → log. Should be a declarative data structure + loop. ~100 LOC reduction possible.
-
-2. **`events.ts` — `registerGameEvents()` (848 LOC)**
-   40+ socket.on() handlers in one function. Each handler repeats the same room/code validation boilerplate (~15 times). Extract a `requireRoom(socket)` helper. Not urgent but noisy.
-
-**Generation pipeline — over-engineered?**
-Partially. The 4 generators (briefing, content, npc, decisions) follow identical patterns: prompt builder → provider call → validation → retry. Could extract a common `generateWithRetry<T>()` wrapper to eliminate ~400 LOC of duplication. But each has domain-specific schemas and validation, so the current separation is defensible.
-
-**Verdict:** Two functions need refactoring (checkThresholds, requireRoom extraction). Generation pipeline is fine — structured repetition, not accidental complexity.
+**Verdict:** No action needed. Generation pipeline has structured repetition (4 generators sharing a pattern) but each has domain-specific schemas, so current separation is defensible.
 
 ---
 
@@ -132,8 +123,6 @@ Partially. The 4 generators (briefing, content, npc, decisions) follow identical
 
 | Problem | Size | Fix | Effort |
 |---------|------|-----|--------|
-| `checkThresholds()` monolith | 358 LOC | Declarative threshold registry + loop | 2h |
-| Repeated room validation in events.ts | ~15 instances | Extract `requireRoom()` helper | 1h |
 | `Decision.tsx` inline RadioGroup | 56 LOC | Extract to component | 30m |
 | Mixed Tailwind/inline styles | Scattered | Standardize on Tailwind | 4h |
 | `wandbUtils.ts` blob | 769 LOC | Split data/transforms/types | 1h |
@@ -154,11 +143,6 @@ Partially. The 4 generators (briefing, content, npc, decisions) follow identical
 ---
 
 ## Recommendations
-
-### Do Soon (High ROI Refactors)
-
-1. **Refactor `checkThresholds()`** to declarative registry — eliminates 358 LOC monolith.
-2. **Extract `requireRoom()` helper** in events.ts — removes 15× boilerplate.
 
 ### Don't Do (Traps)
 
