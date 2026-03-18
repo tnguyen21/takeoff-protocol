@@ -11,56 +11,42 @@ function DeltaRow({ delta }: { delta: StateDelta }) {
 
   return (
     <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        padding: "8px 12px",
-        borderRadius: "6px",
-        background: isPositive
-          ? "rgba(52, 211, 153, 0.06)"
+      className={`flex items-center gap-3 py-2 px-3 rounded-md border ${
+        isPositive
+          ? "bg-status-success/6 border-status-success/15"
           : isNegative
-          ? "rgba(239, 68, 68, 0.06)"
-          : "rgba(255,255,255,0.03)",
-        border: `1px solid ${isPositive ? "rgba(52,211,153,0.15)" : isNegative ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)"}`,
-      }}
+          ? "bg-status-danger/6 border-status-danger/15"
+          : "bg-white/3 border-white/6"
+      }`}
     >
       {/* Delta indicator */}
       <div
-        style={{
-          fontFamily: "monospace",
-          fontSize: "13px",
-          fontWeight: 700,
-          color: isPositive ? "#34d399" : isNegative ? "#f87171" : "#9ca3af",
-          minWidth: "48px",
-          textAlign: "right",
-          flexShrink: 0,
-        }}
+        className={`font-mono text-[13px] font-bold min-w-[48px] text-right shrink-0 ${
+          isPositive ? "text-status-success" : isNegative ? "text-red-400" : "text-text-secondary"
+        }`}
       >
         {isPositive ? "+" : ""}
         {delta.delta}
       </div>
 
       {/* Variable label */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: "#e5e7eb", fontSize: "12px", fontWeight: 500 }}>
+      <div className="flex-1 min-w-0">
+        <div className="text-text-primary text-xs font-medium">
           {delta.label}
         </div>
-        <div style={{ color: "#6b7280", fontSize: "11px", marginTop: "1px", fontFamily: "monospace" }}>
+        <div className="text-text-muted text-[11px] mt-px font-mono">
           {delta.oldValue} → {delta.newValue}
           {delta.accuracy === "estimate" && (
-            <span style={{ color: "#4b5563", marginLeft: "6px" }}>~estimate</span>
+            <span className="text-gray-600 ml-1.5">~estimate</span>
           )}
         </div>
       </div>
 
       {/* Arrow */}
       <div
-        style={{
-          fontSize: "14px",
-          color: isPositive ? "#34d399" : isNegative ? "#f87171" : "#6b7280",
-          flexShrink: 0,
-        }}
+        className={`text-[14px] shrink-0 ${
+          isPositive ? "text-status-success" : isNegative ? "text-red-400" : "text-text-muted"
+        }`}
       >
         {isPositive ? "▲" : isNegative ? "▼" : "—"}
       </div>
@@ -119,40 +105,23 @@ export function Resolution() {
 
   return (
     <div
-      className="absolute inset-0 flex items-start justify-center overflow-y-auto"
-      style={{
-        background: "rgba(0, 0, 0, 0.88)",
-        backdropFilter: "blur(4px)",
-        paddingTop: "32px",
-        paddingBottom: "32px",
-        zIndex: 1000,
-      }}
+      className="absolute inset-0 flex items-start justify-center overflow-y-auto bg-black/[0.88] backdrop-blur-sm pt-8 pb-8 z-[1000]"
     >
-      <div
-        className="flex flex-col gap-6 px-8 py-10"
-        style={{ maxWidth: "760px", width: "100%" }}
-      >
+      <div className="flex flex-col gap-6 px-8 py-10 max-w-[760px] w-full">
         {/* Round header */}
         <div className="flex flex-col gap-1">
-          <div
-            className="text-xs font-mono uppercase tracking-[0.25em]"
-            style={{ color: "rgba(156, 163, 175, 0.7)" }}
-          >
+          <div className="text-xs font-mono uppercase tracking-[0.25em] text-text-secondary/70">
             Round {round}
           </div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "#f9fafb", letterSpacing: "-0.02em" }}
-          >
-            <span style={{ color: "rgba(156, 163, 175, 0.5)" }}>
+          <h1 className="text-2xl font-bold text-text-bright tracking-[-0.02em]">
+            <span className="text-text-secondary/50">
               RESOLUTION —{" "}
             </span>
             Consequences
           </h1>
           <div
-            className="mt-2"
+            className="mt-2 h-px"
             style={{
-              height: "1px",
               background: "linear-gradient(90deg, rgba(234,179,8,0.6) 0%, transparent 100%)",
             }}
           />
@@ -177,24 +146,8 @@ export function Resolution() {
 
         {/* Team decisions summary */}
         {fullyRevealed && Object.keys(resolution.teamDecisions).length > 0 && (
-          <div
-            style={{
-              padding: "16px",
-              borderRadius: "10px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            <div
-              style={{
-                color: "#9ca3af",
-                fontSize: "10px",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "10px",
-              }}
-            >
+          <div className="p-4 rounded-[10px] bg-white/3 border border-white/8">
+            <div className="text-text-secondary text-[10px] font-semibold uppercase tracking-[0.1em] mb-2.5">
               Team Decisions
             </div>
 
@@ -202,32 +155,17 @@ export function Resolution() {
               {Object.entries(resolution.teamDecisions).map(([faction, decision]) => {
                 const isMyFaction = faction === myFaction;
                 return (
-                  <div
-                    key={faction}
-                    style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: "8px",
-                    }}
-                  >
+                  <div key={faction} className="flex items-baseline gap-2">
                     <span
-                      style={{
-                        color: isMyFaction ? "#fbbf24" : "#6b7280",
-                        fontSize: "11px",
-                        fontWeight: isMyFaction ? 700 : 500,
-                        minWidth: "160px",
-                        flexShrink: 0,
-                      }}
+                      className={`text-[11px] min-w-[160px] shrink-0 ${
+                        isMyFaction ? "text-amber-400 font-bold" : "text-text-muted font-medium"
+                      }`}
                     >
                       {(faction in FACTION_LONG_NAMES) ? FACTION_LONG_NAMES[faction as Faction] : faction}
                       {isMyFaction && " (you)"}
                     </span>
                     <span
-                      style={{
-                        color: isMyFaction ? "#e5e7eb" : "#9ca3af",
-                        fontSize: "12px",
-                        fontStyle: "italic",
-                      }}
+                      className={`text-xs italic ${isMyFaction ? "text-text-primary" : "text-text-secondary"}`}
                     >
                       {decision.label}
                     </span>
@@ -240,27 +178,11 @@ export function Resolution() {
 
         {/* Your team's choice — prominent callout */}
         {fullyRevealed && myTeamDecision && (
-          <div
-            style={{
-              padding: "14px 18px",
-              borderRadius: "10px",
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.25)",
-            }}
-          >
-            <div
-              style={{
-                color: "#fbbf24",
-                fontSize: "10px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "4px",
-              }}
-            >
+          <div className="px-[18px] py-[14px] rounded-[10px] bg-amber-400/[0.08] border border-amber-400/25">
+            <div className="text-amber-400 text-[10px] font-bold uppercase tracking-[0.1em] mb-1">
               Your Team Chose
             </div>
-            <div style={{ color: "#fef3c7", fontSize: "14px", fontWeight: 600 }}>
+            <div className="text-amber-100 text-sm font-semibold">
               {myTeamDecision.label}
             </div>
           </div>
@@ -269,16 +191,7 @@ export function Resolution() {
         {/* State deltas */}
         {fullyRevealed && resolution.stateDeltas.length > 0 && (
           <div>
-            <div
-              style={{
-                color: "#9ca3af",
-                fontSize: "10px",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="text-text-secondary text-[10px] font-semibold uppercase tracking-[0.1em] mb-2.5">
               State Changes (your visibility)
             </div>
 
@@ -297,35 +210,22 @@ export function Resolution() {
 
         {/* No visible changes message */}
         {fullyRevealed && resolution.stateDeltas.length === 0 && (
-          <div
-            style={{
-              color: "#6b7280",
-              fontSize: "13px",
-              fontStyle: "italic",
-              padding: "12px",
-              borderRadius: "8px",
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
+          <div className="text-text-muted text-[13px] italic p-3 rounded-lg bg-white/2 border border-white/6">
             No state changes visible to your faction this round.
           </div>
         )}
 
         {/* Waiting indicator */}
         <div
-          className="flex items-center gap-2 text-xs font-mono"
+          className="flex items-center gap-2 text-xs font-mono mt-2 text-text-muted/80"
           style={{
-            color: "rgba(107, 114, 128, 0.8)",
             opacity: fullyRevealed ? 1 : 0,
             transition: "opacity 0.8s ease",
-            marginTop: "0.5rem",
           }}
         >
           <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
+            className="inline-block h-1.5 w-1.5 rounded-full bg-yellow-500/70"
             style={{
-              background: "rgba(234, 179, 8, 0.7)",
               animation: fullyRevealed ? "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" : "none",
             }}
           />

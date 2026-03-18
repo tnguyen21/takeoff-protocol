@@ -115,114 +115,50 @@ export function Decision() {
 
   return (
     // Full-screen overlay
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.75)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-      }}
-    >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/75 backdrop-blur">
       {/* Modal */}
       <div
-        style={{
-          width: "min(860px, 95vw)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          background: "rgba(18,18,28,0.95)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: "16px",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        className="w-[min(860px,95vw)] max-h-[90vh] overflow-y-auto bg-[rgba(18,18,28,0.95)] border border-white/[0.12] rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.08)] flex flex-col"
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "20px 24px 16px",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-b-white/8">
           <div>
-            <div style={{ color: "#e5e7eb", fontSize: "18px", fontWeight: 700, letterSpacing: "-0.3px" }}>
+            <div className="text-text-primary text-lg font-bold tracking-[-0.3px]">
               Decision Phase
             </div>
-            <div style={{ color: "#6b7280", fontSize: "12px", marginTop: "2px" }}>
+            <div className="text-text-muted text-xs mt-0.5">
               Submit your decisions before time runs out
             </div>
           </div>
 
           {/* Countdown */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "2px",
-            }}
-          >
+          <div className="flex flex-col items-center gap-0.5">
             <div
-              style={{
-                fontFamily: "monospace",
-                fontSize: "32px",
-                fontWeight: 700,
-                color: timerColor,
-                lineHeight: 1,
-                transition: "color 0.5s",
-              }}
+              className="font-mono text-[32px] font-bold leading-none"
+              style={{ color: timerColor, transition: "color 0.5s" }}
             >
               {timedOut ? "0:00" : formatTime(timeRemaining)}
             </div>
-            <div style={{ fontSize: "10px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div className="text-[10px] text-text-muted uppercase tracking-[0.05em]">
               remaining
             </div>
           </div>
         </div>
 
         {/* Body */}
-        <div style={{ display: "flex", gap: "0", flex: 1 }}>
+        <div className="flex flex-1">
           {/* Individual Decision */}
-          <div
-            style={{
-              flex: 1,
-              padding: "20px 24px",
-              borderRight: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "14px",
-              }}
-            >
-              <div
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "#8b5cf6",
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ color: "#a78bfa", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div className="flex-1 px-6 py-5 border-r border-r-white/[0.06]">
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+              <span className="text-accent-muted text-[11px] font-semibold uppercase tracking-[0.08em]">
                 Individual Decision
               </span>
             </div>
 
             {individual ? (
               <>
-                <p style={{ color: "#d1d5db", fontSize: "13px", lineHeight: 1.6, marginBottom: "16px" }}>
+                <p className="text-gray-300 text-[13px] leading-relaxed mb-4">
                   {individual.prompt}
                 </p>
                 <RadioGroup
@@ -234,49 +170,21 @@ export function Decision() {
                 />
               </>
             ) : (
-              <p style={{ color: "#6b7280", fontSize: "13px", fontStyle: "italic" }}>
+              <p className="text-text-muted text-[13px] italic">
                 No individual decision this round.
               </p>
             )}
           </div>
 
           {/* Team Decision */}
-          <div style={{ flex: 1, padding: "20px 24px", display: "flex", flexDirection: "column", gap: "0" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "14px",
-              }}
-            >
-              <div
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "#06b6d4",
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ color: "#67e8f9", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div className="flex-1 px-6 py-5 flex flex-col">
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-faction-prometheus shrink-0" />
+              <span className="text-cyan-300 text-[11px] font-semibold uppercase tracking-[0.08em]">
                 Team Decision
               </span>
               {isLeader && (
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                    color: "#fbbf24",
-                    background: "rgba(251,191,36,0.12)",
-                    border: "1px solid rgba(251,191,36,0.3)",
-                    borderRadius: "4px",
-                    padding: "1px 6px",
-                    letterSpacing: "0.04em",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <span className="ml-auto text-[10px] font-semibold text-amber-400 bg-amber-400/[0.12] border border-amber-400/30 rounded px-1.5 py-px tracking-[0.04em] uppercase">
                   Leader
                 </span>
               )}
@@ -284,7 +192,7 @@ export function Decision() {
 
             {team ? (
               <>
-                <p style={{ color: "#d1d5db", fontSize: "13px", lineHeight: 1.6, marginBottom: "16px" }}>
+                <p className="text-gray-300 text-[13px] leading-relaxed mb-4">
                   {team.prompt}
                 </p>
 
@@ -293,33 +201,23 @@ export function Decision() {
                   <>
                     {/* Vote tallies */}
                     {totalVotes > 0 && (
-                      <div
-                        style={{
-                          marginBottom: "16px",
-                          padding: "12px 14px",
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: "10px",
-                        }}
-                      >
-                        <div style={{ color: "#9ca3af", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                      <div className="mb-4 px-3.5 py-3 bg-white/3 border border-white/8 rounded-[10px]">
+                        <div className="text-text-secondary text-[10px] font-semibold uppercase tracking-[0.08em] mb-2">
                           Team Votes
                         </div>
                         {team.options.map((opt) => {
                           const count = voteTallies[opt.id] ?? 0;
                           const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
                           return (
-                            <div key={opt.id} style={{ marginBottom: "6px" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
-                                <span style={{ color: "#d1d5db", fontSize: "12px" }}>{opt.label}</span>
-                                <span style={{ color: "#6b7280", fontSize: "11px" }}>{count} ({pct}%)</span>
+                            <div key={opt.id} className="mb-1.5">
+                              <div className="flex justify-between mb-0.5">
+                                <span className="text-gray-300 text-xs">{opt.label}</span>
+                                <span className="text-text-muted text-[11px]">{count} ({pct}%)</span>
                               </div>
-                              <div style={{ height: "3px", borderRadius: "2px", background: "rgba(255,255,255,0.06)" }}>
+                              <div className="h-[3px] rounded-[2px] bg-white/[0.06]">
                                 <div
+                                  className="h-full rounded-[2px] bg-amber-400/60"
                                   style={{
-                                    height: "100%",
-                                    borderRadius: "2px",
-                                    background: "rgba(251,191,36,0.6)",
                                     width: `${pct}%`,
                                     transition: "width 0.4s ease",
                                   }}
@@ -346,23 +244,11 @@ export function Decision() {
                         }
                       }}
                       disabled={!leaderFinalChoice || teamLocked}
-                      style={{
-                        marginTop: "12px",
-                        width: "100%",
-                        padding: "9px",
-                        borderRadius: "8px",
-                        border: "1px solid rgba(251,191,36,0.4)",
-                        background: teamLocked
-                          ? "rgba(255,255,255,0.03)"
-                          : leaderFinalChoice
-                          ? "rgba(251,191,36,0.15)"
-                          : "rgba(255,255,255,0.03)",
-                        color: teamLocked ? "#6b7280" : leaderFinalChoice ? "#fbbf24" : "#6b7280",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        cursor: teamLocked || !leaderFinalChoice ? "not-allowed" : "pointer",
-                        transition: "all 0.15s",
-                      }}
+                      className={`mt-3 w-full py-[9px] rounded-lg border border-amber-400/40 text-[13px] font-semibold transition-all duration-[150ms] ${
+                        !teamLocked && leaderFinalChoice
+                          ? "bg-amber-400/[0.15] text-amber-400 cursor-pointer"
+                          : "bg-white/3 text-text-muted cursor-not-allowed"
+                      }`}
                     >
                       {teamLocked ? "Team Decision Locked ✓" : "Lock Team Decision"}
                     </button>
@@ -379,7 +265,7 @@ export function Decision() {
                 )}
               </>
             ) : (
-              <p style={{ color: "#6b7280", fontSize: "13px", fontStyle: "italic" }}>
+              <p className="text-text-muted text-[13px] italic">
                 No team decision this round.
               </p>
             )}
@@ -387,31 +273,23 @@ export function Decision() {
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            padding: "16px 24px",
-            borderTop: "1px solid rgba(255,255,255,0.08)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        <div className="px-6 py-4 border-t border-t-white/8 flex items-center justify-between">
           {decisionSubmitted ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#34d399" }} />
-              <span style={{ color: "#34d399", fontSize: "13px", fontWeight: 500 }}>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-status-success" />
+              <span className="text-status-success text-[13px] font-medium">
                 {timedOut && autoSubmitted ? "Time's up — inaction recorded." : "Submitted. Waiting for others..."}
               </span>
             </div>
           ) : timedOut ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
-              <span style={{ color: "#ef4444", fontSize: "13px", fontWeight: 500 }}>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-status-danger" />
+              <span className="text-status-danger text-[13px] font-medium">
                 Time's up — inaction recorded.
               </span>
             </div>
           ) : (
-            <div style={{ color: "#6b7280", fontSize: "12px" }}>
+            <div className="text-text-muted text-xs">
               {!individualChoice && !teamVoteChoice
                 ? "Select your choices above, or skip to abstain."
                 : "Ready to submit."}
@@ -421,17 +299,11 @@ export function Decision() {
           <button
             onClick={handleSubmit}
             disabled={isSubmitDisabled}
-            style={{
-              padding: "9px 20px",
-              borderRadius: "8px",
-              border: isSubmitDisabled ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(139,92,246,0.5)",
-              background: isSubmitDisabled ? "rgba(255,255,255,0.03)" : "rgba(139,92,246,0.2)",
-              color: isSubmitDisabled ? "#6b7280" : "#c4b5fd",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: isSubmitDisabled ? "not-allowed" : "pointer",
-              transition: "all 0.15s",
-            }}
+            className={`py-[9px] px-5 rounded-lg text-[13px] font-semibold transition-all duration-[150ms] ${
+              isSubmitDisabled
+                ? "border border-white/8 bg-white/3 text-text-muted cursor-not-allowed"
+                : "border border-accent/50 bg-accent/20 text-accent-light cursor-pointer"
+            }`}
           >
             {decisionSubmitted ? "Submitted ✓" : "Submit Decision"}
           </button>

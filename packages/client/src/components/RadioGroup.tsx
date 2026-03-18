@@ -20,10 +20,10 @@ export function RadioGroup({
         return (
           <label
             key={opt.id}
-            className={`flex gap-3 items-start px-[14px] py-[10px] rounded-lg transition-all duration-[150ms] ease-in ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+            className={`flex gap-3 items-start px-[14px] py-[10px] rounded-lg transition-all duration-[150ms] ease-in border ${
+              disabled ? "cursor-not-allowed" : "cursor-pointer"
+            } ${isSelected ? "border-accent/70 bg-accent-bg" : "border-border bg-white/3"}`}
             style={{
-              border: `1px solid ${isSelected ? "rgba(139,92,246,0.7)" : "rgba(255,255,255,0.1)"}`,
-              background: isSelected ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.03)",
               opacity: disabled && !isSelected ? 0.5 : 1,
             }}
           >
@@ -34,13 +34,11 @@ export function RadioGroup({
               checked={isSelected}
               disabled={disabled}
               onChange={() => !disabled && onSelect(opt.id)}
-              className="mt-[3px] shrink-0"
-              style={{ accentColor: "#8b5cf6" }}
+              className="mt-[3px] shrink-0 accent-accent"
             />
             <div>
               <div
-                className="text-[13px] font-medium leading-[1.3]"
-                style={{ color: isSelected ? "#c4b5fd" : "#e5e7eb" }}
+                className={`text-[13px] font-medium leading-[1.3] ${isSelected ? "text-accent-light" : "text-text-primary"}`}
               >
                 {opt.label}
               </div>

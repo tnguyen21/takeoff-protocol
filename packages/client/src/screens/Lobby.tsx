@@ -166,28 +166,15 @@ export function Lobby() {
               </div>
               <button
                 onClick={() => gmSetGeneration(!gmGenerationEnabled)}
-                className="flex-shrink-0"
-                style={{
-                  width: "44px",
-                  height: "24px",
-                  borderRadius: "12px",
-                  border: "none",
-                  background: gmGenerationEnabled ? "#06b6d4" : "#374151",
-                  cursor: "pointer",
-                  position: "relative",
-                  transition: "background 0.2s",
-                }}
+                className={`flex-shrink-0 relative w-11 h-6 rounded-full border-none cursor-pointer transition-[background] duration-200 ${
+                  gmGenerationEnabled ? "bg-cyan-500" : "bg-gray-700"
+                }`}
               >
-                <div style={{
-                  width: "18px",
-                  height: "18px",
-                  borderRadius: "50%",
-                  background: "#fff",
-                  position: "absolute",
-                  top: "3px",
-                  left: gmGenerationEnabled ? "23px" : "3px",
-                  transition: "left 0.2s",
-                }} />
+                <div
+                  className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-[left] duration-200 ${
+                    gmGenerationEnabled ? "left-[23px]" : "left-[3px]"
+                  }`}
+                />
               </button>
             </div>
           </div>

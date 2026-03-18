@@ -71,38 +71,25 @@ export function Briefing() {
 
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center"
-      style={{
-        background: "rgba(0, 0, 0, 0.88)",
-        backdropFilter: "blur(4px)",
-        zIndex: 1000,
-      }}
+      className="absolute inset-0 flex items-center justify-center bg-black/[0.88] backdrop-blur-sm z-[1000]"
     >
       <div
-        className="flex flex-col gap-6 px-8 py-10"
-        style={{ maxWidth: "700px", width: "100%", boxSizing: "border-box", overflowX: "hidden" }}
+        className="flex flex-col gap-6 px-8 py-10 max-w-[700px] w-full box-border overflow-x-hidden"
       >
         {/* Round header */}
         <div className="flex flex-col gap-1">
-          <div
-            className="text-xs font-mono uppercase tracking-[0.25em]"
-            style={{ color: "rgba(156, 163, 175, 0.7)" }}
-          >
+          <div className="text-xs font-mono uppercase tracking-[0.25em] text-text-secondary/70">
             {meta.date}
           </div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "#f9fafb", letterSpacing: "-0.02em" }}
-          >
-            <span style={{ color: "rgba(156, 163, 175, 0.5)" }}>
+          <h1 className="text-2xl font-bold text-text-bright tracking-tight">
+            <span className="text-text-secondary/50">
               ROUND {round}:{" "}
             </span>
             {meta.name}
           </h1>
           <div
-            className="mt-2"
+            className="mt-2 h-px"
             style={{
-              height: "1px",
               background: "linear-gradient(90deg, rgba(99,102,241,0.6) 0%, transparent 100%)",
             }}
           />
@@ -127,18 +114,15 @@ export function Briefing() {
 
         {/* Waiting indicator */}
         <div
-          className="flex items-center gap-2 text-xs font-mono"
+          className="flex items-center gap-2 text-xs font-mono mt-2 text-text-muted/80"
           style={{
-            color: "rgba(107, 114, 128, 0.8)",
             opacity: fullyRevealed ? 1 : 0,
             transition: "opacity 0.8s ease",
-            marginTop: "0.5rem",
           }}
         >
           <span
-            className="inline-block h-1.5 w-1.5 rounded-full"
+            className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500/70"
             style={{
-              background: "rgba(99, 102, 241, 0.7)",
               animation: fullyRevealed ? "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" : "none",
             }}
           />
