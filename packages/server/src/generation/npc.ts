@@ -1,5 +1,5 @@
 import type { Faction, NpcTrigger } from "@takeoff/shared";
-import type { GenerationProvider } from "./provider.js";
+import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import type { GenerationContext } from "./context.js";
 import { NPC_SYSTEM_PROMPT } from "./prompts/system.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
@@ -225,6 +225,7 @@ async function generateNpcMessages(
   provider: GenerationProvider,
   context: GenerationContext,
   validationErrors?: string[],
+  options?: GenerationOptions,
 ): Promise<NpcTrigger[]> {
   const systemPrompt = NPC_SYSTEM_PROMPT;
   const userPrompt = buildNpcUserPrompt(context, validationErrors);
@@ -233,6 +234,7 @@ async function generateNpcMessages(
     systemPrompt,
     userPrompt,
     schema: NPC_SCHEMA,
+    options,
   });
 
   return postProcessNpcTriggers(raw, context.targetRound);
@@ -252,12 +254,13 @@ async function generateNpcMessages(
 export async function generateNpcMessagesWithRetry(
   provider: GenerationProvider,
   context: GenerationContext,
+  options?: GenerationOptions,
 ): Promise<NpcTrigger[] | null> {
   let firstResult: NpcTrigger[];
 
   // ── First attempt ─────────────────────────────────────────────────────────
   try {
-    firstResult = await generateNpcMessages(provider, context);
+    firstResult = await generateNpcMessages(provider, context, undefined, options);
   } catch {
     return null;
   }
@@ -270,7 +273,7 @@ export async function generateNpcMessagesWithRetry(
   // ── Retry once with error feedback ────────────────────────────────────────
   let retryResult: NpcTrigger[];
   try {
-    retryResult = await generateNpcMessages(provider, context, firstValidation.errors);
+    retryResult = await generateNpcMessages(provider, context, firstValidation.errors, options);
   } catch {
     return null;
   }

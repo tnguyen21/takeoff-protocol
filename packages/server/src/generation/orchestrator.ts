@@ -20,7 +20,7 @@ import {
   setGeneratedNpcTriggers,
   setGenerationStatus,
 } from "./cache.js";
-import { AnthropicProvider, type GenerationProvider } from "./provider.js";
+import { AnthropicProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
 import { validateBriefing } from "./validate.js";
 
 // ── Factions for content generation ───────────────────────────────────────────
@@ -62,6 +62,12 @@ export async function triggerGeneration(
   const npcEnabled = roomEnabled === true ? true : config.npcEnabled;
   const decisionsEnabled = roomEnabled === true ? true : config.decisionsEnabled;
 
+  // ── Generation options (model + timeout from config) ──────────────────────
+  const briefingOptions: GenerationOptions = { model: config.briefingModel, timeout: config.timeout };
+  const contentOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
+  const decisionOptions: GenerationOptions = { model: config.decisionModel, timeout: config.timeout };
+  const npcOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
+
   // ── Idempotency check ─────────────────────────────────────────────────────
   const existingStatus = getGenerationStatus(room, round);
   if (existingStatus !== undefined) {
@@ -87,7 +93,7 @@ export async function triggerGeneration(
       const startTs = Date.now();
       logGenerationStart(round, briefingArtifact);
 
-      const briefingResult = await generateBriefingWithRetry(resolvedProvider, context);
+      const briefingResult = await generateBriefingWithRetry(resolvedProvider, context, briefingOptions);
 
       const durationMs = Date.now() - startTs;
 
@@ -119,6 +125,7 @@ export async function triggerGeneration(
           context,
           faction,
           contentApps,
+          contentOptions,
         );
 
         const durationMs = Date.now() - startTs;
@@ -139,7 +146,7 @@ export async function triggerGeneration(
       const startTs = Date.now();
       logGenerationStart(round, npcArtifact);
 
-      const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context);
+      const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context, npcOptions);
 
       const durationMs = Date.now() - startTs;
 
@@ -161,7 +168,7 @@ export async function triggerGeneration(
         const startTs = Date.now();
         logGenerationStart(round, decisionsArtifact);
 
-        const decisionsResult = await generateDecisionsWithRetry(resolvedProvider, context, templates, round);
+        const decisionsResult = await generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
 
         const durationMs = Date.now() - startTs;
 

@@ -7,7 +7,7 @@ import type {
   TeamDecision,
 } from "@takeoff/shared";
 import type { GenerationContext } from "./context.js";
-import type { GenerationProvider } from "./provider.js";
+import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { DECISION_SYSTEM_PROMPT } from "./prompts/system.js";
 import { validateDecisions } from "./validate.js";
 
@@ -292,6 +292,7 @@ async function generateSingleDecision(
   context: GenerationContext,
   template: DecisionTemplate,
   round: number,
+  options?: GenerationOptions,
 ): Promise<{ prompt: string; options: DecisionOption[] } | null> {
   const roleOrFaction = template.role ?? template.faction ?? "unknown";
 
@@ -302,6 +303,7 @@ async function generateSingleDecision(
       systemPrompt: DECISION_SYSTEM_PROMPT,
       userPrompt: buildDecisionPrompt(context, template),
       schema: DECISION_SCHEMA,
+      options,
     });
   } catch {
     return null;
@@ -321,6 +323,7 @@ async function generateSingleDecision(
       systemPrompt: DECISION_SYSTEM_PROMPT,
       userPrompt: buildDecisionPrompt(context, template, validation.errors),
       schema: DECISION_SCHEMA,
+      options,
     });
   } catch {
     return null;
@@ -350,6 +353,7 @@ export async function generateDecisions(
   context: GenerationContext,
   templates: DecisionTemplate[],
   round: number,
+  options?: GenerationOptions,
 ): Promise<RoundDecisions | null> {
   const roundTemplates = templates.filter((t) => t.round === round);
 
@@ -357,7 +361,7 @@ export async function generateDecisions(
   const team: TeamDecision[] = [];
 
   for (const template of roundTemplates) {
-    const result = await generateSingleDecision(provider, context, template, round);
+    const result = await generateSingleDecision(provider, context, template, round, options);
     if (result === null) {
       // Any single decision failure → fall back entire round to pre-authored
       return null;
@@ -386,9 +390,10 @@ export async function generateDecisionsWithRetry(
   context: GenerationContext,
   templates: DecisionTemplate[],
   round: number,
+  options?: GenerationOptions,
 ): Promise<RoundDecisions | null> {
   try {
-    return await generateDecisions(provider, context, templates, round);
+    return await generateDecisions(provider, context, templates, round, options);
   } catch {
     return null;
   }

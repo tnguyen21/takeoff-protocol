@@ -1,5 +1,5 @@
 import type { Faction } from "@takeoff/shared";
-import type { GenerationProvider } from "./provider.js";
+import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import type { GenerationContext } from "./context.js";
 import { BRIEFING_SYSTEM_PROMPT } from "./prompts/system.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
@@ -98,6 +98,7 @@ async function generateBriefing(
   provider: GenerationProvider,
   context: GenerationContext,
   validationErrors?: string[],
+  options?: GenerationOptions,
 ): Promise<BriefingOutput> {
   const systemPrompt = BRIEFING_SYSTEM_PROMPT;
   const userPrompt = buildBriefingUserPrompt(context, validationErrors);
@@ -106,6 +107,7 @@ async function generateBriefing(
     systemPrompt,
     userPrompt,
     schema: BRIEFING_SCHEMA,
+    options,
   });
 }
 
@@ -123,12 +125,13 @@ async function generateBriefing(
 export async function generateBriefingWithRetry(
   provider: GenerationProvider,
   context: GenerationContext,
+  options?: GenerationOptions,
 ): Promise<BriefingOutput | null> {
   let firstResult: BriefingOutput;
 
   // ── First attempt ────────────────────────────────────────────────────────
   try {
-    firstResult = await generateBriefing(provider, context);
+    firstResult = await generateBriefing(provider, context, undefined, options);
   } catch {
     return null;
   }
@@ -141,7 +144,7 @@ export async function generateBriefingWithRetry(
   // ── Retry once with error feedback ───────────────────────────────────────
   let retryResult: BriefingOutput;
   try {
-    retryResult = await generateBriefing(provider, context, firstValidation.errors);
+    retryResult = await generateBriefing(provider, context, firstValidation.errors, options);
   } catch {
     return null;
   }

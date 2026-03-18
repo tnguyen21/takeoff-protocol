@@ -1,6 +1,6 @@
 import type { AppContent, AppId, ContentItem, ContentItemType, Faction } from "@takeoff/shared";
 import type { GenerationContext, PlayerSlackMessage } from "./context.js";
-import type { GenerationProvider } from "./provider.js";
+import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { APP_VOICES, CONTENT_SYSTEM_PROMPT, FACTION_VOICES } from "./prompts/index.js";
 import { contentBudget, validateContent } from "./validate.js";
 
@@ -305,6 +305,7 @@ export async function generateContent(
   faction: Faction,
   apps: AppId[],
   retryFeedback?: string,
+  options?: GenerationOptions,
 ): Promise<AppContent[]> {
   const results: AppContent[] = [];
 
@@ -318,6 +319,7 @@ export async function generateContent(
       systemPrompt: CONTENT_SYSTEM_PROMPT,
       userPrompt: buildUserPrompt(context, faction, app, type, retryFeedback, apps.length),
       schema: buildContentSchema(type),
+      options,
     });
 
     // Post-process: guard against malformed/missing items array
@@ -354,11 +356,12 @@ export async function generateContentWithRetry(
   context: GenerationContext,
   faction: Faction,
   apps: AppId[],
+  options?: GenerationOptions,
 ): Promise<AppContent[] | null> {
   // Attempt 1
   let result: AppContent[];
   try {
-    result = await generateContent(provider, context, faction, apps);
+    result = await generateContent(provider, context, faction, apps, undefined, options);
   } catch {
     return null;
   }
@@ -372,7 +375,7 @@ export async function generateContentWithRetry(
   // Attempt 2 — feed validation errors back into the prompt
   const feedback = validation.errors.join("\n");
   try {
-    result = await generateContent(provider, context, faction, apps, feedback);
+    result = await generateContent(provider, context, faction, apps, feedback, options);
   } catch {
     return null;
   }

@@ -12,6 +12,13 @@
  * - D-INV-1: When GEN_DECISIONS_ENABLED=false, decisions are NOT cached (kill switch)
  * - D-INV-2: When generation succeeds, decisions ARE cached
  * - D-INV-3: When generation fails, decisions are NOT cached (fallback to pre-authored)
+ *
+ * Model plumbing invariants:
+ * - M-INV-1: GEN_BRIEFING_MODEL is forwarded to provider.generate() options.model for briefing calls
+ * - M-INV-2: GEN_CONTENT_MODEL is forwarded to provider.generate() options.model for content calls
+ * - M-INV-3: GEN_DECISION_MODEL is forwarded to provider.generate() options.model for decision calls
+ * - M-INV-4: GEN_TIMEOUT_MS is forwarded to provider.generate() options.timeout for all calls
+ * - M-INV-5: Without env overrides, config defaults (Sonnet for briefings, Haiku for content) are forwarded
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
@@ -452,5 +459,231 @@ describe("triggerGeneration — decisions fallback on failure (D-INV-3)", () => 
       // Decisions must NOT be cached — pre-authored fallback will be used
       expect(getGeneratedDecisions(room, 2)).toBeUndefined();
     }),
+  );
+});
+
+// ── Model plumbing: options recorded by a capturing provider ──────────────────
+
+/**
+ * A provider that records each call's options alongside a snippet of the systemPrompt
+ * so tests can filter by generator type (briefing vs content vs decision vs npc).
+ */
+class CapturingProvider {
+  readonly calls: Array<{ systemPromptSnippet: string; model?: string; timeout?: number }> = [];
+
+  constructor(private readonly data: unknown) {}
+
+  async generate<T>(params: {
+    systemPrompt: string;
+    userPrompt: string;
+    schema: object;
+    options?: { model?: string; timeout?: number };
+  }): Promise<T> {
+    this.calls.push({
+      systemPromptSnippet: params.systemPrompt.slice(0, 60),
+      model: params.options?.model,
+      timeout: params.options?.timeout,
+    });
+    return this.data as T;
+  }
+}
+
+function withModelEnv(
+  vars: Partial<Record<string, string | undefined>>,
+  fn: () => Promise<void>,
+): () => Promise<void> {
+  return async () => {
+    const saved: Record<string, string | undefined> = {};
+    for (const key of Object.keys(vars)) {
+      saved[key] = process.env[key];
+      if (vars[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = vars[key] as string;
+      }
+    }
+    // Always enable generation
+    const savedEnabled = process.env.GEN_ENABLED;
+    process.env.GEN_ENABLED = "true";
+    try {
+      await fn();
+    } finally {
+      process.env.GEN_ENABLED = savedEnabled;
+      for (const key of Object.keys(vars)) {
+        if (saved[key] === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = saved[key]!;
+        }
+      }
+    }
+  };
+}
+
+// ── M-INV-1: GEN_BRIEFING_MODEL forwarded to briefing calls ───────────────────
+
+describe("triggerGeneration — model plumbing (M-INV-1)", () => {
+  it(
+    "passes GEN_BRIEFING_MODEL as options.model to briefing provider calls",
+    withModelEnv(
+      {
+        GEN_BRIEFING_MODEL: "claude-opus-4-6",
+        GEN_BRIEFINGS_ENABLED: "true",
+        GEN_NPC_ENABLED: "false",
+        GEN_DECISIONS_ENABLED: "false",
+        // Set content model to something distinct so we can distinguish briefing calls
+        GEN_CONTENT_MODEL: "claude-haiku-4-5-20251001",
+      },
+      async () => {
+        // Provider returns valid briefing data; content calls will fail validation (empty items ok)
+        const provider = new CapturingProvider(VALID_BRIEFING);
+        const room = makeRoom();
+        await triggerGeneration(room, 2, provider);
+
+        // Briefing system prompt starts with "You are an expert" / similar — filter by model
+        // All calls that used the briefing model should have model=claude-opus-4-6
+        const briefingCalls = provider.calls.filter((c) => c.model === "claude-opus-4-6");
+        expect(briefingCalls.length).toBeGreaterThan(0);
+        for (const c of briefingCalls) {
+          expect(c.model).toBe("claude-opus-4-6");
+        }
+      },
+    ),
+  );
+});
+
+// ── M-INV-2: GEN_CONTENT_MODEL forwarded to content calls ────────────────────
+
+describe("triggerGeneration — model plumbing (M-INV-2)", () => {
+  it(
+    "passes GEN_CONTENT_MODEL as options.model to content provider calls",
+    withModelEnv(
+      {
+        GEN_CONTENT_MODEL: "claude-opus-4-6",
+        GEN_BRIEFINGS_ENABLED: "false",
+        GEN_NPC_ENABLED: "false",
+        GEN_DECISIONS_ENABLED: "false",
+      },
+      async () => {
+        const validContent = { items: [] };
+        const provider = new CapturingProvider(validContent);
+        const room = makeRoom();
+        await triggerGeneration(room, 2, provider);
+
+        // Content is generated for 4 factions × N apps — all should use the content model
+        expect(provider.calls.length).toBeGreaterThan(0);
+        for (const c of provider.calls) {
+          expect(c.model).toBe("claude-opus-4-6");
+        }
+      },
+    ),
+  );
+});
+
+// ── M-INV-3: GEN_DECISION_MODEL forwarded to decision calls ───────────────────
+
+describe("triggerGeneration — model plumbing (M-INV-3)", () => {
+  it(
+    "passes GEN_DECISION_MODEL as options.model to decision provider calls",
+    withModelEnv(
+      {
+        GEN_DECISION_MODEL: "claude-opus-4-6",
+        // Set content model different so we can confirm decision calls use decision model
+        GEN_CONTENT_MODEL: "claude-haiku-4-5-20251001",
+        GEN_BRIEFINGS_ENABLED: "false",
+        GEN_NPC_ENABLED: "false",
+        GEN_DECISIONS_ENABLED: "true",
+      },
+      async () => {
+        const provider = new CapturingProvider(VALID_SINGLE_DECISION);
+        const room = makeRoom();
+        await triggerGeneration(room, 2, provider);
+
+        // Decision calls use "claude-opus-4-6"; content calls use "claude-haiku-4-5-20251001"
+        const decisionCalls = provider.calls.filter((c) => c.model === "claude-opus-4-6");
+        expect(decisionCalls.length).toBeGreaterThan(0);
+        for (const c of decisionCalls) {
+          expect(c.model).toBe("claude-opus-4-6");
+        }
+      },
+    ),
+  );
+});
+
+// ── M-INV-4: GEN_TIMEOUT_MS forwarded to all provider calls ───────────────────
+
+describe("triggerGeneration — model plumbing (M-INV-4)", () => {
+  it(
+    "passes GEN_TIMEOUT_MS as options.timeout to all provider calls",
+    withModelEnv(
+      {
+        GEN_TIMEOUT_MS: "99000",
+        GEN_BRIEFINGS_ENABLED: "true",
+        GEN_NPC_ENABLED: "false",
+        GEN_DECISIONS_ENABLED: "false",
+      },
+      async () => {
+        const provider = new CapturingProvider(VALID_BRIEFING);
+        const room = makeRoom();
+        await triggerGeneration(room, 2, provider);
+
+        // All calls (briefing + content) should use the custom timeout
+        expect(provider.calls.length).toBeGreaterThan(0);
+        for (const c of provider.calls) {
+          expect(c.timeout).toBe(99000);
+        }
+      },
+    ),
+  );
+});
+
+// ── M-INV-5: Config defaults forwarded when no env overrides ──────────────────
+
+describe("triggerGeneration — model plumbing (M-INV-5)", () => {
+  it(
+    "uses Sonnet default for briefing calls when GEN_BRIEFING_MODEL is not set",
+    withModelEnv(
+      {
+        GEN_BRIEFING_MODEL: undefined,
+        GEN_BRIEFINGS_ENABLED: "true",
+        GEN_NPC_ENABLED: "false",
+        GEN_DECISIONS_ENABLED: "false",
+        // Pin content model so we can isolate briefing calls by model value
+        GEN_CONTENT_MODEL: "claude-haiku-4-5-20251001",
+      },
+      async () => {
+        const provider = new CapturingProvider(VALID_BRIEFING);
+        const room = makeRoom();
+        await triggerGeneration(room, 2, provider);
+
+        // Briefing calls should use the Sonnet default
+        const sonnetCalls = provider.calls.filter((c) => c.model === "claude-sonnet-4-5-20250514");
+        expect(sonnetCalls.length).toBeGreaterThan(0);
+      },
+    ),
+  );
+
+  it(
+    "uses Haiku default for content calls when GEN_CONTENT_MODEL is not set",
+    withModelEnv(
+      {
+        GEN_CONTENT_MODEL: undefined,
+        GEN_BRIEFINGS_ENABLED: "false",
+        GEN_NPC_ENABLED: "false",
+        GEN_DECISIONS_ENABLED: "false",
+      },
+      async () => {
+        const validContent = { items: [] };
+        const provider = new CapturingProvider(validContent);
+        const room = makeRoom();
+        await triggerGeneration(room, 2, provider);
+
+        // Content is generated for 4 factions × N apps — all should use the Haiku default
+        expect(provider.calls.length).toBeGreaterThan(0);
+        for (const c of provider.calls) {
+          expect(c.model).toBe("claude-haiku-4-5-20251001");
+        }
+      },
+    ),
   );
 });
