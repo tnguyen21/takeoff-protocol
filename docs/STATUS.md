@@ -6,11 +6,11 @@ Last updated: 2026-03-18
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,169 passing tests** (0 failures). LLM generation is the sole content path (pre-authored content removed). Deployment infra (Dockerfile + fly.toml) is configured. All known bugs are fixed.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,169 passing tests** (0 failures). LLM generation is the sole content path (pre-authored content removed). **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
 
-**Ready for first playtest.** The blocking items are: deploy to Fly.io, schedule humans.
+**Ready for first playtest.** The blocking item is: schedule humans.
 
-**Not yet done:** First real playtest, production deployment, generation quality validation with real API calls, external role mechanical depth, monitoring/observability improvements.
+**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth, monitoring/observability improvements.
 
 ---
 
@@ -32,22 +32,14 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 - **Threshold system** — declarative `THRESHOLD_REGISTRY` with 8 thresholds, single dispatch loop
 - **Event handler helpers** — `getSocketRoom()`/`getGmRoom()` eliminate validation boilerplate
 - **Dead code detection** — `bun run knip` configured and passing clean
+- **Production deployment** — Fly.io (sjc), password gate, room cap (5), HMAC cookie auth, rate limiting, GitHub Actions auto-deploy on push to main
+- **Deploy tooling** — `scripts/deploy.sh` (pre-flight + deploy + health check), `scripts/fly-setup.sh` (first-time bootstrap)
 
 ---
 
 ## Bugs
 
-### Server
-
-No known server bugs.
-
-### Client
-
-No known client bugs.
-
-### Shared
-
-No known shared bugs.
+No known bugs (server, client, or shared).
 
 ---
 
@@ -99,6 +91,8 @@ No known shared bugs.
 | Inline `<style>` injected on every render | Moved 5 animation keyframes to index.css | 19a8bda |
 | MemoApp page lookup by mutable title | Switched to stable ID-based page selection | f34a92a |
 | Suppressed `exhaustive-deps` ESLint warnings | Added explanatory comments documenting why safe | 8627b17 |
+| Production 404 on all routes | `process.env["NODE_ENV"]` bracket notation prevents bun build dead-code elimination | 6e9b1f1 |
+| Blank page after password auth (wrong MIME types) | Explicit MIME type map in static serving middleware (Hono/node-server strips Bun.file auto-detection) | 6e9b1f1 |
 
 ---
 
@@ -128,42 +122,17 @@ What's missing:
 
 **Status: Rich content, shallow mechanics. Full audit in EXTERNAL-ROLES-AUDIT.md.**
 
-All four external roles (NSA, Journalist, VC, Diplomat) have individual decisions in all 5 rounds and thematic content, but limited mechanical depth. See EXTERNAL-ROLES-AUDIT.md for detailed proposals.
+All four external roles (NSA, Journalist, VC, Diplomat) have individual decisions in all 5 rounds and thematic content, but limited mechanical depth:
 
-### Hosting & Deployment
-
-**Status: Config ready, pre-flight audit complete, no actual deployment.**
-
-What exists:
-- Dockerfile: multi-stage build, client assets served by server in production
-- fly.toml: sjc region, 512MB RAM, auto-scale 0→N, persistent log volume, force_https
-- Health check endpoint: `/api/health` (returns room count)
-- Graceful shutdown: flushes JSONL loggers on SIGTERM, clears room pruning
-- Room TTL cleanup: 30-min TTL, 5-min prune interval
-- Dev-only code properly gated behind NODE_ENV checks
-
-Pre-deploy checklist:
-- [ ] `fly volumes create game_logs --region sjc --size 3`
-- [ ] `fly secrets set ANTHROPIC_API_KEY=sk-ant-...` (or `GEN_ENABLED=false` for first playtest)
-- [ ] Set `min_machines_running = 1` for playtest (avoids 30-60s cold start)
-- [ ] `fly deploy`
-- [ ] Verify: `curl https://takeoff-protocol.fly.dev/api/health`
-- [ ] Test WebSocket connection in browser
-
-What's missing:
-- No actual Fly.io deployment done
-- No load testing (14 concurrent WebSocket connections)
-- No reconnection testing under real network conditions
+- **NSA Advisor** — Needs weight theft response options (R2), emergency powers recommendation (R3), strategic posture (R5)
+- **Tech Journalist** — Publication impacts are generic; need faction-specific impacts by story angle (safety exposé tanks `obBoardConfidence`, capability hype moves `marketIndex`). Source cultivation: publishing burns sources, protecting builds trust.
+- **VC/Investor** — Needs board authority decisions (halt/proceed Agent-4), capital leverage (withdraw funding), kingmaker mechanics (broker merger, fund safety)
+- **International Diplomat** — Needs counter-offer mechanics for China negotiations, coalition building with durability, leverage mechanisms (EU market access, sanctions)
+- **Cross-role interactions** — NSA directs security upgrades, VC pulls funding to pressure labs, diplomat leaks to journalist, journalist tips off NSA
 
 ### Diagnostics & Logging
 
-**Status: Logger implemented with structured JSONL. Significant observability gaps.**
-
-What exists:
-- JSONL per-room logging with envelope validation
-- Events: phase changes, decisions, state deltas/snapshots, thresholds, NPC triggers, messages, activity, penalties, GM overrides
-- Graceful shutdown: flushes on SIGINT/SIGTERM and room cleanup
-- Generation metrics logged to stdout (start/success/failure per artifact)
+**Status: Logger implemented with structured JSONL. Observability gaps remain.**
 
 What's missing:
 - **Generation metrics not in JSONL** — token usage, cost, retry counts only on stdout
@@ -188,6 +157,16 @@ From 10,000 random-heuristic trials (with generated decision templates):
 | Taiwan | Distributed | Healthy |
 | Open Source | 58.1% irrelevant | Skewed — needs tuning |
 | Prometheus | Distributed | Healthy |
+
+### WandBApp Content Integration
+
+WandBApp (`apps/WandBApp.tsx`) ignores its `content` prop entirely — renders fully static data. Should integrate server-provided content items (training metrics, safety probes) that change per round based on game state.
+
+### Client UX Gaps
+
+- `Dock.tsx:95` — `negotiation-pulse` CSS class undefined (Signal icon has no visual effect during Round 4)
+- Faction display maps (`FACTION_NAMES`, `FACTION_COLORS`) scattered across 4+ files — consolidate
+- `activity:report` only tracks open/close — needs per-app dwell time, focus transitions, cumulative time per phase
 
 ---
 
@@ -219,16 +198,11 @@ From 10,000 random-heuristic trials (with generated decision templates):
 
 ## Refactoring Opportunities
 
-These are not bugs but would improve maintainability:
-
 | Item | Location | Impact |
 |------|----------|--------|
-| ~~`checkThresholds` is a 350-line monolith~~ | ~~game.ts~~ | Done — declarative `THRESHOLD_REGISTRY` + loop |
-| ~~GM authorization guard repeated 9+ times~~ | ~~events.ts~~ | Done — `getSocketRoom()`/`getGmRoom()` helpers |
 | `game:phase` emit duplicated in 6 call sites | game.ts | Extract `emitPhase(io, room)` |
 | `isLeader` derivation triplicated | rooms.ts, events.ts | Shared helper using `isLeaderRole()` |
-| ~~`GMDashboard.tsx` is 700+ lines~~ | ~~screens/GMDashboard.tsx~~ | Done — split into `screens/gm/` module |
-| Mixed inline styles and Tailwind (335 instances) | All client components | Design token setup + migration in progress (hive issues) |
+| Mixed inline styles and Tailwind | All client components | Design token setup + migration in progress |
 | Socket listeners not teardown-friendly | stores/game.ts, stores/messages.ts | Fine for single-session, blocks future leave-room flows |
 | `initializeStoryBible` side-effect in `buildGenerationContext` | generation/context.ts | Surprising mutation in a read-like function |
 | `injectNewsContent` and `publish:submit` near-duplicate | events.ts | Both build ContentItem + Publication + emit `game:publish` |
@@ -237,33 +211,38 @@ These are not bugs but would improve maintainability:
 
 ## Priority Recommendations
 
-### P0 — Deploy & Playtest
-All code bugs are fixed. Next steps:
-1. Deploy to Fly.io with `GEN_ENABLED=false` (isolate game loop from API issues)
-2. Smoke test: create room, join 2-3 browsers, advance through phases
-3. Run first full playtest with real humans (generation off — use placeholder content)
-4. Second playtest with `GEN_ENABLED=true` + `ANTHROPIC_API_KEY` set
+### P0 — Playtest
+Deployment is live. Next steps:
+1. Smoke test on Fly.io: create room, join 2-3 browsers, advance through phases
+2. Run first full playtest with real humans (`GEN_ENABLED=false`)
+3. Second playtest with `GEN_ENABLED=true` + `ANTHROPIC_API_KEY` set
 
 ### P1 — Generation Cost Controls
 Before enabling generation in production:
-5. Add concurrent request throttle (max 5 simultaneous Anthropic API calls)
-6. Add per-room generation budget or max room count cap
-7. Add token usage logging from Anthropic response metadata
-8. Add generation status visibility to GM dashboard (pending/ready/failed)
+4. Add concurrent request throttle (max 5 simultaneous Anthropic API calls)
+5. Add token usage logging from Anthropic response metadata
+6. Add generation status visibility to GM dashboard (pending/ready/failed)
 
 ### P2 — Monitoring & Observability
-9. Generation metrics in JSONL (token usage, cost, retry counts)
-10. Expand `/api/health` (memory, socket count, generation pipeline status)
-11. Surface threshold/NPC trigger events in GM dashboard
-12. Structured error events in JSONL
+7. Generation metrics in JSONL (token usage, cost, retry counts)
+8. Expand `/api/health` (memory, socket count, generation pipeline status)
+9. Surface threshold/NPC trigger events in GM dashboard
 
 ### P3 — Gameplay Enrichment
-13. Resolution narrative generation (Phase C — LLM-generated reactive prose)
-14. External role mechanical depth (NSA emergency powers, journalist impact system, VC board authority, diplomat negotiations)
-15. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
+10. Resolution narrative generation (Phase C — LLM-generated reactive prose)
+11. External role mechanical depth (see External Role Balancing section above)
+12. Journalist publication impacts — faction-specific by story angle
+13. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
 
 ### P4 — Polish
-16. Inline style → Tailwind migration (in progress via hive)
-17. Client component refactors: RadioGroup, wandbUtils split, Lobby FactionGrid (in progress via hive)
-18. Add client screen component tests
-19. Twitter faction bubble system
+14. Inline style → Tailwind migration (in progress)
+15. WandBApp content integration (currently ignores `content` prop)
+16. Add client screen component tests
+17. Client activity tracking enhancements (dwell time, focus transitions)
+18. Cross-game analysis script (`scripts/compare-games.ts`)
+
+### Future (Post-Launch)
+19. Twitter faction bubble system (per-faction algorithmic feed)
+20. Slack real-time conversational NPCs (LLM-powered, respond to player messages)
+21. GM preview/edit of generated content before emission
+22. Game replay from JSONL logs (debrief visualizations, "what if" replays)
