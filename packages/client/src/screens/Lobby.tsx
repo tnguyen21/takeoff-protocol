@@ -1,22 +1,18 @@
 import { useState } from "react";
 import { useGameStore } from "../stores/game.js";
-import { FACTIONS } from "@takeoff/shared";
-import type { Faction } from "@takeoff/shared";
-import { FACTION_IDENTITIES, FACTION_SHORT_NAMES, FACTION_THEMES } from "../constants/factions.js";
+import { FactionGrid, PlayerList } from "./lobby/index.js";
 
 export function Lobby() {
   const {
     roomCode,
     isGM,
     playerName,
-    playerId,
     lobbyPlayers,
     selectedFaction,
     selectedRole,
     setPlayerName,
     createRoom,
     joinRoom,
-    selectRole,
     startGame,
     startTutorial,
     gmGenerationEnabled,
@@ -152,138 +148,9 @@ export function Lobby() {
           )}
         </div>
 
-        {/* 4-column faction grid */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {FACTIONS.map((faction) => {
-            const theme = FACTION_THEMES[faction.id];
-            const factionPlayers = lobbyPlayers.filter((p) => p.faction === faction.id);
-            const isFactionSelected = selectedFaction === faction.id;
+        <FactionGrid />
 
-            return (
-              <div
-                key={faction.id}
-                className={`rounded-xl border flex flex-col transition-colors ${
-                  isFactionSelected && !isGM
-                    ? `${theme.cardBorderSelected} ${theme.cardBg}`
-                    : `${theme.cardBorder} bg-neutral-900/40`
-                }`}
-              >
-                {/* Faction header */}
-                <div className="p-4 border-b border-neutral-800/60">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className={`font-bold text-base ${theme.headerText}`}>
-                      {FACTION_SHORT_NAMES[faction.id]}
-                    </h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${theme.countBg} ${theme.countText}`}>
-                      {factionPlayers.length}/{faction.maxPlayers}
-                    </span>
-                  </div>
-                  <p className="text-neutral-500 text-xs leading-relaxed">
-                    {FACTION_IDENTITIES[faction.id]}
-                  </p>
-                </div>
-
-                {/* Roles */}
-                <div className="p-2 flex flex-col gap-1 flex-1">
-                  {faction.roles.map((role) => {
-                    const takenBy = lobbyPlayers.find(
-                      (p) => p.faction === faction.id && p.role === role.id && p.id !== playerId,
-                    );
-                    const isTaken = !!takenBy;
-                    const isSelected = selectedFaction === faction.id && selectedRole === role.id;
-
-                    return (
-                      <button
-                        key={role.id}
-                        onClick={async () => {
-                          if (!isGM && !isTaken) {
-                            await selectRole(faction.id, role.id);
-                          }
-                        }}
-                        disabled={isGM || isTaken}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all ${
-                          isSelected
-                            ? theme.roleSelectedBg
-                            : isTaken
-                              ? "bg-neutral-800/30 cursor-not-allowed"
-                              : isGM
-                                ? "bg-neutral-800/20 cursor-default"
-                                : `bg-neutral-800/40 ${theme.roleHover} cursor-pointer`
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          {role.isLeader && (
-                            <span className={`text-xs ${isSelected ? "text-white/80" : theme.badgeText}`} title="Faction leader">
-                              ★
-                            </span>
-                          )}
-                          <span className={`font-medium text-xs ${isTaken ? "text-neutral-600" : isSelected ? "text-white" : "text-neutral-200"}`}>
-                            {role.label}
-                          </span>
-                          {role.optional && !isTaken && (
-                            <span className={`text-xs ml-auto ${isSelected ? "text-white/50" : "text-neutral-600"}`}>opt</span>
-                          )}
-                        </div>
-                        {isTaken ? (
-                          <p className="text-neutral-600 text-xs">
-                            taken by {takenBy.name}
-                          </p>
-                        ) : (
-                          <p className={`text-xs leading-relaxed ${isSelected ? "text-white/70" : "text-neutral-500"}`}>
-                            {role.description}
-                          </p>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Player list */}
-        <div className="border-t border-neutral-800/60 pt-5 mb-6">
-          <h3 className="text-neutral-500 text-xs uppercase tracking-widest mb-3">
-            Connected Players ({lobbyPlayers.length})
-          </h3>
-          {lobbyPlayers.length === 0 ? (
-            <p className="text-neutral-700 text-sm italic">No players yet — share the room code.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {lobbyPlayers.map((p) => {
-                const theme = p.faction ? FACTION_THEMES[p.faction] : null;
-                const factionRole = p.faction && p.role
-                  ? FACTIONS.find((f) => f.id === p.faction)?.roles.find((r) => r.id === p.role)
-                  : null;
-                return (
-                  <div
-                    key={p.id}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${
-                      theme ? `${theme.cardBorder} ${theme.cardBg}` : "border-neutral-800 bg-neutral-900/40"
-                    }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${p.connected ? (theme?.dot ?? "bg-neutral-400") : "bg-neutral-700"}`} />
-                    <span className="text-neutral-200 font-medium">{p.name}</span>
-                    {factionRole && theme && (
-                      <span className={`text-xs ${theme.badgeText}`}>
-                        {factionRole.label}
-                      </span>
-                    )}
-                    {!factionRole && p.faction && theme && (
-                      <span className={`text-xs ${theme.badgeText}`}>
-                        {FACTION_SHORT_NAMES[p.faction]}
-                      </span>
-                    )}
-                    {!p.faction && (
-                      <span className="text-xs text-neutral-600">no role selected</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <PlayerList />
 
         {/* AI Generation toggle */}
         {isGM && (
