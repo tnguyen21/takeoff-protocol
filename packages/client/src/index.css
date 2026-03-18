@@ -1,5 +1,46 @@
 @import "tailwindcss";
 
+@theme {
+  /* Surfaces */
+  --color-surface: #0a0a14;
+  --color-surface-elevated: #111827;
+  --color-surface-overlay: rgba(0, 0, 0, 0.68);
+
+  /* Text */
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-text-bright: #f9fafb;
+
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+
+  /* Accent (purple) */
+  --color-accent: #8b5cf6;
+  --color-accent-light: #c4b5fd;
+  --color-accent-muted: #a78bfa;
+  --color-accent-bg: rgba(139, 92, 246, 0.15);
+  --color-accent-border: rgba(139, 92, 246, 0.4);
+
+  /* Faction colors */
+  --color-faction-openbrain: #8b5cf6;
+  --color-faction-prometheus: #06b6d4;
+  --color-faction-china: #ef4444;
+  --color-faction-external: #f59e0b;
+
+  /* Status */
+  --color-status-success: #34d399;
+  --color-status-danger: #ef4444;
+  --color-status-warning: #f59e0b;
+  --color-status-info: #3b82f6;
+
+  /* Timer */
+  --color-timer-normal: #e5e7eb;
+  --color-timer-warning: #f59e0b;
+  --color-timer-critical: #ef4444;
+}
+
 :root {
   --menubar-height: 28px;
   /* Dock floats 8px above bottom; reserve space = icon height + padding + gap */

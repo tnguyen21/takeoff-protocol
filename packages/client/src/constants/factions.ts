@@ -22,10 +22,10 @@ export const FACTION_PREFIX: Record<Faction, string> = {
 };
 
 export const FACTION_COLORS: Record<Faction, string> = {
-  openbrain: "#8b5cf6",
-  prometheus: "#06b6d4",
-  china: "#ef4444",
-  external: "#f59e0b",
+  openbrain: "var(--color-faction-openbrain)",
+  prometheus: "var(--color-faction-prometheus)",
+  china: "var(--color-faction-china)",
+  external: "var(--color-faction-external)",
 };
 
 // Faction descriptions from DESIGN.md section 3 — Identity column
