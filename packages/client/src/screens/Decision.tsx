@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useGameStore } from "../stores/game.js";
 import { FACTIONS } from "@takeoff/shared";
-import type { DecisionOption } from "@takeoff/shared";
 import { soundManager } from "../sounds/index.js";
 import { formatTime } from "../utils.js";
+import { RadioGroup } from "../components/RadioGroup.js";
 
 function isLeaderRole(role: string | null): boolean {
   if (!role) return false;
@@ -12,63 +12,6 @@ function isLeaderRole(role: string | null): boolean {
     if (roleConfig) return roleConfig.isLeader;
   }
   return false;
-}
-
-function RadioGroup({
-  groupName,
-  options,
-  selected,
-  onSelect,
-  disabled,
-}: {
-  groupName: string;
-  options: DecisionOption[];
-  selected: string | null;
-  onSelect: (id: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      {options.map((opt) => {
-        const isSelected = selected === opt.id;
-        return (
-          <label
-            key={opt.id}
-            style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "flex-start",
-              padding: "10px 14px",
-              borderRadius: "8px",
-              border: `1px solid ${isSelected ? "rgba(139,92,246,0.7)" : "rgba(255,255,255,0.1)"}`,
-              background: isSelected ? "rgba(139,92,246,0.15)" : "rgba(255,255,255,0.03)",
-              cursor: disabled ? "not-allowed" : "pointer",
-              opacity: disabled && !isSelected ? 0.5 : 1,
-              transition: "all 0.15s ease",
-            }}
-          >
-            <input
-              type="radio"
-              name={groupName}
-              value={opt.id}
-              checked={isSelected}
-              disabled={disabled}
-              onChange={() => !disabled && onSelect(opt.id)}
-              style={{ marginTop: "3px", accentColor: "#8b5cf6", flexShrink: 0 }}
-            />
-            <div>
-              <div style={{ color: isSelected ? "#c4b5fd" : "#e5e7eb", fontSize: "13px", fontWeight: 500, lineHeight: 1.3 }}>
-                {opt.label}
-              </div>
-              <div style={{ color: "#9ca3af", fontSize: "12px", marginTop: "3px", lineHeight: 1.4 }}>
-                {opt.description}
-              </div>
-            </div>
-          </label>
-        );
-      })}
-    </div>
-  );
 }
 
 export function Decision() {
