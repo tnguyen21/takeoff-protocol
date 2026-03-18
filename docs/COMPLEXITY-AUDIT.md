@@ -1,23 +1,23 @@
 # Complexity Audit
 
-Date: 2026-03-17 (updated 2026-03-18)
+Date: 2026-03-17 (updated 2026-03-18, 2026-03-18b)
 
 ---
 
 ## TL;DR
 
-The codebase is **~23K source LOC** across 3 packages. The architecture is sound. Tests are plentiful (1,169) but many are marginal or tautological.
+The codebase is **~23K source LOC** across 3 packages. The architecture is sound. Tests are plentiful (1,183) but many are marginal or tautological. Most refactoring items from the original audit have been addressed: RadioGroup extracted, wandbUtils split, Lobby decomposed, Tailwind migration ~60% complete. New auth module added (password gate + room cap). Deployment runbook exists.
 
 ---
 
 ## LOC Breakdown
 
-| Package | Source LOC | Test LOC | What It Is |
-|---------|-----------|----------|------------|
-| **shared** | 1,153 | ~1,100 | Types, constants, resolution, fog, endings |
-| **server** | 7,341 | ~11,845 | Game loop, events, generation pipeline, logger |
-| **client** | 14,362 | ~4,160 | React UI: stores, screens, 17 apps, desktop WM |
-| **Total** | **~22,856** | **~17,105** | |
+| Package | Source LOC | Test LOC | Tests | What It Is |
+|---------|-----------|----------|-------|------------|
+| **shared** | 1,153 | ~1,113 | 91 | Types, constants, resolution, fog, endings |
+| **server** | 7,746 | ~11,790 | 681 | Game loop, events, generation pipeline, auth, logger |
+| **client** | 13,802 | ~4,160 | 411 | React UI: stores, screens, 17 apps, desktop WM |
+| **Total** | **~22,701** | **~17,063** | **1,183** | |
 
 ---
 
@@ -34,22 +34,25 @@ The codebase is **~23K source LOC** across 3 packages. The architecture is sound
 
 ---
 
-### server (7,341 LOC) — Clean
+### server (7,746 LOC) — Clean
 
 **Good:**
 - Generation pipeline (orchestrator → generators → provider → validation) is well-structured
 - Logger system is appropriately scoped (not over-engineered)
-- Room management is simple
+- Room management is simple with room cap enforcement
 - No circular dependencies
 - Dead code is clean (`bun run knip` passes)
 - `checkThresholds()` uses a declarative `THRESHOLD_REGISTRY` + loop (8 thresholds)
 - `events.ts` uses `getSocketRoom()`/`getGmRoom()` helpers — no repeated validation boilerplate
+- Auth module (`auth.ts`, ~130 LOC) is self-contained: HMAC cookies, rate limiting, gate page HTML — no external deps
 
-**Verdict:** No action needed. Generation pipeline has structured repetition (4 generators sharing a pattern) but each has domain-specific schemas, so current separation is defensible.
+**Known bug:** Generation config models (`GEN_BRIEFING_MODEL`, `GEN_CONTENT_MODEL`, `GEN_DECISION_MODEL`) are read in `config.ts` but never threaded through to `provider.generate()` calls — everything hits the Haiku default in `provider.ts:85`. Fix in progress (hive issue w-20136bafb91f).
+
+**Verdict:** No action needed beyond the model wiring bug. Generation pipeline has structured repetition (4 generators sharing a pattern) but each has domain-specific schemas, so current separation is defensible.
 
 ---
 
-### client (14,362 LOC) — Fine
+### client (13,802 LOC) — Fine
 
 **Good:**
 - 4 Zustand stores with clear separation (game, messages, notifications, ui)
@@ -57,33 +60,38 @@ The codebase is **~23K source LOC** across 3 packages. The architecture is sound
 - Desktop window manager (Window, MenuBar, Dock, Notifications) is appropriately complex
 - Socket integration is clean (all listeners in stores, not scattered)
 - GM dashboard split into `screens/gm/` module (7 files)
+- Lobby decomposed into `screens/lobby/` module (FactionGrid, PlayerList, RoomBrowser)
+- RadioGroup extracted to `components/RadioGroup.tsx`
+- wandbUtils split into `apps/wandb/` module (artifacts, runs, sweeps, transforms, types)
+- Auth gate: `PasswordGate.tsx` + `RoomBrowser.tsx` (~170 LOC combined)
 
-**Minor issues:**
+**Resolved since last audit:**
+- ~~`Decision.tsx` (499 LOC) inline RadioGroup~~ → RadioGroup extracted, Decision.tsx now 314 LOC
+- ~~`Lobby.tsx` (398 LOC) monolithic wizard~~ → FactionGrid/PlayerList/RoomBrowser extracted, Lobby.tsx now 217 LOC
+- ~~`wandbUtils.ts` (769 LOC) blob~~ → Split into `apps/wandb/` with 6 focused modules
 
-1. **`Decision.tsx` (499 LOC)** — Inline RadioGroup component (56 LOC), leader vs. non-leader UI fork, multiple useRef for stale closure avoidance, heavy inline styles. Could extract RadioGroup + split leader/non-leader views.
+**Remaining issues:**
 
-2. **`Lobby.tsx` (398 LOC)** — Three-step wizard (name → room → role) crammed into one component with early-exit conditionals and deeply nested JSX (87 lines in the faction grid alone).
+1. **Mixed styling** — ~60% Tailwind adoption (41 files), ~25 files still use inline `style={{}}`. Desktop chrome (Window, Dock, MenuBar, Notifications) and several game screens (Decision, Ending, Resolution, Briefing) still have inline styles. Apps are mixed.
 
-3. **`wandbUtils.ts` (769 LOC)** — Static chart data, transform functions, and type definitions all in one file. Should split into data/transforms/types.
+2. **`game.ts` store (577 LOC)** — 30+ state fields, 19 socket listeners, module-level mutable state for sequencing. Getting large but not yet unmanageable. Socket listeners could move to a separate module.
 
-4. **Mixed styling** — Some components use Tailwind classes, others use inline `style={{}}` objects. No consistent approach.
-
-5. **`game.ts` store (569 LOC)** — 30+ state fields, 19 socket listeners, module-level mutable state for sequencing. Getting large but not yet unmanageable. Socket listeners could move to a separate module.
-
-**Verdict:** At the edge of acceptable — refactor only if actively working in those files.
+**Verdict:** Improved since last audit. Remaining styling migration is the main cleanup item.
 
 ---
 
 ## Test Quality Audit
 
-### The Numbers
+### The Numbers (1,183 tests across 47 files)
 
 | Category | Tests | % | Description |
 |----------|-------|---|-------------|
-| **VALUABLE** | ~480 | 36% | Tests real contracts, would catch regressions |
+| **VALUABLE** | ~500 | 37% | Tests real contracts, would catch regressions |
 | **MARGINAL** | ~420 | 31% | Tests something, unlikely to catch real bugs |
-| **WASTEFUL** | ~290 | 22% | Tautological, tests implementation details |
-| **GAPS** | ~147 items | 11% | Important behaviors with no tests |
+| **WASTEFUL** | ~290 | 21% | Tautological, tests implementation details |
+| **GAPS** | ~145 items | 11% | Important behaviors with no tests |
+
+New valuable tests since last audit: auth cookie round-trip/expiry/HMAC tampering (14 tests), room cap enforcement (2 tests).
 
 ### Most Valuable Tests
 
@@ -123,9 +131,7 @@ The codebase is **~23K source LOC** across 3 packages. The architecture is sound
 
 | Problem | Size | Fix | Effort |
 |---------|------|-----|--------|
-| `Decision.tsx` inline RadioGroup | 56 LOC | Extract to component | 30m |
-| Mixed Tailwind/inline styles | Scattered | Standardize on Tailwind | 4h |
-| `wandbUtils.ts` blob | 769 LOC | Split data/transforms/types | 1h |
+| Mixed Tailwind/inline styles | ~25 files | Finish migration (desktop chrome, game screens) | 2-3h |
 
 ### What Looks Complex but Isn't
 
@@ -138,7 +144,7 @@ The codebase is **~23K source LOC** across 3 packages. The architecture is sound
 - No end-to-end tests
 - No monitoring/observability in production
 - No live playtest validation of LLM generation quality
-- No deployment done
+- Generation model config not wired through (bug — fix in progress)
 
 ---
 
