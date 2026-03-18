@@ -12,8 +12,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useGameStore } from "../stores/game.js";
-import { buildCapData, buildSystemData, getRunStatusColor, getRuns, getArtifacts, getSweepData } from "./wandbUtils.js";
-import type { ArtifactEntry, ArtifactSecurityStatus, ProbeStatus, SweepProbe } from "./wandbUtils.js";
+import { buildCapData, buildSystemData, getRunStatusColor, getRuns, getArtifacts, getSweepData } from "./wandb/index.js";
+import type { ArtifactEntry, ArtifactSecurityStatus, ProbeStatus, SweepProbe } from "./wandb/index.js";
 
 // ── Static chart data ────────────────────────────────────────────────────────
 

@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { getRunStatusColor, buildCapData, buildSystemData, getRuns, getArtifacts, getSweepData } from "./wandbUtils.js";
+import { getRunStatusColor, buildCapData, buildSystemData, getRuns, getArtifacts, getSweepData } from "./index.js";
 import type { StateView } from "@takeoff/shared";
 
 function makeView(
