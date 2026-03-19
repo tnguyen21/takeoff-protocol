@@ -1,6 +1,6 @@
 # External Faction Roles: Audit & Enhancement Plan
 
-Last updated: 2026-03-05
+Last updated: 2026-03-19
 
 ## Overview
 
@@ -104,20 +104,9 @@ NSA decisions should directly affect:
 
 ### Gaps
 
-**Publication system is generic.** The real-time publication mechanic (via Socket.IO) applies fixed state deltas regardless of story content:
-- `article`: publicAwareness +15, publicSentiment +10
-- `leak`: publicAwareness +25, publicSentiment -10
-- `research`: publicAwareness +15, publicSentiment +5
+~~**Publication system is generic.**~~ **RESOLVED** (commit `5bf08b9`): `getPublicationEffects()` in `shared/constants.ts` implements a full three-axis effect matrix — angle × target × role. Fixed generic deltas are gone. See *Story Angle System* below for details.
 
-No differentiation based on story angle. A safety expose and a puff piece about compute infrastructure hit the same variables the same way.
-
-**No faction-specific publication impact.** Publishing about OB safety failures should:
-- Tank OB-specific variables (obBoardConfidence, obInternalTrust, obMorale)
-- Boost Prometheus positioning (promBoardConfidence)
-- Spike regulatoryPressure
-- Crash marketIndex
-
-Currently, all publications affect only generic public variables.
+~~**No faction-specific publication impact.**~~ **RESOLVED** (commit `5bf08b9`): Target modifiers hit faction-specific state variables directly — `openbrain` tanks `obBoardConfidence` and `obInternalTrust`; `prometheus` moves `promBoardConfidence` and `alignmentConfidence`; `china` moves `taiwanTension` and `ccpPatience`. SubstackApp exposes angle + target dropdowns so players can choose before publishing.
 
 **No source cultivation or burnout mechanics.** Sources are narrative texture in memos but have no game mechanics:
 - No system to cultivate sources over time
@@ -125,7 +114,7 @@ Currently, all publications affect only generic public variables.
 - No information trading ("I sit on this story if you give me X")
 - No consequence when a source is identified
 
-**No feedback loop.** Publication is one-way: journalist publishes, state updates, no faction response. Missing:
+**No feedback loop.** *(Still open.)* Publication is one-way: journalist publishes, state updates, no faction response. Missing:
 - Lab CEOs issuing responses
 - Government launching investigations
 - Market panic triggering board emergency sessions
@@ -133,23 +122,42 @@ Currently, all publications affect only generic public variables.
 
 ### Proposed Enhancements
 
-#### Story Angle System
-Different angles should produce asymmetric impacts:
+#### Story Angle System — **IMPLEMENTED** (commit `5bf08b9`)
 
-| Angle | Primary Impact | Secondary Impact |
-|-------|---------------|-----------------|
-| Safety crisis | alignmentConfidence -5, regulatoryPressure +5 | obBoardConfidence -3 |
-| Corporate malfeasance | obInternalTrust -5, obBoardConfidence -3 | whistleblowerPressure -5 (others feel safe) |
-| Capability hype | marketIndex +8, publicSentiment +5 | taiwanTension +3 (China alarmed) |
-| Geopolitics/China | publicAwareness +5, taiwanTension +4 | intlCooperation -3 |
-| Government incompetence | regulatoryPressure -3, publicSentiment -5 | intlCooperation -2 |
+`getPublicationEffects(angle, target, role)` in `shared/constants.ts:260-308` implements the full matrix. SubstackApp UI exposes angle and target dropdowns.
 
-#### Source Mechanics
+**Implemented angles** (3):
+
+| Angle | Effects |
+|-------|---------|
+| `safety` | regulatoryPressure +3, publicSentiment -2 |
+| `hype` | marketIndex +5, economicDisruption +2 |
+| `geopolitics` | intlCooperation -2, publicAwareness +2 (bonus stacking) |
+
+**Implemented targets** (4):
+
+| Target | Effects |
+|--------|---------|
+| `openbrain` | obBoardConfidence -3, obInternalTrust -2 |
+| `prometheus` | promBoardConfidence -2, alignmentConfidence +2 |
+| `china` | taiwanTension +3, ccpPatience -2 |
+| `general` | publicAwareness +2 (bonus stacking) |
+
+**Role amplifiers**: `ext_journalist` ×2, `prom_opensource` ×1.5, everyone else ×1.
+
+All combinations are tested in `events.test.ts` (tests INV-1 through INV-4).
+
+**Not yet implemented** (original proposal items that remain open):
+- Corporate malfeasance and government incompetence angles (only 3 angles exist vs. 5 proposed)
+- `whistleblowerPressure` angle effects
+- `obMorale` / `promMorale` targets
+
+#### Source Mechanics — **NOT YET IMPLEMENTED**
 - Publishing with a named source: higher credibility, bigger state impact, but source faces retaliation (future messages dry up)
 - Publishing anonymously: lower impact, source protected, but editor pushes for named sources
 - Source trust accumulates — protecting a source in Round 2 unlocks exclusive intel in Round 4
 
-#### Real-Time Publishing
+#### Real-Time Publishing — **NOT YET IMPLEMENTED**
 - Journalist can publish during deliberation phases, not just during decision windows
 - Publishing mid-round creates immediate pressure on faction decisions that haven't locked yet
 - Creates strategic timing: "If I publish before the board call, they'll be forced to respond"
@@ -364,7 +372,7 @@ These interactions between external roles should exist but currently don't:
 
 ### Tier 1: High Impact, Moderate Effort
 1. **Add 1-2 individual decisions per round for each external role** — biggest gap. NSA/Journalist/VC/Diplomat all need per-round agency.
-2. **Make publication impacts faction-specific** — journalist story angle should hit specific faction variables, not generic publicAwareness.
+2. ~~**Make publication impacts faction-specific**~~ **DONE** — `getPublicationEffects()` implements angle × target × role matrix; SubstackApp UI exposes angle + target dropdowns. (commit `5bf08b9`)
 3. **Add cross-faction consequence chains** — VC pulls funding -> OB burn rate spikes -> OB CEO forced to respond next round.
 
 ### Tier 2: High Impact, High Effort

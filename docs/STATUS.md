@@ -137,7 +137,7 @@ What's missing:
 All four external roles (NSA, Journalist, VC, Diplomat) have individual decisions in all 5 rounds and thematic content, but limited mechanical depth:
 
 - **NSA Advisor** — Needs weight theft response options (R2), emergency powers recommendation (R3), strategic posture (R5)
-- **Tech Journalist** — Publication impacts are generic; need faction-specific impacts by story angle (safety exposé tanks `obBoardConfidence`, capability hype moves `marketIndex`). Source cultivation: publishing burns sources, protecting builds trust.
+- **Tech Journalist** — ~~Publication impacts are generic~~ — `getPublicationEffects()` implements full angle × target × role matrix (commit `5bf08b9`): safety/hype/geopolitics angles, openbrain/prometheus/china/general targets, journalist ×2 amplifier. Remaining gaps: source cultivation (publishing burns sources, protecting builds trust), feedback loops (faction responses to publications), real-time publishing during deliberation phases.
 - **VC/Investor** — Needs board authority decisions (halt/proceed Agent-4), capital leverage (withdraw funding), kingmaker mechanics (broker merger, fund safety)
 - **International Diplomat** — Needs counter-offer mechanics for China negotiations, coalition building with durability, leverage mechanisms (EU market access, sanctions)
 - **Cross-role interactions** — NSA directs security upgrades, VC pulls funding to pressure labs, diplomat leaks to journalist, journalist tips off NSA
