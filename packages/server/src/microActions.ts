@@ -9,7 +9,7 @@
  * where actionCount is the Nth time this player has done this action type this round.
  */
 
-import type { GameRoom, StateVariables } from "@takeoff/shared";
+import type { Faction, GameRoom, StateVariables } from "@takeoff/shared";
 import { clampState } from "@takeoff/shared";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -21,7 +21,13 @@ export interface TweetContext {
   content: string;
 }
 
-export type MicroActionContext = TweetContext;
+export interface SlackContext {
+  type: "slack";
+  channel: string;  // e.g. '#research', '#alignment'
+  faction: Faction; // sender's faction — determines which variables are affected
+}
+
+export type MicroActionContext = TweetContext | SlackContext;
 
 // ── Keyword sets for tweet topic detection ────────────────────────────────────
 
@@ -31,7 +37,7 @@ const ECONOMY_KEYWORDS = ["funding", "market", "investment", "stocks", "jobs", "
 
 const BASE_DELTA = 2;
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
+// ── Internal helpers: tweet ───────────────────────────────────────────────────
 
 function detectTweetTopic(content: string): "safety" | "capability" | "economy" | null {
   const lower = content.toLowerCase();
@@ -68,6 +74,92 @@ function computeTweetEffects(content: string, delta: number): Partial<StateVaria
   return effects;
 }
 
+// ── Internal helpers: slack ───────────────────────────────────────────────────
+
+/** Base delta for a single Slack message. Smaller than tweet (more frequent). */
+const SLACK_BASE_DELTA = 1;
+
+interface SlackEffect {
+  key: keyof StateVariables;
+  multiplier: number; // positive = increase, negative = decrease
+}
+
+/**
+ * Map a (channel, faction) pair to the state variable that is affected.
+ * Returns null if there is no defined effect (skip silently).
+ *
+ * Negative multiplier: obBurnRate/promBurnRate decrease because active ops
+ * communication signals efficiency. Higher burn rate is bad.
+ */
+function getSlackEffect(channel: string, faction: Faction): SlackEffect | null {
+  switch (channel) {
+    case "#general":
+      switch (faction) {
+        case "openbrain":   return { key: "obMorale",          multiplier: 1 };
+        case "prometheus":  return { key: "promMorale",        multiplier: 1 };
+        case "china":       return { key: "ccpPatience",       multiplier: 1 };
+        case "external":    return { key: "intlCooperation",   multiplier: 0.5 };
+      }
+      break;
+
+    case "#research":
+      switch (faction) {
+        case "openbrain":   return { key: "obCapability",      multiplier: 0.5 };
+        case "prometheus":  return { key: "promCapability",    multiplier: 0.5 };
+        case "china":       return { key: "chinaCapability",   multiplier: 0.5 };
+        case "external":    return { key: "publicAwareness",   multiplier: 0.5 };
+      }
+      break;
+
+    case "#alignment":
+      // All factions: alignment confidence +delta/2
+      return { key: "alignmentConfidence", multiplier: 0.5 };
+
+    case "#announcements":
+      switch (faction) {
+        case "openbrain":   return { key: "obInternalTrust",    multiplier: 0.5 };
+        case "prometheus":  return { key: "promBoardConfidence", multiplier: 0.5 };
+        case "china":       return { key: "ccpPatience",         multiplier: 0.5 };
+        case "external":    return { key: "intlCooperation",     multiplier: 0.5 };
+      }
+      break;
+
+    case "#ops":
+      switch (faction) {
+        case "openbrain":   return { key: "obBurnRate",            multiplier: -0.5 };
+        case "prometheus":  return { key: "promBurnRate",          multiplier: -0.5 };
+        case "china":       return { key: "cdzComputeUtilization", multiplier: 0.5 };
+        case "external":    return null; // no effect
+      }
+      break;
+
+    case "#random":
+      switch (faction) {
+        case "openbrain":   return { key: "obMorale",   multiplier: 1 / 3 };
+        case "prometheus":  return { key: "promMorale", multiplier: 1 / 3 };
+        case "china":       return null;
+        case "external":    return null;
+      }
+      break;
+
+    case "#safety":
+      switch (faction) {
+        case "openbrain":   return { key: "alignmentConfidence", multiplier: 0.5 };
+        case "prometheus":  return { key: "alignmentConfidence", multiplier: 0.5 };
+        case "china":       return null;
+        case "external":    return { key: "regulatoryPressure",  multiplier: 0.5 };
+      }
+      break;
+  }
+  return null; // unknown channel or unhandled combination
+}
+
+function computeSlackEffects(context: SlackContext, effectiveDelta: number): Partial<StateVariables> {
+  const effect = getSlackEffect(context.channel, context.faction);
+  if (!effect) return {};
+  return { [effect.key]: effectiveDelta * effect.multiplier } as Partial<StateVariables>;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -84,6 +176,10 @@ export function getActionCount(room: GameRoom, socketId: string, actionType: str
  *
  * Diminishing returns: effectiveDelta = baseDelta / actionCount
  * where actionCount is the Nth time this player has done this action type this round.
+ *
+ * DR key namespacing:
+ *   tweet:  uses actionType string ("tweet")
+ *   slack:  uses "slack:#channel" so each channel has its own DR counter
  */
 export function applyMicroAction(
   room: GameRoom,
@@ -95,18 +191,24 @@ export function applyMicroAction(
   if (!room.microActionCounts) room.microActionCounts = {};
   if (!room.microActionCounts[socketId]) room.microActionCounts[socketId] = {};
 
+  // DR key: tweets use actionType; slack uses channel-namespaced key
+  const drKey = context.type === "slack" ? `slack:${context.channel}` : actionType;
+
   // Increment action count (post-increment: count is now the Nth action)
-  const prevCount = room.microActionCounts[socketId][actionType] ?? 0;
+  const prevCount = room.microActionCounts[socketId][drKey] ?? 0;
   const actionCount = prevCount + 1;
-  room.microActionCounts[socketId][actionType] = actionCount;
+  room.microActionCounts[socketId][drKey] = actionCount;
 
   const multiplier = 1 / actionCount;
-  const effectiveDelta = BASE_DELTA * multiplier;
 
-  // Compute effects based on action type
+  // Compute effects based on context type
   let effects: Partial<StateVariables> = {};
   if (context.type === "tweet") {
+    const effectiveDelta = BASE_DELTA * multiplier;
     effects = computeTweetEffects(context.content, effectiveDelta);
+  } else if (context.type === "slack") {
+    const effectiveDelta = SLACK_BASE_DELTA * multiplier;
+    effects = computeSlackEffects(context, effectiveDelta);
   }
 
   // Apply effects to room state

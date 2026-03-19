@@ -293,7 +293,7 @@ export interface GameRoom {
   storyBible?: StoryBible; // initialized when generation starts; undefined until then
   generatedRounds?: Partial<Record<number, GeneratedRoundArtifacts>>; // cached LLM artifacts by round
   generationStatus?: Partial<Record<number, GenerationStatus>>; // per-round generation state
-  microActionCounts?: Record<string, Record<string, number>>; // microActionCounts[socketId][actionType] = count
+  microActionCounts?: Record<string, Record<string, number>>; // microActionCounts[socketId][actionType] = count; resets each round
 }
 
 export interface RoundHistory {

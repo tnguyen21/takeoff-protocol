@@ -445,6 +445,13 @@ export function registerGameEvents(io: Server, socket: Socket) {
           io.to(pid).emit("message:receive", message);
         }
       }
+
+      // Micro-action: Slack team chat applies a small faction-contextualized state delta
+      applyMicroAction(room, socket.id, "slack", {
+        type: "slack",
+        channel: message.channel ?? "#general",
+        faction: sender.faction,
+      });
     } else {
       // DM: send to specific player
       io.to(to).emit("message:receive", message);
