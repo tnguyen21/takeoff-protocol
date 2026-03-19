@@ -39,6 +39,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
     }
     const room = createRoom(socket.id);
     room.microActionCounts = {};
+    room.playerTweets = [];
     socket.join(room.code);
     socket.data.roomCode = room.code;
     console.log(`[room] created ${room.code} by ${gmName}`);
@@ -104,6 +105,13 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
     // Replay message history
     socket.emit("message:history", { messages });
+
+    // Replay player tweets for reconnect
+    if (room.playerTweets?.length) {
+      for (const tweet of room.playerTweets) {
+        socket.emit("tweet:receive", tweet);
+      }
+    }
 
     console.log(`[room] ${isGMRejoin ? "GM" : player!.name} rejoined ${room.code} (${oldSocketId} → ${socket.id})`);
     if (player) {
@@ -647,6 +655,10 @@ export function registerGameEvents(io: Server, socket: Socket) {
       text: trimmed,
       timestamp: Date.now(),
     };
+
+    // Persist tweet for reconnect replay
+    if (!room.playerTweets) room.playerTweets = [];
+    room.playerTweets.push(tweet);
 
     // Broadcast to ALL players in the room (including sender for confirmation)
     for (const pid of Object.keys(room.players)) {

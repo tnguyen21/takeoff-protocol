@@ -1564,6 +1564,90 @@ describe("tweet:send — real handler", () => {
   });
 });
 
+// ── tweet:send — persistence & rejoin replay ──────────────────────────────────
+
+const TWEET_PERSIST_GM = "gm-tweet-persist-1";
+const TWEET_PERSIST_PLAYER_A = "player-tweet-persist-a";
+const TWEET_PERSIST_PLAYER_B = "player-tweet-persist-b";
+const TWEET_PERSIST_PLAYER_B_NEW = "player-tweet-persist-b-new";
+const TWEET_PERSIST_ROOM = "TWP01";
+
+describe("tweet persistence and rejoin replay", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let senderSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(TWEET_PERSIST_GM, TWEET_PERSIST_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    room.players[TWEET_PERSIST_PLAYER_A] = makePlayer(TWEET_PERSIST_PLAYER_A, { faction: "openbrain", role: "ob_cto" });
+    room.players[TWEET_PERSIST_PLAYER_B] = makePlayer(TWEET_PERSIST_PLAYER_B, { faction: "prometheus", role: "prom_ceo", connected: false });
+    senderSocket = createSocket(TWEET_PERSIST_PLAYER_A);
+    senderSocket.data.roomCode = TWEET_PERSIST_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, senderSocket as unknown as import("socket.io").Socket);
+    _setLoggerForRoom(TWEET_PERSIST_ROOM, new SpyLogger());
+  });
+
+  afterEach(() => {
+    rooms.delete(TWEET_PERSIST_ROOM);
+    _clearLoggers();
+  });
+
+  it("INV-1: player tweets stored in room.playerTweets on send", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "First tweet" });
+    fire(senderSocket.handlers, "tweet:send", { text: "Second tweet" });
+    expect(room.playerTweets).toHaveLength(2);
+    expect((room.playerTweets![0] as Record<string, unknown>).text).toBe("First tweet");
+    expect((room.playerTweets![1] as Record<string, unknown>).text).toBe("Second tweet");
+  });
+
+  it("INV-3: tweet storage does not break broadcast to all players", () => {
+    fire(senderSocket.handlers, "tweet:send", { text: "Broadcast check" });
+    for (const pid of [TWEET_PERSIST_PLAYER_A, TWEET_PERSIST_PLAYER_B]) {
+      expect((io.emits[pid] ?? []).some((e) => e.event === "tweet:receive")).toBe(true);
+    }
+    expect((io.emits[TWEET_PERSIST_GM] ?? []).some((e) => e.event === "tweet:receive")).toBe(true);
+  });
+
+  it("INV-2: on rejoin, all stored tweets are replayed to reconnecting player", () => {
+    // Player A tweets twice before Player B reconnects
+    fire(senderSocket.handlers, "tweet:send", { text: "Tweet before rejoin 1" });
+    fire(senderSocket.handlers, "tweet:send", { text: "Tweet before rejoin 2" });
+    expect(room.playerTweets).toHaveLength(2);
+
+    // Player B reconnects
+    const rejoinSocket = createSocket(TWEET_PERSIST_PLAYER_B_NEW);
+    rejoinSocket.data.roomCode = undefined;
+    registerGameEvents(io as unknown as import("socket.io").Server, rejoinSocket as unknown as import("socket.io").Socket);
+
+    fire(rejoinSocket.handlers, "room:rejoin", { code: TWEET_PERSIST_ROOM, playerId: TWEET_PERSIST_PLAYER_B }, () => {});
+
+    const replayedTweets = rejoinSocket.selfEmits.filter((e) => e.event === "tweet:receive");
+    expect(replayedTweets).toHaveLength(2);
+    const texts = replayedTweets.map((e) => (e.data as Record<string, unknown>).text);
+    expect(texts).toContain("Tweet before rejoin 1");
+    expect(texts).toContain("Tweet before rejoin 2");
+  });
+
+  it("multiple players tweet — all tweets stored in order", () => {
+    // Register a second sender
+    room.players[TWEET_PERSIST_PLAYER_B] = makePlayer(TWEET_PERSIST_PLAYER_B, { faction: "prometheus", role: "prom_ceo" });
+    const senderB = createSocket(TWEET_PERSIST_PLAYER_B);
+    senderB.data.roomCode = TWEET_PERSIST_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, senderB as unknown as import("socket.io").Socket);
+
+    fire(senderSocket.handlers, "tweet:send", { text: "From A" });
+    fire(senderB.handlers, "tweet:send", { text: "From B" });
+    fire(senderSocket.handlers, "tweet:send", { text: "From A again" });
+
+    expect(room.playerTweets).toHaveLength(3);
+    const texts = room.playerTweets!.map((t) => t.text);
+    expect(texts).toEqual(["From A", "From B", "From A again"]);
+  });
+});
+
 // ── Room cap enforcement ──────────────────────────────────────────────────────
 
 describe("room:create — room cap enforcement", () => {

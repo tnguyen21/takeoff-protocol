@@ -294,6 +294,14 @@ export interface GameRoom {
   generatedRounds?: Partial<Record<number, GeneratedRoundArtifacts>>; // cached LLM artifacts by round
   generationStatus?: Partial<Record<number, GenerationStatus>>; // per-round generation state
   microActionCounts?: Record<string, Record<string, number>>; // microActionCounts[socketId][actionType] = count; resets each round
+  playerTweets?: Array<{
+    id: string;
+    playerName: string;
+    playerRole: string | null;
+    playerFaction: string | null;
+    text: string;
+    timestamp: number;
+  }>;
 }
 
 export interface RoundHistory {

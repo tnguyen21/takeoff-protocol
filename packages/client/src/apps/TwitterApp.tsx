@@ -306,11 +306,17 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
   // Tab state
   const [activeTab, setActiveTab] = React.useState<"for-you" | "following">("for-you");
 
+  // Track IDs of all received tweets for replay deduplication
+  const receivedIdsRef = React.useRef<Set<string>>(new Set());
+
   // Listen for tweet:receive events from the server
   React.useEffect(() => {
     function onTweetReceive(tweet: PlayerTweet) {
       // The server echoes the tweet back to the sender too; deduplicate by ID
       if (postedIdsRef.current.has(tweet.id)) return;
+      // Deduplicate replayed tweets on reconnect
+      if (receivedIdsRef.current.has(tweet.id)) return;
+      receivedIdsRef.current.add(tweet.id);
       const handle = `@${tweet.playerName.toLowerCase().replace(/[\s.]/g, "_")}`;
       const incoming: Tweet = {
         id: tweet.id,
@@ -337,14 +343,12 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
     : null;
   const cycleData = mediaCycle !== null ? (MEDIA_CYCLE_TRENDING[Math.min(5, Math.max(0, mediaCycle))] ?? MEDIA_CYCLE_TRENDING[0]) : null;
 
-  // Player tweets (local + received from others) for the Following tab
+  // For You: generated/NPC tweets only (algorithmic feed)
+  // Following: player tweets only (shared social timeline — self + others)
   const playerTweets = [...postedTweets, ...receivedTweets];
-  const allTweets = [...postedTweets, ...baseTweets];
-
-  // "Following" tab: player tweets at the top, then verified accounts
   const displayTweets = activeTab === "following"
-    ? [...playerTweets, ...allTweets.filter((t) => t.verified).slice(0, 8)]
-    : allTweets;
+    ? playerTweets
+    : baseTweets;
 
   function getInteraction(id: string): TweetState {
     return tweetInteractions.get(id) ?? { liked: false, retweeted: false };
