@@ -164,7 +164,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "obCapability", "intlCooperation", "marketIndex", "regulatoryPressure",
       "obBurnRate", "usChinaGap", "promCapability", "alignmentConfidence",
-      "promSafetyBreakthroughProgress",
+      "promSafetyBreakthroughProgress", "securityLevelOB", "securityLevelProm",
     ],
     archetypes: ["prioritize OpenBrain", "prioritize Prometheus", "engage both equally"],
   },
@@ -186,6 +186,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "obCapability", "economicDisruption", "alignmentConfidence", "marketIndex",
       "obBurnRate", "promCapability", "promBurnRate", "promSafetyBreakthroughProgress",
+      "openSourceMomentum",
     ],
     archetypes: ["double down on OpenBrain", "back Prometheus as responsible play", "diversify across safety startups"],
   },
@@ -196,7 +197,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "publicSentiment", "regulatoryPressure", "marketIndex",
       "taiwanTension", "ccpPatience", "publicAwareness", "obCapability",
-      "chinaCapability",
+      "chinaCapability", "openSourceMomentum",
     ],
     archetypes: ["push G7 AI safety framework", "pursue US-China bilateral talks", "draft compute pause treaty"],
   },
@@ -248,7 +249,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     theme: "cross-stakeholder transparency",
     variableScope: [
       "intlCooperation", "publicAwareness", "globalMediaCycle", "marketIndex",
-      "publicSentiment", "regulatoryPressure", "economicDisruption",
+      "publicSentiment", "regulatoryPressure", "economicDisruption", "openSourceMomentum",
     ],
     archetypes: ["share intelligence and coordinate", "selective sharing based on trust", "act independently"],
   },
@@ -387,7 +388,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "publicAwareness", "alignmentConfidence", "regulatoryPressure",
       "securityLevelOB", "aiAutonomyLevel", "obBoardConfidence", "obInternalTrust",
-      "doomClockDistance", "misalignmentSeverity",
+      "doomClockDistance", "misalignmentSeverity", "securityLevelProm",
     ],
     archetypes: ["emergency government oversight", "invoke defense powers", "bilateral diplomacy"],
   },
@@ -398,6 +399,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "publicAwareness", "publicSentiment", "globalMediaCycle", "regulatoryPressure",
       "whistleblowerPressure", "marketIndex", "alignmentConfidence", "obCapability", "obInternalTrust",
+      "obMorale", "promMorale",
     ],
     archetypes: ["publish now", "wait and verify", "coordinate with government first"],
   },
@@ -408,6 +410,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "marketIndex", "promBurnRate", "promBoardConfidence", "obBurnRate", "obBoardConfidence",
       "publicSentiment", "obCapability", "promCapability", "economicDisruption", "obPromGap",
+      "doomClockDistance", "openSourceMomentum",
     ],
     archetypes: ["double down on AI", "hedge positions", "pivot to safety investments"],
   },
@@ -418,6 +421,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
       "globalMediaCycle", "marketIndex", "usChinaGap", "chinaWeightTheftProgress", "alignmentConfidence",
+      "openSourceMomentum",
     ],
     archetypes: ["push G7 emergency summit", "propose compute freeze", "bilateral emergency talks"],
   },
@@ -495,7 +499,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     theme: "coordinated external stakeholder response to Agent-3",
     variableScope: [
       "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
-      "globalMediaCycle", "marketIndex", "economicDisruption",
+      "globalMediaCycle", "marketIndex", "economicDisruption", "openSourceMomentum",
     ],
     archetypes: ["full disclosure coordination", "selective strategic disclosure", "independent divergent action"],
   },
@@ -635,7 +639,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "regulatoryPressure", "alignmentConfidence", "obBoardConfidence", "intlCooperation",
       "securityLevelOB", "aiAutonomyLevel", "obInternalTrust", "doomClockDistance",
-      "misalignmentSeverity",
+      "misalignmentSeverity", "securityLevelProm",
     ],
     archetypes: ["seize control of AI development", "force third-party oversight", "back full speed for national security"],
   },
@@ -646,7 +650,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "publicAwareness", "publicSentiment", "globalMediaCycle", "regulatoryPressure",
       "whistleblowerPressure", "marketIndex", "alignmentConfidence", "obCapability",
-      "obInternalTrust", "misalignmentSeverity",
+      "obInternalTrust", "misalignmentSeverity", "obMorale", "promMorale",
     ],
     archetypes: ["publish now", "verify further", "coordinate with government for exclusive"],
   },
@@ -657,6 +661,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "marketIndex", "obBoardConfidence", "promBoardConfidence", "publicSentiment",
       "obCapability", "promCapability", "economicDisruption", "obPromGap", "whistleblowerPressure",
+      "doomClockDistance", "openSourceMomentum",
     ],
     archetypes: ["push for disclosure", "hedge and wait", "back Prometheus publicly"],
   },
@@ -667,7 +672,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
       "globalMediaCycle", "marketIndex", "usChinaGap", "chinaWeightTheftProgress",
-      "alignmentConfidence", "obMorale",
+      "alignmentConfidence", "obMorale", "openSourceMomentum", "domesticChipProgress",
     ],
     archetypes: ["emergency international framework", "China mutual pause talks", "US-allies coordination"],
   },
@@ -747,6 +752,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
       "globalMediaCycle", "marketIndex", "economicDisruption", "obBoardConfidence",
+      "openSourceMomentum",
     ],
     archetypes: ["coordinate managed response", "independent pressure campaign", "wait for board decision"],
   },
@@ -884,7 +890,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "regulatoryPressure", "alignmentConfidence", "obBoardConfidence", "intlCooperation",
       "securityLevelOB", "aiAutonomyLevel", "obInternalTrust", "doomClockDistance",
-      "misalignmentSeverity", "economicDisruption",
+      "misalignmentSeverity", "economicDisruption", "securityLevelProm",
     ],
     archetypes: ["establish emergency oversight committee", "nationalize the lab", "back safe alternative lab"],
   },
@@ -895,7 +901,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "publicAwareness", "publicSentiment", "globalMediaCycle", "regulatoryPressure",
       "whistleblowerPressure", "marketIndex", "alignmentConfidence", "obCapability",
-      "obInternalTrust", "doomClockDistance",
+      "obInternalTrust", "doomClockDistance", "obMorale", "promMorale",
     ],
     archetypes: ["publish safety story now", "combined labs exposé", "hold for board outcome"],
   },
@@ -906,7 +912,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "marketIndex", "promBurnRate", "promBoardConfidence", "obBurnRate", "obBoardConfidence",
       "publicSentiment", "obCapability", "promCapability", "economicDisruption",
-      "obPromGap", "doomClockDistance",
+      "obPromGap", "doomClockDistance", "openSourceMomentum", "whistleblowerPressure",
     ],
     archetypes: ["back Prometheus publicly", "call for industry pause", "safety pivot investments"],
   },
@@ -917,7 +923,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
       "globalMediaCycle", "marketIndex", "usChinaGap", "chinaWeightTheftProgress",
-      "alignmentConfidence", "doomClockDistance",
+      "alignmentConfidence", "doomClockDistance", "openSourceMomentum", "domesticChipProgress",
     ],
     archetypes: ["push grand bargain", "push G7 moratorium", "propose international oversight model"],
   },
@@ -999,6 +1005,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
       "globalMediaCycle", "marketIndex", "economicDisruption", "doomClockDistance", "whistleblowerPressure",
+      "openSourceMomentum",
     ],
     archetypes: ["coordinate full response", "selective strategic action", "independent divergent action"],
   },
@@ -1143,6 +1150,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "intlCooperation", "alignmentConfidence", "publicSentiment", "regulatoryPressure",
       "marketIndex", "usChinaGap", "promCapability", "obCapability",
       "doomClockDistance", "taiwanTension", "obBoardConfidence", "ccpPatience",
+      "securityLevelOB", "securityLevelProm",
     ],
     archetypes: ["nationalize the labs", "back Prometheus as safe lab", "champion multilateral framework"],
   },
@@ -1153,7 +1161,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "publicAwareness", "publicSentiment", "intlCooperation", "alignmentConfidence",
       "globalMediaCycle", "marketIndex", "regulatoryPressure", "whistleblowerPressure",
-      "doomClockDistance", "misalignmentSeverity",
+      "doomClockDistance", "misalignmentSeverity", "obMorale", "promMorale",
     ],
     archetypes: ["publish everything", "publish safety findings", "hold story for leverage"],
   },
@@ -1165,6 +1173,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "alignmentConfidence", "publicSentiment", "economicDisruption", "intlCooperation",
       "obBurnRate", "obBoardConfidence", "regulatoryPressure", "globalMediaCycle",
       "doomClockDistance", "obCapability", "promCapability", "marketIndex",
+      "openSourceMomentum", "whistleblowerPressure",
     ],
     archetypes: ["call for deployment pause", "back the winner", "redirect capital to safety"],
   },
@@ -1175,7 +1184,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     variableScope: [
       "intlCooperation", "taiwanTension", "publicSentiment", "regulatoryPressure",
       "ccpPatience", "doomClockDistance", "alignmentConfidence", "domesticChipProgress",
-      "economicDisruption",
+      "economicDisruption", "openSourceMomentum",
     ],
     archetypes: ["secure US multilateral commitment", "broker US-China bilateral deal", "deliver EU sanctions ultimatum"],
   },

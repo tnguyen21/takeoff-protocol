@@ -39,10 +39,10 @@ describe("INV-1: every state variable covered per round", () => {
   }
 });
 
-describe("INV-2: variableScope has 4–12 entries per template", () => {
-  it("no template has fewer than 4 or more than 12 variables", () => {
+describe("INV-2: variableScope has 4–14 entries per template", () => {
+  it("no template has fewer than 4 or more than 14 variables", () => {
     const violations = DECISION_TEMPLATES.filter(
-      (t) => t.variableScope.length < 4 || t.variableScope.length > 12,
+      (t) => t.variableScope.length < 4 || t.variableScope.length > 14,
     ).map((t) => ({ round: t.round, role: t.role, faction: t.faction, count: t.variableScope.length }));
     expect(violations).toEqual([]);
   });
@@ -96,6 +96,50 @@ describe("INV-6: all role/faction values are valid", () => {
       (t) => (t.role === undefined) === (t.faction === undefined),
     ).map((t) => ({ round: t.round, role: t.role, faction: t.faction }));
     expect(violations).toEqual([]);
+  });
+});
+
+describe("INV-2b: no duplicate variables in any variableScope", () => {
+  it("every template has unique variables in variableScope", () => {
+    const violations = DECISION_TEMPLATES.filter((t) => {
+      const seen = new Set<string>();
+      return t.variableScope.some((v) => {
+        if (seen.has(v)) return true;
+        seen.add(v);
+        return false;
+      });
+    }).map((t) => ({ round: t.round, role: t.role, faction: t.faction }));
+    expect(violations).toEqual([]);
+  });
+});
+
+describe("critical path: ext_nsa security variable coverage", () => {
+  it("every ext_nsa template includes securityLevelOB", () => {
+    const templates = DECISION_TEMPLATES.filter((t) => t.role === "ext_nsa");
+    const missing = templates.filter((t) => !t.variableScope.includes("securityLevelOB"));
+    expect(missing.map((t) => t.round)).toEqual([]);
+  });
+
+  it("every ext_nsa template includes securityLevelProm", () => {
+    const templates = DECISION_TEMPLATES.filter((t) => t.role === "ext_nsa");
+    const missing = templates.filter((t) => !t.variableScope.includes("securityLevelProm"));
+    expect(missing.map((t) => t.round)).toEqual([]);
+  });
+});
+
+describe("critical path: ext_vc doomClockDistance from R2+", () => {
+  it("ext_vc templates for rounds 2+ include doomClockDistance", () => {
+    const templates = DECISION_TEMPLATES.filter((t) => t.role === "ext_vc" && t.round >= 2);
+    const missing = templates.filter((t) => !t.variableScope.includes("doomClockDistance"));
+    expect(missing.map((t) => t.round)).toEqual([]);
+  });
+});
+
+describe("critical path: ext_diplomat openSourceMomentum coverage", () => {
+  it("every ext_diplomat template includes openSourceMomentum", () => {
+    const templates = DECISION_TEMPLATES.filter((t) => t.role === "ext_diplomat");
+    const missing = templates.filter((t) => !t.variableScope.includes("openSourceMomentum"));
+    expect(missing.map((t) => t.round)).toEqual([]);
   });
 });
 
