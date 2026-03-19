@@ -22,7 +22,7 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 - **Fog-of-war** — corrected noise formula, faction-based hash seeding, comprehensive property tests
 - **Decision/resolution engine** — effects with conditional multipliers, canonical clamping via `STATE_VARIABLE_RANGES`
 - **9 ending arcs** — all resolvers implemented, thresholds tuned via 10K-trial Monte Carlo simulation, full branch coverage in tests
-- **Content generation** — briefing + app content + NPC trigger + decision generation via Claude API, with retry/validation, fog-safety validation, generation metrics in JSONL, client degradation toast. Model selection: Sonnet for briefings/decisions, Haiku for content/NPC. No pre-authored fallback by design.
+- **Content generation** — briefing + app content + NPC trigger + decision generation via Claude API, with retry/validation, fog-safety validation, generation metrics in JSONL, client degradation toast. Model selection: Sonnet for briefings/decisions, Haiku for content/NPC. Role identity context injected into all 16 role + 4 faction decision prompts. No pre-authored fallback by design.
 - **Decision templates** — 104 templates covering all 5 rounds, all 8 faction/role types, with hard/soft constraint validation and distinctness checks
 - **Logging** — buffered JSONL per-room, envelope validation, graceful shutdown on SIGINT/SIGTERM, generation metrics, `scripts/analyze-game.ts` for post-game analysis
 - **Dev tools** — URL bootstrap (`?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&botMode=all_roles`), GM state sliders, jump-to-phase, fog inspector, endings preview
@@ -124,6 +124,7 @@ What exists:
 - Kill switches: `GEN_ENABLED`, `GEN_BRIEFINGS_ENABLED`, `GEN_NPC_ENABLED`, `GEN_DECISIONS_ENABLED`, per-room toggle
 - Provider abstraction (Anthropic Claude, with mock for tests). Model selection: Sonnet for briefings/decisions, Haiku for content/NPC.
 - Decision prompts enriched with prior round choice labels and effects for narrative continuity
+- Role identity context — per-role "Who You Are" descriptions (all 16 roles + 4 faction teams) injected into decision prompts so generated decisions match the character's perspective and power
 - Generation is idempotent per room-round (can't re-trigger same round)
 - Fog-safety validation — heuristic scan of generated content for leaked hidden state values
 - Generation metrics emitted to JSONL game logger (started/success/failure/validation events)
@@ -135,16 +136,16 @@ What's missing:
 
 ### External Role Balancing
 
-**Status: Improved via micro-actions, consequence-chain thresholds, and publication system. Full audit in EXTERNAL-ROLES-AUDIT.md.**
+**Status: Improved via micro-actions, consequence-chain thresholds, publication system, role identity context, and tightened archetypes. Full audit in EXTERNAL-ROLES-AUDIT.md.**
 
-All four external roles have individual decisions in all 5 rounds, thematic content, and now micro-action effects (tweet/Slack/Signal DMs apply role-aware state deltas). Four consequence-chain thresholds (market crash, coalition fracture, public panic, board revolt) make external role decisions cascade into visible game events.
+All four external roles have individual decisions in all 5 rounds, thematic content, and micro-action effects (tweet/Slack/Signal DMs apply role-aware state deltas). Four consequence-chain thresholds (market crash, coalition fracture, public panic, board revolt) make external role decisions cascade into visible game events. Role identity context ("Who You Are") injected into decision prompts so the LLM generates decisions that match each role's perspective and power. Archetypes tightened so generated options use role-specific verbs (NSA: "authorize covert counter-intelligence"; VC: "exercise board vote to halt Agent-4", "threaten to pull OB funding"; etc.).
 
 Remaining gaps:
-- **NSA Advisor** — Needs weight theft response options (R2), emergency powers recommendation (R3), strategic posture (R5)
-- **Tech Journalist** — Publication system implemented (angle × target × role matrix, journalist ×2 amplifier). Remaining: source cultivation (publishing burns sources, protecting builds trust), feedback loops (faction responses to publications)
-- **VC/Investor** — Needs board authority decisions (halt/proceed Agent-4), capital leverage (withdraw funding), kingmaker mechanics (broker merger, fund safety). Market crash threshold now creates visible consequence for economic decisions.
-- **International Diplomat** — Needs counter-offer mechanics for China negotiations, coalition building with durability. Coalition fracture threshold now fires when cooperation collapses.
-- **Cross-role interactions** — Signal DM role-pair effects exist (journalist → whistleblower pressure, NSA ↔ lab → security, VC ↔ lab → board confidence). Still missing: diplomat leaks to journalist, journalist tips off NSA as explicit mechanics
+- **NSA Advisor** — Archetypes now guide toward counter-intelligence (R2), seize control / oversight (R3), nationalize (R4-5). Remaining: no unique enforcement mechanic beyond decisions.
+- **Tech Journalist** — Publication system implemented (angle × target × role matrix, journalist ×2 amplifier). Remaining: source cultivation (publishing burns sources, protecting builds trust), feedback loops (faction responses to publications).
+- **VC/Investor** — Archetypes now guide toward board votes (R3), funding withdrawal threats (R2, R4), capital leverage. Remaining: no unique board/capital mechanic beyond decisions.
+- **International Diplomat** — Archetypes cover treaty frameworks, bilateral/multilateral negotiations, sanctions ultimatums. Remaining: no counter-offer mechanic or coalition durability tracking beyond decisions.
+- **Cross-role interactions** — Signal DM role-pair effects exist (journalist → whistleblower pressure, NSA ↔ lab → security, VC ↔ lab → board confidence). DMs are the primary cross-faction interaction mechanic. UI nudges for DM usage planned but not yet implemented.
 
 ### Diagnostics & Logging
 
@@ -174,8 +175,7 @@ From 10,000 random-heuristic trials (with generated decision templates), post-re
 
 ### P0 — Playtest Prep
 1. Smoke test on Fly.io: create room, join 2-3 browsers, advance through phases
-2. Run first full playtest with real humans (`GEN_ENABLED=false`)
-3. Second playtest with `GEN_ENABLED=true` + `ANTHROPIC_API_KEY` set
+2. Run full playtest with `GEN_ENABLED=true` + `ANTHROPIC_API_KEY` set
 
 ### ~~P1 — Before Enabling Generation~~ ✅
 ~~4. Add concurrent request throttle~~ — Global semaphore (max 5, configurable via `GEN_MAX_CONCURRENT`) in `provider.ts`
@@ -184,7 +184,7 @@ From 10,000 random-heuristic trials (with generated decision templates), post-re
 ~~5. Logger event coverage sweep~~ — All 22 event types already emitting. STATUS was stale.
 
 ### P3 — Gameplay
-6. External role mechanical depth — partially done (micro-actions, consequence-chain thresholds, publication system). Remaining: NSA/VC/Diplomat decision-specific mechanics.
+6. External role mechanical depth — done for v1 (micro-actions, consequence-chain thresholds, publication system, role identity context, tightened archetypes). Unique per-role mechanics (board votes, enforcement, negotiation) deferred to post-playtest.
 7. ~~Journalist publication impacts — faction-specific by story angle~~ ✅ — angle × target × role matrix in `getPublicationEffects()`
 8. ~~Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs~~ ✅ — AI Race stalemate → ~43%, Open Source irrelevant → ~40%
 
