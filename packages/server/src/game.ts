@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateVariables, TeamDecision } from "@takeoff/shared";
+import type { AppContent, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateEffect, StateVariables, TeamDecision } from "@takeoff/shared";
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, STATE_VARIABLE_RANGES, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
@@ -900,6 +900,11 @@ function emitResolution(io: Server, room: GameRoom) {
   // Collect all chosen DecisionOption objects
   const chosenOptions: DecisionOption[] = [];
 
+  // Semantic enrichment for history
+  const roleDecisions: Record<string, string> = {};
+  const chosenLabels: Record<string, string> = {};
+  const chosenEffects: Record<string, StateEffect[]> = {};
+
   // Individual decisions: playerId → optionId
   for (const [playerId, optionId] of Object.entries(room.decisions)) {
     const player = room.players[playerId];
@@ -910,6 +915,9 @@ function emitResolution(io: Server, room: GameRoom) {
       const opt = indiv.options.find((o) => o.id === optionId);
       if (opt) {
         chosenOptions.push(opt);
+        chosenLabels[optionId] = opt.label;
+        chosenEffects[optionId] = opt.effects;
+        if (player.role) roleDecisions[player.role] = optionId;
         break;
       }
     }
@@ -925,6 +933,8 @@ function emitResolution(io: Server, room: GameRoom) {
     if (opt) {
       chosenOptions.push(opt);
       teamDecisionSummary[faction] = { optionId: opt.id, label: opt.label };
+      chosenLabels[optionId] = opt.label;
+      chosenEffects[optionId] = opt.effects;
     }
   }
 
@@ -961,6 +971,8 @@ function emitResolution(io: Server, room: GameRoom) {
     teamDecisions: { ...room.teamDecisions },
     stateBefore,
     stateAfter: { ...room.state },
+    ...(Object.keys(roleDecisions).length > 0 ? { roleDecisions } : {}),
+    ...(Object.keys(chosenLabels).length > 0 ? { chosenLabels, chosenEffects } : {}),
   };
   const existingIdx = room.history.findIndex((h) => h.round === room.round);
   if (existingIdx >= 0) {

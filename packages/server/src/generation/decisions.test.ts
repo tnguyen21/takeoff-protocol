@@ -19,11 +19,11 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import type { DecisionTemplate } from "@takeoff/shared";
+import type { DecisionTemplate, RoundHistory } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { GenerationTimeoutError, GenerationParseError } from "./provider.js";
-import { generateDecisions, generateDecisionsWithRetry } from "./decisions.js";
+import { generateDecisions, generateDecisionsWithRetry, buildDecisionPrompt } from "./decisions.js";
 import type { GenerationContext } from "./context.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 
@@ -569,5 +569,98 @@ describe("generateDecisions — low-level function", () => {
     const result = await generateDecisions(provider, makeContext(), [TEST_TEMPLATE_INDIVIDUAL], 3);
     expect(result).not.toBeNull();
     expect(result!.individual).toHaveLength(1);
+  });
+});
+
+// ── buildDecisionPrompt — semantic history enrichment ─────────────────────────
+
+/** Build a minimal RoundHistory entry with semantic data for round 1 */
+function makeSemanticHistory(): RoundHistory {
+  return {
+    round: 1,
+    decisions: { "socket-abc": "gen_ext_nsa_r1_0" },
+    teamDecisions: { openbrain: "gen_openbrain_r1_2" },
+    stateBefore: { ...INITIAL_STATE },
+    stateAfter: { ...INITIAL_STATE },
+    roleDecisions: { ext_nsa: "gen_ext_nsa_r1_0" },
+    chosenLabels: {
+      "gen_ext_nsa_r1_0": "Invoke Federal Emergency Oversight",
+      "gen_openbrain_r1_2": "Pause Deployment — Internal Safety Audit",
+    },
+    chosenEffects: {
+      "gen_ext_nsa_r1_0": [
+        { variable: "regulatoryPressure", delta: -7 },
+        { variable: "alignmentConfidence", delta: 6 },
+      ],
+      "gen_openbrain_r1_2": [
+        { variable: "obCapability", delta: -3 },
+        { variable: "alignmentConfidence", delta: 6 },
+      ],
+    },
+  };
+}
+
+describe("buildDecisionPrompt — semantic history enrichment", () => {
+  it("includes human-readable label for individual decision history", () => {
+    const ctx = makeContext({ history: [makeSemanticHistory()] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_INDIVIDUAL);
+    expect(prompt).toContain("Invoke Federal Emergency Oversight");
+  });
+
+  it("includes effect deltas for individual decision history", () => {
+    const ctx = makeContext({ history: [makeSemanticHistory()] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_INDIVIDUAL);
+    // Should show effect deltas like "regulatoryPressure -7"
+    expect(prompt).toContain("regulatoryPressure -7");
+    expect(prompt).toContain("alignmentConfidence +6");
+  });
+
+  it("includes human-readable label for team decision history", () => {
+    const ctx = makeContext({ history: [makeSemanticHistory()] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_TEAM);
+    expect(prompt).toContain("Pause Deployment — Internal Safety Audit");
+  });
+
+  it("includes effect deltas for team decision history", () => {
+    const ctx = makeContext({ history: [makeSemanticHistory()] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_TEAM);
+    expect(prompt).toContain("obCapability -3");
+    expect(prompt).toContain("alignmentConfidence +6");
+  });
+
+  it("falls back to optionId when chosenLabels is absent (legacy history)", () => {
+    const legacyHistory: RoundHistory = {
+      round: 1,
+      decisions: { "socket-abc": "gen_ext_nsa_r1_0" },
+      teamDecisions: { openbrain: "gen_openbrain_r1_2" },
+      stateBefore: { ...INITIAL_STATE },
+      stateAfter: { ...INITIAL_STATE },
+      roleDecisions: { ext_nsa: "gen_ext_nsa_r1_0" },
+      // no chosenLabels / chosenEffects
+    };
+    const ctx = makeContext({ history: [legacyHistory] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_INDIVIDUAL);
+    // Falls back to raw optionId
+    expect(prompt).toContain("gen_ext_nsa_r1_0");
+    expect(prompt).toContain("(no effects recorded)");
+  });
+
+  it("does not include history section when context has no history", () => {
+    const ctx = makeContext({ history: [] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_INDIVIDUAL);
+    expect(prompt).not.toContain("## Prior Decisions");
+  });
+
+  it("includes continuity instruction in task section when history is non-empty", () => {
+    const ctx = makeContext({ history: [makeSemanticHistory()] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_INDIVIDUAL);
+    expect(prompt).toContain("consistent pattern");
+    expect(prompt).toContain("pivot");
+  });
+
+  it("omits continuity instruction when there is no history", () => {
+    const ctx = makeContext({ history: [] });
+    const prompt = buildDecisionPrompt(ctx, TEST_TEMPLATE_INDIVIDUAL);
+    expect(prompt).not.toContain("consistent pattern");
   });
 });

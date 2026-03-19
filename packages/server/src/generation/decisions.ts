@@ -144,7 +144,7 @@ const VARIABLE_DESCRIPTIONS: Partial<Record<keyof StateVariables, string>> = {
 
 // ── Prompt builder ─────────────────────────────────────────────────────────────
 
-function buildDecisionPrompt(
+export function buildDecisionPrompt(
   context: GenerationContext,
   template: DecisionTemplate,
   validationErrors?: string[],
@@ -183,25 +183,40 @@ function buildDecisionPrompt(
     `## Decision Template\nTheme: ${template.theme}\n${actorLabel}\nRound: ${template.round}\nVariable Scope: ${template.variableScope.join(", ")}\n\nArchetypes (generate exactly 3 options in this order):\n- Option 0 [${template.archetypes[0]}]: embodies the "${template.archetypes[0]}" play style\n- Option 1 [${template.archetypes[1]}]: embodies the "${template.archetypes[1]}" play style\n- Option 2 [${template.archetypes[2]}]: embodies the "${template.archetypes[2]}" play style`,
   );
 
-  // Decision history for this role/faction
+  // Decision history for this role/faction — rendered with human-readable labels and effects
   if (context.history.length > 0) {
     const historyLines: string[] = [];
     for (const h of context.history) {
+      const roundLines: string[] = [];
       if (template.role) {
-        // Find all decisions from the role this round
-        const playerDecisions = Object.entries(h.decisions);
-        if (playerDecisions.length > 0) {
-          historyLines.push(`Round ${h.round}: ${JSON.stringify(h.decisions)}`);
+        // Show this role's individual decision
+        const optionId = h.roleDecisions?.[template.role];
+        if (optionId) {
+          const label = h.chosenLabels?.[optionId] ?? optionId;
+          const effects = h.chosenEffects?.[optionId] ?? [];
+          const effectsStr = effects.length > 0
+            ? effects.map((e) => `${e.variable} ${e.delta > 0 ? "+" : ""}${e.delta}`).join(", ")
+            : "(no effects recorded)";
+          roundLines.push(`- ${template.role} chose: "${label}"\n  Effects: ${effectsStr}`);
         }
       } else if (template.faction) {
-        const teamChoice = h.teamDecisions[template.faction];
-        if (teamChoice) {
-          historyLines.push(`Round ${h.round}: ${template.faction} chose option "${teamChoice}"`);
+        // Show this faction's team decision
+        const optionId = h.teamDecisions[template.faction];
+        if (optionId) {
+          const label = h.chosenLabels?.[optionId] ?? optionId;
+          const effects = h.chosenEffects?.[optionId] ?? [];
+          const effectsStr = effects.length > 0
+            ? effects.map((e) => `${e.variable} ${e.delta > 0 ? "+" : ""}${e.delta}`).join(", ")
+            : "(no effects recorded)";
+          roundLines.push(`- ${template.faction} team chose: "${label}"\n  Effects: ${effectsStr}`);
         }
+      }
+      if (roundLines.length > 0) {
+        historyLines.push(`Round ${h.round}:\n${roundLines.join("\n")}`);
       }
     }
     if (historyLines.length > 0) {
-      parts.push(`## Prior Decisions (${template.role ?? template.faction})\n${historyLines.join("\n")}`);
+      parts.push(`## Prior Decisions (${template.role ?? template.faction})\n${historyLines.join("\n\n")}`);
     }
   }
 
@@ -219,8 +234,13 @@ function buildDecisionPrompt(
     );
   }
 
+  const continuityInstruction =
+    context.history.length > 0
+      ? "\n\nIf the player's prior choices show a consistent pattern (safety-focused, aggressive, diplomatic), one archetype should continue that path, one should represent a pivot."
+      : "";
+
   parts.push(
-    `## Task\nGenerate one decision for round ${context.targetRound}.\n${template.role ? `This is an individual decision for role: ${template.role}` : `This is a team decision for faction: ${template.faction}`}\n\nReturn exactly 3 options following the archetypes above. Set option ids to "A", "B", "C" — they will be replaced with canonical gen_ ids.\n\nReturn structured JSON only.`,
+    `## Task\nGenerate one decision for round ${context.targetRound}.\n${template.role ? `This is an individual decision for role: ${template.role}` : `This is a team decision for faction: ${template.faction}`}\n\nReturn exactly 3 options following the archetypes above. Set option ids to "A", "B", "C" — they will be replaced with canonical gen_ ids.${continuityInstruction}\n\nReturn structured JSON only.`,
   );
 
   return parts.join("\n\n");

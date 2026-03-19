@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-d856ea2cebfc
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-9e5023cfc38b
 ├── docs
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md

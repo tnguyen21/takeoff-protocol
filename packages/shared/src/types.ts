@@ -310,6 +310,12 @@ export interface RoundHistory {
   teamDecisions: Record<string, string>;
   stateBefore: StateVariables;
   stateAfter: StateVariables;
+  /** role → chosen optionId (parallel to decisions, keyed by role instead of socket playerId) */
+  roleDecisions?: Record<string, string>;
+  /** optionId → human-readable label */
+  chosenLabels?: Record<string, string>;
+  /** optionId → effects that were applied */
+  chosenEffects?: Record<string, StateEffect[]>;
 }
 
 // ── Story Generation ──
