@@ -250,6 +250,7 @@ Before enabling generation in production:
 11. External role mechanical depth (see External Role Balancing section above)
 12. Journalist publication impacts — faction-specific by story angle
 13. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
+14. Update simulation harness for generated decisions — current Monte Carlo uses pre-authored decisions only; needs effect-range sampling or real API decision sets
 
 ### P4 — Polish
 14. Inline style → Tailwind migration (in progress)

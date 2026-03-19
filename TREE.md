@@ -1,6 +1,5 @@
 /Users/tau/projects/takeoff-protocol
 ├── docs
-│   ├── DECISION-GENERATION-PLAN.md
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
 │   ├── DEV-TOOLS.md
@@ -345,4 +344,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 323 files
+23 directories, 322 files
