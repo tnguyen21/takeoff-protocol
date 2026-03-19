@@ -10,7 +10,7 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 
 **Ready for first playtest.** The blocking item is: schedule humans.
 
-**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth, concurrent API request throttle.
+**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth.
 
 ---
 
@@ -128,7 +128,6 @@ What exists:
 - Story bible — accumulates narrative events across rounds, provides LLM "memory" of what happened
 
 What's missing:
-- **No concurrent request throttle** — ~14 API calls/round/room with no cap on simultaneous requests. Needs throttle before enabling generation in production.
 - **No live playtesting** — prompt quality, latency, and cost are untested with real API calls
 
 ### External Role Balancing
@@ -174,8 +173,8 @@ From 10,000 random-heuristic trials (with generated decision templates):
 2. Run first full playtest with real humans (`GEN_ENABLED=false`)
 3. Second playtest with `GEN_ENABLED=true` + `ANTHROPIC_API_KEY` set
 
-### P1 — Before Enabling Generation
-4. Add concurrent request throttle (max 5 simultaneous Anthropic API calls)
+### ~~P1 — Before Enabling Generation~~ ✅
+~~4. Add concurrent request throttle~~ — Global semaphore (max 5, configurable via `GEN_MAX_CONCURRENT`) in `provider.ts`
 
 ### ~~P2 — Logging~~ ✅
 ~~5. Logger event coverage sweep~~ — All 22 event types already emitting. STATUS was stale.
