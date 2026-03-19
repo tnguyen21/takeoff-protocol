@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../../stores/game.js";
+import { apiUrl } from "../../api.js";
 
 interface RoomInfo {
   code: string;
@@ -17,7 +18,7 @@ export function RoomBrowser() {
 
   async function fetchRooms() {
     try {
-      const res = await fetch("/api/rooms", { credentials: "include" });
+      const res = await fetch(apiUrl("/api/rooms"), { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setRooms(data.rooms);

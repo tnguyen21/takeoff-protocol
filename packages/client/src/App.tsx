@@ -6,6 +6,7 @@ import { GMDashboard } from "./screens/gm/index.js";
 import { Ending } from "./screens/Ending.js";
 import { useDevMode } from "./hooks/useDevMode.js";
 import { PasswordGate } from "./screens/PasswordGate.js";
+import { apiUrl } from "./api.js";
 
 export function App() {
   useDevMode();
@@ -13,7 +14,7 @@ export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/check", { credentials: "include" })
+    fetch(apiUrl("/api/auth/check"), { credentials: "include" })
       .then((r) => {
         setAuthed(r.ok);
       })

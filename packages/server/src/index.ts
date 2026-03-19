@@ -1,5 +1,6 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
+import { cors } from "hono/cors";
 import { join, extname } from "node:path";
 import { Server as SocketIOServer } from "socket.io";
 import { registerGameEvents } from "./events.js";
@@ -20,17 +21,21 @@ import {
 } from "./auth.js";
 
 const app = new Hono();
+const clientOrigin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
-app.get("/api/health", (c) => c.json({ status: "ok", rooms: rooms.size }));
-
-// ── Auth routes (exempt from middleware) ──
-
-app.post("/api/auth", async (c) => {
-  if (!isAuthEnabled()) return c.redirect("/");
+async function handleAuth(c: Context, redirectOnSuccess: boolean) {
+  if (!isAuthEnabled()) {
+    return redirectOnSuccess
+      ? c.redirect("/")
+      : c.json({ authenticated: true });
+  }
 
   const ip = getClientIp(c.req.raw.headers);
   if (!checkRateLimit(ip).allowed) {
-    return c.html(getGatePageHtml("Too many attempts — try again in a minute"), 429);
+    const message = "Too many attempts — try again in a minute";
+    return redirectOnSuccess
+      ? c.html(getGatePageHtml(message), 429)
+      : c.json({ error: message }, 429);
   }
 
   const body = await c.req.parseBody();
@@ -39,13 +44,25 @@ app.post("/api/auth", async (c) => {
   recordAttempt(ip);
 
   if (!checkPassword(password)) {
-    return c.html(getGatePageHtml("Wrong passphrase"), 401);
+    const message = "Wrong passphrase";
+    return redirectOnSuccess
+      ? c.html(getGatePageHtml(message), 401)
+      : c.json({ error: message }, 401);
   }
 
   const cookie = generateAuthCookie();
   c.header("Set-Cookie", `site_auth=${cookie}; HttpOnly; Path=/; SameSite=Lax; Max-Age=86400`);
-  return c.redirect("/");
-});
+  return redirectOnSuccess
+    ? c.redirect("/")
+    : c.json({ authenticated: true });
+}
+
+app.get("/api/health", (c) => c.json({ status: "ok", rooms: rooms.size }));
+
+// ── Auth routes (exempt from middleware) ──
+
+app.post("/api/auth", (c) => handleAuth(c, true));
+app.post("/api/auth/login", (c) => handleAuth(c, false));
 
 app.get("/api/auth/check", (c) => {
   if (!isAuthEnabled()) return c.json({ authenticated: true });
@@ -141,6 +158,19 @@ if (isProduction) {
     }
     return c.text("Client assets not found", 500);
   });
+} else {
+  app.use("/api/*", cors({
+    origin: clientOrigin,
+    credentials: true,
+  }));
+
+  app.get("*", (c) => {
+    const url = new URL(c.req.url);
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/socket.io")) {
+      return c.notFound();
+    }
+    return c.redirect(`${clientOrigin}${url.pathname}${url.search}`);
+  });
 }
 
 const port = parseInt(process.env.PORT || "3001");
@@ -152,7 +182,7 @@ const io = new SocketIOServer(server as any, {
     ? {}
     : {
         cors: {
-          origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+          origin: clientOrigin,
           methods: ["GET", "POST"],
           credentials: true,
         },

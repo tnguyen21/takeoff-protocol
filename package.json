@@ -5,7 +5,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
+    "dev": "bun run ./scripts/dev.ts",
     "dev:client": "bun run --filter @takeoff/client dev",
     "dev:server": "bun run --filter @takeoff/server dev",
     "build": "bun run --filter '*' build",

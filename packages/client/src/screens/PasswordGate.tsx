@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "../api.js";
 
 export function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState<string | null>(null);
@@ -11,7 +12,7 @@ export function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
 
     const form = new FormData(e.currentTarget);
     try {
-      const res = await fetch("/api/auth", {
+      const res = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ password: form.get("password") as string }),
