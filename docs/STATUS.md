@@ -10,7 +10,7 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 
 **Ready for first playtest.** The blocking item is: schedule humans.
 
-**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth, logger event coverage sweep.
+**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth, concurrent API request throttle.
 
 ---
 
@@ -145,9 +145,7 @@ All four external roles (NSA, Journalist, VC, Diplomat) have individual decision
 
 ### Diagnostics & Logging
 
-**Status: Logger implemented with structured JSONL. Event coverage incomplete.**
-
-Missing event emissions (18 of 22 spec'd types): `player.role_selected`, `player.disconnected`, `player.reconnected`, `phase.paused`, `phase.resumed`, `phase.extended`, `phase.gm_advanced`, `decision.team_locked`, `decision.inaction`, `state.snapshot`, `state.delta`, `state.gm_override`, `threshold.fired`, `npc_trigger.fired`, `publish.submitted`, `message.sent`, `message.npc`, `activity.penalty`
+**Status: Complete.** Buffered JSONL per-room, envelope validation, graceful shutdown. All 22 spec'd event types emitting (`room.created`, `player.*`, `game.*`, `phase.*`, `decision.*`, `state.*`, `threshold.fired`, `npc_trigger.fired`, `publish.submitted`, `message.*`, `activity.*`, `generation.*`). Post-game analysis via `scripts/analyze-game.ts`.
 
 ### Game Balance
 
@@ -179,8 +177,8 @@ From 10,000 random-heuristic trials (with generated decision templates):
 ### P1 — Before Enabling Generation
 4. Add concurrent request throttle (max 5 simultaneous Anthropic API calls)
 
-### P2 — Logging
-5. Logger event coverage sweep — emit 18 missing event types across events.ts and game.ts
+### ~~P2 — Logging~~ ✅
+~~5. Logger event coverage sweep~~ — All 22 event types already emitting. STATUS was stale.
 
 ### P3 — Gameplay
 6. External role mechanical depth (see External Role Balancing section above)
