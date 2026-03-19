@@ -1,10 +1,17 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterEach } from "bun:test";
 import {
   MockProvider,
   GenerationParseError,
+  GenerationTimeoutError,
+  GenerationApiError,
+  GenerationRateLimitError,
   AnthropicProvider,
   createProvider,
   getThrottleStatus,
+  retryWithBackoff,
+  isTransientGenerationError,
+  notifyRateLimit,
+  _resetSemaphoreForTesting,
 } from "./provider.js";
 
 // ── INV-1: MockProvider input validation contract ─────────────────────────────
@@ -202,5 +209,220 @@ describe("Semaphore — INV-4: module-level singleton (getThrottleStatus)", () =
     createProvider("anthropic");
     createProvider("anthropic");
     expect(getThrottleStatus().limit).toBe(limitBefore);
+  });
+});
+
+// ── Error type distinction ────────────────────────────────────────────────────
+
+describe("GenerationRateLimitError — distinct from other error types", () => {
+  it("is distinct from GenerationApiError and GenerationParseError", () => {
+    const rateLimit = new GenerationRateLimitError(5000);
+    const apiError = new GenerationApiError("api failed");
+    const parseError = new GenerationParseError("bad json");
+
+    expect(rateLimit).toBeInstanceOf(GenerationRateLimitError);
+    expect(rateLimit).not.toBeInstanceOf(GenerationApiError);
+    expect(rateLimit).not.toBeInstanceOf(GenerationParseError);
+
+    expect(apiError).toBeInstanceOf(GenerationApiError);
+    expect(apiError).not.toBeInstanceOf(GenerationRateLimitError);
+
+    expect(parseError).toBeInstanceOf(GenerationParseError);
+    expect(parseError).not.toBeInstanceOf(GenerationRateLimitError);
+  });
+
+  it("stores retryAfterMs when provided", () => {
+    const err = new GenerationRateLimitError(12000);
+    expect(err.retryAfterMs).toBe(12000);
+  });
+
+  it("retryAfterMs is undefined when not provided", () => {
+    const err = new GenerationRateLimitError();
+    expect(err.retryAfterMs).toBeUndefined();
+  });
+});
+
+describe("isTransientGenerationError", () => {
+  it("returns true for GenerationRateLimitError, GenerationTimeoutError, GenerationApiError", () => {
+    expect(isTransientGenerationError(new GenerationRateLimitError())).toBe(true);
+    expect(isTransientGenerationError(new GenerationTimeoutError(30000))).toBe(true);
+    expect(isTransientGenerationError(new GenerationApiError("api fail"))).toBe(true);
+  });
+
+  it("returns false for GenerationParseError and plain Error", () => {
+    expect(isTransientGenerationError(new GenerationParseError("bad json"))).toBe(false);
+    expect(isTransientGenerationError(new Error("generic"))).toBe(false);
+    expect(isTransientGenerationError(null)).toBe(false);
+    expect(isTransientGenerationError("string error")).toBe(false);
+  });
+});
+
+// ── retryWithBackoff — retry count invariants ─────────────────────────────────
+
+const noSleep = () => Promise.resolve();
+
+describe("retryWithBackoff — retry count for transient errors", () => {
+  it("retries up to maxAttempts-1 times on GenerationRateLimitError before giving up", async () => {
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      throw new GenerationRateLimitError();
+    };
+
+    await expect(
+      retryWithBackoff(fn, { maxAttempts: 4, baseDelayMs: 0 }, noSleep),
+    ).rejects.toBeInstanceOf(GenerationRateLimitError);
+
+    // 4 total attempts = 1 initial + 3 retries
+    expect(calls).toBe(4);
+  });
+
+  it("retries on GenerationTimeoutError with same count", async () => {
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      throw new GenerationTimeoutError(30000);
+    };
+
+    await expect(
+      retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 0 }, noSleep),
+    ).rejects.toBeInstanceOf(GenerationTimeoutError);
+
+    expect(calls).toBe(3);
+  });
+
+  it("retries on GenerationApiError", async () => {
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      throw new GenerationApiError("server error");
+    };
+
+    await expect(
+      retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 0 }, noSleep),
+    ).rejects.toBeInstanceOf(GenerationApiError);
+
+    expect(calls).toBe(3);
+  });
+
+  it("does NOT retry on GenerationParseError (non-transient)", async () => {
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      throw new GenerationParseError("bad JSON");
+    };
+
+    await expect(
+      retryWithBackoff(fn, { maxAttempts: 5, baseDelayMs: 0 }, noSleep),
+    ).rejects.toBeInstanceOf(GenerationParseError);
+
+    // Should fail on the first attempt with no retries
+    expect(calls).toBe(1);
+  });
+
+  it("does NOT retry on plain Error (non-transient)", async () => {
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      throw new Error("generic network error");
+    };
+
+    await expect(
+      retryWithBackoff(fn, { maxAttempts: 5, baseDelayMs: 0 }, noSleep),
+    ).rejects.toBeInstanceOf(Error);
+
+    expect(calls).toBe(1);
+  });
+
+  it("succeeds on second attempt after initial transient failure", async () => {
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      if (calls === 1) throw new GenerationRateLimitError();
+      return Promise.resolve("ok");
+    };
+
+    const result = await retryWithBackoff(fn, { maxAttempts: 4, baseDelayMs: 0 }, noSleep);
+    expect(result).toBe("ok");
+    expect(calls).toBe(2);
+  });
+});
+
+describe("retryWithBackoff — backoff delay uses retry-after on rate limit", () => {
+  it("passes retryAfterMs from GenerationRateLimitError to sleepFn on first retry", async () => {
+    const delays: number[] = [];
+    const sleepFn = (ms: number) => { delays.push(ms); return Promise.resolve(); };
+
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      if (calls <= 2) throw new GenerationRateLimitError(5000); // retry-after 5s
+      return Promise.resolve("done");
+    };
+
+    await retryWithBackoff(fn, { maxAttempts: 5, baseDelayMs: 1000, maxDelayMs: 30000 }, sleepFn);
+
+    // First two failures had retry-after=5000, so delay should be 5000 each
+    expect(delays[0]).toBe(5000);
+    expect(delays[1]).toBe(5000);
+  });
+
+  it("caps retry-after at maxDelayMs", async () => {
+    const delays: number[] = [];
+    const sleepFn = (ms: number) => { delays.push(ms); return Promise.resolve(); };
+
+    let calls = 0;
+    const fn = () => {
+      calls++;
+      if (calls === 1) throw new GenerationRateLimitError(120000); // retry-after 2min
+      return Promise.resolve("done");
+    };
+
+    await retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 1000, maxDelayMs: 30000 }, sleepFn);
+
+    // Should be capped at maxDelayMs=30000
+    expect(delays[0]).toBe(30000);
+  });
+
+  it("sleepFn is NOT called on the last failing attempt", async () => {
+    const delays: number[] = [];
+    const sleepFn = (ms: number) => { delays.push(ms); return Promise.resolve(); };
+
+    const fn = () => { throw new GenerationRateLimitError(); };
+
+    await expect(
+      retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 0 }, sleepFn),
+    ).rejects.toBeInstanceOf(GenerationRateLimitError);
+
+    // maxAttempts=3: attempt 0 fails→sleep, attempt 1 fails→sleep, attempt 2 fails→no sleep
+    expect(delays.length).toBe(2);
+  });
+});
+
+// ── Adaptive concurrency via notifyRateLimit ──────────────────────────────────
+
+describe("notifyRateLimit — reduces semaphore concurrency on 429", () => {
+  afterEach(() => {
+    // Restore module semaphore to default after each test to avoid cross-test pollution
+    _resetSemaphoreForTesting();
+  });
+
+  it("reduces getThrottleStatus().limit to 2 when called", () => {
+    notifyRateLimit();
+    expect(getThrottleStatus().limit).toBe(2);
+  });
+
+  it("calling notifyRateLimit multiple times keeps limit at 2 (idempotent reduction)", () => {
+    notifyRateLimit();
+    notifyRateLimit();
+    expect(getThrottleStatus().limit).toBe(2);
+  });
+
+  it("_resetSemaphoreForTesting restores limit to original value", () => {
+    const original = getThrottleStatus().limit;
+    notifyRateLimit();
+    expect(getThrottleStatus().limit).toBe(2);
+    _resetSemaphoreForTesting();
+    expect(getThrottleStatus().limit).toBe(original);
   });
 });

@@ -5,7 +5,7 @@
  * - INV-1: Valid briefing (correct word counts, all factions) passes validation
  * - INV-2: Briefing missing a faction fails validation
  * - INV-3: Briefing with common text <150 words fails validation
- * - INV-4: generateBriefingWithRetry returns null on provider timeout (does not throw)
+ * - INV-4: generateBriefingWithRetry returns null on non-transient provider error (does not throw)
  * - INV-5: generateBriefingWithRetry returns null after two validation failures
  */
 
@@ -13,7 +13,7 @@ import { describe, it, expect } from "bun:test";
 import type { Faction } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GenerationProvider, GenerationOptions } from "./provider.js";
-import { GenerationTimeoutError } from "./provider.js";
+import { GenerationParseError } from "./provider.js";
 import { validateBriefing } from "./validate.js";
 import { generateBriefingWithRetry } from "./briefing.js";
 import type { GenerationContext } from "./context.js";
@@ -175,11 +175,21 @@ describe("validateBriefing — edge cases", () => {
   });
 });
 
-// ── INV-4: Provider timeout → null ────────────────────────────────────────────
+// ── INV-4: Provider error → null ──────────────────────────────────────────────
+//
+// Note: GenerationTimeoutError and GenerationApiError are transient errors that
+// trigger retries. For fast "error → null" tests, use non-transient errors like
+// GenerationParseError. Retry behavior is tested in provider.test.ts.
 
-describe("generateBriefingWithRetry — INV-4: provider timeout", () => {
-  it("returns null when provider throws GenerationTimeoutError (does not throw)", async () => {
-    const provider = new ThrowingProvider(new GenerationTimeoutError(30000));
+describe("generateBriefingWithRetry — INV-4: provider error", () => {
+  it("returns null when provider throws GenerationParseError (does not throw)", async () => {
+    const provider = new ThrowingProvider(new GenerationParseError("bad JSON"));
+    const result = await generateBriefingWithRetry(provider, makeContext());
+    expect(result).toBeNull();
+  });
+
+  it("returns null when provider throws a plain Error (does not throw)", async () => {
+    const provider = new ThrowingProvider(new Error("unexpected network failure"));
     const result = await generateBriefingWithRetry(provider, makeContext());
     expect(result).toBeNull();
   });

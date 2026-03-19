@@ -1,6 +1,7 @@
 import type { AppContent, AppId, ContentItem, ContentItemType, Faction } from "@takeoff/shared";
 import type { GenerationContext, PlayerSlackMessage } from "./context.js";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
+import { retryWithBackoff } from "./provider.js";
 import { APP_VOICES, CONTENT_SYSTEM_PROMPT, FACTION_VOICES } from "./prompts/index.js";
 import { contentBudget, validateContent } from "./validate.js";
 
@@ -342,12 +343,19 @@ export async function generateContent(
 
 // ── Retry Wrapper ─────────────────────────────────────────────────────────────
 
+// Retry tuning for transient errors (429, timeout, API errors) within each
+// logical attempt. Validation-feedback retries remain capped at 2 attempts.
+const TRANSIENT_RETRY_OPTS = { maxAttempts: 4, baseDelayMs: 1000, maxDelayMs: 30000 } as const;
+
 /**
  * Attempt content generation once. If validation fails, retry once with error
  * feedback injected into the prompt. Returns null if both attempts fail.
  *
  * Validation is run on all items across all apps combined (classification
  * budget is per-faction, not per-app).
+ *
+ * INV: Transient errors (429, timeout, API) get up to 4 retries with backoff.
+ * INV: Validation errors trigger at most 1 feedback retry (2 logical attempts total).
  */
 export async function generateContentWithRetry(
   provider: GenerationProvider,
@@ -356,10 +364,13 @@ export async function generateContentWithRetry(
   apps: AppId[],
   options?: GenerationOptions,
 ): Promise<AppContent[] | null> {
-  // Attempt 1
+  // Attempt 1 (transient errors retried with backoff)
   let result: AppContent[];
   try {
-    result = await generateContent(provider, context, faction, apps, undefined, options);
+    result = await retryWithBackoff(
+      () => generateContent(provider, context, faction, apps, undefined, options),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }
@@ -373,7 +384,10 @@ export async function generateContentWithRetry(
   // Attempt 2 — feed validation errors back into the prompt
   const feedback = validation.errors.join("\n");
   try {
-    result = await generateContent(provider, context, faction, apps, feedback, options);
+    result = await retryWithBackoff(
+      () => generateContent(provider, context, faction, apps, feedback, options),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }

@@ -24,11 +24,93 @@ export class GenerationParseError extends Error {
   }
 }
 
-class GenerationApiError extends Error {
+export class GenerationApiError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
     super(message);
     this.name = "GenerationApiError";
   }
+}
+
+/** Thrown when the API returns a 429 rate-limit response (after SDK retries are exhausted). */
+export class GenerationRateLimitError extends Error {
+  constructor(public readonly retryAfterMs?: number) {
+    super(`Generation rate limited${retryAfterMs !== undefined ? `, retry after ${retryAfterMs}ms` : ""}`);
+    this.name = "GenerationRateLimitError";
+  }
+}
+
+// ── Retry with backoff ────────────────────────────────────────────────────────
+
+export interface RetryBackoffOptions {
+  /** Maximum total attempts including the first. Default: 5 */
+  maxAttempts?: number;
+  /** Base delay for exponential backoff, ms. Default: 1000 */
+  baseDelayMs?: number;
+  /** Maximum delay cap, ms. Default: 30000 */
+  maxDelayMs?: number;
+}
+
+/** Returns true for errors that warrant a retry (transient API / network issues). */
+export function isTransientGenerationError(err: unknown): boolean {
+  return (
+    err instanceof GenerationRateLimitError ||
+    err instanceof GenerationTimeoutError ||
+    err instanceof GenerationApiError
+  );
+}
+
+function backoffDelayMs(
+  attempt: number,
+  baseDelayMs: number,
+  maxDelayMs: number,
+  err: unknown,
+): number {
+  // Respect Retry-After header from 429 responses
+  if (err instanceof GenerationRateLimitError && err.retryAfterMs !== undefined) {
+    return Math.min(err.retryAfterMs, maxDelayMs);
+  }
+  // Exponential backoff with ±20% jitter
+  const exp = baseDelayMs * Math.pow(2, attempt);
+  const capped = Math.min(exp, maxDelayMs);
+  return Math.floor(capped * (0.8 + Math.random() * 0.4));
+}
+
+/**
+ * Retry `fn` on transient generation errors (429, timeout, API errors) with
+ * exponential backoff. Non-transient errors (parse errors, validation errors)
+ * are re-thrown immediately without retrying.
+ *
+ * INV: After maxAttempts exhausted, re-throws the last error.
+ *
+ * @param fn        The async function to retry.
+ * @param options   Retry tuning (maxAttempts, baseDelayMs, maxDelayMs).
+ * @param sleepFn   Injectable sleep for unit tests (default: real setTimeout).
+ */
+export async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  options?: RetryBackoffOptions,
+  sleepFn: (ms: number) => Promise<void> = (ms) =>
+    new Promise<void>((resolve) => setTimeout(resolve, ms)),
+): Promise<T> {
+  const maxAttempts = options?.maxAttempts ?? 5;
+  const baseDelayMs = options?.baseDelayMs ?? 1000;
+  const maxDelayMs = options?.maxDelayMs ?? 30000;
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      // Only retry transient errors; surface non-transient errors immediately
+      if (!isTransientGenerationError(err) || attempt === maxAttempts - 1) {
+        throw err;
+      }
+      const delay = backoffDelayMs(attempt, baseDelayMs, maxDelayMs, err);
+      await sleepFn(delay);
+    }
+  }
+  throw lastError;
 }
 
 // ── Provider interface ────────────────────────────────────────────────────────
@@ -84,16 +166,19 @@ export class MockProvider implements GenerationProvider {
 
 class Semaphore {
   private active = 0;
+  private _limit: number;
   private readonly queue: (() => void)[] = [];
 
-  constructor(private readonly limit: number) {}
+  constructor(initialLimit: number) {
+    this._limit = initialLimit;
+  }
 
   async acquire(): Promise<void> {
-    if (this.active < this.limit) {
+    if (this.active < this._limit) {
       this.active++;
       return;
     }
-    return new Promise<void>(resolve => this.queue.push(resolve));
+    return new Promise<void>((resolve) => this.queue.push(resolve));
   }
 
   release(): void {
@@ -105,12 +190,29 @@ class Semaphore {
     }
   }
 
+  /**
+   * Dynamically change the concurrency limit. If the new limit is higher than
+   * the current limit, waiting tasks are immediately promoted up to the new
+   * limit. If lower, in-flight tasks are unaffected but new acquires queue.
+   */
+  setLimit(newLimit: number): void {
+    this._limit = Math.max(1, newLimit);
+    // Wake up queued tasks if limit was raised
+    while (this.active < this._limit && this.queue.length > 0) {
+      const next = this.queue.shift()!;
+      this.active++;
+      next();
+    }
+  }
+
   status(): { active: number; queued: number; limit: number } {
-    return { active: this.active, queued: this.queue.length, limit: this.limit };
+    return { active: this.active, queued: this.queue.length, limit: this._limit };
   }
 }
 
 const DEFAULT_MAX_CONCURRENT = Number(process.env.GEN_MAX_CONCURRENT) || 5;
+const RATE_LIMIT_CONCURRENCY = 2;
+const RATE_LIMIT_RESTORE_MS = 60_000;
 
 // Module-level singleton — shared across all AnthropicProvider instances
 const _semaphore = new Semaphore(
@@ -119,9 +221,38 @@ const _semaphore = new Semaphore(
     : 5,
 );
 
+let _rateLimitRestoreTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Reduce the global concurrency limit to RATE_LIMIT_CONCURRENCY for
+ * RATE_LIMIT_RESTORE_MS after a rate limit hit. Subsequent 429s reset the
+ * restore timer, extending the throttle window.
+ */
+export function notifyRateLimit(): void {
+  _semaphore.setLimit(RATE_LIMIT_CONCURRENCY);
+  if (_rateLimitRestoreTimer) clearTimeout(_rateLimitRestoreTimer);
+  _rateLimitRestoreTimer = setTimeout(() => {
+    _rateLimitRestoreTimer = undefined;
+    _semaphore.setLimit(DEFAULT_MAX_CONCURRENT);
+  }, RATE_LIMIT_RESTORE_MS);
+}
+
 /** Returns current throttle stats for observability. */
 export function getThrottleStatus(): { active: number; queued: number; limit: number } {
   return _semaphore.status();
+}
+
+/**
+ * Restore the module semaphore to its default limit immediately.
+ * For use in tests only — call after tests that invoke notifyRateLimit().
+ * @internal
+ */
+export function _resetSemaphoreForTesting(): void {
+  if (_rateLimitRestoreTimer) {
+    clearTimeout(_rateLimitRestoreTimer);
+    _rateLimitRestoreTimer = undefined;
+  }
+  _semaphore.setLimit(DEFAULT_MAX_CONCURRENT);
 }
 
 // ── AnthropicProvider ─────────────────────────────────────────────────────────
@@ -134,7 +265,10 @@ export class AnthropicProvider implements GenerationProvider {
   private readonly client: Anthropic;
 
   constructor(apiKey?: string) {
-    this.client = new Anthropic({ apiKey });
+    // maxRetries: 5 — SDK handles transient 429/5xx with built-in exponential
+    // backoff before throwing. The game retry layer adds further resilience on
+    // top of these SDK retries.
+    this.client = new Anthropic({ apiKey, maxRetries: 5 });
   }
 
   async generate<T>(params: {
@@ -179,6 +313,20 @@ export class AnthropicProvider implements GenerationProvider {
         response = await Promise.race([apiCall, timeoutPromise]);
       } catch (err) {
         if (err instanceof GenerationTimeoutError) throw err;
+        // Detect rate limit (thrown after SDK's own 5 retries are exhausted)
+        if (err instanceof Anthropic.RateLimitError) {
+          const retryAfterHeader = (err.headers as unknown as Record<string, string> | undefined)?.[
+            "retry-after"
+          ];
+          const retryAfterMs =
+            retryAfterHeader !== undefined
+              ? Math.floor(Number(retryAfterHeader) * 1000)
+              : undefined;
+          notifyRateLimit();
+          throw new GenerationRateLimitError(
+            retryAfterMs !== undefined && Number.isFinite(retryAfterMs) ? retryAfterMs : undefined,
+          );
+        }
         throw new GenerationApiError(`Anthropic API error: ${String(err)}`, err);
       } finally {
         clearTimeout(timeoutId);

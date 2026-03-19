@@ -1,5 +1,6 @@
 import type { Faction, NpcTrigger } from "@takeoff/shared";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
+import { retryWithBackoff } from "./provider.js";
 import type { GenerationContext } from "./context.js";
 import { NPC_SYSTEM_PROMPT } from "./prompts/system.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
@@ -242,14 +243,20 @@ async function generateNpcMessages(
 
 // ── generateNpcMessagesWithRetry ───────────────────────────────────────────────
 
+// Retry tuning for transient errors (429, timeout, API errors) within each
+// logical attempt. Validation-feedback retries remain capped at 2 attempts.
+const TRANSIENT_RETRY_OPTS = { maxAttempts: 4, baseDelayMs: 1000, maxDelayMs: 30000 } as const;
+
 /**
  * Generates NPC triggers with retry-once on validation failure.
  *
- * - First attempt: generate + post-process + validate
- * - On validation failure: retry once, feeding errors back into the prompt
+ * - First attempt: generate + post-process + validate (up to 4 transient-error retries)
+ * - On validation failure: retry once with error feedback (up to 4 transient retries)
  * - On second failure or provider error: return null
  *
  * INV: Never throws. Returns null on any failure.
+ * INV: Transient errors (429, timeout, API) get up to 4 retries with backoff.
+ * INV: Validation errors trigger at most 1 feedback retry (2 logical attempts total).
  */
 export async function generateNpcMessagesWithRetry(
   provider: GenerationProvider,
@@ -258,9 +265,12 @@ export async function generateNpcMessagesWithRetry(
 ): Promise<NpcTrigger[] | null> {
   let firstResult: NpcTrigger[];
 
-  // ── First attempt ─────────────────────────────────────────────────────────
+  // ── First attempt (transient errors retried with backoff) ─────────────────
   try {
-    firstResult = await generateNpcMessages(provider, context, undefined, options);
+    firstResult = await retryWithBackoff(
+      () => generateNpcMessages(provider, context, undefined, options),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }
@@ -273,15 +283,14 @@ export async function generateNpcMessagesWithRetry(
   // ── Retry once with error feedback ────────────────────────────────────────
   let retryResult: NpcTrigger[];
   try {
-    retryResult = await generateNpcMessages(provider, context, firstValidation.errors, options);
+    retryResult = await retryWithBackoff(
+      () => generateNpcMessages(provider, context, firstValidation.errors, options),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }
 
   const retryValidation = validateNpcTriggers(retryResult);
-  if (retryValidation.valid) {
-    return retryResult;
-  }
-
-  return null;
+  return retryValidation.valid ? retryResult : null;
 }

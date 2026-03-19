@@ -1,5 +1,6 @@
 import type { Faction } from "@takeoff/shared";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
+import { retryWithBackoff } from "./provider.js";
 import type { GenerationContext } from "./context.js";
 import { BRIEFING_SYSTEM_PROMPT } from "./prompts/system.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
@@ -113,14 +114,20 @@ async function generateBriefing(
 
 // ── generateBriefingWithRetry ─────────────────────────────────────────────────
 
+// Retry tuning for transient errors (429, timeout, API errors) within each
+// logical attempt. Validation-feedback retries remain capped at 2 attempts.
+const TRANSIENT_RETRY_OPTS = { maxAttempts: 4, baseDelayMs: 1000, maxDelayMs: 30000 } as const;
+
 /**
  * Generates a briefing with retry-once on validation failure.
  *
- * - First attempt: generate + validate
- * - On validation failure: retry once, feeding errors back into the prompt
+ * - First attempt: generate + validate (with up to 4 transient-error retries)
+ * - On validation failure: retry once with error feedback (up to 4 transient retries)
  * - On second failure or provider error: return null (caller falls back to pre-authored)
  *
  * INV: Never throws. Returns null on any failure.
+ * INV: Transient errors (429, timeout, API) get up to 4 retries with backoff.
+ * INV: Validation errors trigger at most 1 feedback retry (2 logical attempts total).
  */
 export async function generateBriefingWithRetry(
   provider: GenerationProvider,
@@ -129,9 +136,12 @@ export async function generateBriefingWithRetry(
 ): Promise<BriefingOutput | null> {
   let firstResult: BriefingOutput;
 
-  // ── First attempt ────────────────────────────────────────────────────────
+  // ── First attempt (transient errors retried with backoff) ─────────────────
   try {
-    firstResult = await generateBriefing(provider, context, undefined, options);
+    firstResult = await retryWithBackoff(
+      () => generateBriefing(provider, context, undefined, options),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }
@@ -141,18 +151,17 @@ export async function generateBriefingWithRetry(
     return firstResult;
   }
 
-  // ── Retry once with error feedback ───────────────────────────────────────
+  // ── Retry once with error feedback ────────────────────────────────────────
   let retryResult: BriefingOutput;
   try {
-    retryResult = await generateBriefing(provider, context, firstValidation.errors, options);
+    retryResult = await retryWithBackoff(
+      () => generateBriefing(provider, context, firstValidation.errors, options),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }
 
   const retryValidation = validateBriefing(retryResult);
-  if (retryValidation.valid) {
-    return retryResult;
-  }
-
-  return null;
+  return retryValidation.valid ? retryResult : null;
 }

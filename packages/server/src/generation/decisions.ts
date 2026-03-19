@@ -8,6 +8,7 @@ import type {
 } from "@takeoff/shared";
 import type { GenerationContext } from "./context.js";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
+import { retryWithBackoff } from "./provider.js";
 import { DECISION_SYSTEM_PROMPT } from "./prompts/system.js";
 import { validateDecisions } from "./validate.js";
 
@@ -305,6 +306,10 @@ function toRoundDecisions(
   return { round, individual: [], team: [team] };
 }
 
+// Retry tuning for transient errors (429, timeout, API errors) within each
+// logical attempt. Validation-feedback retries remain capped at 2 attempts.
+const TRANSIENT_RETRY_OPTS = { maxAttempts: 4, baseDelayMs: 1000, maxDelayMs: 30000 } as const;
+
 // ── Single-decision generator with per-decision retry ─────────────────────────
 
 async function generateSingleDecision(
@@ -316,15 +321,19 @@ async function generateSingleDecision(
 ): Promise<{ prompt: string; options: DecisionOption[] } | null> {
   const roleOrFaction = template.role ?? template.faction ?? "unknown";
 
-  // ── Attempt 1 ─────────────────────────────────────────────────────────────
+  // ── Attempt 1 (transient errors retried with backoff) ─────────────────────
   let raw: GeneratedDecision;
   try {
-    raw = await provider.generate<GeneratedDecision>({
-      systemPrompt: DECISION_SYSTEM_PROMPT,
-      userPrompt: buildDecisionPrompt(context, template),
-      schema: DECISION_SCHEMA,
-      options,
-    });
+    raw = await retryWithBackoff(
+      () =>
+        provider.generate<GeneratedDecision>({
+          systemPrompt: DECISION_SYSTEM_PROMPT,
+          userPrompt: buildDecisionPrompt(context, template),
+          schema: DECISION_SCHEMA,
+          options,
+        }),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }
@@ -339,12 +348,16 @@ async function generateSingleDecision(
   // ── Retry with validation errors injected ─────────────────────────────────
   let raw2: GeneratedDecision;
   try {
-    raw2 = await provider.generate<GeneratedDecision>({
-      systemPrompt: DECISION_SYSTEM_PROMPT,
-      userPrompt: buildDecisionPrompt(context, template, validation.errors),
-      schema: DECISION_SCHEMA,
-      options,
-    });
+    raw2 = await retryWithBackoff(
+      () =>
+        provider.generate<GeneratedDecision>({
+          systemPrompt: DECISION_SYSTEM_PROMPT,
+          userPrompt: buildDecisionPrompt(context, template, validation.errors),
+          schema: DECISION_SCHEMA,
+          options,
+        }),
+      TRANSIENT_RETRY_OPTS,
+    );
   } catch {
     return null;
   }

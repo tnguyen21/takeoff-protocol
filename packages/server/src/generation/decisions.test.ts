@@ -22,7 +22,7 @@ import { describe, it, expect } from "bun:test";
 import type { DecisionTemplate, RoundHistory } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
-import { GenerationTimeoutError, GenerationParseError } from "./provider.js";
+import { GenerationParseError } from "./provider.js";
 import { generateDecisions, generateDecisionsWithRetry, buildDecisionPrompt } from "./decisions.js";
 import type { GenerationContext } from "./context.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
@@ -403,9 +403,13 @@ describe("generateDecisionsWithRetry — INV-3: effects reference template varia
 
 // ── INV-4: Provider failure → null ────────────────────────────────────────────
 
+// Note: GenerationTimeoutError and GenerationApiError are transient — they trigger
+// retries with backoff. Tests below use non-transient errors for fast "error → null"
+// coverage. Retry behavior is tested separately in provider.test.ts.
+
 describe("generateDecisionsWithRetry — INV-4: provider failure returns null", () => {
-  it("returns null when provider throws GenerationTimeoutError", async () => {
-    const provider = new ThrowingProvider(new GenerationTimeoutError(30000));
+  it("returns null when provider throws a plain Error (non-transient, no retry)", async () => {
+    const provider = new ThrowingProvider(new Error("unexpected network failure"));
     const result = await generateDecisionsWithRetry(
       provider,
       makeContext(),
@@ -540,13 +544,13 @@ describe("generateDecisionsWithRetry — any-decision-failure returns null", () 
     expect(result).toBeNull();
   });
 
-  it("returns null if provider throws on second template", async () => {
+  it("returns null if provider throws on second template (non-transient error)", async () => {
     let calls = 0;
     const provider: GenerationProvider = {
       async generate<T>(_p: { systemPrompt: string; userPrompt: string; schema: object }): Promise<T> {
         calls++;
         if (calls === 1) return validIndividualData() as T; // template 1 OK
-        throw new GenerationTimeoutError(30000); // template 2 throws
+        throw new GenerationParseError("bad JSON"); // template 2 throws non-transient
       },
     };
     const result = await generateDecisionsWithRetry(provider, makeContext(), ALL_TEST_TEMPLATES, 3);
