@@ -235,11 +235,13 @@ describe("advancePhase — inaction notifications on decision → resolution", (
 describe("INV-2: state unchanged when no decisions submitted", () => {
   it("state is identical before and after resolution when no decisions submitted", () => {
     const player1 = makePlayer("p1", "openbrain", "ob_ceo");
-    const initialState: StateVariables = { ...INITIAL_STATE };
+    // intlCooperation set above 25 to prevent coalition_fracture threshold from firing
+    const initialState: StateVariables = { ...INITIAL_STATE, intlCooperation: 30 };
 
     const room = makeRoom({
       phase: "decision",
       players: { p1: player1 },
+      state: { ...initialState },
       decisions: {},        // no individual submissions
       teamDecisions: {},    // no team submissions
     });
@@ -394,7 +396,8 @@ describe("checkThresholds — each fires at most once (idempotency invariant)", 
     const ob = makePlayer("p1", "openbrain", "ob_ceo");
     const room = makeRoom({
       players: { c1: china, p1: ob },
-      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100, chinaCapability: 50, taiwanTension: 20 },
+      // intlCooperation set above 25 to prevent coalition_fracture from also firing
+      state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100, chinaCapability: 50, taiwanTension: 20, intlCooperation: 30 },
     });
 
     const { io, emitted } = createMockIo();
@@ -558,7 +561,8 @@ describe("checkThresholds — each fires at most once (idempotency invariant)", 
       players: { p1: ob },
       // publicAwareness set above 25 to avoid npc_r1_public_darkness_tip (lte: 25) at initial state
       // securityLevelOB set above 2 to avoid npc_security_vendor_patch_gap (lte: 2) at initial state
-      state: { ...INITIAL_STATE, publicAwareness: 30, securityLevelOB: 3 },
+      // intlCooperation set above 25 to avoid coalition_fracture at initial state
+      state: { ...INITIAL_STATE, publicAwareness: 30, securityLevelOB: 3, intlCooperation: 30 },
     });
 
     const { io, emitted } = createMockIo();
@@ -567,6 +571,198 @@ describe("checkThresholds — each fires at most once (idempotency invariant)", 
     // No notifications should be emitted to players
     expect(emitted["p1:game:notification"]).toBeUndefined();
     expect(room.firedThresholds?.size ?? 0).toBe(0);
+  });
+
+  // INV-1 + INV-2: market_crash fires at economicDisruption >= 70 and applies state effects
+  it("market_crash fires when economicDisruption >= 70 and applies marketIndex/burnRate effects", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const prom = makePlayer("p2", "prometheus", "prom_ceo");
+    const room = makeRoom({
+      players: { p1: ob, p2: prom },
+      state: { ...INITIAL_STATE, economicDisruption: 70, marketIndex: 140, obBurnRate: 50, promBurnRate: 40 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // INV-2: state effects applied and clamped
+    expect(room.state.marketIndex).toBe(110);   // 140 - 30
+    expect(room.state.obBurnRate).toBe(65);     // 50 + 15
+    expect(room.state.promBurnRate).toBe(55);   // 40 + 15
+
+    // INV-3: all players notified
+    expect(emitted["p1:game:notification"]).toBeDefined();
+    expect(emitted["p2:game:notification"]).toBeDefined();
+
+    // INV-1: recorded in firedThresholds
+    expect(room.firedThresholds?.has("market_crash")).toBe(true);
+  });
+
+  it("market_crash does NOT fire when economicDisruption < 70", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, economicDisruption: 69 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds?.has("market_crash")).toBeFalsy();
+  });
+
+  it("market_crash does NOT fire again on second call (idempotency)", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, economicDisruption: 70, marketIndex: 140, obBurnRate: 50, promBurnRate: 40 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+    checkThresholds(io, room);
+
+    // Effects must not double-apply
+    expect(room.state.marketIndex).toBe(110);
+    expect(room.state.obBurnRate).toBe(65);
+    expect(room.state.promBurnRate).toBe(55);
+  });
+
+  // coalition_fracture fires when intlCooperation < 25
+  it("coalition_fracture fires when intlCooperation < 25 and notifies external faction", () => {
+    const ext = makePlayer("e1", "external", "ext_nsa");
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { e1: ext, p1: ob },
+      state: { ...INITIAL_STATE, intlCooperation: 20, taiwanTension: 30, ccpPatience: 60 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // INV-2: state effects applied
+    expect(room.state.taiwanTension).toBe(40);  // 30 + 10
+    expect(room.state.ccpPatience).toBe(50);    // 60 - 10
+
+    // INV-3: external faction notified, OB not notified
+    expect(emitted["e1:game:notification"]).toBeDefined();
+    expect(emitted["p1:game:notification"]).toBeUndefined();
+
+    // INV-1: recorded
+    expect(room.firedThresholds?.has("coalition_fracture")).toBe(true);
+  });
+
+  it("coalition_fracture does NOT fire when intlCooperation >= 25", () => {
+    const ext = makePlayer("e1", "external", "ext_nsa");
+    const room = makeRoom({
+      players: { e1: ext },
+      state: { ...INITIAL_STATE, intlCooperation: 25 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds?.has("coalition_fracture")).toBeFalsy();
+  });
+
+  // INV-4: public_panic requires BOTH publicAwareness >= 80 AND publicSentiment < -30
+  it("public_panic fires when publicAwareness >= 80 AND publicSentiment < -30", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, publicAwareness: 85, publicSentiment: -40, regulatoryPressure: 20, marketIndex: 140, economicDisruption: 20 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // INV-2: state effects applied
+    expect(room.state.regulatoryPressure).toBe(40);  // 20 + 20
+    expect(room.state.marketIndex).toBe(125);        // 140 - 15
+    expect(room.state.economicDisruption).toBe(30);  // 20 + 10
+
+    // INV-3: all players notified
+    expect(emitted["p1:game:notification"]).toBeDefined();
+
+    // INV-1: recorded
+    expect(room.firedThresholds?.has("public_panic")).toBe(true);
+  });
+
+  it("public_panic does NOT fire when publicAwareness >= 80 but publicSentiment >= -30 (INV-4)", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, publicAwareness: 85, publicSentiment: -30 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds?.has("public_panic")).toBeFalsy();
+  });
+
+  it("public_panic does NOT fire when publicSentiment < -30 but publicAwareness < 80 (INV-4)", () => {
+    const ob = makePlayer("p1", "openbrain", "ob_ceo");
+    const room = makeRoom({
+      players: { p1: ob },
+      state: { ...INITIAL_STATE, publicAwareness: 79, publicSentiment: -50 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds?.has("public_panic")).toBeFalsy();
+  });
+
+  // prom_board_revolt fires when promBoardConfidence < 30
+  it("prom_board_revolt fires when promBoardConfidence < 30 and decrements promMorale", () => {
+    const prom1 = makePlayer("p1", "prometheus", "prom_ceo");
+    const prom2 = makePlayer("p2", "prometheus", "prom_scientist");
+    const room = makeRoom({
+      players: { p1: prom1, p2: prom2 },
+      state: { ...INITIAL_STATE, promBoardConfidence: 25, promMorale: 70 },
+    });
+
+    const { io, emitted } = createMockIo();
+    checkThresholds(io, room);
+
+    // INV-2: state effect applied
+    expect(room.state.promMorale).toBe(60); // 70 - 10
+
+    // INV-3: prometheus faction notified
+    expect(emitted["p1:game:notification"]).toBeDefined();
+    expect(emitted["p2:game:notification"]).toBeDefined();
+
+    // INV-1: recorded
+    expect(room.firedThresholds?.has("prom_board_revolt")).toBe(true);
+  });
+
+  it("prom_board_revolt does NOT fire when promBoardConfidence >= 30", () => {
+    const prom = makePlayer("p1", "prometheus", "prom_ceo");
+    const room = makeRoom({
+      players: { p1: prom },
+      state: { ...INITIAL_STATE, promBoardConfidence: 30 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+
+    expect(room.firedThresholds?.has("prom_board_revolt")).toBeFalsy();
+  });
+
+  it("prom_board_revolt does NOT fire again on second call (idempotency)", () => {
+    const prom = makePlayer("p1", "prometheus", "prom_ceo");
+    const room = makeRoom({
+      players: { p1: prom },
+      state: { ...INITIAL_STATE, promBoardConfidence: 20, promMorale: 70 },
+    });
+
+    const { io } = createMockIo();
+    checkThresholds(io, room);
+    checkThresholds(io, room);
+
+    // Must not double-apply
+    expect(room.state.promMorale).toBe(60); // 70 - 10 only once
   });
 });
 

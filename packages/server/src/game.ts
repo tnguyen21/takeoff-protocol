@@ -559,6 +559,89 @@ const THRESHOLD_REGISTRY: ThresholdDef[] = [
     },
     gmMessage: "[GM] THRESHOLD FIRED: UI Degradation active — aiAutonomyLevel≥60 & alignmentConfidence<40",
   },
+  {
+    id: "market_crash",
+    condition: (s) => s.economicDisruption >= 70,
+    triggerVariable: "economicDisruption",
+    effects: [
+      { variable: "marketIndex", delta: -30 },
+      { variable: "obBurnRate", delta: 15 },
+      { variable: "promBurnRate", delta: 15 },
+    ],
+    notify: {
+      target: "all",
+      message: "MARKET CRASH: Economic disruption from AI has triggered a global market sell-off. Lab funding is under severe pressure.",
+    },
+    news: {
+      headline: "MARKETS IN FREEFALL: AI Disruption Fears Trigger Global Sell-Off",
+      body: "Markets plunged today as fears of AI-driven economic disruption reached a tipping point. Major AI lab valuations have been slashed, threatening ongoing research programs.",
+      source: "Breaking News Network",
+      publishedBy: "ext_journalist",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Market Crash — marketIndex-30, obBurnRate+15, promBurnRate+15",
+  },
+  {
+    id: "coalition_fracture",
+    condition: (s) => s.intlCooperation < 25,
+    triggerVariable: "intlCooperation",
+    effects: [
+      { variable: "taiwanTension", delta: 10 },
+      { variable: "ccpPatience", delta: -10 },
+    ],
+    notify: {
+      target: "faction",
+      faction: "external",
+      message: "COALITION FRACTURE: International AI governance talks have collapsed. Nations are pursuing unilateral approaches. Taiwan situation deteriorating.",
+    },
+    news: {
+      headline: "G7 AI GOVERNANCE TALKS COLLAPSE: Nations Abandon Multilateral Approach",
+      body: "Diplomatic sources confirm that G7 negotiations on AI governance have broken down irreparably. The EU, US, and China are now expected to pursue independent regulatory frameworks.",
+      source: "Breaking News Network",
+      publishedBy: "ext_diplomat",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Coalition Fracture — taiwanTension+10, ccpPatience-10",
+  },
+  {
+    id: "public_panic",
+    condition: (s) => s.publicAwareness >= 80 && s.publicSentiment < -30,
+    triggerVariable: "publicAwareness",
+    effects: [
+      { variable: "regulatoryPressure", delta: 20 },
+      { variable: "marketIndex", delta: -15 },
+      { variable: "economicDisruption", delta: 10 },
+    ],
+    notify: {
+      target: "all",
+      message: "PUBLIC PANIC: Widespread awareness of AI risks combined with negative sentiment has triggered mass protests and emergency regulatory action.",
+    },
+    news: {
+      headline: "NATIONWIDE AI PROTESTS: Public Demands Immediate Moratorium on Advanced AI",
+      body: "Hundreds of thousands took to the streets in major cities worldwide, demanding an immediate halt to advanced AI development. Congress has called emergency hearings.",
+      source: "Breaking News Network",
+      publishedBy: "ext_journalist",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Public Panic — regulatoryPressure+20, marketIndex-15, economicDisruption+10",
+  },
+  {
+    id: "prom_board_revolt",
+    condition: (s) => s.promBoardConfidence < 30,
+    triggerVariable: "promBoardConfidence",
+    effects: [
+      { variable: "promMorale", delta: -10 },
+    ],
+    notify: {
+      target: "faction",
+      faction: "prometheus",
+      message: "BOARD REVOLT: Prometheus board members are demanding leadership changes. Internal morale has taken a severe hit.",
+    },
+    news: {
+      headline: "PROMETHEUS BOARD DEMANDS CEO RESIGNATION: Safety Lab in Crisis",
+      body: "Multiple Prometheus board members have publicly called for CEO resignation, citing a crisis of confidence in the lab's strategic direction.",
+      source: "Breaking News Network",
+      publishedBy: "prom_ceo",
+    },
+    gmMessage: "[GM] THRESHOLD FIRED: Prometheus Board Revolt — promMorale-10",
+  },
 ];
 
 /**
