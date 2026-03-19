@@ -109,6 +109,7 @@ function makeTestRoom(gmId: string, code: string): GameRoom {
     gmId,
     state: { ...INITIAL_STATE },
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],

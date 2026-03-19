@@ -82,6 +82,7 @@ function makeRoom(code: string, overrides: Partial<GameRoom> = {}): GameRoom {
     gmId: `gm-${code}`,
     state: { ...INITIAL_STATE },
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],

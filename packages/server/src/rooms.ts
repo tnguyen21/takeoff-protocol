@@ -83,6 +83,7 @@ export function createRoom(gmSocketId: string): GameRoom {
     gmId: gmSocketId,
     state: { ...INITIAL_STATE },
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],

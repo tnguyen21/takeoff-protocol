@@ -32,6 +32,7 @@ function makeRoom(overrides: Partial<GameRoom> = {}): GameRoom {
     gmId: null,
     state: { ...INITIAL_STATE },
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],
@@ -57,6 +58,7 @@ function makeHistory(round: number, overrides: Partial<RoundHistory> = {}): Roun
   return {
     round,
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     stateBefore: { ...INITIAL_STATE },
     stateAfter: { ...INITIAL_STATE },

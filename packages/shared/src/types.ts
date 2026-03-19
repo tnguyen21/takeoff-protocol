@@ -141,6 +141,7 @@ export interface DecisionTemplate {
   theme: string;
   variableScope: (keyof StateVariables)[];
   archetypes: [string, string, string];
+  slot?: 2;  // omitted (or 1) = primary individual, 2 = second individual
 }
 
 // ── Content ──
@@ -288,6 +289,7 @@ export interface GameRoom {
   gmId: string | null;
   state: StateVariables;
   decisions: Record<string, string>; // playerId → chosen optionId
+  decisions2: Record<string, string>; // playerId → chosen optionId (second individual)
   teamDecisions: Record<string, string>; // faction → chosen optionId
   teamVotes: Record<string, Record<string, string>>; // faction → { playerId → optionId }
   history: RoundHistory[];
@@ -308,6 +310,7 @@ export interface GameRoom {
 export interface RoundHistory {
   round: number;
   decisions: Record<string, string>;
+  decisions2?: Record<string, string>;
   teamDecisions: Record<string, string>;
   stateBefore: StateVariables;
   stateAfter: StateVariables;

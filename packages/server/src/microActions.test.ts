@@ -32,6 +32,7 @@ function makeRoom(players: Player[] = []): GameRoom {
     gmId: null,
     state: { ...INITIAL_STATE, intlCooperation: 30 }, // avoid coalition_fracture threshold
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],

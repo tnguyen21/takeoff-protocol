@@ -23,6 +23,7 @@ function makeRoom(messages: GameMessage[]): GameRoom {
     gmId: null,
     state: { ...INITIAL_STATE },
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],

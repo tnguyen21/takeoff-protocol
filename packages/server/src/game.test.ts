@@ -41,6 +41,7 @@ function makeRoom(overrides: Partial<GameRoom> = {}): GameRoom {
     gmId: null,
     state: { ...INITIAL_STATE },
     decisions: {},
+    decisions2: {},
     teamDecisions: {},
     teamVotes: {},
     history: [],
@@ -1486,6 +1487,7 @@ describe("INV-3: emitResolution logs state.snapshot and state.delta", () => {
       round: 1,
       players: { p1 },
       decisions: {},
+    decisions2: {},
       teamDecisions: {},
     });
     _setLoggerForRoom("LOG3", spy);
@@ -1522,6 +1524,7 @@ describe("INV-3: emitResolution logs state.snapshot and state.delta", () => {
       round: 1,
       players: { p1 },
       decisions: {},
+    decisions2: {},
       teamDecisions: {},
       // Force a state change during resolution so changes is non-empty
       state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100 },
@@ -1550,6 +1553,7 @@ describe("INV-3: emitResolution logs state.snapshot and state.delta", () => {
       round: 1,
       players: { p1: ob },
       decisions: {},
+    decisions2: {},
       teamDecisions: {},
       state: { ...INITIAL_STATE, chinaWeightTheftProgress: 100, chinaCapability: 50 },
     });
