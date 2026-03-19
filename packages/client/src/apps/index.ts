@@ -17,7 +17,6 @@ import { ArxivApp } from "./ArxivApp.js";
 import { SubstackApp } from "./SubstackApp.js";
 import { MemoApp } from "./MemoApp.js";
 import { ComputeApp } from "./ComputeApp.js";
-import { BriefingApp } from "./BriefingApp.js";
 
 export const APP_COMPONENTS: Record<AppId, React.ComponentType<{ content: ContentItem[] }>> = {
   slack: SlackApp,
@@ -30,7 +29,6 @@ export const APP_COMPONENTS: Record<AppId, React.ComponentType<{ content: Conten
   gamestate: GameStateApp,
   security: SecurityApp,
   bloomberg: BloombergApp,
-  briefing: BriefingApp,
   intel: IntelApp,
   military: MilitaryApp,
   arxiv: ArxivApp,

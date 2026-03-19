@@ -24,7 +24,7 @@ describe("FACTION_VOICES", () => {
 
 // INV-2: APP_VOICES has entries for required apps
 describe("APP_VOICES", () => {
-  const REQUIRED_APPS = ["slack", "news", "twitter", "bloomberg", "email", "memo", "signal", "intel"] as const;
+  const REQUIRED_APPS = ["slack", "news", "twitter", "bloomberg", "email", "substack", "memo", "signal", "intel"] as const;
 
   it("INV-2: has entries for all required apps", () => {
     for (const app of REQUIRED_APPS) {
@@ -50,7 +50,7 @@ describe("APP_VOICES", () => {
 
 // INV-2 (CONTENT_SYSTEM_PROMPT): format reference for all 8 app types
 describe("CONTENT_SYSTEM_PROMPT", () => {
-  const REQUIRED_APP_TYPES = ["news", "twitter", "slack", "email", "memo", "signal", "intel", "bloomberg"];
+  const REQUIRED_APP_TYPES = ["news", "twitter", "slack", "email", "substack", "memo", "signal", "intel", "bloomberg"];
 
   it('INV-2: contains format reference for all 8 app types', () => {
     for (const app of REQUIRED_APP_TYPES) {

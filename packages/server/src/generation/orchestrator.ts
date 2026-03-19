@@ -1,5 +1,5 @@
 import type { Server } from "socket.io";
-import type { AppId, Faction, GameRoom } from "@takeoff/shared";
+import type { AppId, ContentItem, Faction, GameRoom } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
   logGenerationFailure,
@@ -19,6 +19,7 @@ import {
   setGeneratedContent,
   setGeneratedDecisions,
   setGeneratedNpcTriggers,
+  setGeneratedSharedContent,
   setGenerationStatus,
 } from "./cache.js";
 import { AnthropicProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
@@ -91,6 +92,7 @@ export async function triggerGeneration(
     let briefingOk = true;
     let contentOk = true;
     let npcOk = true;
+    const sharedSubstackItems: ContentItem[] = [];
 
     // ── Briefing generation ─────────────────────────────────────────────────
     if (briefingsEnabled) {
@@ -151,10 +153,23 @@ export async function triggerGeneration(
           if (fogResult.warnings.length > 0) {
             logValidationFailure(round, `fog-safety:${faction}`, fogResult.warnings);
           }
-          setGeneratedContent(room, round, faction, contentResult);
+          const factionContent = contentResult.filter((appContent) => appContent.app !== "substack");
+          const substackContent = contentResult.find((appContent) => appContent.app === "substack");
+          if (substackContent) {
+            sharedSubstackItems.push(...substackContent.items);
+          }
+          setGeneratedContent(room, round, faction, factionContent);
           logGenerationSuccess(round, contentArtifact, durationMs);
           logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: contentArtifact, durationMs }, { round, actorId: "system" });
         }
+      }
+      if (sharedSubstackItems.length > 0) {
+        sharedSubstackItems.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+        setGeneratedSharedContent(room, round, [{
+          faction: "external",
+          app: "substack",
+          items: sharedSubstackItems,
+        }]);
       }
     }
 

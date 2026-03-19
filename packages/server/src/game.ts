@@ -3,7 +3,7 @@ import type { AppContent, ContentItem, DecisionOption, Faction, GameMessage, Gam
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, STATE_VARIABLE_RANGES, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
-import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers } from "./generation/cache.js";
+import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers, getGeneratedSharedContent } from "./generation/cache.js";
 import { triggerGeneration } from "./generation/orchestrator.js";
 import { TUTORIAL_CONTENT } from "./content/tutorial.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
@@ -400,7 +400,12 @@ function getContentForPlayer(room: GameRoom, player: Player): AppContent[] {
   if (room.round === 0) {
     return TUTORIAL_CONTENT.filter((c) => c.faction === player.faction!);
   }
-  return getGeneratedContent(room, room.round, player.faction!) ?? [];
+  const factionContent = getGeneratedContent(room, room.round, player.faction!) ?? [];
+  const sharedContent = (getGeneratedSharedContent(room, room.round) ?? []).map((appContent) => ({
+    ...appContent,
+    faction: player.faction!,
+  }));
+  return [...factionContent, ...sharedContent];
 }
 
 export function emitContent(io: Server, room: GameRoom) {

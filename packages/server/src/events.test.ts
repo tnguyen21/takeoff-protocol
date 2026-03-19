@@ -1420,13 +1420,12 @@ describe("publish:submit — real handler", () => {
     rooms.delete(PUB_ROOM);
   });
 
-  it("ob_cto can now publish (all roles allowed) — publication stored with legacy flat effects", () => {
+  it("ob_cto cannot publish — non-writer role is rejected", () => {
     const nonPub = createSocket(PUB_OTHER);
     nonPub.data.roomCode = PUB_ROOM;
     registerGameEvents(io as unknown as import("socket.io").Server, nonPub as unknown as import("socket.io").Socket);
     fire(nonPub.handlers, "publish:submit", { type: "article", title: "Test", content: "Body", source: "OB" });
-    expect(room.publications).toHaveLength(1);
-    expect(room.publications[0].publishedBy).toBe("ob_cto");
+    expect(room.publications).toHaveLength(0);
   });
 
   it("ext_journalist can publish article — stored in room.publications", () => {
@@ -1449,14 +1448,26 @@ describe("publish:submit — real handler", () => {
     expect(room.publications[0].type).toBe("leak");
   });
 
-  it("ob_safety cannot publish articles — silently ignored", () => {
+  it("ob_safety can publish articles via the writer allowlist", () => {
     const safetyId = "player-pub-safety2";
     room.players[safetyId] = makePlayer(safetyId, { faction: "openbrain", role: "ob_safety" });
     const safetySocket = createSocket(safetyId);
     safetySocket.data.roomCode = PUB_ROOM;
     registerGameEvents(io as unknown as import("socket.io").Server, safetySocket as unknown as import("socket.io").Socket);
     fire(safetySocket.handlers, "publish:submit", { type: "article", title: "Article", content: "...", source: "OB" });
-    expect(room.publications).toHaveLength(0);
+    expect(room.publications).toHaveLength(1);
+    expect(room.publications[0].publishedBy).toBe("ob_safety");
+  });
+
+  it("ext_diplomat can publish articles via the writer allowlist", () => {
+    const diplomatId = "player-pub-diplomat";
+    room.players[diplomatId] = makePlayer(diplomatId, { faction: "external", role: "ext_diplomat" });
+    const diplomatSocket = createSocket(diplomatId);
+    diplomatSocket.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, diplomatSocket as unknown as import("socket.io").Socket);
+    fire(diplomatSocket.handlers, "publish:submit", { type: "article", title: "Joint Statement", content: "...", source: "EU Delegation" });
+    expect(room.publications).toHaveLength(1);
+    expect(room.publications[0].publishedBy).toBe("ext_diplomat");
   });
 
   it("article applies +15 publicAwareness and +10 publicSentiment to state", () => {
@@ -1717,7 +1728,7 @@ describe("publish:submit — angle×target effect matrix", () => {
     room.round = 1;
     room.phase = "intel";
     room.players[EFF_JOURNALIST] = makePlayer(EFF_JOURNALIST, { faction: "external", role: "ext_journalist" });
-    room.players[EFF_OTHER] = makePlayer(EFF_OTHER, { faction: "openbrain", role: "ob_cto" });
+    room.players[EFF_OTHER] = makePlayer(EFF_OTHER, { faction: "external", role: "ext_diplomat" });
 
     journalistSocket = createSocket(EFF_JOURNALIST);
     journalistSocket.data.roomCode = EFF_ROOM;
@@ -1758,8 +1769,8 @@ describe("publish:submit — angle×target effect matrix", () => {
     expect(room.state.obInternalTrust).toBe(initOBTrust - 4);
   });
 
-  // INV-2: Journalist gets 2x effects, other roles get 1x base
-  it("INV-2: non-journalist ob_cto hype×china — 1× base effects, modest values", () => {
+  // INV-2: Journalist gets 2x effects, other writer roles get 1x base
+  it("INV-2: non-journalist ext_diplomat hype×china — 1× base effects, modest values", () => {
     const initAwareness = room.state.publicAwareness;
     const initMarket = room.state.marketIndex;
     const initEconDisrupt = room.state.economicDisruption;
@@ -1867,7 +1878,7 @@ describe("publish:submit — angle×target effect matrix", () => {
     expect(room.state.publicSentiment).toBe(initSentiment - 10);
   });
 
-  it("ob_safety still cannot publish articles (leak-only restriction preserved)", () => {
+  it("ob_safety can publish articles through the shared writer allowlist", () => {
     const safetyId = "player-eff-safety2";
     room.players[safetyId] = makePlayer(safetyId, { faction: "openbrain", role: "ob_safety" });
     const safetySocket = createSocket(safetyId);
@@ -1878,6 +1889,7 @@ describe("publish:submit — angle×target effect matrix", () => {
       type: "article", title: "Article", content: "...", source: "OB",
       angle: "safety", targetFaction: "general",
     });
-    expect(room.publications).toHaveLength(0);
+    expect(room.publications).toHaveLength(1);
+    expect(room.publications[0].publishedBy).toBe("ob_safety");
   });
 });

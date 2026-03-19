@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, GameRoom, Player, Publication, PublicationAngle, PublicationTarget, PublicationType, Role, StateVariables } from "@takeoff/shared";
-import { getPublicationEffects, isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
+import { canWriteSubstack, getPublicationEffects, isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected, isAtRoomCap, MAX_CONCURRENT_ROOMS } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
@@ -501,8 +501,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       const player = room.players[socket.id];
       if (!player || !player.role || !player.faction) return;
 
-      // Leak mechanic: ob_safety can only do leaks, not articles
-      if (player.role === "ob_safety" && type !== "leak") return;
+      if (!canWriteSubstack(player.role)) return;
 
       // Validate angle/target if provided
       const VALID_ANGLES: PublicationAngle[] = ["safety", "hype", "geopolitics"];

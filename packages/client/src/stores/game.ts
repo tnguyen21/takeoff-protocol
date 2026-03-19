@@ -573,7 +573,7 @@ if (loadSession()) {
 socket.on("game:generation-status", (data: { round: number; status: string; message: string }) => {
   if (data.status === "degraded") {
     useNotificationsStore.getState().addNotification({
-      appId: "system",
+      appId: "gamestate",
       title: "Content Generation",
       body: data.message,
     });

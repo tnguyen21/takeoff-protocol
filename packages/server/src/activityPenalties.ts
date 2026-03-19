@@ -13,7 +13,7 @@ export const PRIMARY_APP_PENALTIES: Partial<Record<Role, ActivityPenalty>> = {
   prom_scientist: { app: "wandb",     variable: "promCapability",       delta: -3 },
   china_director: { app: "compute",   variable: "chinaCapability",      delta: -3 },
   ext_journalist: { app: "signal",    variable: "publicAwareness",      delta: -3 },
-  ext_nsa:        { app: "briefing",  variable: "intlCooperation",      delta: -3 },
+  ext_nsa:        { app: "gamestate", variable: "intlCooperation",      delta: -3 },
   ext_vc:         { app: "bloomberg", variable: "economicDisruption",   delta: 2  },
 };
 
@@ -72,4 +72,3 @@ export function applyActivityPenalties(
 
   return applied;
 }
-

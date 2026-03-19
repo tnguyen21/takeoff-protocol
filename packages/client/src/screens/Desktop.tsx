@@ -25,7 +25,6 @@ const APP_LABELS: Record<string, string> = {
   gamestate: "State",
   security: "Security",
   bloomberg: "Bloomberg",
-  briefing: "Briefing",
   intel: "Intel",
   military: "Military",
   arxiv: "arXiv",
@@ -141,4 +140,3 @@ export function Desktop() {
     </div>
   );
 }
-

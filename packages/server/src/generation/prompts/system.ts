@@ -120,6 +120,7 @@ APP VOICE RULES:
 - signal: Encrypted DM energy. Short, urgent, paranoid.
 - intel: ICD 203 format. Classification headers. Confidence levels (HIGH/MODERATE/LOW).
 - arxiv: Academic preprint style. Research papers with abstract, methodology, findings. NOT corporate emails.
+- substack: Public-facing essays, newsletters, and analysis pieces. Reported but voicey. Broad audience. Headline + body.
 
 ## App Format Reference
 
@@ -131,6 +132,10 @@ When generating for "slack":
 When generating for "email":
 - Format: { sender: "Name <email@company.com>", subject: "Subject Line", body: "email body" }
 - Voice: Corporate formal. Subject lines matter. CC lists imply politics.
+
+When generating for "substack":
+- Format: { sender: "Publication Name" or "Byline", subject: "Article Headline", body: "public-facing article body" }
+- Voice: Newsletter/op-ed/reportage hybrid. Public-facing, readable, and grounded in observable developments.
 
 When generating for "memo":
 - Format: { subject: "MEMO: Topic", body: "memo content with headers and bullet points" }
@@ -218,4 +223,3 @@ NARRATIVE RULES:
 - Write for players who understand AI geopolitics — no hand-holding
 - Never contradict the current game state
 - Never reveal hidden state variables directly — describe observable consequences`;
-

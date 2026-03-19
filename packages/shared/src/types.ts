@@ -156,7 +156,6 @@ export type AppId =
   | "gamestate"
   | "security"
   | "bloomberg"
-  | "briefing"
   | "intel"
   | "military"
   | "arxiv"
@@ -369,6 +368,7 @@ export interface GeneratedRoundArtifacts {
     factionVariants: Record<Faction, string>;
   };
   content?: Partial<Record<Faction, AppContent[]>>;
+  sharedContent?: AppContent[];
   npcTriggers?: NpcTrigger[];
   decisions?: RoundDecisions;
 }

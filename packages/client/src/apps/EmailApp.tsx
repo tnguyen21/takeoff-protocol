@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { canWriteSubstack } from "@takeoff/shared";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
 import { useNotificationsStore } from "../stores/notifications.js";
@@ -367,6 +368,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   const { selectedRole, publishArticle } = useGameStore();
   const stateView = useGameStore((s) => s.stateView);
   const isObSafety = selectedRole === "ob_safety";
+  const canPublishArticle = canWriteSubstack(selectedRole);
 
   const regulatoryAccuracy = stateView?.regulatoryPressure.accuracy ?? null;
   const regulatoryValue = stateView
@@ -416,6 +418,12 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
     useNotificationsStore.getState().dismissByApp("email");
   }, [content.length]);
 
+  useEffect(() => {
+    if (!canPublishArticle && composeOpen) {
+      setComposeOpen(false);
+    }
+  }, [canPublishArticle, composeOpen]);
+
   // Reset selection when folder or search changes
   useEffect(() => {
     setSelected(0);
@@ -456,6 +464,7 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
   }
 
   function openCompose(mode: "new" | "reply" | "forward") {
+    if (!canPublishArticle) return;
     if (mode === "reply" && selectedEmail) {
       setComposeTo(selectedEmail.from);
       setComposeCc("");
@@ -505,14 +514,16 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
       {/* Folder sidebar */}
       <div className="w-40 border-r border-white/10 flex flex-col shrink-0 bg-[#0f0f0f]">
         {/* Compose button */}
-        <div className="p-2.5">
-          <button
-            onClick={() => openCompose("new")}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded flex items-center gap-1.5"
-          >
-            <span className="text-sm">✎</span> Compose
-          </button>
-        </div>
+        {canPublishArticle && (
+          <div className="p-2.5">
+            <button
+              onClick={() => openCompose("new")}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded flex items-center gap-1.5"
+            >
+              <span className="text-sm">✎</span> Compose
+            </button>
+          </div>
+        )}
 
         {/* Folder list */}
         <nav className="flex-1 px-1">
@@ -705,20 +716,22 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
             </div>
 
             {/* Reply / Forward */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => openCompose("reply")}
-                className="text-[11px] bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1 rounded text-neutral-300"
-              >
-                ↩ Reply
-              </button>
-              <button
-                onClick={() => openCompose("forward")}
-                className="text-[11px] bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1 rounded text-neutral-300"
-              >
-                ↗ Forward
-              </button>
-            </div>
+            {canPublishArticle && (
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => openCompose("reply")}
+                  className="text-[11px] bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1 rounded text-neutral-300"
+                >
+                  ↩ Reply
+                </button>
+                <button
+                  onClick={() => openCompose("forward")}
+                  className="text-[11px] bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1 rounded text-neutral-300"
+                >
+                  ↗ Forward
+                </button>
+              </div>
+            )}
 
             {highRegulatory && selectedEmail.classification === "critical" && (
               <span className="inline-block text-[9px] bg-amber-800/60 text-amber-300 px-1.5 py-0.5 rounded font-semibold tracking-wider mb-3">

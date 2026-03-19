@@ -3,11 +3,6 @@
  * without hitting react/jsx-dev-runtime issues.
  */
 
-/** Returns true if the given role can publish on Substack. All roles can publish. */
-export function isPublisherRole(_role: string | null | undefined): boolean {
-  return true;
-}
-
 /** Estimate reading time in minutes at 200 words per minute, minimum 1. */
 export function estimateReadTime(text: string): number {
   const words = text.trim().split(/\s+/).filter(Boolean).length;

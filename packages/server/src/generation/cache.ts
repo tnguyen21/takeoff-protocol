@@ -47,6 +47,16 @@ export function getGeneratedContent(
   return room.generatedRounds?.[round]?.content?.[faction];
 }
 
+export function setGeneratedSharedContent(room: GameRoom, round: number, content: AppContent[]): void {
+  const rounds = ensureGeneratedRounds(room);
+  if (!rounds[round]) rounds[round] = {};
+  rounds[round]!.sharedContent = content;
+}
+
+export function getGeneratedSharedContent(room: GameRoom, round: number): AppContent[] | undefined {
+  return room.generatedRounds?.[round]?.sharedContent;
+}
+
 export function setGeneratedNpcTriggers(room: GameRoom, round: number, triggers: NpcTrigger[]): void {
   const rounds = ensureGeneratedRounds(room);
   if (!rounds[round]) rounds[round] = {};

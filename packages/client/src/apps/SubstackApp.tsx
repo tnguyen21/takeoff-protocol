@@ -1,39 +1,26 @@
 import React from "react";
-import type { PublicationAngle, PublicationTarget } from "@takeoff/shared";
+import { FACTIONS, canWriteSubstack, type PublicationAngle, type PublicationTarget } from "@takeoff/shared";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
+import { estimateReadTime, renderMarkdown } from "./substackUtils.js";
 
-const POSTS = [
-  { title: "Why I left my AI safety role (and what I learned)", date: "Feb 27", status: "Published", reads: "24.1K" },
-  { title: "The alignment tax is real — and it's growing", date: "Feb 20", status: "Published", reads: "18.4K" },
-  { title: "DRAFT: What does 'safe' even mean in 2026?", date: "Feb 28", status: "Draft", reads: "" },
-];
-
-const EDITOR_CONTENT = `Why I left my AI safety role (and what I learned)
-
-After three years working at the frontier of AI alignment research, I resigned last month. I want to explain why — not to burn bridges, but because I think the dynamics that drove me out are important for the field to understand.
-
-The short version: the pressure to ship had become indistinguishable from the pressure to compromise.
-
----
-
-**The research was real.** I'm proud of the work our team published. The deceptive alignment probes, the scalable oversight experiments — we were doing genuine science, and some of it genuinely mattered.
-
-But science doesn't exist in a vacuum. It exists inside institutions, and institutions have incentives. By the end of my tenure, I had watched the safety timeline get compressed three times to accommodate capability milestones. I had watched "we need more time to evaluate this" get overruled twice by leadership citing competitive pressure.
-
-I wasn't alone in noticing. Several colleagues had similar experiences, though most stayed quiet.
-
----
-
-**This is not an accusation.** The people making these decisions were not villains. They were caught between genuine uncertainty about risks and genuine competitive pressure that felt existential. I understand the logic. I just came to believe that the institutional structure couldn't reliably surface and act on safety concerns when they conflicted with deployment timelines.
-
-And that's the thing about safety failures. They don't announce themselves. They accumulate quietly until they don't.`;
+interface FeedPost {
+  id: string;
+  title: string;
+  body: string;
+  timestamp: number;
+  displayDate: string;
+  byline: string;
+  badge: string;
+  readTime: number;
+}
 
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
   const { selectedRole, publishArticle, publications } = useGameStore();
+  const canWrite = canWriteSubstack(selectedRole);
 
-  const docItems = content.filter((i) => i.type === "document" || i.type === "memo");
-  const [selectedIdx, setSelectedIdx] = React.useState(0);
+  const docItems = content.filter((i) => i.type === "document");
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [composing, setComposing] = React.useState(false);
   const [composeTitle, setComposeTitle] = React.useState("");
   const [composeBody, setComposeBody] = React.useState("");
@@ -41,36 +28,68 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   const [composeTarget, setComposeTarget] = React.useState<PublicationTarget | "">("");
   const [justPublished, setJustPublished] = React.useState(false);
 
-  // Track publications created by this session for the post list
-  const myPublications = publications.filter((p) => selectedRole && p.publishedBy === selectedRole);
+  const roleLabels = React.useMemo(
+    () =>
+      new Map(
+        FACTIONS.flatMap((faction) => faction.roles.map((role) => [role.id, role.label] as const)),
+      ),
+    [],
+  );
 
-  const posts =
-    docItems.length > 0
-      ? docItems.map((item) => ({
-          title: item.subject ?? item.body.split("\n")[0] ?? "(untitled)",
-          date: item.timestamp,
-          status: "Published",
-          reads: "",
-          body: item.subject ? item.body : item.body.slice(item.body.indexOf("\n") + 1),
-        }))
-      : POSTS.map((p) => ({ ...p, body: EDITOR_CONTENT.slice(EDITOR_CONTENT.indexOf("\n") + 1) }));
+  const posts = React.useMemo<FeedPost[]>(() => {
+    const generatedPosts = docItems.map((item) => {
+      const timestamp = Date.parse(item.timestamp) || 0;
+      return {
+        id: item.id,
+        title: item.subject ?? item.body.split("\n")[0] ?? "(untitled)",
+        body: item.body,
+        timestamp,
+        displayDate: timestamp > 0 ? new Date(timestamp).toLocaleDateString() : item.timestamp,
+        byline: item.sender ?? "Guest Essay",
+        badge: item.classification === "critical" ? "Urgent" : "Essay",
+        readTime: estimateReadTime(item.body),
+      };
+    });
 
-  // Append recently published items
-  const allPosts = [
-    ...posts,
-    ...myPublications.map((pub) => ({
-      title: pub.title,
-      date: new Date(pub.publishedAt).toLocaleTimeString(),
-      status: "Published",
-      reads: "",
-      body: pub.content,
-    })),
-  ];
+    const publicationPosts = publications.map((publication) => ({
+      id: `publication-${publication.id}`,
+      title: publication.title,
+      body: publication.content,
+      timestamp: publication.publishedAt,
+      displayDate: new Date(publication.publishedAt).toLocaleString(),
+      byline: publication.source || roleLabels.get(publication.publishedBy) || publication.publishedBy,
+      badge:
+        publication.type === "leak"
+          ? "Leak"
+          : publication.type === "research"
+            ? "Research"
+            : "Op-ed",
+      readTime: estimateReadTime(publication.content),
+    }));
 
-  const safeIdx = Math.min(selectedIdx, allPosts.length - 1);
-  const selected = allPosts[safeIdx];
+    return [...generatedPosts, ...publicationPosts].sort((a, b) => b.timestamp - a.timestamp);
+  }, [docItems, publications, roleLabels]);
+
+  React.useEffect(() => {
+    if (!canWrite && composing) {
+      setComposing(false);
+    }
+  }, [canWrite, composing]);
+
+  React.useEffect(() => {
+    if (posts.length === 0) {
+      if (selectedId !== null) setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !posts.some((post) => post.id === selectedId)) {
+      setSelectedId(posts[0]!.id);
+    }
+  }, [posts, selectedId]);
+
+  const selected = posts.find((post) => post.id === selectedId) ?? null;
 
   function handlePublish() {
+    if (!canWrite) return;
     if (!composeTitle.trim() || !composeBody.trim() || !composeAngle || !composeTarget) return;
     publishArticle({
       type: "article",
@@ -89,36 +108,62 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
     setTimeout(() => setJustPublished(false), 3000);
   }
 
-  // ── Writer/publisher view — shown to all roles ──
   return (
     <div className="flex h-full bg-white text-black text-sm">
-      {/* Sidebar */}
-      <div className="w-52 bg-neutral-50 border-r border-neutral-200 flex flex-col shrink-0">
+      <div className="w-60 bg-neutral-50 border-r border-neutral-200 flex flex-col shrink-0">
         <div className="p-3 border-b border-neutral-200">
-          <div className="font-bold text-sm">AI Safety Notes</div>
-          <div className="text-neutral-500 text-xs">Dr. Rachel Hayes · 24.1K subs</div>
+          <div className="font-bold text-sm">The World Feed</div>
+          <div className="text-neutral-500 text-xs">
+            Essays, dispatches, and public analysis from across the AI race
+          </div>
         </div>
         <div className="overflow-y-auto flex-1 p-2 space-y-1">
-          {["Posts", "Drafts", "Subscribers", "Analytics", "Settings"].map((item, i) => (
-            <div key={item} className={`px-2 py-1.5 rounded cursor-pointer text-xs ${i === 0 ? "bg-neutral-200 font-semibold" : "text-neutral-600 hover:bg-neutral-100"}`}>
-              {item}
+          {posts.length === 0 ? (
+            <div className="px-2 py-6 text-xs text-neutral-500 text-center">
+              No articles yet. The public narrative will populate here as the round unfolds.
             </div>
-          ))}
+          ) : (
+            posts.map((post) => (
+              <button
+                key={post.id}
+                onClick={() => {
+                  setSelectedId(post.id);
+                  setComposing(false);
+                }}
+                className={`w-full text-left px-2.5 py-2 rounded border ${
+                  selected?.id === post.id && !composing
+                    ? "bg-amber-50 border-amber-200"
+                    : "border-transparent hover:bg-neutral-100"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-xs text-neutral-900 truncate">{post.title}</span>
+                  <span className="text-[9px] uppercase tracking-wide text-neutral-500 shrink-0">
+                    {post.badge}
+                  </span>
+                </div>
+                <div className="text-[10px] text-neutral-500 mt-1 truncate">{post.byline}</div>
+                <div className="text-[10px] text-neutral-400 mt-0.5">
+                  {post.displayDate} · {post.readTime} min read
+                </div>
+              </button>
+            ))
+          )}
         </div>
-        <div className="p-3 border-t border-neutral-200">
-          <button
-            onClick={() => { setComposing(true); setSelectedIdx(-1); }}
-            className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600"
-          >
-            New post
-          </button>
-        </div>
+        {canWrite && (
+          <div className="p-3 border-t border-neutral-200">
+            <button
+              onClick={() => setComposing(true)}
+              className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600"
+            >
+              New post
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Main */}
       <div className="flex flex-col flex-1 min-w-0">
         {composing ? (
-          /* Compose form */
           <div className="flex flex-col flex-1 p-5 gap-3">
             <div className="flex items-center gap-2 mb-1">
               <button
@@ -127,7 +172,7 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
               >
                 ← Back
               </button>
-              <span className="text-xs font-semibold text-neutral-500">New Article</span>
+              <span className="text-xs font-semibold text-neutral-500">Publish to the public feed</span>
             </div>
             <input
               type="text"
@@ -171,7 +216,7 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
                 disabled={!composeTitle.trim() || !composeBody.trim() || !composeAngle || !composeTarget}
                 className="bg-[#ff6719] text-white text-xs px-5 py-2 rounded font-semibold hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Publish to all subscribers
+                Publish to feed
               </button>
               <button
                 onClick={() => setComposing(false)}
@@ -183,49 +228,52 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
           </div>
         ) : (
           <>
-            {/* Post list */}
-            <div className="border-b border-neutral-200 shrink-0">
-              {allPosts.map((p, i) => (
-                <div
-                  key={i}
-                  onClick={() => setSelectedIdx(i)}
-                  className={`flex items-center gap-3 px-4 py-3 border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer ${safeIdx === i ? "bg-blue-50" : ""}`}
-                >
-                  <div className="flex-1">
-                    <div className="font-semibold text-xs text-neutral-800">{p.title}</div>
-                    <div className="text-[10px] text-neutral-500 mt-0.5">{p.date} · {p.status}{p.reads ? ` · ${p.reads} reads` : ""}</div>
-                  </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.status === "Draft" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>
-                    {p.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Editor */}
             {selected && (
               <div className="flex-1 overflow-y-auto p-5">
-                <div className="max-w-xl mx-auto">
+                <div className="max-w-2xl mx-auto">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-500 font-semibold">
+                      {selected.badge}
+                    </span>
+                    <span className="text-[10px] text-neutral-400">{selected.displayDate}</span>
+                    <span className="text-[10px] text-neutral-400">{selected.readTime} min read</span>
+                  </div>
                   <div className="text-xl font-bold text-neutral-800 mb-3">{selected.title}</div>
+                  <div className="text-xs text-neutral-500 mb-4">{selected.byline}</div>
                   <div className="h-px bg-neutral-200 mb-4" />
-                  <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-sans leading-relaxed">{selected.body}</pre>
+                  <article
+                    className="prose prose-sm max-w-none text-neutral-700"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body) }}
+                  />
                 </div>
               </div>
             )}
+            {!selected && (
+              <div className="flex-1 flex items-center justify-center text-neutral-500 text-sm">
+                No articles available yet.
+              </div>
+            )}
 
-            {/* Toolbar */}
             <div className="border-t border-neutral-200 px-4 py-2 flex gap-2 items-center shrink-0">
-              <button
-                onClick={() => setComposing(true)}
-                className="bg-[#ff6719] text-white text-xs px-4 py-1.5 rounded font-semibold hover:bg-orange-600"
-              >
-                Publish
-              </button>
-              <button className="text-neutral-500 text-xs px-3 py-1.5 rounded border border-neutral-200 hover:bg-neutral-50">Save draft</button>
-              {justPublished && (
-                <span className="text-[10px] text-green-600 font-semibold ml-2">✓ Published to all feeds</span>
+              {canWrite && (
+                <>
+                  <button
+                    onClick={() => setComposing(true)}
+                    className="bg-[#ff6719] text-white text-xs px-4 py-1.5 rounded font-semibold hover:bg-orange-600"
+                  >
+                    Write
+                  </button>
+                  <button className="text-neutral-500 text-xs px-3 py-1.5 rounded border border-neutral-200 hover:bg-neutral-50">
+                    Save draft
+                  </button>
+                </>
               )}
-              <span className="text-[10px] text-neutral-400 ml-auto">Autosaved 2m ago</span>
+              {justPublished && (
+                <span className="text-[10px] text-green-600 font-semibold ml-2">✓ Published to the public feed</span>
+              )}
+              <span className="text-[10px] text-neutral-400 ml-auto">
+                {canWrite ? "Writers can shape the public narrative from here." : "Read-only access"}
+              </span>
             </div>
           </>
         )}

@@ -495,6 +495,7 @@ describe("INV-1 (new apps): each new app produces items with the correct type af
   const newAppCases: Array<{ app: Parameters<typeof generateContent>[3][0]; expectedType: ContentItem["type"] }> = [
     { app: "slack", expectedType: "message" },
     { app: "email", expectedType: "document" },
+    { app: "substack", expectedType: "document" },
     { app: "memo", expectedType: "memo" },
     { app: "signal", expectedType: "message" },
     { app: "intel", expectedType: "document" },
@@ -535,6 +536,19 @@ describe("INV-2 (new apps): post-processing invariants hold for all new app type
     const provider = new MockProvider({ items: [itemWithCondition] });
     const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["email"]);
     expect("condition" in result[0]!.items[0]!).toBe(false);
+  });
+
+  it("substack items preserve subject and sender when provider supplies them", async () => {
+    const substackItem: ContentItem = {
+      ...makeItem({ id: "gen-substack-1", type: "document", classification: "context", round: 3 }),
+      sender: "The World Feed",
+      subject: "Frontier Labs Enter a New Phase",
+    };
+    const provider = new MockProvider({ items: [substackItem] });
+    const result = await generateContent(provider, BASE_CONTEXT, "openbrain", ["substack"]);
+    const item = result[0]!.items[0]!;
+    expect(item.sender).toBe("The World Feed");
+    expect(item.subject).toBe("Frontier Labs Enter a New Phase");
   });
 });
 

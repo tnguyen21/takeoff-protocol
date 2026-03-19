@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { resolveDecisions, clampState } from "./resolution.js";
-import { STATE_VARIABLE_RANGES } from "./constants.js";
+import { FACTIONS, STATE_VARIABLE_RANGES, SUBSTACK_WRITER_ROLES, canWriteSubstack } from "./constants.js";
 import { computeFogView } from "./fog.js";
 import { computeEndingArcs } from "./endings.js";
 import type { DecisionOption, Faction, GameMessage, NpcPersona, NpcTrigger, StateVariables } from "./types.js";
@@ -141,6 +141,45 @@ describe("NPC types", () => {
     };
     expect(factionOnly.target.role).toBeUndefined();
     expect(roleOnly.target.faction).toBeUndefined();
+  });
+});
+
+describe("faction app config", () => {
+  it("every faction includes substack in its app list", () => {
+    for (const faction of FACTIONS) {
+      expect(faction.apps).toContain("substack");
+    }
+  });
+
+  it("every role primary app is available in its faction app list", () => {
+    for (const faction of FACTIONS) {
+      const factionApps = new Set(faction.apps);
+      for (const role of faction.roles) {
+        for (const app of role.primaryApps) {
+          expect(
+            factionApps.has(app),
+            `${faction.id}/${role.id} primary app ${app} missing from faction apps`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+});
+
+describe("canWriteSubstack", () => {
+  it("returns true only for the configured writer allowlist", () => {
+    const allowed = new Set(SUBSTACK_WRITER_ROLES);
+
+    for (const faction of FACTIONS) {
+      for (const role of faction.roles) {
+        expect(canWriteSubstack(role.id)).toBe(allowed.has(role.id));
+      }
+    }
+  });
+
+  it("returns false for null and undefined", () => {
+    expect(canWriteSubstack(null)).toBe(false);
+    expect(canWriteSubstack(undefined)).toBe(false);
   });
 });
 
@@ -1110,4 +1149,3 @@ describe("clampState", () => {
     }
   });
 });
-

@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "bun:test";
 import { buildNarrative, advancePhase, checkThresholds, startTutorial, endTutorial, syncPhaseTimer, clearPhaseTimer, emitContent, startGame, buildNameMap, personalizeText, personalizeContent, getActiveDecisions } from "./game.js";
 import { INITIAL_STATE, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import type { AppContent, AppId, ContentItem, GameMessage, GameRoom, Player, RoundDecisions, StateVariables } from "@takeoff/shared";
-import { setGeneratedContent, setGeneratedDecisions, setGeneratedNpcTriggers } from "./generation/cache.js";
+import { setGeneratedContent, setGeneratedDecisions, setGeneratedNpcTriggers, setGeneratedSharedContent } from "./generation/cache.js";
 import { getNpcTriggersForRound } from "./test-fixtures.js";
 import { _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 import type { EventContext } from "./logger/types.js";
@@ -1133,6 +1133,44 @@ describe("emitContent — INV-2: generated news is emitted directly", () => {
 
     // Exactly 3 generated news items (from makeGenContent)
     expect(allNewsItems.length).toBe(3);
+  });
+});
+
+describe("emitContent — shared content fan-out", () => {
+  it("emits shared substack content to every faction with the recipient faction applied", () => {
+    const obPlayer = makePlayer("p1", "openbrain", "ob_ceo");
+    const chinaPlayer = makePlayer("p2", "china", "china_director");
+    const room = makeRoom({ round: 1, players: { p1: obPlayer, p2: chinaPlayer } });
+
+    setGeneratedContent(room, 1, "openbrain", [makeGenContent("openbrain", "news", 1)]);
+    setGeneratedContent(room, 1, "china", [makeGenContent("china", "news", 1)]);
+    setGeneratedSharedContent(room, 1, [
+      {
+        faction: "external",
+        app: "substack",
+        items: [
+          {
+            id: "gen-substack-shared-1",
+            type: "document",
+            round: 1,
+            sender: "The World Feed",
+            subject: "Shared essay",
+            body: "A public-facing analysis piece.",
+            timestamp: "2027-01-01T00:00:00Z",
+            classification: "context",
+          },
+        ],
+      },
+    ]);
+
+    const { io, emitted } = createMockIo();
+    emitContent(io, room);
+
+    const obContent = getEmittedContent(emitted, "p1");
+    const chinaContent = getEmittedContent(emitted, "p2");
+
+    expect(obContent.some((app) => app.app === "substack" && app.faction === "openbrain")).toBe(true);
+    expect(chinaContent.some((app) => app.app === "substack" && app.faction === "china")).toBe(true);
   });
 });
 

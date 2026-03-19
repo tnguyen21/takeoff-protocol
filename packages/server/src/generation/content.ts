@@ -24,6 +24,7 @@ export const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
   twitter: "tweet",
   slack: "message",
   email: "document",
+  substack: "document",
   memo: "memo",
   signal: "message",
   intel: "document",
@@ -190,6 +191,7 @@ No player messages in Slack last round. Generate standalone contextual messages 
   const APP_STRUCTURAL_HINTS: Partial<Record<AppId, string>> = {
     slack: `Each item MUST include "sender" (display name, e.g. "@alice") and "channel" (e.g. "#research", "#general").`,
     email: `Each item MUST include "sender" (email address or display name) and "subject" (email subject line).`,
+    substack: `Each item MUST include "sender" (publication or byline) and "subject" (article headline). Write as a public-facing essay, newsletter post, or reported analysis piece. Do not write internal memos, DMs, or private correspondence.`,
     memo: `Each item MUST include "subject" (memo title/header, e.g. "RE: Safety Review Q3"). Keep the subject concise (≤60 chars) — it appears as the sidebar page title in the UI. Format the body as an internal memo or report, not a chat message (use formal headers, paragraph structure). Content should reference and build on events from prior rounds since memos accumulate and players see the progression across rounds.`,
     signal: `Each item MUST include "sender" (handle or name). Keep messages short and paranoid.`,
     intel: `Each item MUST include "subject" (report title). Use ICD 203 format with classification headers.`,
