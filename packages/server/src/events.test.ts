@@ -1599,8 +1599,8 @@ describe("tweet persistence and rejoin replay", () => {
     fire(senderSocket.handlers, "tweet:send", { text: "First tweet" });
     fire(senderSocket.handlers, "tweet:send", { text: "Second tweet" });
     expect(room.playerTweets).toHaveLength(2);
-    expect((room.playerTweets![0] as Record<string, unknown>).text).toBe("First tweet");
-    expect((room.playerTweets![1] as Record<string, unknown>).text).toBe("Second tweet");
+    expect(room.playerTweets![0]?.text).toBe("First tweet");
+    expect(room.playerTweets![1]?.text).toBe("Second tweet");
   });
 
   it("INV-3: tweet storage does not break broadcast to all players", () => {

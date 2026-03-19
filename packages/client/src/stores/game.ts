@@ -1,9 +1,10 @@
 import { create } from "zustand";
-import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationAngle, PublicationTarget, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotification, GamePhase, IndividualDecision, Player, PlayerTweet, Publication, PublicationAngle, PublicationTarget, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { soundManager } from "../sounds/index.js";
 import { useUIStore } from "./ui.js";
+import { appendPlayerTweet } from "./playerTweets.js";
 
 // ── Session persistence (survives page refresh) ──
 
@@ -69,6 +70,7 @@ interface GameStore {
   timer: { endsAt: number; pausedAt?: number };
   stateView: StateView | null;
   content: AppContent[];
+  playerTweets: PlayerTweet[];
   briefingText: string | null;
 
   // Decisions
@@ -143,6 +145,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   timer: { endsAt: 0 },
   stateView: null,
   content: [],
+  playerTweets: [],
   decisions: null,
   decisionSubmitted: false,
   teamVotes: {},
@@ -182,7 +185,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         const gmName = get().playerName ?? "GM";
         socket.emit("room:create", { gmName }, (res: { ok: boolean; code?: string; error?: string }) => {
           if (res.ok && res.code) {
-            set({ roomCode: res.code, isGM: true, playerId: socket.id });
+            set({ roomCode: res.code, isGM: true, playerId: socket.id, playerTweets: [] });
             saveSession({ roomCode: res.code, playerName: gmName, playerId: socket.id!, isGM: true });
             resolve(res.code);
           } else {
@@ -208,7 +211,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           { code, name },
           (res: { ok: boolean; player?: Player }) => {
             if (res.ok) {
-              set({ roomCode: code.toUpperCase(), playerId: socket.id });
+              set({ roomCode: code.toUpperCase(), playerId: socket.id, playerTweets: [] });
               saveSession({ roomCode: code.toUpperCase(), playerName: name, playerId: socket.id!, isGM: false });
               resolve(true);
             } else {
@@ -548,6 +551,18 @@ socket.on("game:notification", (data: GameNotification) => {
   useGameStore.setState((state) => ({
     notifications: [...state.notifications, data],
   }));
+});
+
+socket.on("tweet:receive", (tweet: PlayerTweet) => {
+  useGameStore.setState((state) => {
+    const nextTweets = appendPlayerTweet(state.playerTweets, tweet);
+    if (nextTweets === state.playerTweets) {
+      return state;
+    }
+    return {
+      playerTweets: nextTweets,
+    };
+  });
 });
 
 // Auto-connect on load if we have a stored session (page refresh / history navigation)
