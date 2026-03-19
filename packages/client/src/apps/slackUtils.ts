@@ -7,7 +7,6 @@
 import type { ContentItem, GameMessage } from "@takeoff/shared";
 
 export const SLACK_CHANNELS = ["#general", "#research", "#alignment", "#announcements", "#ops", "#random"] as const;
-type SlackChannel = (typeof SLACK_CHANNELS)[number];
 
 /**
  * Assigns a Slack channel to a content item.

@@ -8,7 +8,6 @@ export function Lobby() {
     isGM,
     playerName,
     lobbyPlayers,
-    selectedFaction,
     selectedRole,
     setPlayerName,
     startGame,

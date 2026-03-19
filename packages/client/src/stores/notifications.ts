@@ -20,7 +20,7 @@ interface NotificationsStore {
 
 const MAX_VISIBLE = 3;
 
-export const useNotificationsStore = create<NotificationsStore>((set, get) => ({
+export const useNotificationsStore = create<NotificationsStore>((set) => ({
   queue: [],
   visible: [],
 

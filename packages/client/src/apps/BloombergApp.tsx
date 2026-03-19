@@ -243,7 +243,7 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
       {/* Scrolling ticker tape */}
       <div className="overflow-hidden bg-[#050505] border-b border-green-900 shrink-0 py-0.5">
         <div className="bbg-tape-inner inline-flex gap-0 text-[10px] tabular-nums">
-          {[tapeContent, tapeContent].map((chunk, ci) => (
+          {[tapeContent, tapeContent].map((_, ci) => (
             <span key={ci} className="inline-flex">
               {TAPE_TICKERS.map((t, i) => (
                 <span key={`${ci}-${i}`} className="inline-flex items-center gap-1 mr-4">

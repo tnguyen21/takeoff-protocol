@@ -48,5 +48,3 @@ export const EVENT_NAMES = {
   GENERATION_FAILURE: "generation.failure",
   GENERATION_VALIDATION_FAILURE: "generation.validation_failure",
 } as const;
-
-type EventName = (typeof EVENT_NAMES)[keyof typeof EVENT_NAMES];

@@ -125,7 +125,7 @@ export function extractPlayerSlackMessages(
  * Create the initial story bible from static arc templates and faction data.
  * Call this once when a game room is first initialized or generation is first triggered.
  */
-export function initializeStoryBible(room: GameRoom): StoryBible {
+export function initializeStoryBible(_room: GameRoom): StoryBible {
   const factions: StoryBible["factions"] = (
     ["openbrain", "prometheus", "china", "external"] as Faction[]
   ).map((faction) => {

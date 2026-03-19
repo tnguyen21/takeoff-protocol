@@ -578,10 +578,3 @@ socket.on("gm:timers-updated", (data: { timerOverrides: Partial<Record<GamePhase
 socket.on("gm:generation-updated", (data: { enabled: boolean }) => {
   useGameStore.setState({ gmGenerationEnabled: data.enabled });
 });
-
-// ── Selectors ──
-
-/** Filter the stored AppContent[] for a specific app, merging items from all matching entries. */
-export function getContentForApp(content: AppContent[], appId: AppId): ContentItem[] {
-  return content.filter((c) => c.app === appId).flatMap((c) => c.items);
-}

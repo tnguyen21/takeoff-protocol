@@ -6,12 +6,10 @@ import { useGameStore } from "../stores/game.js";
 import { AppIcon } from "../apps/icons.js";
 import { FACTIONS } from "@takeoff/shared";
 
-const ICON_SIZE = 44;
-const ICON_GAP = 4;
 const ICON_DISPLAY_SIZE = 24;
 
 export function Dock() {
-  const { windows, openWindow, focusWindow, minimizeWindow, openedThisRound } = useUIStore();
+  const { windows, openWindow, minimizeWindow, openedThisRound } = useUIStore();
   const unreadCounts = useMessagesStore((s) => s.unreadCounts);
   const markRead = useMessagesStore((s) => s.markRead);
   const round = useGameStore((s) => s.round);

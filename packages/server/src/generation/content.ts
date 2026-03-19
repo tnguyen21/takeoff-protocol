@@ -16,8 +16,6 @@ export const VALID_SLACK_CHANNELS = [
   "#random",
 ] as const;
 
-type ValidSlackChannel = (typeof VALID_SLACK_CHANNELS)[number];
-
 // ── App → ContentItemType mapping ─────────────────────────────────────────────
 
 export const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {

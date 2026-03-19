@@ -2,7 +2,6 @@ import React from "react";
 import type { PublicationAngle, PublicationTarget } from "@takeoff/shared";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
-import { estimateReadTime, renderMarkdown } from "./substackUtils.js";
 
 const POSTS = [
   { title: "Why I left my AI safety role (and what I learned)", date: "Feb 27", status: "Published", reads: "24.1K" },
@@ -30,44 +29,6 @@ I wasn't alone in noticing. Several colleagues had similar experiences, though m
 
 And that's the thing about safety failures. They don't announce themselves. They accumulate quietly until they don't.`;
 
-const STATIC_COMMENTS = [
-  {
-    author: "Dr. Priya Nair",
-    initial: "P",
-    timestamp: "Feb 27",
-    text: "This resonates deeply. The 'competitive pressure as existential threat' framing is one I've heard from almost everyone I've interviewed at frontier labs. Thank you for putting it into words.",
-    likes: 87,
-  },
-  {
-    author: "Marcus Chen",
-    initial: "M",
-    timestamp: "Feb 27",
-    text: "The safety timeline compression you describe is real. At two different orgs I've worked at, the standard was 'we'll do more safety testing after launch.' The institutional logic makes sense in the moment and is terrifying in aggregate.",
-    likes: 64,
-  },
-  {
-    author: "alignment_lurker_9",
-    initial: "A",
-    timestamp: "Feb 28",
-    text: "What would actually fix this? Genuine question. External audit? Liability? Or are we just too early in the capability curve for any governance to matter?",
-    likes: 23,
-  },
-  {
-    author: "Isabel Ferreira",
-    initial: "I",
-    timestamp: "Mar 1",
-    text: "I left last year for similar reasons. The hardest part wasn't the decision — it was watching colleagues rationalize each compromise as necessary. Miss the work, not the environment.",
-    likes: 41,
-  },
-];
-
-const RECOMMENDED = [
-  "Alignment Forum Weekly",
-  "The GPU Report",
-  "China AI Watcher",
-  "Compute & Capital",
-];
-
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
   const { selectedRole, publishArticle, publications } = useGameStore();
 
@@ -78,7 +39,6 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   const [composeBody, setComposeBody] = React.useState("");
   const [composeAngle, setComposeAngle] = React.useState<PublicationAngle | "">("");
   const [composeTarget, setComposeTarget] = React.useState<PublicationTarget | "">("");
-  const [publishedCount, setPublishedCount] = React.useState(0);
   const [justPublished, setJustPublished] = React.useState(false);
 
   // Track publications created by this session for the post list
@@ -120,7 +80,6 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
       angle: composeAngle,
       targetFaction: composeTarget,
     });
-    setPublishedCount((c) => c + 1);
     setJustPublished(true);
     setComposing(false);
     setComposeTitle("");

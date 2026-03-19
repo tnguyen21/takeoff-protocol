@@ -27,7 +27,7 @@ function NarrativeArcTable({ arcs }: { arcs: EndingArc[] }) {
           </tr>
         </thead>
         <tbody>
-          {arcs.map((arc, i) => {
+          {arcs.map((arc) => {
             const outcomeTitle = arc.spectrum[arc.result].split(" — ")[0];
             return (
               <tr key={arc.id} className="border-b border-[#111] last:border-0">

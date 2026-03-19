@@ -78,14 +78,6 @@ const BRAND_ICON_COMPONENTS: Record<string, React.ComponentType<{ className?: st
   wandb: WandBIcon,
 };
 
-function getAppBrandColor(appId: string): string | undefined {
-  return BRAND_COLORS[appId];
-}
-
-function isBrandIcon(appId: string): boolean {
-  return appId in BRAND_ICON_COMPONENTS;
-}
-
 // React component for rendering app icons
 interface AppIconProps {
   appId: string;

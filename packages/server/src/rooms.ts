@@ -1,5 +1,5 @@
 import { INITIAL_STATE, isLeaderRole } from "@takeoff/shared";
-import type { Faction, GameMessage, GamePhase, GameRoom, Player, Role, StateVariables } from "@takeoff/shared";
+import type { Faction, GameMessage, GameRoom, Player, Role } from "@takeoff/shared";
 import { createLoggerForRoom } from "./logger/registry.js";
 
 export const MAX_CONCURRENT_ROOMS = parseInt(process.env.MAX_CONCURRENT_ROOMS || "5", 10);

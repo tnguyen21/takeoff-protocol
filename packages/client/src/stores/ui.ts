@@ -39,7 +39,7 @@ const MENUBAR_H = 28;
 const DOCK_H = 64;
 const MAX_VISIBLE_WINDOWS = 6;
 
-export const useUIStore = create<UIStore>((set, get) => ({
+export const useUIStore = create<UIStore>((set) => ({
   windows: [],
   topZ: 0,
   openedThisRound: new Set<string>(),

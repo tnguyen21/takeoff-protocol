@@ -90,7 +90,7 @@ export function seedBotsForRoom(room: GameRoom, humanPlayerId: string, opts: Dev
  * Writes directly to room.decisions / room.teamVotes / room.teamDecisions.
  * No-ops silently if no bots present or round === 0.
  */
-export function scheduleBotDecisionSubmissions(io: Server, room: GameRoom, opts: DevBotOptions): void {
+export function scheduleBotDecisionSubmissions(_io: Server, room: GameRoom, opts: DevBotOptions): void {
   // Silently no-op if no bots in room
   const botIds = Object.keys(room.players).filter((id) => id.startsWith("__bot_"));
   if (botIds.length === 0) return;
