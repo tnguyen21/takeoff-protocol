@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-18
+Last updated: 2026-03-19
 
 ---
 
@@ -102,11 +102,22 @@ No known bugs (server, client, or shared).
 
 **Status: Full pipeline implemented. LLM generation is the sole content path. Real API quality untested.**
 
+Design principles:
+- **Skeleton + flesh** — narrative skeleton (5-round arc, thresholds, endings) is pre-authored; LLM generates the flesh (messages, headlines, decisions) reactive to game state
+- **State is source of truth** — LLM reads `StateVariables`, `RoundHistory[]`, `firedThresholds`; never invents state
+- **Structured output** — typed JSON matching existing schemas, validated server-side, no client protocol changes
+- **No free lunches** — every decision option must have >= 2 positive and >= 2 negative effects, enforced by validation
+- **No fallback by design** — if API is down, content is simply missing; degradation toast notifies players
+
+What's fixed (pre-authored, all rounds): Round 1 content, state variable definitions, fog-of-war rules, threshold events, ending arc resolvers, phase structure, activity penalties.
+
+What's generated (Rounds 2-5): briefings, app content (all apps), decisions (template-constrained), NPC messages. Pipeline triggers during resolution of round R-1, caches in `room.generatedRounds[R]`.
+
 What exists:
 - Full generation pipeline: briefing + content (news/twitter/slack/email/memo/signal) + NPC triggers + decisions
 - 104 decision templates across all 5 rounds, all 8 faction/role types
 - Decision validation: hard constraints (3 options, 5-8 effects, no-free-lunch), soft constraints (variable scope, effect bounds), distinctness checks
-- Prompt system with faction voices, app voices, round arc templates
+- Prompt system with faction voices, app voices, round arc templates (3-layer: static system prompt + story bible + round-specific instructions)
 - Retry with error feedback (max 2 attempts per artifact)
 - Kill switches: `GEN_ENABLED`, `GEN_BRIEFINGS_ENABLED`, `GEN_NPC_ENABLED`, `GEN_DECISIONS_ENABLED`, per-room toggle
 - Provider abstraction (Anthropic Claude, with mock for tests). Model selection: Sonnet for briefings/decisions, Haiku for content/NPC.
@@ -114,12 +125,16 @@ What exists:
 - Fog-safety validation — heuristic scan of generated content for leaked hidden state values
 - Generation metrics emitted to JSONL game logger (started/success/failure/validation events)
 - Client degradation toast — notifies players via macOS-style notification when generation partially fails
-- No pre-authored fallback by design — if API is down, content is simply missing
+- Story bible — accumulates narrative events across rounds, provides LLM "memory" of what happened
 
 What's missing:
-- **No cost controls** — no concurrent request throttle, no per-room budget, no daily spend cap. ~14 API calls/round/room, ~$6.64/round. 100 concurrent rooms = $3,300+.
-- **Resolution narrative generation** — described in GENERATIVE-CONTENT.md Phase C. Current resolution narrative is a generic template, not LLM-generated.
-- **No live playtesting** — prompt quality, latency, and cost are untested with real API calls.
+- **No cost controls** — no concurrent request throttle, no per-room budget, no daily spend cap. ~14 API calls/round/room. Cost estimate unclear: original design estimated ~$0.08/round but didn't account for per-template decision calls (~20/round). True cost unknown until real API testing.
+- **Resolution narrative generation** — current resolution narrative is a generic template, not LLM-generated (GH issue #1)
+- **No live playtesting** — prompt quality, latency, and cost are untested with real API calls
+
+Open design questions:
+- Should player DMs/team chats be included in generation context? (Currently only Slack messages are included)
+- How do we measure generation quality? Playtester surveys? A/B testing?
 
 ### External Role Balancing
 
@@ -140,7 +155,6 @@ All four external roles (NSA, Journalist, VC, Diplomat) have individual decision
 What's missing:
 - **Event coverage gaps** — 10 of 22 spec'd event types not yet emitted (see below)
 - **Health endpoint minimal** — only room count; no memory, socket count, generation status
-- **GM has no generation visibility** — can't see if generation is pending/ready/failed
 - **No cost instrumentation** — no tracking of actual API spend
 
 Missing event emissions: `player.role_selected`, `player.disconnected`, `player.reconnected`, `phase.paused`, `phase.resumed`, `phase.extended`, `phase.gm_advanced`, `decision.team_locked`, `decision.inaction`, `state.snapshot`, `state.delta`, `state.gm_override`, `threshold.fired`, `npc_trigger.fired`, `publish.submitted`, `message.sent`, `message.npc`, `activity.penalty`
@@ -225,7 +239,6 @@ Deployment is live. Next steps:
 Before enabling generation in production:
 4. Add concurrent request throttle (max 5 simultaneous Anthropic API calls)
 5. Add token usage logging from Anthropic response metadata
-6. Add generation status visibility to GM dashboard (pending/ready/failed)
 
 ### P2 — Monitoring & Observability
 7. Logger event coverage sweep — emit 18 missing event types across events.ts and game.ts
@@ -233,7 +246,7 @@ Before enabling generation in production:
 9. Surface threshold/NPC trigger events in GM dashboard
 
 ### P3 — Gameplay Enrichment
-10. Resolution narrative generation (Phase C — LLM-generated reactive prose)
+10. Resolution narrative generation — LLM-generated reactive prose (GH issue #1)
 11. External role mechanical depth (see External Role Balancing section above)
 12. Journalist publication impacts — faction-specific by story angle
 13. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
@@ -246,5 +259,6 @@ Before enabling generation in production:
 ### Future (Post-Launch)
 19. Twitter faction bubble system (per-faction algorithmic feed)
 20. Slack real-time conversational NPCs (LLM-powered, respond to player messages)
-21. GM preview/edit of generated content before emission
-22. Game replay from JSONL logs (debrief visualizations, "what if" replays)
+21. Game replay from JSONL logs (debrief visualizations, "what if" replays)
+22. Decision generation v2 — full generation with Monte Carlo validation (GH issue #2)
+23. Streaming content delivery — progressive content during intel phase instead of batch

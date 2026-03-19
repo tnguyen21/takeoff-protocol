@@ -5,7 +5,6 @@
 │   ├── DESIGN.md
 │   ├── DEV-TOOLS.md
 │   ├── EXTERNAL-ROLES-AUDIT.md
-│   ├── GENERATIVE-CONTENT.md
 │   └── STATUS.md
 ├── packages
 │   ├── client
@@ -346,4 +345,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 324 files
+23 directories, 323 files
