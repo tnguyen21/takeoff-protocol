@@ -128,13 +128,8 @@ What exists:
 - Story bible — accumulates narrative events across rounds, provides LLM "memory" of what happened
 
 What's missing:
-- **No cost controls** — no concurrent request throttle, no per-room budget, no daily spend cap. ~14 API calls/round/room. Cost estimate unclear: original design estimated ~$0.08/round but didn't account for per-template decision calls (~20/round). True cost unknown until real API testing.
-- **Resolution narrative generation** — current resolution narrative is a generic template, not LLM-generated (GH issue #1)
+- **No concurrent request throttle** — ~14 API calls/round/room with no cap on simultaneous requests. Needs throttle before enabling generation in production.
 - **No live playtesting** — prompt quality, latency, and cost are untested with real API calls
-
-Open design questions:
-- Should player DMs/team chats be included in generation context? (Currently only Slack messages are included)
-- How do we measure generation quality? Playtester surveys? A/B testing?
 
 ### External Role Balancing
 
@@ -150,14 +145,9 @@ All four external roles (NSA, Journalist, VC, Diplomat) have individual decision
 
 ### Diagnostics & Logging
 
-**Status: Logger implemented with structured JSONL. Observability gaps remain.**
+**Status: Logger implemented with structured JSONL. Event coverage incomplete.**
 
-What's missing:
-- **Event coverage gaps** — 10 of 22 spec'd event types not yet emitted (see below)
-- **Health endpoint minimal** — only room count; no memory, socket count, generation status
-- **No cost instrumentation** — no tracking of actual API spend
-
-Missing event emissions: `player.role_selected`, `player.disconnected`, `player.reconnected`, `phase.paused`, `phase.resumed`, `phase.extended`, `phase.gm_advanced`, `decision.team_locked`, `decision.inaction`, `state.snapshot`, `state.delta`, `state.gm_override`, `threshold.fired`, `npc_trigger.fired`, `publish.submitted`, `message.sent`, `message.npc`, `activity.penalty`
+Missing event emissions (18 of 22 spec'd types): `player.role_selected`, `player.disconnected`, `player.reconnected`, `phase.paused`, `phase.resumed`, `phase.extended`, `phase.gm_advanced`, `decision.team_locked`, `decision.inaction`, `state.snapshot`, `state.delta`, `state.gm_override`, `threshold.fired`, `npc_trigger.fired`, `publish.submitted`, `message.sent`, `message.npc`, `activity.penalty`
 
 ### Game Balance
 
@@ -177,89 +167,46 @@ From 10,000 random-heuristic trials (with generated decision templates):
 | Open Source | 58.1% irrelevant | Skewed — needs tuning |
 | Prometheus | Distributed | Healthy |
 
-### WandBApp Content Integration
-
-WandBApp (`apps/WandBApp.tsx`) ignores its `content` prop entirely — renders fully static data. Should integrate server-provided content items (training metrics, safety probes) that change per round based on game state.
-
-### Client UX Gaps
-
-- `Dock.tsx:95` — `negotiation-pulse` CSS class undefined (Signal icon has no visual effect during Round 4)
-- Faction display maps (`FACTION_NAMES`, `FACTION_COLORS`) scattered across 4+ files — consolidate
-
 ---
 
-## Test Quality
+## Weekend Plan
 
-### Current Coverage
-- 1,143 pass, 2 skip, 0 fail across 47 test files
-- Server (641 tests / 25 files): events, game, rooms, devBots, activity, decision-cycle, reconnect, cleanup, updateStoryBible + generation suite + logger suite + auth + decision submission edge cases
-- Client (411 tests / 21 files): ErrorBoundary, Decision, PublishNotificationBanner component tests + utility tests across all 13 app modules + store tests (game, messages, notifications, UI) + GM ControlsPanel export tests
-- Shared (91 tests / 1 file): resolution, fog, endings with property tests
-
-### Coverage Gaps
-
-**Critical (high risk, no tests):**
-- **Client socket integration (`socket.ts`)** — reconnection retry logic on client side untested
-
-**High (moderate risk):**
-- **Client screens** (`Desktop.tsx`, `Lobby.tsx`, `Ending.tsx`, `Resolution.tsx`, `screens/gm/`, `Briefing.tsx`) — no component render tests
-- **Generation error paths** — timeout/parse/validation failures tested in isolation but not in full orchestration flow
-
-**Medium (lower risk):**
-- **17 app components** (EmailApp, SlackApp, etc.) — only utility functions tested, not React components
-- **Simulation harness** — no tests for Monte Carlo or sampler logic itself
-
-**Structural:**
-- No end-to-end tests (real browser + server)
-
----
-
-## Refactoring Opportunities
-
-| Item | Location | Impact |
-|------|----------|--------|
-| `game:phase` emit duplicated in 6 call sites | game.ts | Extract `emitPhase(io, room)` |
-| `isLeader` derivation triplicated | rooms.ts, events.ts | Shared helper using `isLeaderRole()` |
-| Mixed inline styles and Tailwind | All client components | Design token setup + migration in progress |
-| Socket listeners not teardown-friendly | stores/game.ts, stores/messages.ts | Fine for single-session, blocks future leave-room flows |
-| `initializeStoryBible` side-effect in `buildGenerationContext` | generation/context.ts | Surprising mutation in a read-like function |
-| `injectNewsContent` and `publish:submit` near-duplicate | events.ts | Both build ContentItem + Publication + emit `game:publish` |
-
----
-
-## Priority Recommendations
-
-### P0 — Playtest
-Deployment is live. Next steps:
+### P0 — Playtest Prep
 1. Smoke test on Fly.io: create room, join 2-3 browsers, advance through phases
 2. Run first full playtest with real humans (`GEN_ENABLED=false`)
 3. Second playtest with `GEN_ENABLED=true` + `ANTHROPIC_API_KEY` set
 
-### P1 — Generation Cost Controls
-Before enabling generation in production:
+### P1 — Before Enabling Generation
 4. Add concurrent request throttle (max 5 simultaneous Anthropic API calls)
-5. Add token usage logging from Anthropic response metadata
 
-### P2 — Monitoring & Observability
-7. Logger event coverage sweep — emit 18 missing event types across events.ts and game.ts
-8. Expand `/api/health` (memory, socket count, generation pipeline status)
-9. Surface threshold/NPC trigger events in GM dashboard
+### P2 — Logging
+5. Logger event coverage sweep — emit 18 missing event types across events.ts and game.ts
 
-### P3 — Gameplay Enrichment
-10. Resolution narrative generation — LLM-generated reactive prose (GH issue #1)
-11. External role mechanical depth (see External Role Balancing section above)
-12. Journalist publication impacts — faction-specific by story angle
-13. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
-14. Update simulation harness for generated decisions — current Monte Carlo uses pre-authored decisions only; needs effect-range sampling or real API decision sets
+### P3 — Gameplay
+6. External role mechanical depth (see External Role Balancing section above)
+7. Journalist publication impacts — faction-specific by story angle
+8. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
 
-### P4 — Polish
-14. Inline style → Tailwind migration (in progress)
-15. WandBApp content integration (currently ignores `content` prop)
-16. Add client screen component tests
+---
+
+## Backlog (GitHub Issues)
+
+| # | Issue |
+|---|-------|
+| [#1](https://github.com/nwyin/takeoff-protocol/issues/1) | Resolution narrative generation |
+| [#2](https://github.com/nwyin/takeoff-protocol/issues/2) | Decision generation v2 with Monte Carlo validation |
+| [#3](https://github.com/nwyin/takeoff-protocol/issues/3) | Token usage logging |
+| [#4](https://github.com/nwyin/takeoff-protocol/issues/4) | Expand /api/health endpoint |
+| [#5](https://github.com/nwyin/takeoff-protocol/issues/5) | GM dashboard: threshold/NPC event visibility |
+| [#6](https://github.com/nwyin/takeoff-protocol/issues/6) | Simulation harness: support generated decisions |
+| [#7](https://github.com/nwyin/takeoff-protocol/issues/7) | Complete Tailwind migration |
+| [#8](https://github.com/nwyin/takeoff-protocol/issues/8) | WandBApp content integration |
+| [#9](https://github.com/nwyin/takeoff-protocol/issues/9) | Client component test coverage |
+| [#10](https://github.com/nwyin/takeoff-protocol/issues/10) | Server refactoring |
+| [#11](https://github.com/nwyin/takeoff-protocol/issues/11) | Client UX gaps (negotiation-pulse CSS, faction maps) |
 
 ### Future (Post-Launch)
-19. Twitter faction bubble system (per-faction algorithmic feed)
-20. Slack real-time conversational NPCs (LLM-powered, respond to player messages)
-21. Game replay from JSONL logs (debrief visualizations, "what if" replays)
-22. Decision generation v2 — full generation with Monte Carlo validation (GH issue #2)
-23. Streaming content delivery — progressive content during intel phase instead of batch
+- Twitter faction bubble system (per-faction algorithmic feed)
+- Slack real-time conversational NPCs (LLM-powered, respond to player messages)
+- Game replay from JSONL logs (debrief visualizations, "what if" replays)
+- Streaming content delivery — progressive content during intel phase instead of batch
