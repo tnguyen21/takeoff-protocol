@@ -1,7 +1,9 @@
 import type {
   DecisionOption,
   DecisionTemplate,
+  Faction,
   IndividualDecision,
+  Role,
   RoundDecisions,
   StateVariables,
   TeamDecision,
@@ -143,6 +145,65 @@ const VARIABLE_DESCRIPTIONS: Partial<Record<keyof StateVariables, string>> = {
   domesticChipProgress: "China's domestic chip development progress (0-100)",
 };
 
+// ── Role identity context ─────────────────────────────────────────────────────
+//
+// Injected into the decision prompt so the LLM writes decisions that feel like
+// they belong on this person's desk. Describes who the player is, what levers
+// they control, and how their decisions should read.
+
+const ROLE_IDENTITY: Record<Role, string> = {
+  // ── OpenBrain ──
+  ob_ceo:
+    "You are the CEO of OpenBrain, the leading US AI lab. You answer to your board, your investors, and increasingly to the US government. You believe speed is safety — if you don't build it, China will. Your decisions read like high-stakes board memos and investor calls.",
+  ob_cto:
+    "You are OpenBrain's CTO and Head of Research. You architect the frontier systems. Agent-2 through Agent-5 are your babies. You care about technical elegance and pushing the capability boundary. Your decisions read like engineering trade-offs with civilization-scale consequences.",
+  ob_safety:
+    "You are OpenBrain's Chief Safety Officer. You see warning signs others dismiss. You've been hired to do alignment work but constantly deprioritized. You might be the only person standing between a breakthrough and a catastrophe. Your decisions carry the weight of conscience vs. career.",
+  ob_security:
+    "You are OpenBrain's Security Lead. You know the weight theft vulnerabilities. You want resources but capabilities always gets priority. Your decisions involve breach prevention, incident response, and the constant tension between security lockdown and engineering velocity.",
+
+  // ── Prometheus ──
+  prom_ceo:
+    "You are the CEO of Prometheus, the safety-first AI lab. You're principled but frustrated watching OpenBrain cut corners and get rewarded. Your board wants you to move faster. Your decisions balance principles against competitive pressure.",
+  prom_scientist:
+    "You are Prometheus's Chief Scientist. You believe safety IS the path to better AI. Your alignment approaches might actually work — if given time and compute. Your decisions read like research strategy with existential stakes.",
+  prom_policy:
+    "You are Prometheus's Head of Policy, the bridge to Washington. You're positioning Prometheus as the 'responsible' choice. Your decisions involve regulatory advocacy, government partnerships, and leveraging safety credentials for competitive advantage.",
+  prom_opensource:
+    "You are Prometheus's Head of Open Source. You believe democratizing AI is morally right and strategically smart — but open-sourcing helps China too. Your decisions involve the tension between transparency, community, and national security.",
+
+  // ── China ──
+  china_director:
+    "You are the Director of DeepCent, China's frontier AI lab. You can do more with less. You have stolen Agent-2 weights, massive state compute, and a strategy to commoditize the model layer. Your decisions read like asymmetric competitive strategy.",
+  china_intel:
+    "You are the CCP Intelligence Chief overseeing AI espionage. You have eyes on both US labs. Stealing Agent-3 or Agent-4 weights could leapfrog everything — but getting caught could trigger kinetic escalation. Your decisions are risk/reward calculations with geopolitical stakes.",
+  china_military:
+    "You are a PLA Military Strategist. Taiwan is always on the table. Cyber is always active. You evaluate kinetic and non-kinetic options on the escalation ladder. Your decisions read like military planning memos — posture, readiness, and contingency.",
+  china_scientist:
+    "You are a senior DeepCent researcher focused on AI capability and alignment evaluation. You work within the state system but care about technical excellence. Your decisions balance scientific ambition with party directives.",
+
+  // ── External Stakeholders ──
+  ext_nsa:
+    "You are the US National Security Advisor. You see AI as the new Manhattan Project. You have classified intelligence others don't — PDBs, signals intercepts, lab assessments. Your decisions are presidential recommendations. Frame options as executive actions: invoke emergency powers, direct agencies, authorize operations. You speak with the weight of the Oval Office.",
+  ext_journalist:
+    "You are an investigative tech journalist with named sources inside both labs and the NSC. Your power is publishing — timing and framing determine whether you cause a market crash, protect a source, or shift the public narrative. Your decisions involve what to publish, when, how to protect sources, and whether to coordinate with government or go independent. Every story is a tradeoff between impact and trust.",
+  ext_vc:
+    "You are a major VC with board seats at both OpenBrain and Prometheus and $920M+ in illiquid positions. Your capital decisions directly affect lab operations — funding commitments set burn rates, board votes shape strategy, public statements move markets. Your decisions read like investment committee memos: deploy, hedge, divest, or leverage your board position to force governance changes.",
+  ext_diplomat:
+    "You are an international diplomat representing the EU and allied nations. Your power comes from coalition-building, treaty frameworks, and economic leverage — the EU's $400B market access is a real stick. Your decisions involve multilateral coordination, bilateral negotiation terms, sanctions threats, and the constant risk that your coalition fractures. Frame options as diplomatic moves with acceptance risk and coalition durability implications.",
+};
+
+const FACTION_IDENTITY: Record<Faction, string> = {
+  openbrain:
+    "This is a team decision for the OpenBrain faction. The team includes the CEO, CTO, Safety Officer, and Security Lead. They must agree despite internal tensions between speed and safety. Frame the decision as a leadership consensus moment.",
+  prometheus:
+    "This is a team decision for the Prometheus faction. The team includes the CEO, Chief Scientist, Head of Policy, and Head of Open Source. They share safety values but disagree on tactics. Frame the decision as a principled strategy alignment.",
+  china:
+    "This is a team decision for the China faction (DeepCent + CCP). The team includes the DeepCent Director, Intelligence Chief, Military Strategist, and Senior Scientist. Party directives create a different decision-making dynamic than the US labs. Frame the decision as a strategic committee consensus.",
+  external:
+    "This is a team decision for the External Stakeholders. The NSA Advisor, Journalist, VC, and Diplomat have overlapping but conflicting interests — national security, transparency, profit, and cooperation. They rarely agree. Frame the decision as a fragile coalition moment where the compromise itself is the tension.",
+};
+
 // ── Prompt builder ─────────────────────────────────────────────────────────────
 
 export function buildDecisionPrompt(
@@ -177,6 +238,13 @@ export function buildDecisionPrompt(
     return `- ${v}: ${desc}`;
   });
   parts.push(`## Variable Descriptions\n${varDescLines.join("\n")}`);
+
+  // Role/faction identity context
+  if (template.role && ROLE_IDENTITY[template.role]) {
+    parts.push(`## Who You Are\n${ROLE_IDENTITY[template.role]}`);
+  } else if (template.faction && FACTION_IDENTITY[template.faction]) {
+    parts.push(`## Who You Are\n${FACTION_IDENTITY[template.faction]}`);
+  }
 
   // Template details
   const actorLabel = template.role ? `Role: ${template.role}` : `Faction: ${template.faction}`;

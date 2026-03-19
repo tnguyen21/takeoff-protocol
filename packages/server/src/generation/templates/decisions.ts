@@ -390,7 +390,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "securityLevelOB", "aiAutonomyLevel", "obBoardConfidence", "obInternalTrust",
       "doomClockDistance", "misalignmentSeverity", "securityLevelProm",
     ],
-    archetypes: ["emergency government oversight", "invoke defense powers", "bilateral diplomacy"],
+    archetypes: ["emergency government oversight", "invoke defense powers", "authorize covert counter-intelligence"],
   },
   {
     round: 2,
@@ -412,7 +412,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "publicSentiment", "obCapability", "promCapability", "economicDisruption", "obPromGap",
       "doomClockDistance", "openSourceMomentum",
     ],
-    archetypes: ["double down on AI", "hedge positions", "pivot to safety investments"],
+    archetypes: ["increase OB commitment", "threaten conditional funding withdrawal", "pivot capital to Prometheus safety play"],
   },
   {
     round: 2,
@@ -663,7 +663,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "obCapability", "promCapability", "economicDisruption", "obPromGap", "whistleblowerPressure",
       "doomClockDistance", "openSourceMomentum",
     ],
-    archetypes: ["push for disclosure", "hedge and wait", "back Prometheus publicly"],
+    archetypes: ["exercise board vote to halt Agent-4", "hedge and wait", "back Prometheus publicly"],
   },
   {
     round: 3,
@@ -892,7 +892,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "securityLevelOB", "aiAutonomyLevel", "obInternalTrust", "doomClockDistance",
       "misalignmentSeverity", "economicDisruption", "securityLevelProm",
     ],
-    archetypes: ["establish emergency oversight committee", "nationalize the lab", "back safe alternative lab"],
+    archetypes: ["nationalize the lab", "establish emergency oversight committee", "back safe alternative lab"],
   },
   {
     round: 4,
@@ -914,7 +914,7 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "publicSentiment", "obCapability", "promCapability", "economicDisruption",
       "obPromGap", "doomClockDistance", "openSourceMomentum", "whistleblowerPressure",
     ],
-    archetypes: ["back Prometheus publicly", "call for industry pause", "safety pivot investments"],
+    archetypes: ["threaten to pull OB funding", "call for industry pause", "back Prometheus publicly"],
   },
   {
     round: 4,
