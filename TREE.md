@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-ff63f8ebe52c
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-b3a461033c3e
 ├── docs
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
@@ -46,6 +46,8 @@
 │   │   │   ├── game.test.ts
 │   │   │   ├── game.ts
 │   │   │   ├── index.ts
+│   │   │   ├── microActions.test.ts
+│   │   │   ├── microActions.ts
 │   │   │   ├── reconnect.test.ts
 │   │   │   ├── rooms.test.ts
 │   │   │   ├── rooms.ts
@@ -90,4 +92,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 69 files
+22 directories, 71 files

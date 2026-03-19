@@ -10,6 +10,7 @@ import { getNpcPersona } from "./content/npcPersonas.js";
 import { applyActivityPenalties } from "./activityPenalties.js";
 import { updateStoryBible } from "./generation/context.js";
 import { cleanupRoom } from "./extendUses.js";
+import { resetMicroActionCounts } from "./microActions.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
@@ -274,6 +275,7 @@ export function advancePhase(io: Server, room: GameRoom) {
       room.decisions = {};
       room.teamDecisions = {};
       room.teamVotes = {};
+      resetMicroActionCounts(room);
     }
   }
 

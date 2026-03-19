@@ -8,6 +8,7 @@ import { getLoggerForRoom } from "./logger/registry.js";
 
 import { extendUses, cleanupRoom } from "./extendUses.js";
 import { EVENT_NAMES } from "./logger/index.js";
+import { applyMicroAction } from "./microActions.js";
 
 // ── Input length limits ────────────────────────────────────────────────────────
 const MAX_CHAT_LENGTH = 2000;
@@ -37,6 +38,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
       return;
     }
     const room = createRoom(socket.id);
+    room.microActionCounts = {};
     socket.join(room.code);
     socket.data.roomCode = room.code;
     console.log(`[room] created ${room.code} by ${gmName}`);
@@ -635,6 +637,9 @@ export function registerGameEvents(io: Server, socket: Socket) {
     if (room.gmId) {
       io.to(room.gmId).emit("tweet:receive", tweet);
     }
+
+    // Micro-action: tweet affects game state (silent — no client notification)
+    applyMicroAction(room, socket.id, "tweet", { type: "tweet", content: trimmed });
   });
 
   // ── Activity Tracking ──
