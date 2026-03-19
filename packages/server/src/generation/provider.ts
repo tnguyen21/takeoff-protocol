@@ -80,6 +80,50 @@ export class MockProvider implements GenerationProvider {
   }
 }
 
+// ── Semaphore ─────────────────────────────────────────────────────────────────
+
+class Semaphore {
+  private active = 0;
+  private readonly queue: (() => void)[] = [];
+
+  constructor(private readonly limit: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.active < this.limit) {
+      this.active++;
+      return;
+    }
+    return new Promise<void>(resolve => this.queue.push(resolve));
+  }
+
+  release(): void {
+    this.active--;
+    const next = this.queue.shift();
+    if (next) {
+      this.active++;
+      next();
+    }
+  }
+
+  status(): { active: number; queued: number; limit: number } {
+    return { active: this.active, queued: this.queue.length, limit: this.limit };
+  }
+}
+
+const DEFAULT_MAX_CONCURRENT = Number(process.env.GEN_MAX_CONCURRENT) || 5;
+
+// Module-level singleton — shared across all AnthropicProvider instances
+const _semaphore = new Semaphore(
+  Number.isFinite(DEFAULT_MAX_CONCURRENT) && DEFAULT_MAX_CONCURRENT > 0
+    ? Math.floor(DEFAULT_MAX_CONCURRENT)
+    : 5,
+);
+
+/** Returns current throttle stats for observability. */
+export function getThrottleStatus(): { active: number; queued: number; limit: number } {
+  return _semaphore.status();
+}
+
 // ── AnthropicProvider ─────────────────────────────────────────────────────────
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
@@ -104,55 +148,60 @@ export class AnthropicProvider implements GenerationProvider {
     const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
     const maxTokens = options?.maxTokens ?? DEFAULT_MAX_TOKENS;
 
-    const toolName = "structured_output";
-    const toolDef: Anthropic.Tool = {
-      name: toolName,
-      description: "Return structured JSON matching the provided schema.",
-      input_schema: schema as Anthropic.Tool["input_schema"],
-    };
-
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-    const apiCall = this.client.messages.create({
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      tools: [toolDef],
-      tool_choice: { type: "tool", name: toolName },
-      messages: [{ role: "user", content: userPrompt }],
-    });
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => {
-        reject(new GenerationTimeoutError(timeout));
-      }, timeout);
-    });
-
-    let response: Anthropic.Message;
+    await _semaphore.acquire();
     try {
-      response = await Promise.race([apiCall, timeoutPromise]);
-    } catch (err) {
-      if (err instanceof GenerationTimeoutError) throw err;
-      throw new GenerationApiError(`Anthropic API error: ${String(err)}`, err);
+      const toolName = "structured_output";
+      const toolDef: Anthropic.Tool = {
+        name: toolName,
+        description: "Return structured JSON matching the provided schema.",
+        input_schema: schema as Anthropic.Tool["input_schema"],
+      };
+
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      const apiCall = this.client.messages.create({
+        model,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        tools: [toolDef],
+        tool_choice: { type: "tool", name: toolName },
+        messages: [{ role: "user", content: userPrompt }],
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new GenerationTimeoutError(timeout));
+        }, timeout);
+      });
+
+      let response: Anthropic.Message;
+      try {
+        response = await Promise.race([apiCall, timeoutPromise]);
+      } catch (err) {
+        if (err instanceof GenerationTimeoutError) throw err;
+        throw new GenerationApiError(`Anthropic API error: ${String(err)}`, err);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      // Extract tool_use block
+      const toolUseBlock = response.content.find(
+        (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
+      );
+
+      if (!toolUseBlock) {
+        throw new GenerationParseError("No tool_use block in Anthropic response");
+      }
+
+      const input = toolUseBlock.input;
+      if (input === null || input === undefined) {
+        throw new GenerationParseError("tool_use block has null/undefined input");
+      }
+
+      return input as T;
     } finally {
-      clearTimeout(timeoutId);
+      _semaphore.release();
     }
-
-    // Extract tool_use block
-    const toolUseBlock = response.content.find(
-      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
-    );
-
-    if (!toolUseBlock) {
-      throw new GenerationParseError("No tool_use block in Anthropic response");
-    }
-
-    const input = toolUseBlock.input;
-    if (input === null || input === undefined) {
-      throw new GenerationParseError("tool_use block has null/undefined input");
-    }
-
-    return input as T;
   }
 }
 

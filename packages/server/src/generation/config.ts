@@ -10,6 +10,7 @@ interface GenerationConfig {
   contentModel: string;       // GEN_CONTENT_MODEL, default "claude-haiku-4-5-20251001"
   decisionModel: string;      // GEN_DECISION_MODEL, default same as briefingModel
   timeout: number;            // GEN_TIMEOUT_MS, default 30000
+  maxConcurrent: number;      // GEN_MAX_CONCURRENT, default 5
 }
 
 // ── Config reader ─────────────────────────────────────────────────────────────
@@ -48,6 +49,12 @@ export function getGenerationConfig(): GenerationConfig {
       ? Number(rawTimeout)
       : 30000;
 
+  const rawMaxConcurrent = env.GEN_MAX_CONCURRENT;
+  const maxConcurrent =
+    rawMaxConcurrent !== undefined && rawMaxConcurrent !== ""
+      ? Number(rawMaxConcurrent)
+      : 5;
+
   return {
     enabled,
     briefingsEnabled,
@@ -58,5 +65,6 @@ export function getGenerationConfig(): GenerationConfig {
     contentModel,
     decisionModel,
     timeout: Number.isFinite(timeout) ? timeout : 30000,
+    maxConcurrent: Number.isFinite(maxConcurrent) && maxConcurrent > 0 ? Math.floor(maxConcurrent) : 5,
   };
 }
