@@ -74,7 +74,7 @@ interface GameStore {
   briefingText: string | null;
 
   // Decisions
-  decisions: { individual: IndividualDecision | null; team: TeamDecision | null } | null;
+  decisions: { individual: IndividualDecision | null; individual2: IndividualDecision | null; team: TeamDecision | null } | null;
   decisionSubmitted: boolean;
   teamVotes: Record<string, string>; // playerId → optionId (leader only)
   teamLocked: boolean; // true after leader submits final team decision
@@ -118,7 +118,7 @@ interface GameStore {
   startGame: () => void;
   startTutorial: () => void;
   endTutorial: () => void;
-  submitDecision: (individual: string, teamVote?: string) => void;
+  submitDecision: (individual: string, individual2?: string, teamVote?: string) => void;
   submitLeaderDecision: (teamDecision: string) => void;
   gmAdvance: () => void;
   gmPause: () => void;
@@ -281,8 +281,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     socket.emit("gm:end-tutorial");
   },
 
-  submitDecision: (individual, teamVote) => {
-    socket.emit("decision:submit", { individual, teamVote });
+  submitDecision: (individual, individual2, teamVote) => {
+    socket.emit("decision:submit", { individual, individual2, teamVote });
     set({ decisionSubmitted: true });
   },
 
@@ -514,7 +514,7 @@ socket.on("game:publish", (data: GamePublishPayload) => {
   }
 });
 
-socket.on("game:decisions", (data: { individual: IndividualDecision | null; team: TeamDecision | null }) => {
+socket.on("game:decisions", (data: { individual: IndividualDecision | null; individual2: IndividualDecision | null; team: TeamDecision | null }) => {
   useGameStore.setState({ decisions: data });
 });
 

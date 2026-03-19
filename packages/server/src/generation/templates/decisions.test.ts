@@ -153,10 +153,24 @@ describe("getTemplatesForRound", () => {
   });
 
   it("returns the expected number of templates per round", () => {
-    const expected: Record<number, number> = { 1: 20, 2: 22, 3: 22, 4: 22, 5: 18 };
+    const expected: Record<number, number> = { 1: 23, 2: 25, 3: 25, 4: 25, 5: 22 };
     for (const [round, count] of Object.entries(expected)) {
       const templates = getTemplatesForRound(Number(round));
       expect(templates.length).toBe(count);
     }
+  });
+});
+
+describe("no external team templates remain", () => {
+  it("no template has faction 'external'", () => {
+    const extTeam = DECISION_TEMPLATES.filter((t) => t.faction === "external");
+    expect(extTeam).toEqual([]);
+  });
+});
+
+describe("slot 2 templates", () => {
+  it("exactly 20 templates have slot === 2", () => {
+    const slot2 = DECISION_TEMPLATES.filter((t) => t.slot === 2);
+    expect(slot2.length).toBe(20);
   });
 });

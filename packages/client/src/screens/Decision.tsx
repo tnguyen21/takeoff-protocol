@@ -28,13 +28,16 @@ export function Decision() {
   } = useGameStore();
 
   const [individualChoice, setIndividualChoice] = useState<string | null>(null);
+  const [individual2Choice, setIndividual2Choice] = useState<string | null>(null);
   const [teamVoteChoice, setTeamVoteChoice] = useState<string | null>(null);
   const [leaderFinalChoice, setLeaderFinalChoice] = useState<string | null>(null);
 
   // Refs that always hold the latest choice values, eliminating stale closure in auto-submit
   const individualChoiceRef = useRef(individualChoice);
+  const individual2ChoiceRef = useRef(individual2Choice);
   const teamVoteChoiceRef = useRef(teamVoteChoice);
   useEffect(() => { individualChoiceRef.current = individualChoice; }, [individualChoice]);
+  useEffect(() => { individual2ChoiceRef.current = individual2Choice; }, [individual2Choice]);
   useEffect(() => { teamVoteChoiceRef.current = teamVoteChoice; }, [teamVoteChoice]);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
@@ -46,6 +49,7 @@ export function Decision() {
   useEffect(() => {
     if (phase === "decision") {
       setIndividualChoice(null);
+      setIndividual2Choice(null);
       setTeamVoteChoice(null);
       setLeaderFinalChoice(null);
       setTimedOut(false);
@@ -81,7 +85,11 @@ export function Decision() {
   const handleSubmit = useCallback(() => {
     if (decisionSubmitted) return;
     soundManager.play("pop");
-    submitDecision(individualChoiceRef.current ?? "", teamVoteChoiceRef.current ?? undefined);
+    submitDecision(
+      individualChoiceRef.current ?? "",
+      individual2ChoiceRef.current ?? undefined,
+      teamVoteChoiceRef.current ?? undefined,
+    );
   }, [decisionSubmitted, submitDecision]);
 
   useEffect(() => {
@@ -94,6 +102,7 @@ export function Decision() {
   if (phase !== "decision") return null;
 
   const individual = decisions?.individual ?? null;
+  const individual2 = decisions?.individual2 ?? null;
   const team = decisions?.team ?? null;
 
   const isSubmitDisabled = decisionSubmitted || timedOut;
@@ -176,30 +185,48 @@ export function Decision() {
             )}
           </div>
 
-          {/* Team Decision */}
+          {/* Right Column: Tactical Decision OR Team Decision */}
           <div className="flex-1 px-6 py-5 flex flex-col">
-            <div className="flex items-center gap-2 mb-3.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-faction-prometheus shrink-0" />
-              <span className="text-cyan-300 text-[11px] font-semibold uppercase tracking-[0.08em]">
-                Team Decision
-              </span>
-              {isLeader && (
-                <span className="ml-auto text-[10px] font-semibold text-amber-400 bg-amber-400/[0.12] border border-amber-400/30 rounded px-1.5 py-px tracking-[0.04em] uppercase">
-                  Leader
-                </span>
-              )}
-            </div>
-
-            {team ? (
+            {individual2 ? (
               <>
+                <div className="flex items-center gap-2 mb-3.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                  <span className="text-amber-300 text-[11px] font-semibold uppercase tracking-[0.08em]">
+                    Tactical Decision
+                  </span>
+                </div>
+
+                <p className="text-gray-300 text-[13px] leading-relaxed mb-4">
+                  {individual2.prompt}
+                </p>
+                <RadioGroup
+                  groupName="individual2"
+                  options={individual2.options}
+                  selected={individual2Choice}
+                  onSelect={setIndividual2Choice}
+                  disabled={isSubmitDisabled}
+                />
+              </>
+            ) : team ? (
+              <>
+                <div className="flex items-center gap-2 mb-3.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-faction-prometheus shrink-0" />
+                  <span className="text-cyan-300 text-[11px] font-semibold uppercase tracking-[0.08em]">
+                    Team Decision
+                  </span>
+                  {isLeader && (
+                    <span className="ml-auto text-[10px] font-semibold text-amber-400 bg-amber-400/[0.12] border border-amber-400/30 rounded px-1.5 py-px tracking-[0.04em] uppercase">
+                      Leader
+                    </span>
+                  )}
+                </div>
+
                 <p className="text-gray-300 text-[13px] leading-relaxed mb-4">
                   {team.prompt}
                 </p>
 
                 {isLeader ? (
-                  /* Leader sees: vote tallies + direct decision picker */
                   <>
-                    {/* Vote tallies */}
                     {totalVotes > 0 && (
                       <div className="mb-4 px-3.5 py-3 bg-white/3 border border-white/8 rounded-[10px]">
                         <div className="text-text-secondary text-[10px] font-semibold uppercase tracking-[0.08em] mb-2">
@@ -229,7 +256,6 @@ export function Decision() {
                       </div>
                     )}
 
-                    {/* Leader's decision */}
                     <RadioGroup
                       groupName="leader-final"
                       options={team.options}
@@ -254,7 +280,6 @@ export function Decision() {
                     </button>
                   </>
                 ) : (
-                  /* Non-leader sees: just the vote */
                   <RadioGroup
                     groupName="team-vote"
                     options={team.options}
@@ -266,7 +291,7 @@ export function Decision() {
               </>
             ) : (
               <p className="text-text-muted text-[13px] italic">
-                No team decision this round.
+                No decision this round.
               </p>
             )}
           </div>
@@ -290,7 +315,7 @@ export function Decision() {
             </div>
           ) : (
             <div className="text-text-muted text-xs">
-              {!individualChoice && !teamVoteChoice
+              {!individualChoice && !individual2Choice && !teamVoteChoice
                 ? "Select your choices above, or skip to abstain."
                 : "Ready to submit."}
             </div>

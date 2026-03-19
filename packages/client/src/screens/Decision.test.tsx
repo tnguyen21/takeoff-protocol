@@ -79,7 +79,7 @@ function baseState() {
   return {
     phase: "decision" as const,
     timer: { endsAt: FAR_FUTURE },
-    decisions: { individual: INDIVIDUAL_DECISION, team: TEAM_DECISION },
+    decisions: { individual: INDIVIDUAL_DECISION, individual2: null, team: TEAM_DECISION },
     decisionSubmitted: false,
     teamVotes: {},
     teamLocked: false,
@@ -109,15 +109,15 @@ describe("Decision component — rendering", () => {
   });
 
   it("INV-2: shows placeholder when individual decision is null", () => {
-    useGameStore.setState({ decisions: { individual: null, team: TEAM_DECISION } });
+    useGameStore.setState({ decisions: { individual: null, individual2: null, team: TEAM_DECISION } });
     render(<Decision />);
     expect(screen.getByText("No individual decision this round.")).toBeTruthy();
   });
 
   it("INV-3: shows placeholder when team decision is null", () => {
-    useGameStore.setState({ decisions: { individual: INDIVIDUAL_DECISION, team: null } });
+    useGameStore.setState({ decisions: { individual: INDIVIDUAL_DECISION, individual2: null, team: null } });
     render(<Decision />);
-    expect(screen.getByText("No team decision this round.")).toBeTruthy();
+    expect(screen.getByText("No decision this round.")).toBeTruthy();
   });
 
   it("FAIL-1: returns null when phase is not 'decision'", () => {
@@ -151,7 +151,7 @@ describe("Decision component — submission flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Submit Decision/i }));
 
     expect(submitDecision).toHaveBeenCalledTimes(1);
-    expect(submitDecision).toHaveBeenCalledWith("publish", "speed");
+    expect(submitDecision).toHaveBeenCalledWith("publish", undefined, "speed");
   });
 
   it("INV-4: Submit with only individual choice passes undefined for team vote", () => {
@@ -165,7 +165,7 @@ describe("Decision component — submission flow", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Submit Decision/i }));
 
-    expect(submitDecision).toHaveBeenCalledWith("publish", undefined);
+    expect(submitDecision).toHaveBeenCalledWith("publish", undefined, undefined);
   });
 
   it("INV-5: decisionSubmitted=true disables all radio inputs and shows 'Submitted ✓'", () => {
@@ -272,7 +272,7 @@ describe("Decision component — auto-submit stale-closure fix", () => {
 
     // Must submit option B (the latest selection), not option A
     expect(submitDecision).toHaveBeenCalledTimes(1);
-    expect(submitDecision).toHaveBeenCalledWith("suppress", undefined);
+    expect(submitDecision).toHaveBeenCalledWith("suppress", undefined, undefined);
   });
 
   it("INV-1: timer auto-submit with no selection submits empty string", async () => {
@@ -285,7 +285,7 @@ describe("Decision component — auto-submit stale-closure fix", () => {
     });
 
     expect(submitDecision).toHaveBeenCalledTimes(1);
-    expect(submitDecision).toHaveBeenCalledWith("", undefined);
+    expect(submitDecision).toHaveBeenCalledWith("", undefined, undefined);
   });
 
   it("INV-2: manual submit via button uses the current selection", () => {
@@ -296,7 +296,7 @@ describe("Decision component — auto-submit stale-closure fix", () => {
     fireEvent.click(screen.getAllByRole("radio", { name: /Suppress/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: /Submit Decision/i }));
 
-    expect(submitDecision).toHaveBeenCalledWith("suppress", undefined);
+    expect(submitDecision).toHaveBeenCalledWith("suppress", undefined, undefined);
   });
 
   it("INV-3: auto-submit fires exactly once even after repeated timer state changes", async () => {

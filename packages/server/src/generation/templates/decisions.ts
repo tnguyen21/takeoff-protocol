@@ -202,6 +202,52 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     archetypes: ["push G7 AI safety framework", "pursue US-China bilateral talks", "draft compute pause treaty"],
   },
 
+  // ── External individual (slot 2) ──────────────────────────
+  {
+    round: 1,
+    role: "ext_nsa",
+    slot: 2,
+    theme: "intelligence sharing posture",
+    variableScope: [
+      "securityLevelOB", "securityLevelProm", "intlCooperation", "usChinaGap",
+      "chinaWeightTheftProgress", "regulatoryPressure", "alignmentConfidence", "obInternalTrust",
+    ],
+    archetypes: ["share classified briefings with labs", "restrict intelligence to need-to-know", "selective disclosure to preferred lab"],
+  },
+  {
+    round: 1,
+    role: "ext_journalist",
+    slot: 2,
+    theme: "source cultivation strategy",
+    variableScope: [
+      "publicAwareness", "publicSentiment", "obInternalTrust", "whistleblowerPressure",
+      "globalMediaCycle", "regulatoryPressure", "promMorale", "obMorale",
+    ],
+    archetypes: ["cultivate OpenBrain sources", "cultivate Prometheus sources", "cultivate government sources"],
+  },
+  {
+    round: 1,
+    role: "ext_vc",
+    slot: 2,
+    theme: "board governance initiative",
+    variableScope: [
+      "obBoardConfidence", "promBoardConfidence", "marketIndex", "obBurnRate",
+      "promBurnRate", "economicDisruption", "openSourceMomentum", "alignmentConfidence",
+    ],
+    archetypes: ["push board governance reform at OpenBrain", "push board governance reform at Prometheus", "maintain board status quo"],
+  },
+  {
+    round: 1,
+    role: "ext_diplomat",
+    slot: 2,
+    theme: "bilateral back-channel",
+    variableScope: [
+      "intlCooperation", "taiwanTension", "ccpPatience", "regulatoryPressure",
+      "publicSentiment", "usChinaGap", "openSourceMomentum", "economicDisruption",
+    ],
+    archetypes: ["open informal China back-channel", "brief EU allies on US lab race", "propose Global South inclusion"],
+  },
+
   // ── OpenBrain team ──────────────────────────────────────────
   {
     round: 1,
@@ -240,18 +286,6 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "publicAwareness",
     ],
     archetypes: ["max CDZ buildout", "invest in domestic chip fabrication", "split frontier and open-source"],
-  },
-
-  // ── External team ───────────────────────────────────────────
-  {
-    round: 1,
-    faction: "external",
-    theme: "cross-stakeholder transparency",
-    variableScope: [
-      "intlCooperation", "publicAwareness", "globalMediaCycle", "marketIndex",
-      "publicSentiment", "regulatoryPressure", "economicDisruption", "openSourceMomentum",
-    ],
-    archetypes: ["share intelligence and coordinate", "selective sharing based on trust", "act independently"],
   },
 
   // ════════════════════════════════════════════════════════════
@@ -426,6 +460,52 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     archetypes: ["push G7 emergency summit", "propose compute freeze", "bilateral emergency talks"],
   },
 
+  // ── External individual (slot 2) ──────────────────────────
+  {
+    round: 2,
+    role: "ext_nsa",
+    slot: 2,
+    theme: "counter-intelligence operation",
+    variableScope: [
+      "securityLevelOB", "securityLevelProm", "chinaWeightTheftProgress", "intlCooperation",
+      "taiwanTension", "regulatoryPressure", "usChinaGap", "alignmentConfidence",
+    ],
+    archetypes: ["deploy FBI counter-intelligence team", "monitor and document only", "coordinate with allied agencies"],
+  },
+  {
+    round: 2,
+    role: "ext_journalist",
+    slot: 2,
+    theme: "source protection decision",
+    variableScope: [
+      "publicAwareness", "publicSentiment", "whistleblowerPressure", "obInternalTrust",
+      "globalMediaCycle", "regulatoryPressure", "obMorale", "promMorale",
+    ],
+    archetypes: ["protect source identity at all costs", "negotiate on-record attribution", "burn source for bigger story"],
+  },
+  {
+    round: 2,
+    role: "ext_vc",
+    slot: 2,
+    theme: "portfolio risk hedge",
+    variableScope: [
+      "obBoardConfidence", "promBoardConfidence", "marketIndex", "obBurnRate",
+      "promBurnRate", "economicDisruption", "doomClockDistance", "openSourceMomentum",
+    ],
+    archetypes: ["increase OpenBrain Series F commitment", "delay funding pending safety audit", "redirect capital to Prometheus"],
+  },
+  {
+    round: 2,
+    role: "ext_diplomat",
+    slot: 2,
+    theme: "coalition unity investment",
+    variableScope: [
+      "intlCooperation", "taiwanTension", "ccpPatience", "regulatoryPressure",
+      "publicSentiment", "usChinaGap", "openSourceMomentum", "domesticChipProgress",
+    ],
+    archetypes: ["invest diplomatic capital in G7 unity", "pursue bilateral US-China track", "convene emergency UN session"],
+  },
+
   // ── OpenBrain team ──────────────────────────────────────────
   {
     round: 2,
@@ -490,18 +570,6 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "usChinaGap", "ccpPatience", "aiAutonomyLevel", "chinaWeightTheftProgress",
     ],
     archetypes: ["attempt weight theft now", "continue open source path", "pursue arms control signal"],
-  },
-
-  // ── External team ───────────────────────────────────────────
-  {
-    round: 2,
-    faction: "external",
-    theme: "coordinated external stakeholder response to Agent-3",
-    variableScope: [
-      "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
-      "globalMediaCycle", "marketIndex", "economicDisruption", "openSourceMomentum",
-    ],
-    archetypes: ["full disclosure coordination", "selective strategic disclosure", "independent divergent action"],
   },
 
   // ════════════════════════════════════════════════════════════
@@ -677,6 +745,52 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     archetypes: ["emergency international framework", "China mutual pause talks", "US-allies coordination"],
   },
 
+  // ── External individual (slot 2) ──────────────────────────
+  {
+    round: 3,
+    role: "ext_nsa",
+    slot: 2,
+    theme: "emergency powers invocation",
+    variableScope: [
+      "regulatoryPressure", "securityLevelOB", "securityLevelProm", "alignmentConfidence",
+      "doomClockDistance", "misalignmentSeverity", "intlCooperation", "obBoardConfidence", "aiAutonomyLevel",
+    ],
+    archetypes: ["recommend DPA Section 4511 invocation", "recommend binding oversight committee", "recommend containment without emergency powers"],
+  },
+  {
+    round: 3,
+    role: "ext_journalist",
+    slot: 2,
+    theme: "whistleblower coordination",
+    variableScope: [
+      "whistleblowerPressure", "publicAwareness", "publicSentiment", "regulatoryPressure",
+      "obInternalTrust", "globalMediaCycle", "misalignmentSeverity", "doomClockDistance",
+    ],
+    archetypes: ["coordinate with whistleblower", "go solo with available evidence", "share notes with government"],
+  },
+  {
+    round: 3,
+    role: "ext_vc",
+    slot: 2,
+    theme: "emergency board session on Agent-4",
+    variableScope: [
+      "obBoardConfidence", "promBoardConfidence", "marketIndex", "obBurnRate",
+      "economicDisruption", "regulatoryPressure", "doomClockDistance", "whistleblowerPressure",
+    ],
+    archetypes: ["call emergency OpenBrain board session", "file SEC material concern disclosure", "coordinate institutional investor response"],
+  },
+  {
+    round: 3,
+    role: "ext_diplomat",
+    slot: 2,
+    theme: "China back-channel engagement",
+    variableScope: [
+      "intlCooperation", "taiwanTension", "ccpPatience", "usChinaGap",
+      "chinaCapability", "domesticChipProgress", "regulatoryPressure", "doomClockDistance", "openSourceMomentum",
+    ],
+    archetypes: ["share China offer with NSA", "negotiate bilateral terms directly", "propose multilateral framework including China"],
+  },
+
   // ── OpenBrain team ──────────────────────────────────────────
   {
     round: 3,
@@ -742,19 +856,6 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "domesticChipProgress", "usChinaGap", "securityLevelProm", "globalMediaCycle",
     ],
     archetypes: ["increase Taiwan posture", "de-escalate to build international trust", "use Taiwan as negotiating leverage"],
-  },
-
-  // ── External team ───────────────────────────────────────────
-  {
-    round: 3,
-    faction: "external",
-    theme: "external stakeholders coordination during crisis",
-    variableScope: [
-      "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
-      "globalMediaCycle", "marketIndex", "economicDisruption", "obBoardConfidence",
-      "openSourceMomentum",
-    ],
-    archetypes: ["coordinate managed response", "independent pressure campaign", "wait for board decision"],
   },
 
   // ════════════════════════════════════════════════════════════
@@ -928,6 +1029,52 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
     archetypes: ["push grand bargain", "push G7 moratorium", "propose international oversight model"],
   },
 
+  // ── External individual (slot 2) ──────────────────────────
+  {
+    round: 4,
+    role: "ext_nsa",
+    slot: 2,
+    theme: "agency coordination directive",
+    variableScope: [
+      "securityLevelOB", "securityLevelProm", "regulatoryPressure", "intlCooperation",
+      "chinaWeightTheftProgress", "doomClockDistance", "aiAutonomyLevel", "misalignmentSeverity",
+    ],
+    archetypes: ["direct interagency security sweep", "authorize expanded surveillance", "stand down domestic operations"],
+  },
+  {
+    round: 4,
+    role: "ext_journalist",
+    slot: 2,
+    theme: "source risk management",
+    variableScope: [
+      "whistleblowerPressure", "publicAwareness", "publicSentiment", "obInternalTrust",
+      "globalMediaCycle", "regulatoryPressure", "doomClockDistance", "misalignmentSeverity",
+    ],
+    archetypes: ["double down on source network", "pivot to public records investigation", "collaborate with rival journalist"],
+  },
+  {
+    round: 4,
+    role: "ext_vc",
+    slot: 2,
+    theme: "capital withdrawal or commitment",
+    variableScope: [
+      "obBoardConfidence", "marketIndex", "obBurnRate", "promBurnRate",
+      "economicDisruption", "doomClockDistance", "whistleblowerPressure", "openSourceMomentum",
+    ],
+    archetypes: ["withdraw OpenBrain funding commitment", "double down with governance conditions", "quietly divest secondary shares"],
+  },
+  {
+    round: 4,
+    role: "ext_diplomat",
+    slot: 2,
+    theme: "sanctions leverage play",
+    variableScope: [
+      "intlCooperation", "regulatoryPressure", "economicDisruption", "publicSentiment",
+      "taiwanTension", "ccpPatience", "openSourceMomentum", "doomClockDistance",
+    ],
+    archetypes: ["threaten EU AI sanctions", "offer EU market access as incentive", "invoke Global South legitimacy argument"],
+  },
+
   // ── OpenBrain team ──────────────────────────────────────────
   {
     round: 4,
@@ -995,19 +1142,6 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "taiwanTension", "securityLevelProm", "openSourceMomentum", "usChinaGap", "globalMediaCycle",
     ],
     archetypes: ["consolidate and focus", "diversify research bets", "prepare for conflict scenario"],
-  },
-
-  // ── External team ───────────────────────────────────────────
-  {
-    round: 4,
-    faction: "external",
-    theme: "external stakeholders final coordination",
-    variableScope: [
-      "intlCooperation", "regulatoryPressure", "publicAwareness", "publicSentiment",
-      "globalMediaCycle", "marketIndex", "economicDisruption", "doomClockDistance", "whistleblowerPressure",
-      "openSourceMomentum",
-    ],
-    archetypes: ["coordinate full response", "selective strategic action", "independent divergent action"],
   },
 
   // ════════════════════════════════════════════════════════════
@@ -1187,6 +1321,52 @@ export const DECISION_TEMPLATES: DecisionTemplate[] = [
       "economicDisruption", "openSourceMomentum",
     ],
     archetypes: ["secure US multilateral commitment", "broker US-China bilateral deal", "deliver EU sanctions ultimatum"],
+  },
+
+  // ── External individual (slot 2) ──────────────────────────
+  {
+    round: 5,
+    role: "ext_nsa",
+    slot: 2,
+    theme: "enforcement posture on superintelligent AI",
+    variableScope: [
+      "securityLevelOB", "securityLevelProm", "intlCooperation", "doomClockDistance",
+      "taiwanTension", "alignmentConfidence", "regulatoryPressure", "aiAutonomyLevel", "usChinaGap",
+    ],
+    archetypes: ["recommend military containment posture", "recommend civilian oversight transfer", "recommend international joint command"],
+  },
+  {
+    round: 5,
+    role: "ext_journalist",
+    slot: 2,
+    theme: "final source decision",
+    variableScope: [
+      "publicAwareness", "publicSentiment", "whistleblowerPressure", "globalMediaCycle",
+      "regulatoryPressure", "doomClockDistance", "intlCooperation", "misalignmentSeverity",
+    ],
+    archetypes: ["protect all sources and publish anonymously", "name sources for maximum impact", "hand evidence to authorities"],
+  },
+  {
+    round: 5,
+    role: "ext_vc",
+    slot: 2,
+    theme: "merger or dissolution play",
+    variableScope: [
+      "obBoardConfidence", "promBoardConfidence", "marketIndex", "economicDisruption",
+      "obBurnRate", "promBurnRate", "doomClockDistance", "openSourceMomentum", "alignmentConfidence",
+    ],
+    archetypes: ["broker lab merger", "fund independent safety foundation", "liquidate all AI positions"],
+  },
+  {
+    round: 5,
+    role: "ext_diplomat",
+    slot: 2,
+    theme: "treaty enforcement mechanism",
+    variableScope: [
+      "intlCooperation", "taiwanTension", "ccpPatience", "regulatoryPressure",
+      "doomClockDistance", "economicDisruption", "openSourceMomentum", "publicSentiment", "alignmentConfidence",
+    ],
+    archetypes: ["deliver binding treaty framework", "accept non-binding agreement", "walk away from negotiations"],
   },
 
   // ── OpenBrain team ──────────────────────────────────────────

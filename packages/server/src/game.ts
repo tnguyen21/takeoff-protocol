@@ -110,6 +110,7 @@ export function startGame(io: Server, room: GameRoom) {
   room.round = 1;
   room.phase = "briefing";
   room.decisions = {};
+  room.decisions2 = {};
   room.teamDecisions = {};
   room.teamVotes = {};
   setPhaseTimer(io, room);
@@ -148,6 +149,7 @@ export function startTutorial(io: Server, room: GameRoom) {
   room.round = 0;
   room.phase = "intel";
   room.decisions = {};
+  room.decisions2 = {};
   room.teamDecisions = {};
   room.teamVotes = {};
 
@@ -174,6 +176,7 @@ export function endTutorial(io: Server, room: GameRoom) {
   room.round = 1;
   room.phase = "briefing";
   room.decisions = {};
+  room.decisions2 = {};
   room.teamDecisions = {};
   room.teamVotes = {};
   // Clear tutorial content so players get real round 1 content
@@ -273,6 +276,7 @@ export function advancePhase(io: Server, room: GameRoom) {
       room.round++;
       room.phase = "briefing";
       room.decisions = {};
+      room.decisions2 = {};
       room.teamDecisions = {};
       room.teamVotes = {};
       resetMicroActionCounts(room);
@@ -342,9 +346,11 @@ export function emitDecisions(io: Server, room: GameRoom) {
 
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
-    const individual: IndividualDecision | undefined = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role);
+    const individuals = roundDecisions.individual.filter((d: IndividualDecision) => d.role === player.role);
+    const individual = individuals[0] ?? null;
+    const individual2 = individuals[1] ?? null;  // second slot if exists
     const team: TeamDecision | undefined = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction);
-    io.to(socketId).emit("game:decisions", { individual: individual ?? null, team: team ?? null });
+    io.to(socketId).emit("game:decisions", { individual: individual ?? null, individual2, team: team ?? null });
   }
 }
 
@@ -928,6 +934,23 @@ function emitResolution(io: Server, room: GameRoom) {
     }
   }
 
+  // Second individual decisions (slot 2): playerId → optionId
+  for (const [playerId, optionId] of Object.entries(room.decisions2 ?? {})) {
+    const player = room.players[playerId];
+    if (!player || !roundDecisions) continue;
+
+    for (const indiv of roundDecisions.individual) {
+      const opt = indiv.options.find((o) => o.id === optionId);
+      if (opt) {
+        chosenOptions.push(opt);
+        chosenLabels[optionId] = opt.label;
+        chosenEffects[optionId] = opt.effects;
+        if (player.role) roleDecisions[player.role + ":2"] = optionId;
+        break;
+      }
+    }
+  }
+
   // Team decisions: faction → optionId
   const teamDecisionSummary: Record<string, { optionId: string; label: string }> = {};
   for (const [faction, optionId] of Object.entries(room.teamDecisions)) {
@@ -973,6 +996,7 @@ function emitResolution(io: Server, room: GameRoom) {
   const historyEntry = {
     round: room.round,
     decisions: { ...room.decisions },
+    decisions2: { ...room.decisions2 },
     teamDecisions: { ...room.teamDecisions },
     stateBefore,
     stateAfter: { ...room.state },
@@ -1069,6 +1093,7 @@ export function jumpToPhase(io: Server, room: GameRoom, round: number, phase: Ga
   room.round = round;
   room.phase = phase;
   room.decisions = {};
+  room.decisions2 = {};
   room.teamDecisions = {};
   room.teamVotes = {};
 
@@ -1124,9 +1149,11 @@ export function replayPlayerState(socket: Socket, room: GameRoom, player: Player
     if (room.phase === "decision") {
       const roundDecisions = getActiveDecisions(room, room.round);
       if (roundDecisions) {
-        const individual = roundDecisions.individual.find((d: IndividualDecision) => d.role === player.role) ?? null;
+        const individuals = roundDecisions.individual.filter((d: IndividualDecision) => d.role === player.role);
+        const individual = individuals[0] ?? null;
+        const individual2 = individuals[1] ?? null;
         const team = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction) ?? null;
-        socket.emit("game:decisions", { individual, team });
+        socket.emit("game:decisions", { individual, individual2, team });
       }
 
       // Gap 1: replay team votes to the reconnected leader

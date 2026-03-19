@@ -117,11 +117,21 @@ export function scheduleBotDecisionSubmissions(_io: Server, room: GameRoom, opts
       if (room.phase !== "decision") return;
 
       // Individual decision
-      const individualDecision = roundDecisions.individual.find((d) => d.role === bot.role);
+      const individualDecisions = roundDecisions.individual.filter((d) => d.role === bot.role);
+      const individualDecision = individualDecisions[0];
       if (individualDecision && individualDecision.options.length > 0) {
         const chosenOptionId = pickRandomOption(individualDecision.options, opts.seed);
         room.decisions[botId] = chosenOptionId;
         console.log(`[dev-bot] submitted individual role=${bot.role} option=${chosenOptionId}`);
+      }
+
+      // Second individual decision (slot 2)
+      const individual2Decision = individualDecisions[1];
+      if (individual2Decision && individual2Decision.options.length > 0) {
+        const chosenOptionId2 = pickRandomOption(individual2Decision.options, opts.seed);
+        if (!room.decisions2) room.decisions2 = {};
+        room.decisions2[botId] = chosenOptionId2;
+        console.log(`[dev-bot] submitted individual2 role=${bot.role} option=${chosenOptionId2}`);
       }
 
       // Team vote

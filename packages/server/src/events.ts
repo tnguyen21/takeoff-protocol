@@ -341,7 +341,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
   // ── Decisions ──
 
-  socket.on("decision:submit", ({ individual, teamVote }: { individual: string; teamVote?: string }) => {
+  socket.on("decision:submit", ({ individual, individual2, teamVote }: { individual: string; individual2?: string; teamVote?: string }) => {
     const room = getSocketRoom(socket);
     if (!room || room.phase !== "decision") return;
 
@@ -361,10 +361,21 @@ export function registerGameEvents(io: Server, socket: Socket) {
       room.decisions[socket.id] = validIndividual;
     }
 
+    // Validate and record second individual decision
+    const indivAll = roundDecisions.individual.filter((d) => d.role === player.role);
+    const indiv2 = indivAll[1];
+    const validIndividual2 = individual2 && indiv2?.options.some((o) => o.id === individual2) ? individual2 : null;
+
+    if (validIndividual2) {
+      if (!room.decisions2) room.decisions2 = {};
+      room.decisions2[socket.id] = validIndividual2;
+    }
+
     // Log decisions
     const timeRemainingMs = room.timer.endsAt - Date.now();
     const logger = getLoggerForRoom(room.code);
     if (validIndividual) logger.log("decision.individual_submitted", { playerName: player.name, role: player.role, optionId: validIndividual, timeRemainingMs }, { actorId: player.name, round: room.round, phase: room.phase });
+    if (validIndividual2) logger.log("decision.individual2_submitted", { playerName: player.name, role: player.role, optionId: validIndividual2, timeRemainingMs }, { actorId: player.name, round: room.round, phase: room.phase });
     if (validTeamVote) logger.log("decision.team_vote", { playerName: player.name, faction: player.faction, optionId: validTeamVote }, { actorId: player.name, round: room.round, phase: room.phase });
 
     // Record team vote
@@ -787,6 +798,7 @@ export function registerGameEvents(io: Server, socket: Socket) {
         room.round = round;
         room.phase = phase;
         room.decisions = {};
+        room.decisions2 = {};
         room.teamDecisions = {};
         room.teamVotes = {};
 
