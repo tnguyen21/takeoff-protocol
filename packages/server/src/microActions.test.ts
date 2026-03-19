@@ -724,6 +724,239 @@ describe("Signal DM INV-5: all deltas clamped", () => {
   });
 });
 
+// ── Signal DM: INV-6: Role-pair specific effects ──────────────────────────────
+
+describe("Signal DM INV-6: role-pair specific effects", () => {
+  // NSA ↔ OB: securityLevelOB
+  it("NSA → OB: securityLevelOB += 0.75 AND intlCooperation += 0.75 (first action)", () => {
+    const room = makeRoom();
+    const secBefore = getState(room, "securityLevelOB");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_nsa",
+      recipientRole: "ob_ceo",
+    });
+    expect(getState(room, "securityLevelOB") - secBefore).toBeCloseTo(0.75, 5);
+    expect(getState(room, "intlCooperation") - coopBefore).toBeCloseTo(0.75, 5);
+  });
+
+  it("OB → NSA (symmetric): securityLevelOB increases AND intlCooperation increases", () => {
+    const room = makeRoom();
+    const secBefore = getState(room, "securityLevelOB");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "external",
+      senderRole: "ob_cto",
+      recipientRole: "ext_nsa",
+    });
+    expect(getState(room, "securityLevelOB")).toBeGreaterThan(secBefore);
+    expect(getState(room, "intlCooperation")).toBeGreaterThan(coopBefore);
+  });
+
+  it("NSA → OB: does NOT affect securityLevelProm", () => {
+    const room = makeRoom();
+    const promSecBefore = getState(room, "securityLevelProm");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_nsa",
+      recipientRole: "ob_security",
+    });
+    expect(getState(room, "securityLevelProm")).toBe(promSecBefore);
+  });
+
+  // NSA ↔ Prom: securityLevelProm
+  it("NSA → Prom: securityLevelProm += 0.75 AND intlCooperation += 0.75 (first action)", () => {
+    const room = makeRoom();
+    const secBefore = getState(room, "securityLevelProm");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "prometheus",
+      senderRole: "ext_nsa",
+      recipientRole: "prom_ceo",
+    });
+    expect(getState(room, "securityLevelProm") - secBefore).toBeCloseTo(0.75, 5);
+    expect(getState(room, "intlCooperation") - coopBefore).toBeCloseTo(0.75, 5);
+  });
+
+  it("Prom → NSA (symmetric): securityLevelProm increases", () => {
+    const room = makeRoom();
+    const secBefore = getState(room, "securityLevelProm");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "prometheus",
+      recipientFaction: "external",
+      senderRole: "prom_scientist",
+      recipientRole: "ext_nsa",
+    });
+    expect(getState(room, "securityLevelProm")).toBeGreaterThan(secBefore);
+  });
+
+  it("NSA → Prom: does NOT affect securityLevelOB", () => {
+    const room = makeRoom();
+    const obSecBefore = getState(room, "securityLevelOB");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "prometheus",
+      senderRole: "ext_nsa",
+      recipientRole: "prom_policy",
+    });
+    expect(getState(room, "securityLevelOB")).toBe(obSecBefore);
+  });
+
+  // VC ↔ OB: obBoardConfidence
+  it("VC → OB: obBoardConfidence += 0.75 AND intlCooperation += 0.75 (first action)", () => {
+    const room = makeRoom();
+    const confBefore = getState(room, "obBoardConfidence");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_vc",
+      recipientRole: "ob_ceo",
+    });
+    expect(getState(room, "obBoardConfidence") - confBefore).toBeCloseTo(0.75, 5);
+    expect(getState(room, "intlCooperation") - coopBefore).toBeCloseTo(0.75, 5);
+  });
+
+  it("OB → VC (symmetric): obBoardConfidence increases", () => {
+    const room = makeRoom();
+    const confBefore = getState(room, "obBoardConfidence");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "external",
+      senderRole: "ob_cto",
+      recipientRole: "ext_vc",
+    });
+    expect(getState(room, "obBoardConfidence")).toBeGreaterThan(confBefore);
+  });
+
+  it("VC → OB: does NOT affect promBoardConfidence", () => {
+    const room = makeRoom();
+    const promConfBefore = getState(room, "promBoardConfidence");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_vc",
+      recipientRole: "ob_safety",
+    });
+    expect(getState(room, "promBoardConfidence")).toBe(promConfBefore);
+  });
+
+  // VC ↔ Prom: promBoardConfidence
+  it("VC → Prom: promBoardConfidence += 0.75 AND intlCooperation += 0.75 (first action)", () => {
+    const room = makeRoom();
+    const confBefore = getState(room, "promBoardConfidence");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "prometheus",
+      senderRole: "ext_vc",
+      recipientRole: "prom_ceo",
+    });
+    expect(getState(room, "promBoardConfidence") - confBefore).toBeCloseTo(0.75, 5);
+    expect(getState(room, "intlCooperation") - coopBefore).toBeCloseTo(0.75, 5);
+  });
+
+  it("Prom → VC (symmetric): promBoardConfidence increases", () => {
+    const room = makeRoom();
+    const confBefore = getState(room, "promBoardConfidence");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "prometheus",
+      recipientFaction: "external",
+      senderRole: "prom_scientist",
+      recipientRole: "ext_vc",
+    });
+    expect(getState(room, "promBoardConfidence")).toBeGreaterThan(confBefore);
+  });
+
+  // Fallback: NSA → China (no ob_* or prom_*): only intlCooperation
+  it("NSA → China: only intlCooperation increases, no security level change", () => {
+    const room = makeRoom();
+    const obSecBefore = getState(room, "securityLevelOB");
+    const promSecBefore = getState(room, "securityLevelProm");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "china",
+      senderRole: "ext_nsa",
+      recipientRole: "china_director",
+    });
+    expect(getState(room, "securityLevelOB")).toBe(obSecBefore);
+    expect(getState(room, "securityLevelProm")).toBe(promSecBefore);
+    expect(getState(room, "intlCooperation")).toBeGreaterThan(coopBefore);
+  });
+
+  // Fallback: VC → China (no ob_* or prom_*): only intlCooperation
+  it("VC → China: only intlCooperation increases, no board confidence change", () => {
+    const room = makeRoom();
+    const obConfBefore = getState(room, "obBoardConfidence");
+    const promConfBefore = getState(room, "promBoardConfidence");
+    const coopBefore = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "china",
+      senderRole: "ext_vc",
+      recipientRole: "china_scientist",
+    });
+    expect(getState(room, "obBoardConfidence")).toBe(obConfBefore);
+    expect(getState(room, "promBoardConfidence")).toBe(promConfBefore);
+    expect(getState(room, "intlCooperation")).toBeGreaterThan(coopBefore);
+  });
+
+  // Role-specific effects don't bleed into unrelated DMs
+  it("OB → Prom (no NSA/VC): no securityLevel or board confidence changes", () => {
+    const room = makeRoom();
+    const obSecBefore = getState(room, "securityLevelOB");
+    const promSecBefore = getState(room, "securityLevelProm");
+    const obConfBefore = getState(room, "obBoardConfidence");
+    const promConfBefore = getState(room, "promBoardConfidence");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "prometheus",
+      senderRole: "ob_ceo",
+      recipientRole: "prom_ceo",
+    });
+    expect(getState(room, "securityLevelOB")).toBe(obSecBefore);
+    expect(getState(room, "securityLevelProm")).toBe(promSecBefore);
+    expect(getState(room, "obBoardConfidence")).toBe(obConfBefore);
+    expect(getState(room, "promBoardConfidence")).toBe(promConfBefore);
+  });
+
+  // Journalist still takes priority and returns before role-pair dispatch
+  it("journalist DM: no securityLevel or board confidence changes even with NSA-like roles", () => {
+    const room = makeRoom();
+    const obSecBefore = getState(room, "securityLevelOB");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_journalist",
+      recipientRole: "ob_security",
+    });
+    // journalist path returns early: no security level effect
+    expect(getState(room, "securityLevelOB")).toBe(obSecBefore);
+    expect(getState(room, "whistleblowerPressure")).toBeGreaterThan(5); // whistleblower fires
+  });
+});
+
 // ── Signal DM: Failure modes ──────────────────────────────────────────────────
 
 describe("Signal DM failure modes", () => {

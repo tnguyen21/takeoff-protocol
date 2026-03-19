@@ -178,14 +178,50 @@ function computeSignalDmEffects(context: SignalDmContext, effectiveDelta: number
   // but defensive check here preserves the invariant.
   if (context.senderFaction === context.recipientFaction) return {};
 
+  const { senderRole, recipientRole } = context;
+  const roles = [senderRole, recipientRole];
+
+  // Universal secondary: all cross-faction DMs improve international coordination
   const effects: Partial<StateVariables> = {
     intlCooperation: effectiveDelta / 2,
   };
 
   // Journalist involvement: talking to or from a journalist = potential leak source
-  if (context.senderRole === "ext_journalist" || context.recipientRole === "ext_journalist") {
+  if (roles.includes("ext_journalist")) {
     effects.whistleblowerPressure = effectiveDelta / 2;
+    return effects;
   }
+
+  // Role-pair specific effects (additive on top of intlCooperation secondary)
+  const hasNsa = roles.includes("ext_nsa");
+  const hasVc = roles.includes("ext_vc");
+
+  if (hasNsa) {
+    if (roles.some((r) => r.startsWith("ob_"))) {
+      // NSA ↔ OB lab: NSA directs security posture
+      effects.securityLevelOB = effectiveDelta / 2;
+    } else if (roles.some((r) => r.startsWith("prom_"))) {
+      // NSA ↔ Prom lab: NSA directs security posture
+      effects.securityLevelProm = effectiveDelta / 2;
+    } else if (roles.includes("ext_diplomat") || roles.includes("ext_vc")) {
+      // NSA ↔ Diplomat or NSA ↔ VC: policy coordination
+      // Note: ext_diplomat and ext_vc share the "external" faction with ext_nsa,
+      // so the same-faction guard prevents this in normal play.
+      effects.regulatoryPressure = effectiveDelta / 2;
+    }
+  } else if (hasVc) {
+    if (roles.some((r) => r.startsWith("ob_"))) {
+      // VC ↔ OB lab: investor pressure on lab board
+      effects.obBoardConfidence = effectiveDelta / 2;
+    } else if (roles.some((r) => r.startsWith("prom_"))) {
+      // VC ↔ Prom lab: investor pressure on lab board
+      effects.promBoardConfidence = effectiveDelta / 2;
+    }
+    // VC ↔ NSA: handled above in the hasNsa branch (ext_vc matches the diplomat||vc check)
+  }
+
+  // ext_diplomat ↔ any non-external: intlCooperation already set above
+  // Other cross-faction: intlCooperation fallback already set above
 
   return effects;
 }
