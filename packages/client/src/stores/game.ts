@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, EndingArc, Faction, GameNotification, GamePhase, IndividualDecision, Player, Publication, PublicationAngle, PublicationTarget, PublicationType, ResolutionData, Role, RoundHistory, StateVariables, StateView, TeamDecision } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { soundManager } from "../sounds/index.js";
@@ -107,7 +107,7 @@ interface GameStore {
 
   // Actions
   setPlayerName: (name: string) => void;
-  publishArticle: (payload: { type: PublicationType; title: string; content: string; source: string }) => void;
+  publishArticle: (payload: { type: PublicationType; title: string; content: string; source: string; angle?: PublicationAngle; targetFaction?: PublicationTarget }) => void;
   dismissNotification: (id: string) => void;
   createRoom: () => Promise<string | null>;
   joinRoom: (code: string) => Promise<boolean>;
@@ -168,8 +168,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setPlayerName: (name) => set({ playerName: name }),
 
-  publishArticle: ({ type, title, content, source }) => {
-    socket.emit("publish:submit", { type, title, content, source });
+  publishArticle: ({ type, title, content, source, angle, targetFaction }) => {
+    socket.emit("publish:submit", { type, title, content, source, angle, targetFaction });
   },
 
   dismissNotification: (id) => {

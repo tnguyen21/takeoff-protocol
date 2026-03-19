@@ -244,6 +244,8 @@ export interface NpcPersona {
 // ── Publications ──
 
 export type PublicationType = "article" | "leak" | "research";
+export type PublicationAngle = "safety" | "hype" | "geopolitics";
+export type PublicationTarget = "openbrain" | "prometheus" | "china" | "general";
 
 export interface Publication {
   id: string;
@@ -254,6 +256,8 @@ export interface Publication {
   publishedBy: Role;
   publishedAt: number;
   round: number;
+  angle?: PublicationAngle;
+  targetFaction?: PublicationTarget;
 }
 
 // ── Notifications ──

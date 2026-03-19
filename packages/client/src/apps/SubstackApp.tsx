@@ -1,7 +1,8 @@
 import React from "react";
+import type { PublicationAngle, PublicationTarget } from "@takeoff/shared";
 import type { AppProps } from "./types.js";
 import { useGameStore } from "../stores/game.js";
-import { isPublisherRole, estimateReadTime, renderMarkdown } from "./substackUtils.js";
+import { estimateReadTime, renderMarkdown } from "./substackUtils.js";
 
 const POSTS = [
   { title: "Why I left my AI safety role (and what I learned)", date: "Feb 27", status: "Published", reads: "24.1K" },
@@ -69,16 +70,16 @@ const RECOMMENDED = [
 
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
   const { selectedRole, publishArticle, publications } = useGameStore();
-  const canPublish = isPublisherRole(selectedRole);
 
   const docItems = content.filter((i) => i.type === "document" || i.type === "memo");
   const [selectedIdx, setSelectedIdx] = React.useState(0);
   const [composing, setComposing] = React.useState(false);
   const [composeTitle, setComposeTitle] = React.useState("");
   const [composeBody, setComposeBody] = React.useState("");
+  const [composeAngle, setComposeAngle] = React.useState<PublicationAngle | "">("");
+  const [composeTarget, setComposeTarget] = React.useState<PublicationTarget | "">("");
   const [publishedCount, setPublishedCount] = React.useState(0);
   const [justPublished, setJustPublished] = React.useState(false);
-  const [liked, setLiked] = React.useState(false);
 
   // Track publications created by this session for the post list
   const myPublications = publications.filter((p) => selectedRole && p.publishedBy === selectedRole);
@@ -110,134 +111,26 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   const selected = allPosts[safeIdx];
 
   function handlePublish() {
-    if (!composeTitle.trim() || !composeBody.trim()) return;
+    if (!composeTitle.trim() || !composeBody.trim() || !composeAngle || !composeTarget) return;
     publishArticle({
       type: "article",
       title: composeTitle.trim(),
       content: composeBody.trim(),
       source: "",
+      angle: composeAngle,
+      targetFaction: composeTarget,
     });
     setPublishedCount((c) => c + 1);
     setJustPublished(true);
     setComposing(false);
     setComposeTitle("");
     setComposeBody("");
+    setComposeAngle("");
+    setComposeTarget("");
     setTimeout(() => setJustPublished(false), 3000);
   }
 
-  // ── Reader view (non-publisher roles) ──
-  if (!canPublish) {
-    const readTime = selected ? estimateReadTime(selected.body) : 1;
-    const baseLikes = 1248;
-    const displayLikes = baseLikes + (liked ? 1 : 0);
-
-    return (
-      <div className="flex h-full bg-white text-black text-sm">
-        {/* Reader Sidebar */}
-        <div className="w-52 bg-neutral-50 border-r border-neutral-200 flex flex-col shrink-0">
-          <div className="p-3 border-b border-neutral-200">
-            <div className="font-bold text-sm">AI Safety Notes</div>
-            <div className="text-neutral-500 text-xs">Dr. Rachel Hayes · 24.1K subs</div>
-          </div>
-          <div className="overflow-y-auto flex-1 p-2 space-y-1">
-            {allPosts.map((p, i) => (
-              <div
-                key={i}
-                onClick={() => setSelectedIdx(i)}
-                className={`px-2 py-1.5 rounded cursor-pointer text-xs ${safeIdx === i ? "bg-orange-50 font-semibold text-orange-800" : "text-neutral-600 hover:bg-neutral-100"}`}
-              >
-                <div className="truncate">{p.title}</div>
-                <div className="text-[10px] text-neutral-400 mt-0.5">{p.date}</div>
-              </div>
-            ))}
-          </div>
-          {/* Recommended section */}
-          <div className="p-3 border-t border-neutral-200">
-            <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wide mb-2">Recommended</div>
-            <div className="space-y-1">
-              {RECOMMENDED.map((name) => (
-                <div key={name} className="text-[11px] text-neutral-600 hover:text-orange-700 cursor-pointer truncate">{name}</div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Reader Main */}
-        <div className="flex-1 overflow-y-auto">
-          {selected && (
-            <div className="max-w-2xl mx-auto px-8 py-8">
-              {/* Article title — large serif */}
-              <h1 className="font-serif text-[1.75rem] font-bold leading-[1.2] text-neutral-900 mb-4">
-                {selected.title}
-              </h1>
-
-              {/* Author metadata */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-[#ff6719] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  R
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-neutral-800">Dr. Rachel Hayes</div>
-                  <div className="text-xs text-neutral-500">
-                    {selected.date} · {readTime} min read · ♥ 1,248 · 💬 86
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-px bg-neutral-200 mb-6" />
-
-              {/* Markdown-rendered article body */}
-              <div
-                className="text-neutral-800 font-serif text-base leading-[1.7]"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body) }}
-              />
-
-              {/* Like button + Subscribe CTA */}
-              <div className="mt-8 flex items-center gap-4">
-                <button
-                  onClick={() => setLiked((v) => !v)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-sm font-medium transition-colors ${liked ? "bg-red-50 border-red-300 text-red-600" : "border-neutral-300 text-neutral-600 hover:border-red-300 hover:text-red-500"}`}
-                >
-                  {liked ? "♥" : "♡"} {displayLikes.toLocaleString()}
-                </button>
-                <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#ff6719] text-white text-sm font-semibold hover:bg-orange-600">
-                  Subscribe
-                </button>
-              </div>
-
-              {/* Comments section */}
-              <div className="mt-10 border-t border-neutral-200 pt-6">
-                <div className="text-base font-bold text-neutral-800 mb-5">
-                  {STATIC_COMMENTS.length} comments
-                </div>
-                <div className="space-y-5">
-                  {STATIC_COMMENTS.map((c, i) => (
-                    <div key={i} className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-neutral-300 text-neutral-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                        {c.initial}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="text-xs font-semibold text-neutral-800">{c.author}</span>
-                          <span className="text-[10px] text-neutral-400">{c.timestamp}</span>
-                        </div>
-                        <div className="text-xs text-neutral-700 leading-relaxed">{c.text}</div>
-                        <div className="mt-1.5 flex items-center gap-1 text-[11px] text-neutral-400">
-                          <span>♥ {c.likes}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Writer/publisher view (original layout) ──
+  // ── Writer/publisher view — shown to all roles ──
   return (
     <div className="flex h-full bg-white text-black text-sm">
       {/* Sidebar */}
@@ -290,10 +183,33 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
               onChange={(e) => setComposeBody(e.target.value)}
               className="flex-1 border border-neutral-300 rounded px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none leading-relaxed"
             />
+            <div className="flex gap-2 shrink-0">
+              <select
+                value={composeAngle}
+                onChange={(e) => setComposeAngle(e.target.value as PublicationAngle | "")}
+                className="flex-1 border border-neutral-300 rounded px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+              >
+                <option value="">Angle…</option>
+                <option value="safety">Safety</option>
+                <option value="hype">Hype</option>
+                <option value="geopolitics">Geopolitics</option>
+              </select>
+              <select
+                value={composeTarget}
+                onChange={(e) => setComposeTarget(e.target.value as PublicationTarget | "")}
+                className="flex-1 border border-neutral-300 rounded px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
+              >
+                <option value="">Target…</option>
+                <option value="openbrain">OpenBrain</option>
+                <option value="prometheus">Prometheus</option>
+                <option value="china">China</option>
+                <option value="general">General</option>
+              </select>
+            </div>
             <div className="flex gap-2 items-center shrink-0">
               <button
                 onClick={handlePublish}
-                disabled={!composeTitle.trim() || !composeBody.trim()}
+                disabled={!composeTitle.trim() || !composeBody.trim() || !composeAngle || !composeTarget}
                 className="bg-[#ff6719] text-white text-xs px-5 py-2 rounded font-semibold hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Publish to all subscribers

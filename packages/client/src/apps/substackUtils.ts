@@ -3,11 +3,9 @@
  * without hitting react/jsx-dev-runtime issues.
  */
 
-const PUBLISHER_ROLES = ["ext_journalist", "prom_opensource"];
-
-/** Returns true if the given role has publish permissions. */
-export function isPublisherRole(role: string | null | undefined): boolean {
-  return !!role && PUBLISHER_ROLES.includes(role);
+/** Returns true if the given role can publish on Substack. All roles can publish. */
+export function isPublisherRole(_role: string | null | undefined): boolean {
+  return true;
 }
 
 /** Estimate reading time in minutes at 200 words per minute, minimum 1. */

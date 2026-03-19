@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
-import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, GameRoom, Player, Publication, PublicationType, Role, StateVariables } from "@takeoff/shared";
-import { isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
+import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, GameRoom, Player, Publication, PublicationAngle, PublicationTarget, PublicationType, Role, StateVariables } from "@takeoff/shared";
+import { getPublicationEffects, isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected, isAtRoomCap, MAX_CONCURRENT_ROOMS } from "./rooms.js";
 import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
@@ -465,19 +465,21 @@ export function registerGameEvents(io: Server, socket: Socket) {
 
   socket.on(
     "publish:submit",
-    ({ type, title, content, source }: { type: PublicationType; title: string; content: string; source: string }) => {
+    ({ type, title, content, source, angle, targetFaction }: { type: PublicationType; title: string; content: string; source: string; angle?: PublicationAngle; targetFaction?: PublicationTarget }) => {
       const room = getSocketRoom(socket);
       if (!room) return;
 
       const player = room.players[socket.id];
       if (!player || !player.role || !player.faction) return;
 
-      // Validate: only specific roles can publish
-      const PUBLISHER_ROLES: Role[] = ["ext_journalist", "prom_opensource", "ob_safety"];
-      if (!PUBLISHER_ROLES.includes(player.role)) return;
-
       // Leak mechanic: ob_safety can only do leaks, not articles
       if (player.role === "ob_safety" && type !== "leak") return;
+
+      // Validate angle/target if provided
+      const VALID_ANGLES: PublicationAngle[] = ["safety", "hype", "geopolitics"];
+      const VALID_TARGETS: PublicationTarget[] = ["openbrain", "prometheus", "china", "general"];
+      if (angle !== undefined && !VALID_ANGLES.includes(angle)) return;
+      if (targetFaction !== undefined && !VALID_TARGETS.includes(targetFaction)) return;
 
       title = title.slice(0, MAX_PUBLISH_TITLE_LENGTH);
       content = content.slice(0, MAX_PUBLISH_CONTENT_LENGTH);
@@ -523,25 +525,31 @@ export function registerGameEvents(io: Server, socket: Socket) {
         publishedBy: player.role,
         publishedAt: Date.now(),
         round: room.round,
+        angle,
+        targetFaction,
       };
       room.publications.push(publication);
 
       // Compute state effects
-      const STATE_EFFECTS: Record<PublicationType, Partial<StateVariables>> = {
-        article: { publicAwareness: 15, publicSentiment: 10 },
-        leak:    { publicAwareness: 25, publicSentiment: -10 },
-        research: { publicAwareness: 15, publicSentiment: 5 },
-      };
-      const effects = STATE_EFFECTS[type];
+      let effects: Partial<StateVariables>;
+      if (angle !== undefined && targetFaction !== undefined) {
+        // New angle×target effect matrix
+        effects = getPublicationEffects(angle, targetFaction, player.role);
+      } else {
+        // Legacy flat effects (backwards compat for publications without angle/target)
+        const STATE_EFFECTS: Record<PublicationType, Partial<StateVariables>> = {
+          article: { publicAwareness: 15, publicSentiment: 10 },
+          leak:    { publicAwareness: 25, publicSentiment: -10 },
+          research: { publicAwareness: 15, publicSentiment: 5 },
+        };
+        effects = STATE_EFFECTS[type];
+      }
       const stateRec = room.state as unknown as Record<string, number>;
       for (const [key, delta] of Object.entries(effects) as [keyof StateVariables, number][]) {
+        const range = STATE_VARIABLE_RANGES[key];
+        if (!range) continue;
         const current = room.state[key];
-        // publicAwareness: clamp 0-100; publicSentiment: clamp -100 to 100
-        if (key === "publicSentiment") {
-          stateRec[key] = Math.max(-100, Math.min(100, current + delta));
-        } else {
-          stateRec[key] = Math.max(0, Math.min(100, current + delta));
-        }
+        stateRec[key] = Math.max(range[0], Math.min(range[1], current + delta));
       }
 
       const summary = `${type === "leak" ? "🔴 LEAK" : type === "research" ? "📄 RESEARCH" : "📰 PUBLISHED"}: ${title}`;

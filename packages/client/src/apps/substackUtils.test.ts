@@ -2,7 +2,7 @@
  * Tests for SubstackApp pure helper functions.
  *
  * Invariants tested:
- * - INV-1: Non-publisher roles are correctly identified (isPublisherRole)
+ * - INV-1: isPublisherRole returns true for all roles (universal publish access)
  * - INV-2: Markdown syntax renders as formatted HTML (renderMarkdown)
  * - INV-3: Read time estimation is at least 1 and scales with word count
  */
@@ -13,27 +13,27 @@ import { isPublisherRole, estimateReadTime, renderMarkdown } from "./substackUti
 // ── isPublisherRole ────────────────────────────────────────────────────────────
 
 describe("isPublisherRole", () => {
-  it("INV-1: returns true for ext_journalist (publisher role)", () => {
+  it("INV-1: returns true for ext_journalist", () => {
     expect(isPublisherRole("ext_journalist")).toBe(true);
   });
 
-  it("INV-1: returns true for prom_opensource (publisher role)", () => {
+  it("INV-1: returns true for prom_opensource", () => {
     expect(isPublisherRole("prom_opensource")).toBe(true);
   });
 
-  it("INV-1: returns false for non-publisher roles", () => {
-    expect(isPublisherRole("gov_regulator")).toBe(false);
-    expect(isPublisherRole("mil_commander")).toBe(false);
-    expect(isPublisherRole("int_analyst")).toBe(false);
+  it("INV-1: returns true for all roles (universal publish access)", () => {
+    expect(isPublisherRole("ob_cto")).toBe(true);
+    expect(isPublisherRole("china_director")).toBe(true);
+    expect(isPublisherRole("ext_diplomat")).toBe(true);
   });
 
-  it("INV-1: returns false for null and undefined", () => {
-    expect(isPublisherRole(null)).toBe(false);
-    expect(isPublisherRole(undefined)).toBe(false);
+  it("INV-1: returns true even for null and undefined (safe default)", () => {
+    expect(isPublisherRole(null)).toBe(true);
+    expect(isPublisherRole(undefined)).toBe(true);
   });
 
-  it("INV-1: returns false for empty string", () => {
-    expect(isPublisherRole("")).toBe(false);
+  it("INV-1: returns true for empty string", () => {
+    expect(isPublisherRole("")).toBe(true);
   });
 });
 

@@ -1,4 +1,4 @@
-import type { AppId, Faction, Role, StateVariables } from "./types.js";
+import type { AppId, Faction, PublicationAngle, PublicationTarget, Role, StateVariables } from "./types.js";
 
 // ── Human-readable labels for state variables ──
 
@@ -236,4 +236,74 @@ export const INITIAL_STATE: StateVariables = {
 // ── Round Count ──
 
 export const TOTAL_ROUNDS = 5;
+
+// ── Publication Effects ──
+
+/**
+ * Compute state deltas for a publication given angle × target × role.
+ *
+ * Base effects (all publications):   publicAwareness +3
+ * Angle effects:
+ *   safety:      regulatoryPressure +3, publicSentiment -2
+ *   hype:        marketIndex +5, economicDisruption +2
+ *   geopolitics: intlCooperation -2, publicAwareness +2 (stacks with base)
+ * Target modifiers:
+ *   openbrain:  obBoardConfidence -3, obInternalTrust -2
+ *   prometheus: promBoardConfidence -2, alignmentConfidence +2
+ *   china:      taiwanTension +3, ccpPatience -2
+ *   general:    publicAwareness +2 (stacks)
+ * Role amplifiers:
+ *   ext_journalist:  ×2
+ *   prom_opensource: ×1.5 (rounded)
+ *   everyone else:   ×1
+ */
+export function getPublicationEffects(
+  angle: PublicationAngle,
+  target: PublicationTarget,
+  role: string,
+): Partial<StateVariables> {
+  const raw: Partial<Record<keyof StateVariables, number>> = {};
+
+  // Base
+  raw.publicAwareness = 3;
+
+  // Angle base effects
+  if (angle === "safety") {
+    raw.regulatoryPressure = 3;
+    raw.publicSentiment = -2;
+  } else if (angle === "hype") {
+    raw.marketIndex = 5;
+    raw.economicDisruption = 2;
+  } else if (angle === "geopolitics") {
+    raw.intlCooperation = -2;
+    raw.publicAwareness = (raw.publicAwareness ?? 0) + 2; // stacks → 5
+  }
+
+  // Target modifiers
+  if (target === "openbrain") {
+    raw.obBoardConfidence = -3;
+    raw.obInternalTrust = -2;
+  } else if (target === "prometheus") {
+    raw.promBoardConfidence = -2;
+    raw.alignmentConfidence = 2;
+  } else if (target === "china") {
+    raw.taiwanTension = 3;
+    raw.ccpPatience = -2;
+  } else if (target === "general") {
+    raw.publicAwareness = (raw.publicAwareness ?? 0) + 2; // stacks
+  }
+
+  // Role amplifier
+  let multiplier = 1;
+  if (role === "ext_journalist") multiplier = 2;
+  else if (role === "prom_opensource") multiplier = 1.5;
+
+  if (multiplier !== 1) {
+    for (const key of Object.keys(raw) as (keyof StateVariables)[]) {
+      raw[key] = Math.round((raw[key] as number) * multiplier);
+    }
+  }
+
+  return raw as Partial<StateVariables>;
+}
 

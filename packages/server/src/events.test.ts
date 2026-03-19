@@ -1420,12 +1420,13 @@ describe("publish:submit — real handler", () => {
     rooms.delete(PUB_ROOM);
   });
 
-  it("non-publisher role (ob_cto) silently ignored — no publication stored", () => {
+  it("ob_cto can now publish (all roles allowed) — publication stored with legacy flat effects", () => {
     const nonPub = createSocket(PUB_OTHER);
     nonPub.data.roomCode = PUB_ROOM;
     registerGameEvents(io as unknown as import("socket.io").Server, nonPub as unknown as import("socket.io").Socket);
     fire(nonPub.handlers, "publish:submit", { type: "article", title: "Test", content: "Body", source: "OB" });
-    expect(room.publications).toHaveLength(0);
+    expect(room.publications).toHaveLength(1);
+    expect(room.publications[0].publishedBy).toBe("ob_cto");
   });
 
   it("ext_journalist can publish article — stored in room.publications", () => {
@@ -1610,5 +1611,189 @@ describe("room:create — room cap enforcement", () => {
 
     expect(result.ok).toBe(true);
     expect(result.code).toBeDefined();
+  });
+});
+
+// ── publish:submit — angle×target effect matrix ───────────────────────────────
+
+const EFF_GM_ID = "gm-eff-1";
+const EFF_JOURNALIST = "player-eff-journalist";
+const EFF_OTHER = "player-eff-other";
+const EFF_ROOM = "EFF01";
+
+describe("publish:submit — angle×target effect matrix", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let journalistSocket: ReturnType<typeof createSocket>;
+  let otherSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(EFF_GM_ID, EFF_ROOM);
+    room.round = 1;
+    room.phase = "intel";
+    room.players[EFF_JOURNALIST] = makePlayer(EFF_JOURNALIST, { faction: "external", role: "ext_journalist" });
+    room.players[EFF_OTHER] = makePlayer(EFF_OTHER, { faction: "openbrain", role: "ob_cto" });
+
+    journalistSocket = createSocket(EFF_JOURNALIST);
+    journalistSocket.data.roomCode = EFF_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, journalistSocket as unknown as import("socket.io").Socket);
+
+    otherSocket = createSocket(EFF_OTHER);
+    otherSocket.data.roomCode = EFF_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, otherSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(EFF_ROOM);
+  });
+
+  // INV-1: Publication effects match the expected (angle × target × role) combination
+  it("INV-1: journalist safety×openbrain — 2× effects on obBoardConfidence, regulatoryPressure, publicAwareness", () => {
+    const initAwareness = room.state.publicAwareness;
+    const initReg = room.state.regulatoryPressure;
+    const initOBBoard = room.state.obBoardConfidence;
+    const initOBTrust = room.state.obInternalTrust;
+    const initSentiment = room.state.publicSentiment;
+
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article", title: "Safety Exposé", content: "...", source: "Press",
+      angle: "safety", targetFaction: "openbrain",
+    });
+
+    // Base publicAwareness +3, safety adds nothing extra, openbrain target adds nothing to awareness
+    // All at ×2 for journalist: publicAwareness +6
+    expect(room.state.publicAwareness).toBe(initAwareness + 6);
+    // regulatoryPressure +3 × 2 = +6
+    expect(room.state.regulatoryPressure).toBe(initReg + 6);
+    // publicSentiment -2 × 2 = -4
+    expect(room.state.publicSentiment).toBe(initSentiment - 4);
+    // obBoardConfidence -3 × 2 = -6
+    expect(room.state.obBoardConfidence).toBe(initOBBoard - 6);
+    // obInternalTrust -2 × 2 = -4
+    expect(room.state.obInternalTrust).toBe(initOBTrust - 4);
+  });
+
+  // INV-2: Journalist gets 2x effects, other roles get 1x base
+  it("INV-2: non-journalist ob_cto hype×china — 1× base effects, modest values", () => {
+    const initAwareness = room.state.publicAwareness;
+    const initMarket = room.state.marketIndex;
+    const initEconDisrupt = room.state.economicDisruption;
+    const initTaiwan = room.state.taiwanTension;
+    const initCCP = room.state.ccpPatience;
+
+    fire(otherSocket.handlers, "publish:submit", {
+      type: "article", title: "Hype Story", content: "...", source: "OB",
+      angle: "hype", targetFaction: "china",
+    });
+
+    // publicAwareness +3 × 1 = +3
+    expect(room.state.publicAwareness).toBe(initAwareness + 3);
+    // marketIndex +5 × 1 = +5
+    expect(room.state.marketIndex).toBe(initMarket + 5);
+    // economicDisruption +2 × 1 = +2
+    expect(room.state.economicDisruption).toBe(initEconDisrupt + 2);
+    // taiwanTension +3 × 1 = +3
+    expect(room.state.taiwanTension).toBe(initTaiwan + 3);
+    // ccpPatience -2 × 1 = -2
+    expect(room.state.ccpPatience).toBe(initCCP - 2);
+  });
+
+  // INV-3: All state deltas are clamped to STATE_VARIABLE_RANGES after application
+  it("INV-3: effects clamped — publicAwareness does not exceed 100", () => {
+    room.state.publicAwareness = 99; // near max
+
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article", title: "Title", content: "...", source: "Press",
+      angle: "geopolitics", targetFaction: "general",
+    });
+
+    // geopolitics: publicAwareness +2 (stacks), general: publicAwareness +2 (stacks) = base 3+2+2=7, ×2=14
+    // 99 + 14 would exceed 100, must clamp to 100
+    expect(room.state.publicAwareness).toBe(100);
+  });
+
+  // INV-4: Legacy publications (no angle/target) still work with old flat effects
+  it("INV-4: no angle/target — fallback to legacy flat effects (article +15 awareness, +10 sentiment)", () => {
+    const initAwareness = room.state.publicAwareness;
+    const initSentiment = room.state.publicSentiment;
+
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article", title: "Legacy Article", content: "...", source: "Press",
+      // no angle, no targetFaction
+    });
+
+    expect(room.state.publicAwareness).toBe(initAwareness + 15);
+    expect(room.state.publicSentiment).toBe(initSentiment + 10);
+  });
+
+  it("invalid angle rejected — no publication stored", () => {
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article", title: "Bad Angle", content: "...", source: "Press",
+      angle: "invalid_angle" as any, targetFaction: "general",
+    });
+    expect(room.publications).toHaveLength(0);
+  });
+
+  it("invalid target rejected — no publication stored", () => {
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article", title: "Bad Target", content: "...", source: "Press",
+      angle: "safety", targetFaction: "notafaction" as any,
+    });
+    expect(room.publications).toHaveLength(0);
+  });
+
+  it("geopolitics×prometheus — journalist gets 2× on intlCooperation, promBoardConfidence, alignmentConfidence", () => {
+    const initIntl = room.state.intlCooperation;
+    const initAwareness = room.state.publicAwareness;
+    const initPromBoard = room.state.promBoardConfidence;
+    const initAlign = room.state.alignmentConfidence;
+
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article", title: "Geopolitics Prom", content: "...", source: "Press",
+      angle: "geopolitics", targetFaction: "prometheus",
+    });
+
+    // intlCooperation -2 × 2 = -4
+    expect(room.state.intlCooperation).toBe(initIntl - 4);
+    // publicAwareness (3+2) × 2 = +10
+    expect(room.state.publicAwareness).toBe(initAwareness + 10);
+    // promBoardConfidence -2 × 2 = -4
+    expect(room.state.promBoardConfidence).toBe(initPromBoard - 4);
+    // alignmentConfidence +2 × 2 = +4
+    expect(room.state.alignmentConfidence).toBe(initAlign + 4);
+  });
+
+  it("ob_safety can still publish leaks with legacy flat effects", () => {
+    const safetyId = "player-eff-safety";
+    room.players[safetyId] = makePlayer(safetyId, { faction: "openbrain", role: "ob_safety" });
+    const safetySocket = createSocket(safetyId);
+    safetySocket.data.roomCode = EFF_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, safetySocket as unknown as import("socket.io").Socket);
+
+    const initAwareness = room.state.publicAwareness;
+    const initSentiment = room.state.publicSentiment;
+
+    fire(safetySocket.handlers, "publish:submit", {
+      type: "leak", title: "Internal Leak", content: "...", source: "Anon",
+    });
+
+    // ob_safety uses legacy flat effects for leaks: +25 awareness, -10 sentiment
+    expect(room.state.publicAwareness).toBe(initAwareness + 25);
+    expect(room.state.publicSentiment).toBe(initSentiment - 10);
+  });
+
+  it("ob_safety still cannot publish articles (leak-only restriction preserved)", () => {
+    const safetyId = "player-eff-safety2";
+    room.players[safetyId] = makePlayer(safetyId, { faction: "openbrain", role: "ob_safety" });
+    const safetySocket = createSocket(safetyId);
+    safetySocket.data.roomCode = EFF_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, safetySocket as unknown as import("socket.io").Socket);
+
+    fire(safetySocket.handlers, "publish:submit", {
+      type: "article", title: "Article", content: "...", source: "OB",
+      angle: "safety", targetFaction: "general",
+    });
+    expect(room.publications).toHaveLength(0);
   });
 });
