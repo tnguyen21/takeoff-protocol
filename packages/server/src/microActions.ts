@@ -27,7 +27,15 @@ export interface SlackContext {
   faction: Faction; // sender's faction — determines which variables are affected
 }
 
-export type MicroActionContext = TweetContext | SlackContext;
+export interface SignalDmContext {
+  type: "signal_dm";
+  senderFaction: Faction;
+  recipientFaction: Faction;
+  senderRole: string;
+  recipientRole: string;
+}
+
+export type MicroActionContext = TweetContext | SlackContext | SignalDmContext;
 
 // ── Keyword sets for tweet topic detection ────────────────────────────────────
 
@@ -160,6 +168,28 @@ function computeSlackEffects(context: SlackContext, effectiveDelta: number): Par
   return { [effect.key]: effectiveDelta * effect.multiplier } as Partial<StateVariables>;
 }
 
+// ── Internal helpers: signal_dm ───────────────────────────────────────────────
+
+/** Base delta for a cross-faction Signal DM. Cross-faction communication is impactful. */
+const SIGNAL_DM_BASE_DELTA = 1.5;
+
+function computeSignalDmEffects(context: SignalDmContext, effectiveDelta: number): Partial<StateVariables> {
+  // Same-faction DMs produce no effect — callers should guard before calling,
+  // but defensive check here preserves the invariant.
+  if (context.senderFaction === context.recipientFaction) return {};
+
+  const effects: Partial<StateVariables> = {
+    intlCooperation: effectiveDelta / 2,
+  };
+
+  // Journalist involvement: talking to or from a journalist = potential leak source
+  if (context.senderRole === "ext_journalist" || context.recipientRole === "ext_journalist") {
+    effects.whistleblowerPressure = effectiveDelta / 2;
+  }
+
+  return effects;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -191,8 +221,13 @@ export function applyMicroAction(
   if (!room.microActionCounts) room.microActionCounts = {};
   if (!room.microActionCounts[socketId]) room.microActionCounts[socketId] = {};
 
-  // DR key: tweets use actionType; slack uses channel-namespaced key
+  // DR key: tweets use actionType; slack uses channel-namespaced key; signal_dm shares one counter
   const drKey = context.type === "slack" ? `slack:${context.channel}` : actionType;
+
+  // Same-faction Signal DMs: no effect, no count consumed (invariant: guard BEFORE increment)
+  if (context.type === "signal_dm" && context.senderFaction === context.recipientFaction) {
+    return { multiplier: 0, effects: {} };
+  }
 
   // Increment action count (post-increment: count is now the Nth action)
   const prevCount = room.microActionCounts[socketId][drKey] ?? 0;
@@ -209,6 +244,9 @@ export function applyMicroAction(
   } else if (context.type === "slack") {
     const effectiveDelta = SLACK_BASE_DELTA * multiplier;
     effects = computeSlackEffects(context, effectiveDelta);
+  } else if (context.type === "signal_dm") {
+    const effectiveDelta = SIGNAL_DM_BASE_DELTA * multiplier;
+    effects = computeSignalDmEffects(context, effectiveDelta);
   }
 
   // Apply effects to room state

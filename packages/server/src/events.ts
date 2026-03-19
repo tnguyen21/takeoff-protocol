@@ -456,6 +456,18 @@ export function registerGameEvents(io: Server, socket: Socket) {
       // DM: send to specific player
       io.to(to).emit("message:receive", message);
       io.to(socket.id).emit("message:receive", message); // echo back to sender
+
+      // Micro-action: Signal DM affects game state for cross-faction communication
+      const recipient = room.players[to];
+      if (recipient && !to.startsWith("__bot_") && sender.faction && recipient.faction) {
+        applyMicroAction(room, socket.id, "signal_dm", {
+          type: "signal_dm",
+          senderFaction: sender.faction,
+          recipientFaction: recipient.faction,
+          senderRole: sender.role ?? "",
+          recipientRole: recipient.role ?? "",
+        });
+      }
     }
 
     // GM sees all messages (avoid duplicating if the GM is also a normal recipient)

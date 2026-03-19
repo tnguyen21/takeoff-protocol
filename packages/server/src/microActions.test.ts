@@ -524,3 +524,244 @@ describe("Slack failure modes", () => {
     expect(room.microActionCounts!["p1"]["slack:#research"]).toBe(1);
   });
 });
+
+// ── Signal DM: INV-1: Same-faction DMs produce no effect ─────────────────────
+
+describe("Signal DM INV-1: same-faction DMs produce no effect", () => {
+  it("OB player DMs another OB player: no state change", () => {
+    const room = makeRoom();
+    const stateBefore = { ...room.state };
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "openbrain",
+      senderRole: "ob_ceo",
+      recipientRole: "ob_cto",
+    });
+    expect(room.state).toEqual(stateBefore);
+  });
+
+  it("same-faction DM: count is NOT consumed (no DR increment)", () => {
+    const room = makeRoom();
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "prometheus",
+      recipientFaction: "prometheus",
+      senderRole: "prom_ceo",
+      recipientRole: "prom_cto",
+    });
+    expect(getActionCount(room, "p1", "signal_dm")).toBe(0);
+  });
+
+  it("same-faction DM: multiplier returned is 0", () => {
+    const room = makeRoom();
+    const { multiplier } = applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "china",
+      recipientFaction: "china",
+      senderRole: "cdz_director",
+      recipientRole: "cdz_engineer",
+    });
+    expect(multiplier).toBe(0);
+  });
+});
+
+// ── Signal DM: INV-2: Cross-faction DMs increase intlCooperation ──────────────
+
+describe("Signal DM INV-2: cross-faction DMs increase intlCooperation", () => {
+  it("OB player DMs Prom player: intlCooperation += 0.75 (base 1.5 * 1 * 0.5)", () => {
+    const room = makeRoom();
+    const before = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "prometheus",
+      senderRole: "ob_ceo",
+      recipientRole: "prom_ceo",
+    });
+    expect(getState(room, "intlCooperation") - before).toBeCloseTo(0.75, 5);
+  });
+
+  it("External player DMs China player: intlCooperation increases", () => {
+    const room = makeRoom();
+    const before = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "china",
+      senderRole: "ext_diplomat",
+      recipientRole: "cdz_director",
+    });
+    expect(getState(room, "intlCooperation")).toBeGreaterThan(before);
+  });
+});
+
+// ── Signal DM: INV-3: Journalist involvement adds whistleblowerPressure ────────
+
+describe("Signal DM INV-3: journalist involvement adds whistleblowerPressure", () => {
+  it("journalist sends DM cross-faction: intlCooperation +0.75 AND whistleblowerPressure +0.75", () => {
+    const room = makeRoom();
+    const coopBefore = getState(room, "intlCooperation");
+    const whistleBefore = getState(room, "whistleblowerPressure");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_journalist",
+      recipientRole: "ob_ceo",
+    });
+    expect(getState(room, "intlCooperation") - coopBefore).toBeCloseTo(0.75, 5);
+    expect(getState(room, "whistleblowerPressure") - whistleBefore).toBeCloseTo(0.75, 5);
+  });
+
+  it("journalist receives DM cross-faction: whistleblowerPressure also increases", () => {
+    const room = makeRoom();
+    const whistleBefore = getState(room, "whistleblowerPressure");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "external",
+      senderRole: "ob_safety",
+      recipientRole: "ext_journalist",
+    });
+    expect(getState(room, "whistleblowerPressure")).toBeGreaterThan(whistleBefore);
+  });
+
+  it("non-journalist cross-faction DM: no whistleblowerPressure change", () => {
+    const room = makeRoom();
+    const whistleBefore = getState(room, "whistleblowerPressure");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "prometheus",
+      senderRole: "ob_ceo",
+      recipientRole: "prom_ceo",
+    });
+    expect(getState(room, "whistleblowerPressure")).toBe(whistleBefore);
+  });
+});
+
+// ── Signal DM: INV-4: Diminishing returns shared across all DMs ───────────────
+
+describe("Signal DM INV-4: diminishing returns shared across all DMs", () => {
+  it("shared counter: 2nd cross-faction DM gives half the first delta", () => {
+    const room = makeRoom();
+
+    const start = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "prometheus",
+      senderRole: "ob_ceo",
+      recipientRole: "prom_ceo",
+    });
+    const delta1 = getState(room, "intlCooperation") - start;
+
+    const mid = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "china",
+      senderRole: "ob_ceo",
+      recipientRole: "cdz_director",
+    });
+    const delta2 = getState(room, "intlCooperation") - mid;
+
+    expect(delta2).toBeCloseTo(delta1 / 2, 5);
+  });
+
+  it("4th cross-faction DM: intlCooperation delta ≈ 1.5/4/2 = 0.1875", () => {
+    const room = makeRoom();
+    for (let i = 0; i < 3; i++) {
+      applyMicroAction(room, "p1", "signal_dm", {
+        type: "signal_dm",
+        senderFaction: "openbrain",
+        recipientFaction: "prometheus",
+        senderRole: "ob_ceo",
+        recipientRole: "prom_ceo",
+      });
+    }
+    const before = getState(room, "intlCooperation");
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "china",
+      senderRole: "ob_ceo",
+      recipientRole: "cdz_director",
+    });
+    const delta = getState(room, "intlCooperation") - before;
+    expect(delta).toBeCloseTo(1.5 / 4 / 2, 5);
+  });
+});
+
+// ── Signal DM: INV-5: All deltas clamped ──────────────────────────────────────
+
+describe("Signal DM INV-5: all deltas clamped", () => {
+  it("intlCooperation at max: does not exceed max", () => {
+    const room = makeRoom();
+    room.state.intlCooperation = STATE_VARIABLE_RANGES.intlCooperation[1];
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "prometheus",
+      senderRole: "ob_ceo",
+      recipientRole: "prom_ceo",
+    });
+    expect(getState(room, "intlCooperation")).toBe(STATE_VARIABLE_RANGES.intlCooperation[1]);
+  });
+
+  it("whistleblowerPressure at max: does not exceed max after journalist DM", () => {
+    const room = makeRoom();
+    room.state.whistleblowerPressure = STATE_VARIABLE_RANGES.whistleblowerPressure[1];
+    applyMicroAction(room, "p1", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "external",
+      recipientFaction: "openbrain",
+      senderRole: "ext_journalist",
+      recipientRole: "ob_ceo",
+    });
+    expect(getState(room, "whistleblowerPressure")).toBe(STATE_VARIABLE_RANGES.whistleblowerPressure[1]);
+  });
+});
+
+// ── Signal DM: Failure modes ──────────────────────────────────────────────────
+
+describe("Signal DM failure modes", () => {
+  it("room with no microActionCounts: auto-initialises and does not crash", () => {
+    const room = makeRoom();
+    room.microActionCounts = undefined;
+    expect(() => {
+      applyMicroAction(room, "p1", "signal_dm", {
+        type: "signal_dm",
+        senderFaction: "openbrain",
+        recipientFaction: "prometheus",
+        senderRole: "ob_ceo",
+        recipientRole: "prom_ceo",
+      });
+    }).not.toThrow();
+    expect(room.microActionCounts).toBeDefined();
+  });
+
+  it("different players have independent DR counters for signal_dm", () => {
+    const room = makeRoom();
+    for (let i = 0; i < 10; i++) {
+      applyMicroAction(room, "p1", "signal_dm", {
+        type: "signal_dm",
+        senderFaction: "openbrain",
+        recipientFaction: "prometheus",
+        senderRole: "ob_ceo",
+        recipientRole: "prom_ceo",
+      });
+    }
+    const before = getState(room, "intlCooperation");
+    applyMicroAction(room, "p2", "signal_dm", {
+      type: "signal_dm",
+      senderFaction: "openbrain",
+      recipientFaction: "prometheus",
+      senderRole: "ob_ceo",
+      recipientRole: "prom_ceo",
+    });
+    const delta = getState(room, "intlCooperation") - before;
+    expect(delta).toBeCloseTo(0.75, 5); // full first-action delta for p2
+  });
+});
