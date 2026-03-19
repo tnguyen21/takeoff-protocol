@@ -6,18 +6,18 @@ Last updated: 2026-03-19
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,143 passing tests** (0 failures, 47 test files). LLM generation is the sole content path (no pre-authored fallback by design). **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,292 passing tests** (0 failures, 50 test files). LLM generation is the sole content path (no pre-authored fallback by design). **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
 
 **Ready for first playtest.** The blocking item is: schedule humans.
 
-**Not yet done:** First real playtest, generation quality validation with real API calls, external role mechanical depth.
+**Not yet done:** First real playtest, generation quality validation with real API calls.
 
 ---
 
 ## What Works
 
 - **Phase state machine** — full 5-round loop with timer management, GM controls, pause/extend/jump
-- **17 client apps** — all implemented with rich UX (Slack, Signal, Bloomberg, W&B, Security, Intel, Military, arXiv, News, Email, Memo, Twitter, GameState, Briefing, Compute, Substack, Sheets)
+- **16 client apps** — all implemented with rich UX (Slack, Signal, Bloomberg, W&B, Security, Intel, Military, arXiv, News, Email, Memo, Twitter, GameState, Compute, Substack, Sheets)
 - **Desktop window manager** — draggable, resizable, z-ordered windows with dock + menubar + notifications
 - **Fog-of-war** — corrected noise formula, faction-based hash seeding, comprehensive property tests
 - **Decision/resolution engine** — effects with conditional multipliers, canonical clamping via `STATE_VARIABLE_RANGES`
@@ -29,7 +29,9 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 - **Bot system** — fills empty seats with auto-submitting bots for solo testing
 - **Simulation harness** — Monte Carlo with hawk/dove/chaotic/random heuristics, 10K-trial reports, percentile analysis
 - **Reconnection** — full state replay on rejoin (messages, content, phase, decisions)
-- **Threshold system** — declarative `THRESHOLD_REGISTRY` with 8 thresholds, single dispatch loop
+- **Threshold system** — declarative `THRESHOLD_REGISTRY` with 12 thresholds (including 4 external-role consequence chains: market crash, coalition fracture, public panic, board revolt), single dispatch loop
+- **Micro-actions** — tweet, Slack channel, and Signal DM actions apply diminishing-return state effects; Slack effects are per-channel per-faction, Signal DMs have role-pair specific effects (e.g. journalist → whistleblower pressure, NSA ↔ lab → security)
+- **Shared social feeds** — Twitter "Following" tab shows player tweets across factions; Substack "World Feed" with role-gated publishing
 - **Event handler helpers** — `getSocketRoom()`/`getGmRoom()` eliminate validation boilerplate
 - **Dead code detection** — `bun run knip` configured and passing clean
 - **Production deployment** — Fly.io (sjc), password gate, room cap (5), HMAC cookie auth, rate limiting, GitHub Actions auto-deploy on push to main
@@ -118,9 +120,10 @@ What exists:
 - 104 decision templates across all 5 rounds, all 8 faction/role types
 - Decision validation: hard constraints (3 options, 5-8 effects, no-free-lunch), soft constraints (variable scope, effect bounds), distinctness checks
 - Prompt system with faction voices, app voices, round arc templates (3-layer: static system prompt + story bible + round-specific instructions)
-- Retry with error feedback (max 2 attempts per artifact)
+- Retry with exponential backoff for API 429s (max 4 attempts, respects Retry-After header, ±20% jitter), plus content-level retry with error feedback
 - Kill switches: `GEN_ENABLED`, `GEN_BRIEFINGS_ENABLED`, `GEN_NPC_ENABLED`, `GEN_DECISIONS_ENABLED`, per-room toggle
 - Provider abstraction (Anthropic Claude, with mock for tests). Model selection: Sonnet for briefings/decisions, Haiku for content/NPC.
+- Decision prompts enriched with prior round choice labels and effects for narrative continuity
 - Generation is idempotent per room-round (can't re-trigger same round)
 - Fog-safety validation — heuristic scan of generated content for leaked hidden state values
 - Generation metrics emitted to JSONL game logger (started/success/failure/validation events)
@@ -132,15 +135,16 @@ What's missing:
 
 ### External Role Balancing
 
-**Status: Rich content, shallow mechanics. Full audit in EXTERNAL-ROLES-AUDIT.md.**
+**Status: Improved via micro-actions, consequence-chain thresholds, and publication system. Full audit in EXTERNAL-ROLES-AUDIT.md.**
 
-All four external roles (NSA, Journalist, VC, Diplomat) have individual decisions in all 5 rounds and thematic content, but limited mechanical depth:
+All four external roles have individual decisions in all 5 rounds, thematic content, and now micro-action effects (tweet/Slack/Signal DMs apply role-aware state deltas). Four consequence-chain thresholds (market crash, coalition fracture, public panic, board revolt) make external role decisions cascade into visible game events.
 
+Remaining gaps:
 - **NSA Advisor** — Needs weight theft response options (R2), emergency powers recommendation (R3), strategic posture (R5)
-- **Tech Journalist** — ~~Publication impacts are generic~~ — `getPublicationEffects()` implements full angle × target × role matrix (commit `5bf08b9`): safety/hype/geopolitics angles, openbrain/prometheus/china/general targets, journalist ×2 amplifier. Remaining gaps: source cultivation (publishing burns sources, protecting builds trust), feedback loops (faction responses to publications), real-time publishing during deliberation phases.
-- **VC/Investor** — Needs board authority decisions (halt/proceed Agent-4), capital leverage (withdraw funding), kingmaker mechanics (broker merger, fund safety)
-- **International Diplomat** — Needs counter-offer mechanics for China negotiations, coalition building with durability, leverage mechanisms (EU market access, sanctions)
-- **Cross-role interactions** — NSA directs security upgrades, VC pulls funding to pressure labs, diplomat leaks to journalist, journalist tips off NSA
+- **Tech Journalist** — Publication system implemented (angle × target × role matrix, journalist ×2 amplifier). Remaining: source cultivation (publishing burns sources, protecting builds trust), feedback loops (faction responses to publications)
+- **VC/Investor** — Needs board authority decisions (halt/proceed Agent-4), capital leverage (withdraw funding), kingmaker mechanics (broker merger, fund safety). Market crash threshold now creates visible consequence for economic decisions.
+- **International Diplomat** — Needs counter-offer mechanics for China negotiations, coalition building with durability. Coalition fracture threshold now fires when cooperation collapses.
+- **Cross-role interactions** — Signal DM role-pair effects exist (journalist → whistleblower pressure, NSA ↔ lab → security, VC ↔ lab → board confidence). Still missing: diplomat leaks to journalist, journalist tips off NSA as explicit mechanics
 
 ### Diagnostics & Logging
 
@@ -148,20 +152,20 @@ All four external roles (NSA, Journalist, VC, Diplomat) have individual decision
 
 ### Game Balance
 
-**Status: Significantly improved after threshold tuning. Two arcs still skewed.**
+**Status: All arcs rebalanced. No single outcome dominates above 45% in 10K random-heuristic trials.**
 
-From 10,000 random-heuristic trials (with generated decision templates):
+From 10,000 random-heuristic trials (with generated decision templates), post-rebalance:
 
 | Arc | Distribution | Status |
 |-----|-------------|--------|
-| AI Race | 63.8% stalemate, rest distributed | Stalemate dominates |
+| AI Race | ~43% stalemate (was 63.8%) | Rebalanced — widened gap/capability thresholds |
 | Alignment | Max outcome 43% (superficial) | Well-distributed after OR→AND fix |
 | Control | Max outcome 53.6% (government) | Slightly high |
 | Economy | Max outcome 45.7% | Acceptable |
 | US-China | Max outcome 45.1% | Well-distributed |
 | Public Reaction | Max outcome 42.8% | Healthy |
 | Taiwan | Distributed | Healthy |
-| Open Source | 58.1% irrelevant | Skewed — needs tuning |
+| Open Source | ~40% irrelevant (was 58.1%), leaked ~17% (was ~0%) | Rebalanced — new leaked path, lower thresholds |
 | Prometheus | Distributed | Healthy |
 
 ---
@@ -180,9 +184,9 @@ From 10,000 random-heuristic trials (with generated decision templates):
 ~~5. Logger event coverage sweep~~ — All 22 event types already emitting. STATUS was stale.
 
 ### P3 — Gameplay
-6. External role mechanical depth (see External Role Balancing section above)
-7. Journalist publication impacts — faction-specific by story angle
-8. Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs
+6. External role mechanical depth — partially done (micro-actions, consequence-chain thresholds, publication system). Remaining: NSA/VC/Diplomat decision-specific mechanics.
+7. ~~Journalist publication impacts — faction-specific by story angle~~ ✅ — angle × target × role matrix in `getPublicationEffects()`
+8. ~~Further tune AI Race (stalemate 63.8%) and Open Source (irrelevant 58.1%) arcs~~ ✅ — AI Race stalemate → ~43%, Open Source irrelevant → ~40%
 
 ---
 
