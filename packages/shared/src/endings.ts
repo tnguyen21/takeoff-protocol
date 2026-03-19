@@ -135,17 +135,14 @@ const NARRATIVES: Record<EndingArcId, string[]> = {
 // ── Resolution Logic ───────────────────────────────────────────────────────────
 
 function resolveAiRace(s: StateVariables): number {
-  // China parity: low US lead OR high compute + chip independence
+  // China parity: US lead gone OR high compute + chip independence
   const chinaClose = s.usChinaGap < -2 || (s.cdzComputeUtilization > 80 && s.domesticChipProgress > 60);
-  // Prometheus catch-up: standard gap closure OR safety breakthrough proved its worth
-  const promClosing = (s.obPromGap <= 1 && s.promCapability >= 55) || s.promSafetyBreakthroughProgress >= 80;
-  const obDominant = s.obCapability >= 65 && s.obPromGap >= 4 && !chinaClose;
+  // Prometheus catch-up: gap ≤3 months with modest capability, or safety breakthrough
+  const promClosing = (s.obPromGap <= 3 && s.promCapability >= 38) || s.promSafetyBreakthroughProgress >= 80;
+  // OB dominant: non-negative gap with capability above low bar, or very high absolute capability
+  const obDominant = !chinaClose && ((s.obCapability >= 44 && s.obPromGap >= 0) || s.obCapability >= 68);
   // Priority order: China parity (1) > Prometheus lead (3) > OB dominant (2) > multi-polar (0).
-  // chinaClose and promClosing use entirely different state variables and CAN both be true
-  // simultaneously (e.g. China has high compute + chip independence while Prometheus has
-  // also closed the gap on OpenBrain). China parity is intentionally checked first: when a
-  // peer-state competitor has reached capability parity, that geopolitical story overrides
-  // the inter-US-lab competition regardless of Prometheus's standing.
+  // chinaClose and promClosing CAN both be true simultaneously — China is checked first.
   // obDominant already guards with !chinaClose, keeping it consistent with this ordering.
   if (chinaClose) return 1;
   if (promClosing) return 3;
@@ -250,12 +247,14 @@ function resolveTaiwan(s: StateVariables): number {
 function resolveOpenSource(s: StateVariables): number {
   // Full weight theft = everything leaked
   if (s.chinaWeightTheftProgress >= 100) return 0;
-  // Strong open-source momentum → strategic open-sourcing
-  if (s.openSourceMomentum >= 60) return 1;
-  // Both labs locked down + low momentum → closed won
-  if (s.securityLevelOB >= 4 && s.securityLevelProm >= 4 && s.openSourceMomentum < 40) return 2;
-  // Moderate momentum or cooperation → strategic release
-  if (s.intlCooperation >= 40 || s.openSourceMomentum >= 40) return 1;
+  // Either lab at minimum security + enough open-source pressure → uncontrolled release
+  if ((s.securityLevelOB <= 1 || s.securityLevelProm <= 1) && s.openSourceMomentum >= 25) return 0;
+  // Meaningful open-source momentum → strategic open-sourcing
+  if (s.openSourceMomentum >= 40) return 1;
+  // Both labs locked down → closed won
+  if (s.securityLevelOB >= 4 && s.securityLevelProm >= 4) return 2;
+  // Moderate momentum or international pressure → strategic release
+  if (s.intlCooperation >= 30 || s.openSourceMomentum >= 28) return 1;
   return 3; // Irrelevant — open vs closed became a non-factor
 }
 

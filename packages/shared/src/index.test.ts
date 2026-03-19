@@ -799,8 +799,8 @@ describe("computeEndingArcs", () => {
   });
 
   it("resolveAiRace: 3-way stalemate when no condition fires", () => {
-    // BASE_STATE: obCapability=50 (<65), chinaClose=false, promClosing=false → result 0
-    const arcs = computeEndingArcs(BASE_STATE);
+    // obPromGap=5 prevents promClosing (needs ≤3); obCapability=43 prevents obDominant (needs ≥44)
+    const arcs = computeEndingArcs({ ...BASE_STATE, obCapability: 43, obPromGap: 5 });
     expect(arcs.find((a) => a.id === "aiRace")!.result).toBe(0);
   });
 
