@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import type { AppContent, ContentItem, Faction, StateVariables } from "@takeoff/shared";
 import type { GenerationContext } from "./context.js";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
-import { MockProvider, GenerationParseError } from "./provider.js";
+import { MockProvider } from "./provider.js";
 import { validateContent, validateFogSafety, contentBudget } from "./validate.js";
 import { generateContent, generateContentWithRetry, forceSlackChannel, VALID_SLACK_CHANNELS } from "./content.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
@@ -75,7 +75,7 @@ function makeItem(
  * 3 critical, 5 context, 1 red-herring, 1 breadcrumb → 10 items is short.
  * We need 15-30 total, so pad with extra context items.
  */
-function makeValidItemSet(faction: Faction, round = 3): ContentItem[] {
+function makeValidItemSet(_faction: Faction, round = 3): ContentItem[] {
   const items: ContentItem[] = [];
   // 3 critical
   for (let i = 0; i < 3; i++) {
@@ -702,7 +702,7 @@ describe("contentBudget — scales budgets by appCount", () => {
 // ── validateContent with appCount ─────────────────────────────────────────────
 
 /** Build a valid item set for N apps (appCount > 2). Scale = ceil(N/2). */
-function makeScaledItemSet(faction: Faction, appCount: number, round = 3): ContentItem[] {
+function makeScaledItemSet(_faction: Faction, appCount: number, round = 3): ContentItem[] {
   const scale = Math.ceil(appCount / 2);
   const items: ContentItem[] = [];
   for (let i = 0; i < 3 * scale; i++)

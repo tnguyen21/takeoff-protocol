@@ -424,7 +424,6 @@ describe("validateDecisions — soft constraints produce warnings", () => {
   });
 
   it("scope check: effect outside variableScope produces a warning (not an error)", () => {
-    const { DecisionTemplate } = {} as any; // just to confirm type exists — we use inline object
     const template = {
       round: 1,
       role: "ob_ceo" as Role,

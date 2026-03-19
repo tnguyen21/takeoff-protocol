@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "bun:test";
+import { it, expect, afterEach } from "bun:test";
 import { getGenerationConfig } from "./config.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

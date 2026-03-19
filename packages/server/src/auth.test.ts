@@ -4,7 +4,6 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createHmac } from "node:crypto";
 import {
   isAuthEnabled,
-  checkPassword,
   generateAuthCookie,
   validateAuthCookie,
   parseCookieHeader,

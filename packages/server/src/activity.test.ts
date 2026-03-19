@@ -7,8 +7,8 @@
  * - INV-4: Activity resets between rounds (playerActivity cleared after resolution)
  */
 
-import { describe, expect, it, beforeEach } from "bun:test";
-import type { GameRoom, Player, StateVariables } from "@takeoff/shared";
+import { describe, expect, it } from "bun:test";
+import type { GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { PRIMARY_APP_PENALTIES, applyActivityPenalties } from "./activityPenalties.js";
 

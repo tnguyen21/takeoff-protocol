@@ -15,23 +15,12 @@
  * - INV-4: All deltas are clamped within STATE_VARIABLE_RANGES
  */
 
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import type { Faction, GameRoom, Player, StateVariables } from "@takeoff/shared";
 import { INITIAL_STATE, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { applyMicroAction, getActionCount, resetMicroActionCounts } from "./microActions.js";
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
-
-function makePlayer(id: string): Player {
-  return {
-    id,
-    name: "Test",
-    faction: "openbrain" as never,
-    role: "ob_cto" as never,
-    isLeader: false,
-    connected: true,
-  };
-}
 
 function makeRoom(players: Player[] = []): GameRoom {
   return {

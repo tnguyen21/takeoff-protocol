@@ -10,7 +10,7 @@
  * - INV-6: Each JSONL line is valid JSON when parsed independently
  */
 
-import { describe, expect, it, beforeEach, afterEach } from "bun:test";
+import { describe, expect, it, afterEach } from "bun:test";
 import { readFile, rm } from "fs/promises";
 import { existsSync } from "fs";
 import { GameLogger, NullLogger, validateEnvelope, EVENT_NAMES } from "./index.js";
@@ -304,7 +304,7 @@ describe("NullLogger", () => {
 
 describe("EVENT_NAMES constants", () => {
   it("all event names are non-empty dot-namespaced strings", () => {
-    for (const [key, value] of Object.entries(EVENT_NAMES)) {
+    for (const [, value] of Object.entries(EVENT_NAMES)) {
       expect(typeof value).toBe("string");
       expect(value.length).toBeGreaterThan(0);
       expect(value.includes(".")).toBe(true);

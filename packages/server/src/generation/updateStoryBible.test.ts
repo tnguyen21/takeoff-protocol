@@ -142,7 +142,6 @@ describe("updateStoryBible — INV-2: event structure validity", () => {
       teamDecisions: { openbrain: "ob_r3_team_push" },
     });
     updateStoryBible(room);
-    const teamEvents = room.storyBible!.events.filter((e) => e.narrativeWeight === "major");
     // If no match for round 3 openbrain, we just ensure no crash and round is set
     for (const event of room.storyBible!.events) {
       expect(event.round).toBe(3);

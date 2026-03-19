@@ -12,13 +12,11 @@
  * Invariants tested:
  * - INV-1: After phase change, decisionSubmitted=false, teamVotes={}, teamLocked=false
  * - INV-2: After phase change, gmDecisionStatus=[] and gmExtendUsesRemaining=2
- * - INV-3: getContentForApp returns only items from entries matching the given appId
- * - INV-4: nextSeq() returns strictly increasing integers (no duplicates, gaps exactly 1)
+ * - INV-3: nextSeq() returns strictly increasing integers (no duplicates, gaps exactly 1)
  */
 
 import { describe, it, expect, beforeEach } from "bun:test";
-import { loadSession, saveSession, clearSession, useGameStore, getContentForApp, nextSeq } from "./game.js";
-import type { AppContent } from "@takeoff/shared";
+import { loadSession, saveSession, clearSession, useGameStore, nextSeq } from "./game.js";
 
 const SESSION_KEY = "takeoff:session";
 
@@ -160,62 +158,10 @@ describe("phase transition state resets", () => {
   });
 });
 
-// ── getContentForApp ─────────────────────────────────────────────────────────
-
-describe("getContentForApp", () => {
-  const slackItem1 = { id: "s1", type: "message" as const, round: 1, body: "hello", timestamp: "09:00" };
-  const slackItem2 = { id: "s2", type: "message" as const, round: 1, body: "world", timestamp: "09:01" };
-  const slackItem3 = { id: "s3", type: "message" as const, round: 2, body: "more", timestamp: "09:02" };
-  const wandbItem = { id: "w1", type: "message" as const, round: 1, body: "metrics", timestamp: "09:03" };
-
-  it("INV-3: returns flattened items from all entries matching appId", () => {
-    const content: AppContent[] = [
-      { faction: "openbrain", app: "slack", items: [slackItem1, slackItem2] },
-      { faction: "prometheus", app: "slack", items: [slackItem3] },
-      { faction: "openbrain", app: "wandb", items: [wandbItem] },
-    ];
-
-    const result = getContentForApp(content, "slack");
-    expect(result).toHaveLength(3);
-    expect(result.map((i) => i.id)).toEqual(["s1", "s2", "s3"]);
-  });
-
-  it("INV-3: does not include items from non-matching appId entries", () => {
-    const content: AppContent[] = [
-      { faction: "openbrain", app: "slack", items: [slackItem1] },
-      { faction: "openbrain", app: "wandb", items: [wandbItem] },
-    ];
-
-    const result = getContentForApp(content, "slack");
-    expect(result.map((i) => i.id)).not.toContain("w1");
-  });
-
-  it("INV-3: returns empty array when no entries match appId", () => {
-    const content: AppContent[] = [
-      { faction: "openbrain", app: "wandb", items: [wandbItem] },
-    ];
-
-    expect(getContentForApp(content, "slack")).toEqual([]);
-  });
-
-  it("empty content array returns []", () => {
-    expect(getContentForApp([], "slack")).toEqual([]);
-  });
-
-  it("matching entries with empty items arrays return []", () => {
-    const content: AppContent[] = [
-      { faction: "openbrain", app: "slack", items: [] },
-      { faction: "prometheus", app: "slack", items: [] },
-    ];
-
-    expect(getContentForApp(content, "slack")).toEqual([]);
-  });
-});
-
 // ── nextSeq ──────────────────────────────────────────────────────────────────
 
 describe("nextSeq", () => {
-  it("INV-4: each call returns exactly 1 more than the previous call", () => {
+  it("INV-3: each call returns exactly 1 more than the previous call", () => {
     const values: number[] = [];
     for (let i = 0; i < 100; i++) {
       values.push(nextSeq());

@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect } from "bun:test";
-import type { DecisionTemplate, RoundDecisions } from "@takeoff/shared";
+import type { DecisionTemplate } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { GenerationTimeoutError, GenerationParseError } from "./provider.js";
