@@ -124,6 +124,38 @@ export interface GenerationProvider {
   }): Promise<T>;
 }
 
+// ── CapturingProvider (wraps any provider, records all prompts) ───────────────
+
+export interface CapturedPrompt {
+  systemPrompt: string;
+  userPrompt: string;
+  model?: string;
+}
+
+/**
+ * Transparent wrapper that records every generate() call's prompts.
+ * Use in the orchestrator / game runner to capture prompts for audit.
+ */
+export class CapturingProvider implements GenerationProvider {
+  public readonly calls: CapturedPrompt[] = [];
+
+  constructor(private readonly inner: GenerationProvider) {}
+
+  async generate<T>(params: {
+    systemPrompt: string;
+    userPrompt: string;
+    schema: object;
+    options?: GenerationOptions;
+  }): Promise<T> {
+    this.calls.push({
+      systemPrompt: params.systemPrompt,
+      userPrompt: params.userPrompt,
+      model: params.options?.model,
+    });
+    return this.inner.generate(params);
+  }
+}
+
 // ── MockProvider ──────────────────────────────────────────────────────────────
 
 export class MockProvider implements GenerationProvider {

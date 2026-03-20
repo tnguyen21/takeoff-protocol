@@ -281,8 +281,8 @@ describe("validateDecisions — INV-2: each hard constraint violation produces a
       team: [],
     };
     const result = validateDecisions(decisions);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("not distinct") && e.includes('"A"') && e.includes('"B"'))).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((w) => w.includes("low distinctness") && w.includes('"A"') && w.includes('"B"'))).toBe(true);
   });
 
   it("conditional multiplier of 5.0 fails bounds", () => {

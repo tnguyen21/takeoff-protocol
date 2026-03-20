@@ -246,6 +246,31 @@
   }
   .story-event .weight-major { color: var(--amber); font-size: 10px; }
   .story-event .weight-minor { color: var(--text-muted); font-size: 10px; }
+
+  /* Prompt blocks */
+  .prompt-block {
+    margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px;
+    overflow: hidden;
+  }
+  .prompt-block summary {
+    padding: 8px 12px; cursor: pointer; font-size: 11px;
+    font-weight: 600; color: var(--text-muted);
+    background: rgba(0,0,0,0.2);
+  }
+  .prompt-block summary:hover { color: var(--text); }
+  .prompt-block pre {
+    padding: 12px; margin: 0; font-size: 11px; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word;
+    background: rgba(0,0,0,0.3); max-height: 400px; overflow-y: auto;
+  }
+
+  /* Decision summary */
+  .decision-summary-item {
+    padding: 4px 10px; margin-bottom: 2px;
+    background: rgba(0,0,0,0.15); border-radius: 4px; font-size: 12px;
+  }
+  .decision-summary-item .ds-key { color: var(--text-muted); }
+  .decision-summary-item .ds-val { color: var(--accent); font-weight: 500; }
 </style>
 </head>
 <body>
@@ -344,8 +369,18 @@ function renderRound(parent, round) {
     parent.appendChild(makeSection("Decisions", renderDecisions(round.artifacts.decisions, round.chosenLabels)));
   }
 
+  // Decision Summary (what bots chose)
+  if (round.decisionSummary && Object.keys(round.decisionSummary).length > 0) {
+    parent.appendChild(makeSection("Decision Summary", renderDecisionSummary(round.decisionSummary, round.chosenLabels)));
+  }
+
   // Resolution
   parent.appendChild(makeSection("Resolution", renderResolution(round)));
+
+  // Prompts (collapsible)
+  if (round.artifacts.prompts?.length) {
+    parent.appendChild(makeSection("Prompts", renderPrompts(round.artifacts.prompts), `${round.artifacts.prompts.length} calls`));
+  }
 }
 
 function makeSection(title, renderFn, badge) {
@@ -683,6 +718,41 @@ function renderEnding(parent) {
       }
     }));
   }
+}
+
+function renderDecisionSummary(summary, chosenLabels) {
+  return (parent) => {
+    for (const [key, val] of Object.entries(summary)) {
+      const chosen = chosenLabels?.[val.optionId] || val.label || val.optionId;
+      const el = document.createElement("div");
+      el.className = "decision-summary-item";
+      el.innerHTML = `<span class="ds-key">${esc(key)}</span> → <span class="ds-val">${esc(chosen)}</span>`;
+      parent.appendChild(el);
+    }
+  };
+}
+
+function renderPrompts(prompts) {
+  return (parent) => {
+    for (const p of prompts) {
+      const block = document.createElement("div");
+      block.className = "prompt-block";
+
+      const label = `${p.artifact}${p.model ? ` (${p.model})` : ""}`;
+
+      // System prompt
+      const sysDet = document.createElement("details");
+      sysDet.innerHTML = `<summary>${esc(label)} — system prompt</summary><pre>${esc(p.system)}</pre>`;
+      block.appendChild(sysDet);
+
+      // User prompt
+      const usrDet = document.createElement("details");
+      usrDet.innerHTML = `<summary>${esc(label)} — user prompt</summary><pre>${esc(p.user)}</pre>`;
+      block.appendChild(usrDet);
+
+      parent.appendChild(block);
+    }
+  };
 }
 
 function esc(s) {

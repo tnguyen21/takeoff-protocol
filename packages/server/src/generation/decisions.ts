@@ -465,11 +465,18 @@ export async function generateDecisions(
 ): Promise<RoundDecisions | null> {
   const roundTemplates = templates.filter((t) => t.round === round);
 
+  // Parallelize all decision generation (semaphore in provider handles concurrency)
+  const results = await Promise.all(
+    roundTemplates.map(async (template) => {
+      const result = await generateSingleDecision(provider, context, template, round, options);
+      return { template, result };
+    }),
+  );
+
   const individual: IndividualDecision[] = [];
   const team: TeamDecision[] = [];
 
-  for (const template of roundTemplates) {
-    const result = await generateSingleDecision(provider, context, template, round, options);
+  for (const { template, result } of results) {
     if (result === null) {
       // Any single decision failure → fall back entire round to pre-authored
       return null;

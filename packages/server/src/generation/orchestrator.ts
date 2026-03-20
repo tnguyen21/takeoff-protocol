@@ -15,6 +15,7 @@ import { generateDecisionsWithRetry } from "./decisions.js";
 import { getTemplatesForRound } from "./templates/decisions.js";
 import { buildGenerationContext } from "./context.js";
 import {
+  appendGeneratedPrompts,
   getGenerationStatus,
   setGeneratedBriefing,
   setGeneratedContent,
@@ -23,7 +24,7 @@ import {
   setGeneratedSharedContent,
   setGenerationStatus,
 } from "./cache.js";
-import { AnthropicProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
+import { AnthropicProvider, CapturingProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
 import { validateBriefing, validateFogSafety } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
@@ -91,9 +92,11 @@ export async function triggerGeneration(
   const logger = getLoggerForRoom(room.code);
 
   try {
-    // ── Provider ────────────────────────────────────────────────────────────
-    const resolvedProvider: GenerationProvider =
+    // ── Provider (wrap in CapturingProvider to record prompts) ──────────────
+    const innerProvider: GenerationProvider =
       provider ?? new AnthropicProvider();
+    const capturing = new CapturingProvider(innerProvider);
+    const resolvedProvider = capturing;
 
     const context = buildGenerationContext(room, round);
 
@@ -101,6 +104,21 @@ export async function triggerGeneration(
     let contentOk = true;
     let npcOk = true;
     const sharedSubstackItems: ContentItem[] = [];
+
+    // Helper: label and flush captured prompts since lastCallIdx
+    let lastCallIdx = 0;
+    function flushPrompts(artifact: string): void {
+      const newCalls = capturing.calls.slice(lastCallIdx);
+      lastCallIdx = capturing.calls.length;
+      if (newCalls.length > 0) {
+        appendGeneratedPrompts(room, round, newCalls.map(c => ({
+          artifact,
+          system: c.systemPrompt,
+          user: c.userPrompt,
+          model: c.model,
+        })));
+      }
+    }
 
     // ── Briefing generation ─────────────────────────────────────────────────
     if (briefingsEnabled) {
@@ -130,6 +148,7 @@ export async function triggerGeneration(
           logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: briefingArtifact, durationMs }, { round, actorId: "system" });
         }
       }
+      flushPrompts("briefing");
     }
 
     // ── Content generation ──────────────────────────────────────────────────
@@ -184,6 +203,7 @@ export async function triggerGeneration(
           items: sharedSubstackItems,
         }]);
       }
+      flushPrompts("content");
     }
 
     // ── NPC generation ───────────────────────────────────────────────────────
@@ -206,6 +226,7 @@ export async function triggerGeneration(
         logGenerationSuccess(round, npcArtifact, durationMs);
         logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: npcArtifact, durationMs }, { round, actorId: "system" });
       }
+      flushPrompts("npc");
     }
 
     // ── Decision generation ───────────────────────────────────────────────────
@@ -232,6 +253,7 @@ export async function triggerGeneration(
           logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: decisionsArtifact, durationMs }, { round, actorId: "system" });
         }
       }
+      flushPrompts("decisions");
     }
 
     // ── Final status ──────────────────────────────────────────────────────────

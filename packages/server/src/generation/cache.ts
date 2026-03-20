@@ -77,6 +77,17 @@ export function getGeneratedDecisions(room: GameRoom, round: number): RoundDecis
   return room.generatedRounds?.[round]?.decisions;
 }
 
+export function appendGeneratedPrompts(
+  room: GameRoom,
+  round: number,
+  prompts: Array<{ artifact: string; system: string; user: string; model?: string }>,
+): void {
+  const rounds = ensureGeneratedRounds(room);
+  if (!rounds[round]) rounds[round] = {};
+  if (!rounds[round]!.prompts) rounds[round]!.prompts = [];
+  rounds[round]!.prompts!.push(...prompts);
+}
+
 export function setGenerationStatus(room: GameRoom, round: number, status: GenerationStatus): void {
   const statuses = ensureGenerationStatus(room);
   const current = statuses[round];

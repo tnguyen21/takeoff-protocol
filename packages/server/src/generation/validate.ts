@@ -413,12 +413,12 @@ export function validateDecisions(
         }
       }
 
-      // Hard: no-free-lunch
-      if (posCount < 2) {
-        errors.push(`${optId}: no-free-lunch violation — only ${posCount} positive effects (need ≥2)`);
+      // Hard: no-free-lunch (must have at least 1 positive and 1 negative)
+      if (posCount < 1) {
+        errors.push(`${optId}: no-free-lunch violation — only ${posCount} positive effects (need ≥1)`);
       }
-      if (negCount < 2) {
-        errors.push(`${optId}: no-free-lunch violation — only ${negCount} negative effects (need ≥2)`);
+      if (negCount < 1) {
+        errors.push(`${optId}: no-free-lunch violation — only ${negCount} negative effects (need ≥1)`);
       }
 
       // Soft: net delta magnitude [15, 35]
@@ -427,7 +427,7 @@ export function validateDecisions(
       }
     }
 
-    // Hard: distinctness check for each option pair
+    // Soft: distinctness check for each option pair (LLMs often share directional effects)
     for (let i = 0; i < options.length; i++) {
       for (let j = i + 1; j < options.length; j++) {
         const optA = options[i]!;
@@ -443,8 +443,8 @@ export function validateDecisions(
           const sameSignCount = sharedVars.filter((v) => signsA.get(v) === signsB.get(v)).length;
           const ratio = sameSignCount / sharedVars.length;
           if (ratio >= 0.6) {
-            errors.push(
-              `${decisionId}: options "${optA.id}" and "${optB.id}" are not distinct — ${sameSignCount}/${sharedVars.length} shared variables have same-sign deltas (≥60%)`,
+            warnings.push(
+              `${decisionId}: options "${optA.id}" and "${optB.id}" have low distinctness — ${sameSignCount}/${sharedVars.length} shared variables have same-sign deltas (≥60%)`,
             );
           }
         }

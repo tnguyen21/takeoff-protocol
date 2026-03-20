@@ -312,6 +312,7 @@ function collectRoundData(room: GameRoom, round: number) {
     sharedContent: artifacts?.sharedContent ?? null,
     npcTriggers: artifacts?.npcTriggers ?? null,
     decisions: artifacts?.decisions ?? null,
+    prompts: artifacts?.prompts ?? null,
   };
 }
 
@@ -366,9 +367,9 @@ async function main() {
       roomCode: room.code,
       durationMs: 0,
       models: {
-        briefing: process.env.GEN_BRIEFING_MODEL ?? "claude-sonnet-4-5-20250514",
+        briefing: process.env.GEN_BRIEFING_MODEL ?? "claude-sonnet-4-6",
         content: process.env.GEN_CONTENT_MODEL ?? "claude-haiku-4-5-20251001",
-        decision: process.env.GEN_DECISION_MODEL ?? process.env.GEN_BRIEFING_MODEL ?? "claude-sonnet-4-5-20250514",
+        decision: process.env.GEN_DECISION_MODEL ?? process.env.GEN_BRIEFING_MODEL ?? "claude-sonnet-4-6",
       },
     },
     initialState: { ...INITIAL_STATE },

@@ -374,6 +374,13 @@ export interface GeneratedRoundArtifacts {
   sharedContent?: AppContent[];
   npcTriggers?: NpcTrigger[];
   decisions?: RoundDecisions;
+  /** Captured LLM prompts for audit/review. Each entry is one API call. */
+  prompts?: Array<{
+    artifact: string;   // e.g. "briefing", "content:openbrain", "npc", "decision:ob_ceo"
+    system: string;
+    user: string;
+    model?: string;
+  }>;
 }
 
 // ── Resolution ──
