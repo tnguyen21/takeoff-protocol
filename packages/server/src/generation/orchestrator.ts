@@ -279,3 +279,44 @@ export async function triggerGeneration(
     }
   }
 }
+
+// ── retriggerDecisions ──────────────────────────────────────────────────────
+
+/**
+ * Standalone retry for decision generation only.
+ *
+ * Called when the decision phase starts but decisions aren't cached — either
+ * the main orchestrator is still running (pending) or it already finished
+ * without caching decisions (failed / decisions-specific failure).
+ *
+ * Skips the idempotency check of triggerGeneration since this targets only
+ * the decisions artifact. Never throws.
+ */
+export async function retriggerDecisions(
+  room: GameRoom,
+  round: number,
+): Promise<boolean> {
+  try {
+    const config = getGenerationConfig();
+    if (!config.decisionsEnabled) return false;
+
+    const provider = new AnthropicProvider();
+    const context = buildGenerationContext(room, round);
+    const templates = getTemplatesForRound(round);
+    if (templates.length === 0) return false;
+
+    const options: GenerationOptions = { model: config.decisionModel, timeout: config.timeout };
+    console.log(`[decisions:retry] Retrying decision generation for round ${round}`);
+    const result = await generateDecisionsWithRetry(provider, context, templates, round, options);
+    if (result) {
+      setGeneratedDecisions(room, round, result);
+      console.log(`[decisions:retry] Success for round ${round}`);
+      return true;
+    }
+    console.error(`[decisions:retry] Failed for round ${round}`);
+    return false;
+  } catch (err) {
+    console.error(`[decisions:retry] Unexpected error for round ${round}:`, err);
+    return false;
+  }
+}

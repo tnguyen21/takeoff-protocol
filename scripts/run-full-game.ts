@@ -403,7 +403,21 @@ async function main() {
     }
 
     // 3. Collect generated artifacts and log failures
-    const artifacts = collectRoundData(room, round);
+    let artifacts = collectRoundData(room, round);
+
+    // 3a. If decisions are missing, retry just decisions (the most timeout-prone artifact)
+    if (!artifacts.decisions) {
+      log("  Decisions missing — retrying decision generation...");
+      const { retriggerDecisions } = await import("../packages/server/src/generation/orchestrator.js");
+      const retryOk = await retriggerDecisions(room, round);
+      if (retryOk) {
+        artifacts = collectRoundData(room, round);
+        log("  Decision retry succeeded!");
+      } else {
+        log("  WARN: Decision retry also failed");
+      }
+    }
+
     const decisionCount = artifacts.decisions
       ? `${artifacts.decisions.individual.length} individual, ${artifacts.decisions.team.length} team`
       : "none";

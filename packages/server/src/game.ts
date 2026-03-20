@@ -3,8 +3,8 @@ import type { AppContent, ContentItem, DecisionOption, Faction, GameMessage, Gam
 import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, STATE_VARIABLE_RANGES, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
-import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers, getGeneratedSharedContent } from "./generation/cache.js";
-import { triggerGeneration } from "./generation/orchestrator.js";
+import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers, getGeneratedSharedContent, getGenerationStatus } from "./generation/cache.js";
+import { triggerGeneration, retriggerDecisions } from "./generation/orchestrator.js";
 import { TUTORIAL_CONTENT } from "./content/tutorial.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { applyActivityPenalties } from "./activityPenalties.js";
@@ -338,12 +338,9 @@ export function getActiveDecisions(room: GameRoom, round: number) {
   return getGeneratedDecisions(room, round);
 }
 
-export function emitDecisions(io: Server, room: GameRoom) {
-  // Tutorial round has no real decisions
-  if (room.round === 0) return;
-  const roundDecisions = getActiveDecisions(room, room.round);
+/** Send cached decisions to all players immediately. */
+function emitDecisionsToPlayers(io: Server, room: GameRoom, roundDecisions: ReturnType<typeof getActiveDecisions>) {
   if (!roundDecisions) return;
-
   for (const [socketId, player] of Object.entries(room.players)) {
     if (!player.faction || !player.role) continue;
     const individuals = roundDecisions.individual.filter((d: IndividualDecision) => d.role === player.role);
@@ -352,6 +349,58 @@ export function emitDecisions(io: Server, room: GameRoom) {
     const team: TeamDecision | undefined = roundDecisions.team.find((d: TeamDecision) => d.faction === player.faction);
     io.to(socketId).emit("game:decisions", { individual: individual ?? null, individual2, team: team ?? null });
   }
+}
+
+const DECISION_POLL_INTERVAL_MS = 2_000;
+const DECISION_POLL_MAX_WAIT_MS = 60_000;
+
+export function emitDecisions(io: Server, room: GameRoom) {
+  // Tutorial round has no real decisions
+  if (room.round === 0) return;
+
+  const roundDecisions = getActiveDecisions(room, room.round);
+  if (roundDecisions) {
+    emitDecisionsToPlayers(io, room, roundDecisions);
+    return;
+  }
+
+  // Decisions not ready — poll until available or timeout
+  const targetRound = room.round;
+  const genStatus = getGenerationStatus(room, targetRound);
+  console.log(`[decisions:poll] Round ${targetRound} decisions not ready (generation status: ${genStatus}), polling...`);
+
+  // If generation already finished without decisions, retry just the decisions artifact
+  if (genStatus === "ready" || genStatus === "failed") {
+    void retriggerDecisions(room, targetRound);
+  }
+
+  const startTime = Date.now();
+  const timer = setInterval(() => {
+    // Stop polling if room moved past the decision phase
+    if (room.phase !== "decision" || room.round !== targetRound) {
+      clearInterval(timer);
+      return;
+    }
+
+    const decisions = getActiveDecisions(room, targetRound);
+    if (decisions) {
+      clearInterval(timer);
+      console.log(`[decisions:poll] Round ${targetRound} decisions arrived after ${Date.now() - startTime}ms`);
+      emitDecisionsToPlayers(io, room, decisions);
+      return;
+    }
+
+    if (Date.now() - startTime >= DECISION_POLL_MAX_WAIT_MS) {
+      clearInterval(timer);
+      console.error(`[decisions:poll] Round ${targetRound} decisions unavailable after ${DECISION_POLL_MAX_WAIT_MS}ms`);
+      io.to(room.code).emit("game:notification", {
+        id: `decisions-unavailable-r${targetRound}`,
+        summary: "Decision generation is delayed. The GM may extend this phase.",
+        from: "system",
+        timestamp: Date.now(),
+      });
+    }
+  }, DECISION_POLL_INTERVAL_MS);
 }
 
 export function emitStateViews(io: Server, room: GameRoom) {
