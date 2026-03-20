@@ -2,7 +2,7 @@ import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, GamePhase, GameRoom, Player, Publication, PublicationAngle, PublicationTarget, PublicationType, Role, StateVariables } from "@takeoff/shared";
 import { canWriteSubstack, getPublicationEffects, isLeaderRole, STATE_VARIABLE_RANGES } from "@takeoff/shared";
 import { createRoom, getRoom, joinRoom, rejoinRoom, selectRole, getLobbyState, getPlayerMessages, recordAllDisconnected, clearAllDisconnected, isAtRoomCap, MAX_CONCURRENT_ROOMS } from "./rooms.js";
-import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
+import { advancePhase, checkThresholds, jumpToPhase, startGame, startTutorial, endTutorial, endGame, replayPlayerState, emitStateViews, emitBriefing, emitContent, emitDecisions, getActiveDecisions, syncPhaseTimer, clearPhaseTimer } from "./game.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { getLoggerForRoom } from "./logger/registry.js";
 
@@ -175,6 +175,12 @@ export function registerGameEvents(io: Server, socket: Socket) {
     getLoggerForRoom(room.code).log("phase.gm_advanced", { round: room.round, phase: room.phase }, { actorId: "gm", round: room.round, phase: room.phase });
     clearPhaseTimer(room);
     advancePhase(io, room);
+  });
+
+  socket.on("gm:end-game", () => {
+    const room = getGmRoom(socket);
+    if (!room || room.phase === "ending") return;
+    endGame(io, room, "gm");
   });
 
   socket.on("gm:pause", () => {

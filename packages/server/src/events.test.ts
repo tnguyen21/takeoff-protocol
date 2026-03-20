@@ -1393,6 +1393,60 @@ describe("gm:advance — real handler", () => {
   });
 });
 
+// ── gm:end-game ───────────────────────────────────────────────────────────────
+
+const END_GM_ID = "gm-end-1";
+const END_ROOM = "ENDGM";
+
+describe("gm:end-game — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let gmSocket: ReturnType<typeof createSocket>;
+  let spy: SpyLogger;
+
+  beforeEach(() => {
+    io = createIo();
+    spy = new SpyLogger();
+    room = makeTestRoom(END_GM_ID, END_ROOM);
+    room.round = 2;
+    room.phase = "deliberation";
+    room.timer = { endsAt: Date.now() + 5000 };
+    _setLoggerForRoom(END_ROOM, spy);
+    gmSocket = createSocket(END_GM_ID);
+    gmSocket.data.roomCode = END_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, gmSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    clearPhaseTimer(room);
+    rooms.delete(END_ROOM);
+    _clearLoggers();
+  });
+
+  it("non-GM socket silently ignored — phase unchanged", () => {
+    const other = createSocket("non-gm-end");
+    other.data.roomCode = END_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, other as unknown as import("socket.io").Socket);
+    fire(other.handlers, "gm:end-game");
+    expect(room.phase).toBe("deliberation");
+  });
+
+  it("ends the game immediately and emits ending payloads", () => {
+    fire(gmSocket.handlers, "gm:end-game");
+
+    expect(room.phase).toBe("ending");
+
+    const roomEmits = io.emits[END_ROOM] ?? [];
+    expect(roomEmits.some((e) => e.event === "game:phase" && (e.data as { phase?: string }).phase === "ending")).toBe(true);
+    expect(roomEmits.some((e) => e.event === "game:ending")).toBe(true);
+
+    const endedLog = spy.calls.find((c) => c.event === "game.ended");
+    expect(endedLog).toBeDefined();
+    expect(endedLog!.ctx?.actorId).toBe("gm");
+    expect(endedLog!.data).toMatchObject({ endedBy: "gm", endedEarly: true });
+  });
+});
+
 // ── publish:submit ────────────────────────────────────────────────────────────
 
 const PUB_GM_ID = "gm-pub-1";

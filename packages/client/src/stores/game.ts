@@ -123,6 +123,7 @@ interface GameStore {
   gmAdvance: () => void;
   gmPause: () => void;
   gmExtend: () => void;
+  gmEndGame: () => void;
   gmSetState: (variable: keyof StateVariables, value: number) => void;
   gmJump: (round: number, phase: string) => void;
   gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
@@ -301,6 +302,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gmExtend: () => {
     socket.emit("gm:extend");
+  },
+
+  gmEndGame: () => {
+    socket.emit("gm:end-game");
   },
 
   gmSetState: (variable, value) => {

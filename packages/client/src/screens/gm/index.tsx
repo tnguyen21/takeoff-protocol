@@ -21,6 +21,7 @@ export function GMDashboard() {
     gmAdvance,
     gmPause,
     gmExtend,
+    gmEndGame,
     gmSetState,
     gmSetTimers,
     endTutorial,
@@ -56,6 +57,7 @@ export function GMDashboard() {
             gmAdvance={gmAdvance}
             gmPause={gmPause}
             gmExtend={gmExtend}
+            gmEndGame={gmEndGame}
             gmSetTimers={gmSetTimers}
             endTutorial={endTutorial}
           />

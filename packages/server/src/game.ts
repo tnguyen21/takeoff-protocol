@@ -195,6 +195,45 @@ export function endTutorial(io: Server, room: GameRoom) {
   emitBriefing(io, room);
 }
 
+export function endGame(io: Server, room: GameRoom, endedBy: "system" | "gm" = "system") {
+  if (room.phase === "ending") return;
+
+  const prevPhase = room.phase;
+  room.phase = "ending";
+  clearPhaseTimer(room);
+
+  io.to(room.code).emit("game:phase", {
+    phase: room.phase,
+    round: room.round,
+    timer: { endsAt: 0 },
+  });
+
+  const arcs = computeEndingArcs(room.state);
+  io.to(room.code).emit("game:ending", {
+    arcs,
+    history: room.history,
+    finalState: room.state,
+    players: room.players,
+  });
+
+  const logger = getLoggerForRoom(room.code);
+  logger.log(EVENT_NAMES.PHASE_CHANGED, {
+    round: room.round,
+    phase: room.phase,
+    prevPhase,
+    duration: 0,
+  }, { round: room.round, phase: room.phase, actorId: endedBy });
+  logger.log(EVENT_NAMES.GAME_ENDED, {
+    code: room.code,
+    finalState: room.state,
+    arcs,
+    endedBy,
+    endedEarly: endedBy === "gm",
+  }, { round: room.round, phase: room.phase, actorId: endedBy });
+  void closeLoggerForRoom(room.code);
+  cleanupRoom(room.code);
+}
+
 export function advancePhase(io: Server, room: GameRoom) {
   // If in tutorial round (0), any advance transitions to Round 1 Briefing
   if (room.round === 0) {
@@ -236,39 +275,7 @@ export function advancePhase(io: Server, room: GameRoom) {
     // End of round
     if (room.phase === "resolution") {
       if (room.round >= TOTAL_ROUNDS) {
-        room.phase = "ending";
-        clearPhaseTimer(room);
-        io.to(room.code).emit("game:phase", {
-          phase: room.phase,
-          round: room.round,
-          timer: { endsAt: 0 },
-        });
-
-        // Compute and emit ending data with fog of war lifted
-        const arcs = computeEndingArcs(room.state);
-        io.to(room.code).emit("game:ending", {
-          arcs,
-          history: room.history,
-          finalState: room.state,
-          players: room.players,
-        });
-
-        // Log phase change and game ended, then close logger
-        const logger = getLoggerForRoom(room.code);
-        logger.log(EVENT_NAMES.PHASE_CHANGED, {
-          round: room.round,
-          phase: room.phase,
-          prevPhase,
-          duration: 0,
-        }, { round: room.round, phase: room.phase, actorId: "system" });
-        logger.log(EVENT_NAMES.GAME_ENDED, {
-          code: room.code,
-          finalState: room.state,
-          arcs,
-        });
-        void closeLoggerForRoom(room.code);
-        cleanupRoom(room.code);
-
+        endGame(io, room);
         return;
       }
 

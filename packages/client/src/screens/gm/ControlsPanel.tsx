@@ -329,6 +329,7 @@ interface ControlsPanelProps {
   gmAdvance: () => void;
   gmPause: () => void;
   gmExtend: () => void;
+  gmEndGame: () => void;
   gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
   endTutorial: () => void;
 }
@@ -343,11 +344,18 @@ export function ControlsPanel({
   gmAdvance,
   gmPause,
   gmExtend,
+  gmEndGame,
   gmSetTimers,
   endTutorial,
 }: ControlsPanelProps) {
   const [showEndings, setShowEndings] = useState(false);
   const isPaused = !!timer.pausedAt;
+  const handleEndGame = useCallback(() => {
+    if (typeof window !== "undefined" && !window.confirm("End the game now and show the ending screen?")) {
+      return;
+    }
+    gmEndGame();
+  }, [gmEndGame]);
 
   return (
     <>
@@ -383,6 +391,12 @@ export function ControlsPanel({
             >
               ⏭ Skip to Round 1
             </button>
+            <button
+              onClick={handleEndGame}
+              style={btnStyle("#f87171")}
+            >
+              ■ End Game Now
+            </button>
           </>
         ) : (
           /* Normal game controls */
@@ -416,6 +430,13 @@ export function ControlsPanel({
               style={btnStyle("#ef4444")}
             >
               ⏭ Advance Phase
+            </button>
+
+            <button
+              onClick={handleEndGame}
+              style={btnStyle("#f87171")}
+            >
+              ■ End Game Now
             </button>
 
             {import.meta.env.DEV && (
