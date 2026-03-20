@@ -142,7 +142,8 @@ export async function generateBriefingWithRetry(
       () => generateBriefing(provider, context, undefined, options),
       TRANSIENT_RETRY_OPTS,
     );
-  } catch {
+  } catch (err) {
+    console.error(`[briefing] Attempt 1 threw:`, String(err));
     return null;
   }
 
@@ -151,6 +152,8 @@ export async function generateBriefingWithRetry(
     return firstResult;
   }
 
+  console.error(`[briefing] Attempt 1 validation failed:`, firstValidation.errors);
+
   // ── Retry once with error feedback ────────────────────────────────────────
   let retryResult: BriefingOutput;
   try {
@@ -158,10 +161,14 @@ export async function generateBriefingWithRetry(
       () => generateBriefing(provider, context, firstValidation.errors, options),
       TRANSIENT_RETRY_OPTS,
     );
-  } catch {
+  } catch (err) {
+    console.error(`[briefing] Attempt 2 threw:`, String(err));
     return null;
   }
 
   const retryValidation = validateBriefing(retryResult);
+  if (!retryValidation.valid) {
+    console.error(`[briefing] Attempt 2 validation failed:`, retryValidation.errors);
+  }
   return retryValidation.valid ? retryResult : null;
 }

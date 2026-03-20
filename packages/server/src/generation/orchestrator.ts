@@ -1,5 +1,6 @@
 import type { Server } from "socket.io";
 import type { AppId, ContentItem, Faction, GameRoom } from "@takeoff/shared";
+import { FACTIONS } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
   logGenerationFailure,
@@ -63,7 +64,14 @@ export async function triggerGeneration(
 
   // When room toggle is on, enable everything; otherwise use env config
   const briefingsEnabled = roomEnabled === true ? true : config.briefingsEnabled;
-  const contentApps: AppId[] = Object.keys(APP_TYPE_MAP) as AppId[];
+  const allContentApps: AppId[] = Object.keys(APP_TYPE_MAP) as AppId[];
+  // Build per-faction app list: only generate for apps the faction actually has
+  const factionAppMap = new Map<Faction, AppId[]>();
+  for (const factionConfig of FACTIONS) {
+    const factionId = factionConfig.id as Faction;
+    const factionApps = allContentApps.filter(app => factionConfig.apps.includes(app));
+    factionAppMap.set(factionId, factionApps);
+  }
   const npcEnabled = roomEnabled === true ? true : config.npcEnabled;
   const decisionsEnabled = roomEnabled === true ? true : config.decisionsEnabled;
 
@@ -125,29 +133,34 @@ export async function triggerGeneration(
     }
 
     // ── Content generation ──────────────────────────────────────────────────
-    if (contentApps.length > 0) {
-      for (const faction of ALL_FACTIONS) {
-        const contentArtifact = `content:${faction}`;
-        const startTs = Date.now();
-        logGenerationStart(round, contentArtifact);
-        logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
+    if (allContentApps.length > 0) {
+      const factionResults = await Promise.all(
+        ALL_FACTIONS.map(async (faction) => {
+          const factionApps = factionAppMap.get(faction) ?? allContentApps;
+          const contentArtifact = `content:${faction}`;
+          const startTs = Date.now();
+          logGenerationStart(round, contentArtifact);
+          logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
 
-        const contentResult = await generateContentWithRetry(
-          resolvedProvider,
-          context,
-          faction,
-          contentApps,
-          contentOptions,
-        );
+          const contentResult = await generateContentWithRetry(
+            resolvedProvider,
+            context,
+            faction,
+            factionApps,
+            contentOptions,
+          );
 
-        const durationMs = Date.now() - startTs;
+          const durationMs = Date.now() - startTs;
+          return { faction, contentResult, contentArtifact, durationMs };
+        }),
+      );
 
+      for (const { faction, contentResult, contentArtifact, durationMs } of factionResults) {
         if (contentResult === null) {
           logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
           logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: contentArtifact, reason: "generateContentWithRetry returned null", durationMs }, { round, actorId: "system" });
           contentOk = false;
         } else {
-          // Log fog-safety warnings (non-blocking — heuristic may have false positives)
           const allItems = contentResult.flatMap(ac => ac.items);
           const fogResult = validateFogSafety(allItems, room.state, faction);
           if (fogResult.warnings.length > 0) {

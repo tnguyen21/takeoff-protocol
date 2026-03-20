@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Takeoff Protocol — Game Review</title>
+<style>
+  :root {
+    --bg: #0d0d14;
+    --surface: #14141f;
+    --surface2: #1a1a2a;
+    --border: rgba(255,255,255,0.08);
+    --text: #e0e0e0;
+    --text-muted: #888;
+    --accent: #60a5fa;
+    --green: #34d399;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --ob: #60a5fa;
+    --prom: #a78bfa;
+    --china: #f87171;
+    --ext: #fbbf24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 13px;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header .meta { color: var(--text-muted); font-size: 11px; }
+
+  /* File picker */
+  .file-picker {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; gap: 16px;
+  }
+  .file-picker label {
+    padding: 12px 24px; border: 2px dashed var(--border); border-radius: 12px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .file-picker label:hover { border-color: var(--accent); }
+  .file-picker input { display: none; }
+
+  /* Round tabs */
+  .round-tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    border-bottom: 1px solid var(--border); padding-bottom: 0;
+  }
+  .round-tab {
+    padding: 8px 16px; cursor: pointer; border: 1px solid transparent;
+    border-bottom: none; border-radius: 8px 8px 0 0; background: transparent;
+    color: var(--text-muted); font-size: 13px; font-family: inherit; transition: all 0.15s;
+  }
+  .round-tab:hover { background: var(--surface); color: var(--text); }
+  .round-tab.active {
+    background: var(--surface); color: var(--accent);
+    border-color: var(--border); border-bottom-color: var(--surface);
+    margin-bottom: -1px;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 24px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .section-header {
+    padding: 12px 16px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    user-select: none;
+  }
+  .section-header:hover { background: rgba(255,255,255,0.03); }
+  .section-header h2 { font-size: 14px; font-weight: 600; }
+  .section-header .badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); color: var(--text-muted);
+  }
+  .section-header .chevron {
+    margin-left: auto; color: var(--text-muted); transition: transform 0.2s;
+  }
+  .section-header.collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { padding: 16px; }
+  .section-body.hidden { display: none; }
+
+  /* Faction tabs within sections */
+  .faction-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .faction-tab {
+    padding: 4px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 11px; font-family: inherit; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); transition: all 0.15s;
+  }
+  .faction-tab:hover { background: rgba(255,255,255,0.04); }
+  .faction-tab.active { border-color: currentColor; }
+  .faction-tab[data-faction="openbrain"].active { color: var(--ob); }
+  .faction-tab[data-faction="prometheus"].active { color: var(--prom); }
+  .faction-tab[data-faction="china"].active { color: var(--china); }
+  .faction-tab[data-faction="external"].active { color: var(--ext); }
+
+  /* Content blocks */
+  .content-block {
+    margin-bottom: 12px; padding: 12px;
+    background: rgba(0,0,0,0.3); border-radius: 8px;
+    border-left: 3px solid var(--border);
+  }
+  .content-block.openbrain { border-left-color: var(--ob); }
+  .content-block.prometheus { border-left-color: var(--prom); }
+  .content-block.china { border-left-color: var(--china); }
+  .content-block.external { border-left-color: var(--ext); }
+
+  .content-block h3 {
+    font-size: 12px; font-weight: 600; margin-bottom: 6px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .content-block p { white-space: pre-wrap; }
+
+  /* App content items */
+  .app-group { margin-bottom: 16px; }
+  .app-label {
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+  }
+  .content-item {
+    padding: 8px 12px; margin-bottom: 4px;
+    background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 12px;
+  }
+  .content-item .sender { color: var(--amber); font-weight: 600; }
+  .content-item .subject { color: var(--text); font-weight: 500; }
+  .content-item .body { color: var(--text-muted); margin-top: 2px; }
+  .content-item .meta-line { color: var(--text-muted); font-size: 10px; margin-top: 2px; }
+
+  /* Decision cards */
+  .decision-card {
+    margin-bottom: 16px; padding: 14px;
+    background: rgba(0,0,0,0.3); border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .decision-card .role-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 4px;
+  }
+  .decision-card .prompt {
+    color: var(--text); font-size: 13px; margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .option {
+    padding: 10px 12px; margin-bottom: 6px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 6px; transition: background 0.15s;
+  }
+  .option.chosen {
+    background: rgba(96,165,250,0.08);
+    border-color: rgba(96,165,250,0.3);
+  }
+  .option .option-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+  .option .option-id {
+    font-size: 10px; font-weight: 700; padding: 1px 6px;
+    border-radius: 3px; background: rgba(255,255,255,0.06);
+  }
+  .option .option-label { font-weight: 600; font-size: 13px; }
+  .option .chosen-badge {
+    font-size: 9px; padding: 1px 6px; border-radius: 3px;
+    background: rgba(96,165,250,0.15); color: var(--accent);
+    margin-left: auto;
+  }
+  .option .option-desc { color: var(--text-muted); font-size: 12px; margin-bottom: 6px; }
+  .option .effects { display: flex; flex-wrap: wrap; gap: 4px; }
+  .effect-tag {
+    font-size: 10px; padding: 2px 6px; border-radius: 3px;
+    font-family: inherit;
+  }
+  .effect-tag.positive { background: rgba(52,211,153,0.1); color: var(--green); }
+  .effect-tag.negative { background: rgba(239,68,68,0.1); color: var(--red); }
+
+  /* State table */
+  .state-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .state-table th {
+    text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border);
+    color: var(--text-muted); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .state-table td {
+    padding: 4px 10px; border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .state-table .delta-positive { color: var(--green); }
+  .state-table .delta-negative { color: var(--red); }
+
+  /* Thresholds */
+  .threshold-badge {
+    display: inline-block; padding: 4px 10px; margin: 2px;
+    border-radius: 6px; font-size: 11px; font-weight: 600;
+    background: rgba(239,68,68,0.12); color: var(--red);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  /* NPC triggers */
+  .npc-card {
+    padding: 10px 12px; margin-bottom: 6px;
+    background: rgba(0,0,0,0.2); border-radius: 6px;
+    border-left: 3px solid var(--amber);
+  }
+  .npc-card .npc-id { font-size: 10px; color: var(--amber); font-weight: 600; }
+  .npc-card .npc-content { font-size: 12px; margin-top: 4px; }
+  .npc-card .npc-meta { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Ending arcs */
+  .arc-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; margin-bottom: 6px;
+    background: rgba(0,0,0,0.2); border-radius: 8px;
+  }
+  .arc-card .arc-label { font-weight: 600; min-width: 160px; }
+  .arc-card .arc-result { color: var(--accent); }
+  .arc-spectrum {
+    display: flex; gap: 2px; flex: 1;
+  }
+  .arc-pip {
+    flex: 1; height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+  }
+  .arc-pip.active { background: var(--accent); }
+
+  /* Story bible */
+  .story-section { margin-bottom: 12px; }
+  .story-section h4 {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .story-event {
+    padding: 6px 10px; margin-bottom: 4px;
+    background: rgba(0,0,0,0.15); border-radius: 4px; font-size: 12px;
+  }
+  .story-event .weight-major { color: var(--amber); font-size: 10px; }
+  .story-event .weight-minor { color: var(--text-muted); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="header">
+    <h1>Takeoff Protocol — Game Review</h1>
+    <div class="meta" id="header-meta"></div>
+  </div>
+  <div class="file-picker" id="file-picker">
+    <p style="color:var(--text-muted)">Load a game JSON file to review generated content</p>
+    <label>
+      <span style="color:var(--accent)">Choose file...</span>
+      <input type="file" accept=".json" id="file-input">
+    </label>
+    <p style="color:var(--text-muted);font-size:11px">
+      Generated by: <code>bun scripts/run-full-game.ts</code>
+    </p>
+  </div>
+  <div id="game-view" style="display:none"></div>
+</div>
+
+<script>
+const FACTION_NAMES = { openbrain: "OpenBrain", prometheus: "Prometheus", china: "China", external: "External" };
+const FACTION_COLORS = { openbrain: "#60a5fa", prometheus: "#a78bfa", china: "#f87171", external: "#fbbf24" };
+
+let gameData = null;
+let activeRound = 1;
+
+document.getElementById("file-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    gameData = JSON.parse(ev.target.result);
+    document.getElementById("file-picker").style.display = "none";
+    document.getElementById("game-view").style.display = "block";
+    renderGame();
+  };
+  reader.readAsText(file);
+});
+
+function renderGame() {
+  const meta = gameData.metadata;
+  document.getElementById("header-meta").innerHTML =
+    `${meta.timestamp.slice(0, 19)} | Room: ${meta.roomCode} | Duration: ${(meta.durationMs / 1000).toFixed(0)}s | Seed: ${meta.seed ?? "random"}<br>` +
+    `Models — briefing: ${meta.models.briefing} | content: ${meta.models.content} | decision: ${meta.models.decision}`;
+
+  const view = document.getElementById("game-view");
+  view.innerHTML = "";
+
+  // Round tabs
+  const tabs = document.createElement("div");
+  tabs.className = "round-tabs";
+  for (let r = 1; r <= gameData.rounds.length; r++) {
+    const tab = document.createElement("button");
+    tab.className = `round-tab${r === activeRound ? " active" : ""}`;
+    tab.textContent = `Round ${r}`;
+    tab.onclick = () => { activeRound = r; renderGame(); };
+    tabs.appendChild(tab);
+  }
+  // Ending tab
+  const endTab = document.createElement("button");
+  endTab.className = `round-tab${activeRound === 0 ? " active" : ""}`;
+  endTab.textContent = "Ending";
+  endTab.onclick = () => { activeRound = 0; renderGame(); };
+  tabs.appendChild(endTab);
+
+  view.appendChild(tabs);
+
+  if (activeRound === 0) {
+    renderEnding(view);
+  } else {
+    const round = gameData.rounds[activeRound - 1];
+    if (round) renderRound(view, round);
+  }
+}
+
+function renderRound(parent, round) {
+  // Briefing
+  if (round.artifacts.briefing) {
+    parent.appendChild(makeSection("Briefing", () => renderBriefing(round.artifacts.briefing)));
+  }
+
+  // Content
+  if (round.artifacts.content) {
+    parent.appendChild(makeSection("Content", () => renderContent(round.artifacts.content, round.artifacts.sharedContent)));
+  }
+
+  // NPC Triggers
+  if (round.artifacts.npcTriggers?.length) {
+    parent.appendChild(makeSection("NPC Triggers", () => renderNpcTriggers(round.artifacts.npcTriggers)));
+  }
+
+  // Decisions
+  if (round.artifacts.decisions) {
+    parent.appendChild(makeSection("Decisions", () => renderDecisions(round.artifacts.decisions, round.chosenLabels)));
+  }
+
+  // Resolution
+  parent.appendChild(makeSection("Resolution", () => renderResolution(round)));
+}
+
+function makeSection(title, renderFn, badge) {
+  const section = document.createElement("div");
+  section.className = "section";
+
+  const header = document.createElement("div");
+  header.className = "section-header";
+  header.innerHTML = `<h2>${title}</h2>${badge ? `<span class="badge">${badge}</span>` : ""}<span class="chevron">▼</span>`;
+
+  const body = document.createElement("div");
+  body.className = "section-body";
+  renderFn(body);
+
+  header.onclick = () => {
+    header.classList.toggle("collapsed");
+    body.classList.toggle("hidden");
+  };
+
+  section.appendChild(header);
+  section.appendChild(body);
+  return section;
+}
+
+function renderBriefing(briefing) {
+  return (parent) => {
+    // Common briefing
+    const common = document.createElement("div");
+    common.className = "content-block";
+    common.innerHTML = `<h3>Common Briefing</h3><p>${esc(briefing.common)}</p>`;
+    parent.appendChild(common);
+
+    // Faction variants
+    if (briefing.factionVariants) {
+      for (const [faction, text] of Object.entries(briefing.factionVariants)) {
+        if (!text) continue;
+        const block = document.createElement("div");
+        block.className = `content-block ${faction}`;
+        block.innerHTML = `<h3>${FACTION_NAMES[faction] || faction} Variant</h3><p>${esc(text)}</p>`;
+        parent.appendChild(block);
+      }
+    }
+  };
+}
+
+function renderContent(content, sharedContent) {
+  return (parent) => {
+    const factions = Object.keys(content);
+    let activeFaction = factions[0] || "openbrain";
+
+    const tabs = document.createElement("div");
+    tabs.className = "faction-tabs";
+
+    const contentArea = document.createElement("div");
+
+    function showFaction(faction) {
+      activeFaction = faction;
+      tabs.querySelectorAll(".faction-tab").forEach(t => t.classList.toggle("active", t.dataset.faction === faction));
+      contentArea.innerHTML = "";
+
+      const appContents = content[faction] || [];
+      for (const appContent of appContents) {
+        const group = document.createElement("div");
+        group.className = "app-group";
+        group.innerHTML = `<div class="app-label">${appContent.app}</div>`;
+        for (const item of appContent.items) {
+          const el = document.createElement("div");
+          el.className = "content-item";
+          let html = "";
+          if (item.sender) html += `<span class="sender">${esc(item.sender)}</span> `;
+          if (item.subject) html += `<span class="subject">${esc(item.subject)}</span>`;
+          html += `<div class="body">${esc(item.body)}</div>`;
+          if (item.classification) html += `<div class="meta-line">${item.type} · ${item.classification}</div>`;
+          el.innerHTML = html;
+          group.appendChild(el);
+        }
+        contentArea.appendChild(group);
+      }
+
+      // Shared content (substack)
+      if (sharedContent?.length) {
+        for (const appContent of sharedContent) {
+          const group = document.createElement("div");
+          group.className = "app-group";
+          group.innerHTML = `<div class="app-label">${appContent.app} (shared)</div>`;
+          for (const item of appContent.items) {
+            const el = document.createElement("div");
+            el.className = "content-item";
+            let html = "";
+            if (item.sender) html += `<span class="sender">${esc(item.sender)}</span> `;
+            if (item.subject) html += `<span class="subject">${esc(item.subject)}</span>`;
+            html += `<div class="body">${esc(item.body)}</div>`;
+            el.innerHTML = html;
+            group.appendChild(el);
+          }
+          contentArea.appendChild(group);
+        }
+      }
+    }
+
+    for (const faction of factions) {
+      const tab = document.createElement("button");
+      tab.className = "faction-tab";
+      tab.dataset.faction = faction;
+      tab.textContent = FACTION_NAMES[faction] || faction;
+      tab.onclick = () => showFaction(faction);
+      tabs.appendChild(tab);
+    }
+
+    parent.appendChild(tabs);
+    parent.appendChild(contentArea);
+    showFaction(activeFaction);
+  };
+}
+
+function renderNpcTriggers(triggers) {
+  return (parent) => {
+    for (const trigger of triggers) {
+      const card = document.createElement("div");
+      card.className = "npc-card";
+      let meta = [];
+      if (trigger.condition) meta.push(`condition: ${trigger.condition.variable} ${trigger.condition.operator} ${trigger.condition.value}`);
+      if (trigger.schedule) meta.push(`schedule: R${trigger.schedule.round} ${trigger.schedule.phase}`);
+      if (trigger.target?.faction) meta.push(`target faction: ${trigger.target.faction}`);
+      if (trigger.target?.role) meta.push(`target role: ${trigger.target.role}`);
+      card.innerHTML = `
+        <div class="npc-id">${esc(trigger.npcId)} — ${esc(trigger.id)}</div>
+        <div class="npc-content">${esc(trigger.content)}</div>
+        ${meta.length ? `<div class="npc-meta">${meta.join(" · ")}</div>` : ""}
+      `;
+      parent.appendChild(card);
+    }
+  };
+}
+
+function renderDecisions(decisions, chosenLabels) {
+  return (parent) => {
+    const chosenSet = new Set(Object.keys(chosenLabels || {}));
+
+    // Individual decisions
+    for (const dec of decisions.individual) {
+      const card = document.createElement("div");
+      card.className = "decision-card";
+      const factionColor = FACTION_COLORS[dec.role?.slice(0, dec.role.indexOf("_")) === "ob" ? "openbrain" :
+        dec.role?.startsWith("prom") ? "prometheus" :
+        dec.role?.startsWith("china") ? "china" : "external"] || "#888";
+
+      card.innerHTML = `
+        <div class="role-label" style="color:${factionColor}">${esc(dec.role)}</div>
+        <div class="prompt">${esc(dec.prompt)}</div>
+      `;
+
+      for (const opt of dec.options) {
+        const isChosen = chosenSet.has(opt.id);
+        const optEl = document.createElement("div");
+        optEl.className = `option${isChosen ? " chosen" : ""}`;
+
+        let effectsHtml = "";
+        for (const eff of opt.effects || []) {
+          const cls = eff.delta >= 0 ? "positive" : "negative";
+          const sign = eff.delta >= 0 ? "+" : "";
+          let tag = `${eff.variable} ${sign}${eff.delta}`;
+          if (eff.condition) tag += ` (if ${eff.condition.variable} ${eff.condition.operator} ${eff.condition.threshold}: ×${eff.condition.multiplier})`;
+          effectsHtml += `<span class="effect-tag ${cls}">${tag}</span>`;
+        }
+
+        optEl.innerHTML = `
+          <div class="option-header">
+            <span class="option-id">${esc(opt.id)}</span>
+            <span class="option-label">${esc(opt.label)}</span>
+            ${isChosen ? '<span class="chosen-badge">CHOSEN</span>' : ""}
+          </div>
+          <div class="option-desc">${esc(opt.description)}</div>
+          <div class="effects">${effectsHtml}</div>
+        `;
+        card.appendChild(optEl);
+      }
+      parent.appendChild(card);
+    }
+
+    // Team decisions
+    for (const dec of decisions.team) {
+      const card = document.createElement("div");
+      card.className = "decision-card";
+      const factionColor = FACTION_COLORS[dec.faction] || "#888";
+
+      card.innerHTML = `
+        <div class="role-label" style="color:${factionColor}">${esc(dec.faction)} — Team Decision</div>
+        <div class="prompt">${esc(dec.prompt)}</div>
+      `;
+
+      for (const opt of dec.options) {
+        const isChosen = chosenSet.has(opt.id);
+        const optEl = document.createElement("div");
+        optEl.className = `option${isChosen ? " chosen" : ""}`;
+
+        let effectsHtml = "";
+        for (const eff of opt.effects || []) {
+          const cls = eff.delta >= 0 ? "positive" : "negative";
+          const sign = eff.delta >= 0 ? "+" : "";
+          effectsHtml += `<span class="effect-tag ${cls}">${esc(eff.variable)} ${sign}${eff.delta}</span>`;
+        }
+
+        optEl.innerHTML = `
+          <div class="option-header">
+            <span class="option-id">${esc(opt.id)}</span>
+            <span class="option-label">${esc(opt.label)}</span>
+            ${isChosen ? '<span class="chosen-badge">CHOSEN</span>' : ""}
+          </div>
+          <div class="option-desc">${esc(opt.description)}</div>
+          <div class="effects">${effectsHtml}</div>
+        `;
+        card.appendChild(optEl);
+      }
+      parent.appendChild(card);
+    }
+  };
+}
+
+function renderResolution(round) {
+  return (parent) => {
+    // Thresholds
+    if (round.thresholdsFired?.length) {
+      const thDiv = document.createElement("div");
+      thDiv.style.marginBottom = "12px";
+      for (const t of round.thresholdsFired) {
+        thDiv.innerHTML += `<span class="threshold-badge">${esc(t)}</span>`;
+      }
+      parent.appendChild(thDiv);
+    }
+
+    // State changes table
+    const before = round.stateBefore;
+    const after = round.stateAfter;
+    const changed = Object.keys(before).filter(k => before[k] !== after[k]).sort((a, b) => {
+      const da = Math.abs(after[a] - before[a]);
+      const db = Math.abs(after[b] - before[b]);
+      return db - da;
+    });
+
+    if (changed.length) {
+      const table = document.createElement("table");
+      table.className = "state-table";
+      table.innerHTML = `<thead><tr><th>Variable</th><th>Before</th><th>After</th><th>Delta</th></tr></thead>`;
+      const tbody = document.createElement("tbody");
+      for (const k of changed) {
+        const delta = after[k] - before[k];
+        const cls = delta > 0 ? "delta-positive" : "delta-negative";
+        const sign = delta > 0 ? "+" : "";
+        tbody.innerHTML += `<tr><td>${k}</td><td>${fmt(before[k])}</td><td>${fmt(after[k])}</td><td class="${cls}">${sign}${fmt(delta)}</td></tr>`;
+      }
+      table.appendChild(tbody);
+      parent.appendChild(table);
+    }
+  };
+}
+
+function renderEnding(parent) {
+  // Ending arcs
+  if (gameData.endingArcs?.length) {
+    parent.appendChild(makeSection("Ending Arcs", (body) => {
+      for (const arc of gameData.endingArcs) {
+        const card = document.createElement("div");
+        card.className = "arc-card";
+        let spectrumHtml = '<div class="arc-spectrum">';
+        for (let i = 0; i < arc.spectrum.length; i++) {
+          spectrumHtml += `<div class="arc-pip${i === arc.result ? " active" : ""}" title="${esc(arc.spectrum[i])}"></div>`;
+        }
+        spectrumHtml += "</div>";
+        card.innerHTML = `
+          <div class="arc-label">${esc(arc.label)}</div>
+          ${spectrumHtml}
+          <div class="arc-result">${esc(arc.spectrum[arc.result])}</div>
+        `;
+        body.appendChild(card);
+      }
+    }));
+  }
+
+  // Final state
+  if (gameData.finalState) {
+    parent.appendChild(makeSection("Final State", (body) => {
+      const table = document.createElement("table");
+      table.className = "state-table";
+      table.innerHTML = `<thead><tr><th>Variable</th><th>Initial</th><th>Final</th><th>Delta</th></tr></thead>`;
+      const tbody = document.createElement("tbody");
+      for (const k of Object.keys(gameData.initialState)) {
+        const initial = gameData.initialState[k];
+        const final_ = gameData.finalState[k];
+        const delta = final_ - initial;
+        if (delta === 0) continue;
+        const cls = delta > 0 ? "delta-positive" : "delta-negative";
+        const sign = delta > 0 ? "+" : "";
+        tbody.innerHTML += `<tr><td>${k}</td><td>${fmt(initial)}</td><td>${fmt(final_)}</td><td class="${cls}">${sign}${fmt(delta)}</td></tr>`;
+      }
+      table.appendChild(tbody);
+      body.appendChild(table);
+    }));
+  }
+
+  // Story bible
+  if (gameData.storyBible) {
+    parent.appendChild(makeSection("Story Bible", (body) => {
+      const sb = gameData.storyBible;
+
+      if (sb.activeThreads?.length) {
+        const div = document.createElement("div");
+        div.className = "story-section";
+        div.innerHTML = `<h4>Active Threads</h4>`;
+        for (const t of sb.activeThreads) {
+          div.innerHTML += `<div class="story-event">${esc(t)}</div>`;
+        }
+        body.appendChild(div);
+      }
+
+      if (sb.events?.length) {
+        const div = document.createElement("div");
+        div.className = "story-section";
+        div.innerHTML = `<h4>Events (${sb.events.length})</h4>`;
+        for (const ev of sb.events) {
+          div.innerHTML += `<div class="story-event">
+            <span class="weight-${ev.narrativeWeight}">[${ev.narrativeWeight}]</span>
+            R${ev.round} ${ev.phase}: ${esc(ev.summary)}
+            ${ev.stateImpact ? `<div style="color:var(--text-muted);font-size:11px">${esc(ev.stateImpact)}</div>` : ""}
+          </div>`;
+        }
+        body.appendChild(div);
+      }
+
+      if (sb.toneShift) {
+        const div = document.createElement("div");
+        div.className = "story-section";
+        div.innerHTML = `<h4>Tone</h4><div class="story-event">${esc(sb.toneShift)}</div>`;
+        body.appendChild(div);
+      }
+    }));
+  }
+}
+
+function esc(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function fmt(n) {
+  return typeof n === "number" ? (Number.isInteger(n) ? n.toString() : n.toFixed(1)) : String(n);
+}
+</script>
+</body>
+</html>

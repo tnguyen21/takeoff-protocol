@@ -308,37 +308,32 @@ export async function generateContent(
   retryFeedback?: string,
   options?: GenerationOptions,
 ): Promise<AppContent[]> {
-  const results: AppContent[] = [];
+  const results = await Promise.all(
+    apps.map(async (app) => {
+      const type = APP_TYPE_MAP[app];
+      if (!type) {
+        throw new Error(`generateContent: app "${app}" is not supported (gamestate, sheets, compute, wandb, and similar apps do not generate content)`);
+      }
 
-  for (const app of apps) {
-    const type = APP_TYPE_MAP[app];
-    if (!type) {
-      throw new Error(`generateContent: app "${app}" is not supported (gamestate, sheets, compute, wandb, and similar apps do not generate content)`);
-    }
+      const raw = await provider.generate<{ items: ContentItem[] }>({
+        systemPrompt: CONTENT_SYSTEM_PROMPT,
+        userPrompt: buildUserPrompt(context, faction, app, type, retryFeedback, apps.length),
+        schema: buildContentSchema(type),
+        options,
+      });
 
-    const raw = await provider.generate<{ items: ContentItem[] }>({
-      systemPrompt: CONTENT_SYSTEM_PROMPT,
-      userPrompt: buildUserPrompt(context, faction, app, type, retryFeedback, apps.length),
-      schema: buildContentSchema(type),
-      options,
-    });
+      let items: ContentItem[] = Array.isArray(raw?.items) ? raw.items : [];
+      items = items.map(({ condition: _condition, ...rest }) => rest as ContentItem);
+      items = ensureGenPrefix(items);
+      items = forceRound(items, context.targetRound);
+      items = forceType(items, type);
+      if (app === "slack") {
+        items = forceSlackChannel(items);
+      }
 
-    // Post-process: guard against malformed/missing items array
-    let items: ContentItem[] = Array.isArray(raw?.items) ? raw.items : [];
-
-    // Strip condition — generated content is state-aware, not condition-gated
-    items = items.map(({ condition: _condition, ...rest }) => rest as ContentItem);
-
-    // Enforce structural invariants
-    items = ensureGenPrefix(items);
-    items = forceRound(items, context.targetRound);
-    items = forceType(items, type);
-    if (app === "slack") {
-      items = forceSlackChannel(items);
-    }
-
-    results.push({ faction, app, items });
-  }
+      return { faction, app, items } as AppContent;
+    }),
+  );
 
   return results;
 }
@@ -373,7 +368,8 @@ export async function generateContentWithRetry(
       () => generateContent(provider, context, faction, apps, undefined, options),
       TRANSIENT_RETRY_OPTS,
     );
-  } catch {
+  } catch (err) {
+    console.error(`[content:${faction}] Attempt 1 threw:`, String(err));
     return null;
   }
 
@@ -383,6 +379,8 @@ export async function generateContentWithRetry(
     return result;
   }
 
+  console.error(`[content:${faction}] Attempt 1 validation failed (${allItems.length} items):`, validation.errors);
+
   // Attempt 2 — feed validation errors back into the prompt
   const feedback = validation.errors.join("\n");
   try {
@@ -390,11 +388,15 @@ export async function generateContentWithRetry(
       () => generateContent(provider, context, faction, apps, feedback, options),
       TRANSIENT_RETRY_OPTS,
     );
-  } catch {
+  } catch (err) {
+    console.error(`[content:${faction}] Attempt 2 threw:`, String(err));
     return null;
   }
 
   const allItems2 = result.flatMap((ac) => ac.items);
   const validation2 = validateContent(allItems2, faction, context.targetRound, apps.length);
+  if (!validation2.valid) {
+    console.error(`[content:${faction}] Attempt 2 validation failed (${allItems2.length} items):`, validation2.errors);
+  }
   return validation2.valid ? result : null;
 }

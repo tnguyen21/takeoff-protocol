@@ -402,7 +402,8 @@ async function generateSingleDecision(
         }),
       TRANSIENT_RETRY_OPTS,
     );
-  } catch {
+  } catch (err) {
+    console.error(`[decision:${roleOrFaction}] Attempt 1 threw:`, String(err));
     return null;
   }
 
@@ -412,6 +413,8 @@ async function generateSingleDecision(
   if (validation.valid) {
     return processed;
   }
+
+  console.error(`[decision:${roleOrFaction}] Attempt 1 validation failed:`, validation.errors);
 
   // ── Retry with validation errors injected ─────────────────────────────────
   let raw2: GeneratedDecision;
@@ -426,13 +429,17 @@ async function generateSingleDecision(
         }),
       TRANSIENT_RETRY_OPTS,
     );
-  } catch {
+  } catch (err) {
+    console.error(`[decision:${roleOrFaction}] Attempt 2 threw:`, String(err));
     return null;
   }
 
   const processed2 = postProcessDecision(raw2, roleOrFaction, round);
   const miniRound2 = toRoundDecisions(round, template, processed2);
   const validation2 = validateDecisions(miniRound2, [template]);
+  if (!validation2.valid) {
+    console.error(`[decision:${roleOrFaction}] Attempt 2 validation failed:`, validation2.errors);
+  }
   return validation2.valid ? processed2 : null;
 }
 

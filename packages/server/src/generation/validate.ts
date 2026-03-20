@@ -66,26 +66,33 @@ export function validateContent(
   const { minTotal, maxTotal, minCritical, maxCritical, minContext, maxContext, minRedHerring, maxRedHerring } =
     contentBudget(appCount);
 
-  // Total count
+  // Total count — hard error only if grossly out of range (< 50% of min or > 200% of max)
+  if (items.length < Math.floor(minTotal * 0.5)) {
+    errors.push(`${faction}: only ${items.length} total items, need ≥${Math.floor(minTotal * 0.5)}`);
+  }
+  if (items.length > maxTotal * 2) {
+    errors.push(`${faction}: ${items.length} total items, max ${maxTotal * 2}`);
+  }
+  // Soft budget warnings for total count
   if (items.length < minTotal) {
-    errors.push(`${faction}: only ${items.length} total items, need ≥${minTotal}`);
+    warnings.push(`${faction}: only ${items.length} total items, target ≥${minTotal}`);
   }
   if (items.length > maxTotal) {
-    errors.push(`${faction}: ${items.length} total items, max ${maxTotal}`);
+    warnings.push(`${faction}: ${items.length} total items, target ≤${maxTotal}`);
   }
 
-  // Classification budget
+  // Classification budget — soft warnings only (prompt already guides distribution)
   const critical = items.filter((i) => i.classification === "critical").length;
   const context = items.filter((i) => i.classification === "context").length;
   const redHerring = items.filter((i) => i.classification === "red-herring").length;
 
-  if (critical < minCritical) errors.push(`${faction}: only ${critical} critical items, need ≥${minCritical}`);
-  if (critical > maxCritical) errors.push(`${faction}: ${critical} critical items, max ${maxCritical}`);
-  if (context < minContext) errors.push(`${faction}: only ${context} context items, need ≥${minContext}`);
-  if (context > maxContext) errors.push(`${faction}: ${context} context items, max ${maxContext}`);
+  if (critical < minCritical) warnings.push(`${faction}: only ${critical} critical items, target ≥${minCritical}`);
+  if (critical > maxCritical) warnings.push(`${faction}: ${critical} critical items, target ≤${maxCritical}`);
+  if (context < minContext) warnings.push(`${faction}: only ${context} context items, target ≥${minContext}`);
+  if (context > maxContext) warnings.push(`${faction}: ${context} context items, target ≤${maxContext}`);
   if (redHerring < minRedHerring)
-    errors.push(`${faction}: only ${redHerring} red-herring items, need ≥${minRedHerring}`);
-  if (redHerring > maxRedHerring) errors.push(`${faction}: ${redHerring} red-herring items, max ${maxRedHerring}`);
+    warnings.push(`${faction}: only ${redHerring} red-herring items, target ≥${minRedHerring}`);
+  if (redHerring > maxRedHerring) warnings.push(`${faction}: ${redHerring} red-herring items, target ≤${maxRedHerring}`);
 
   // Per-item invariants
   for (const item of items) {

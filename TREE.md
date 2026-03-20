@@ -3,8 +3,18 @@
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
 │   ├── DEV-TOOLS.md
+│   ├── DYNAMIC-DECISIONS.md
 │   ├── EXTERNAL-ROLES-AUDIT.md
+│   ├── MICRO-ACTIONS.md
 │   └── STATUS.md
+├── logs
+│   ├── 3H6H_2026-03-20T02-40-00-434Z.jsonl
+│   ├── BYKY_2026-03-20T02-24-04-800Z.jsonl
+│   ├── LVMD_2026-03-20T01-40-16-916Z.jsonl
+│   ├── NLUT_2026-03-20T02-30-08-106Z.jsonl
+│   └── SW8L_2026-03-20T02-56-32-378Z.jsonl
+├── output
+│   └── game-2026-03-20T02-05-48.json
 ├── packages
 │   ├── client
 │   │   ├── src
@@ -345,12 +355,14 @@
 │   ├── report-dove.md
 │   ├── report-hawk.md
 │   ├── report-random.md
+│   ├── run-full-game.ts
 │   ├── scale-deltas.ts
 │   ├── simulate-core.ts
 │   ├── simulate-generated.test.ts
 │   ├── simulate-generated.ts
 │   ├── simulate.test.ts
-│   └── simulate.ts
+│   ├── simulate.ts
+│   └── view-game.html
 ├── Dockerfile
 ├── fly.toml
 ├── knip.json
@@ -359,4 +371,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-23 directories, 337 files
+25 directories, 347 files

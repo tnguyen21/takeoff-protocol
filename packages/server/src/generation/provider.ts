@@ -210,16 +210,27 @@ class Semaphore {
   }
 }
 
-const DEFAULT_MAX_CONCURRENT = Number(process.env.GEN_MAX_CONCURRENT) || 5;
 const RATE_LIMIT_CONCURRENCY = 2;
 const RATE_LIMIT_RESTORE_MS = 60_000;
 
-// Module-level singleton — shared across all AnthropicProvider instances
-const _semaphore = new Semaphore(
-  Number.isFinite(DEFAULT_MAX_CONCURRENT) && DEFAULT_MAX_CONCURRENT > 0
-    ? Math.floor(DEFAULT_MAX_CONCURRENT)
-    : 5,
-);
+// Module-level singleton — lazily initialized on first use so runtime env vars take effect
+let _semaphore: Semaphore | undefined;
+let _defaultMaxConcurrent: number | undefined;
+
+function getSemaphore(): Semaphore {
+  if (!_semaphore) {
+    const raw = Number(process.env.GEN_MAX_CONCURRENT);
+    const limit = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 5;
+    _defaultMaxConcurrent = limit;
+    _semaphore = new Semaphore(limit);
+  }
+  return _semaphore;
+}
+
+function getDefaultMaxConcurrent(): number {
+  getSemaphore(); // ensure _defaultMaxConcurrent is set
+  return _defaultMaxConcurrent!;
+}
 
 let _rateLimitRestoreTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -229,17 +240,17 @@ let _rateLimitRestoreTimer: ReturnType<typeof setTimeout> | undefined;
  * restore timer, extending the throttle window.
  */
 export function notifyRateLimit(): void {
-  _semaphore.setLimit(RATE_LIMIT_CONCURRENCY);
+  getSemaphore().setLimit(RATE_LIMIT_CONCURRENCY);
   if (_rateLimitRestoreTimer) clearTimeout(_rateLimitRestoreTimer);
   _rateLimitRestoreTimer = setTimeout(() => {
     _rateLimitRestoreTimer = undefined;
-    _semaphore.setLimit(DEFAULT_MAX_CONCURRENT);
+    getSemaphore().setLimit(getDefaultMaxConcurrent());
   }, RATE_LIMIT_RESTORE_MS);
 }
 
 /** Returns current throttle stats for observability. */
 export function getThrottleStatus(): { active: number; queued: number; limit: number } {
-  return _semaphore.status();
+  return getSemaphore().status();
 }
 
 /**
@@ -252,7 +263,7 @@ export function _resetSemaphoreForTesting(): void {
     clearTimeout(_rateLimitRestoreTimer);
     _rateLimitRestoreTimer = undefined;
   }
-  _semaphore.setLimit(DEFAULT_MAX_CONCURRENT);
+  getSemaphore().setLimit(getDefaultMaxConcurrent());
 }
 
 // ── AnthropicProvider ─────────────────────────────────────────────────────────
@@ -282,7 +293,7 @@ export class AnthropicProvider implements GenerationProvider {
     const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
     const maxTokens = options?.maxTokens ?? DEFAULT_MAX_TOKENS;
 
-    await _semaphore.acquire();
+    await getSemaphore().acquire();
     try {
       const toolName = "structured_output";
       const toolDef: Anthropic.Tool = {
@@ -348,7 +359,7 @@ export class AnthropicProvider implements GenerationProvider {
 
       return input as T;
     } finally {
-      _semaphore.release();
+      getSemaphore().release();
     }
   }
 }

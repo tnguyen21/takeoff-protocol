@@ -124,10 +124,10 @@ describe("INV-1: validateContent — valid items pass", () => {
   });
 });
 
-// ── INV-2: Content with <3 critical items fails ───────────────────────────────
+// ── INV-2: Classification budget is now soft (warnings, not errors) ───────────
 
-describe("INV-2: validateContent — rejects insufficient critical items", () => {
-  it("fails when only 2 critical items are present", () => {
+describe("INV-2: validateContent — classification budget violations are warnings", () => {
+  it("warns (but passes) when only 2 critical items are present", () => {
     const items: ContentItem[] = [];
     for (let i = 0; i < 2; i++)
       items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round: 3 }));
@@ -139,25 +139,25 @@ describe("INV-2: validateContent — rejects insufficient critical items", () =>
       items.push(makeItem({ id: `gen-bc${i}`, type: "headline", classification: "breadcrumb", round: 3 }));
 
     const result = validateContent(items, "openbrain", 3);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("critical"))).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((w) => w.includes("critical"))).toBe(true);
   });
 
-  it("fails when 0 critical items are present", () => {
+  it("warns (but passes) when 0 critical items are present", () => {
     const items: ContentItem[] = [];
     for (let i = 0; i < 15; i++)
       items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round: 3 }));
 
     const result = validateContent(items, "china");
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("critical"))).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((w) => w.includes("critical"))).toBe(true);
   });
 });
 
-// ── INV-3: Content with >30 total items fails ─────────────────────────────────
+// ── INV-3: Hard reject only for grossly out-of-range totals ───────────────────
 
-describe("INV-3: validateContent — rejects too many items", () => {
-  it("fails when 31 items are provided", () => {
+describe("INV-3: validateContent — total count bounds", () => {
+  it("passes with 31 items (within 2x max)", () => {
     const items: ContentItem[] = [];
     for (let i = 0; i < 3; i++)
       items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round: 3 }));
@@ -165,18 +165,27 @@ describe("INV-3: validateContent — rejects too many items", () => {
       items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round: 3 }));
     for (let i = 0; i < 2; i++)
       items.push(makeItem({ id: `gen-rh${i}`, type: "headline", classification: "red-herring", round: 3 }));
-    // 31 items total
+    // 31 items total — over soft max (30) but under hard max (60)
 
     const result = validateContent(items, "external");
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("max 30"))).toBe(true);
+    expect(result.valid).toBe(true);
+    expect(result.warnings.some((w) => w.includes("total items"))).toBe(true);
   });
 
-  it("fails when array has fewer than 15 items", () => {
+  it("fails when array has fewer than 50% of minimum", () => {
     const items = makeValidItemSet("openbrain").slice(0, 5);
     const result = validateContent(items, "openbrain");
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("≥15"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("total items"))).toBe(true);
+  });
+
+  it("fails when array exceeds 2x maximum", () => {
+    const items: ContentItem[] = [];
+    for (let i = 0; i < 65; i++)
+      items.push(makeItem({ id: `gen-x${i}`, type: "headline", classification: "context", round: 3 }));
+    const result = validateContent(items, "openbrain");
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("total items"))).toBe(true);
   });
 });
 
@@ -379,18 +388,23 @@ describe("Happy path: generateContent succeeds with valid mock data", () => {
 // ── Budget violation: retry succeeds ─────────────────────────────────────────
 
 describe("Budget violation: generateContentWithRetry retries on validation failure", () => {
-  it("succeeds on second attempt when first attempt has too few critical items", async () => {
-    // First call: items with only 2 critical (fails budget check)
-    const invalidItems = makeValidItemSet("openbrain").map((item) =>
+  it("succeeds on first attempt when classification budget is off (now soft warning)", async () => {
+    // Items with only 2 critical — was a hard error, now a warning
+    const items = makeValidItemSet("openbrain").map((item) =>
       item.classification === "critical" && item.id.endsWith("2")
         ? { ...item, classification: "context" as const }
         : item,
     );
-    // Ensure we have exactly 2 critical by patching:
-    const patchedInvalidItems = invalidItems.map((item, idx) =>
-      item.classification === "critical" && idx > 0 ? { ...item, classification: "context" as const } : item,
-    );
+    const provider = new MockProvider({ items });
+    const result = await generateContentWithRetry(provider, BASE_CONTEXT, "openbrain", ["news"]);
+    expect(result).not.toBeNull();
+  });
 
+  it("retries when structural violation (empty body) on first attempt, succeeds on second", async () => {
+    // First call: items with an empty body (hard error)
+    const invalidItems = makeValidItemSet("openbrain").map((item, idx) =>
+      idx === 0 ? { ...item, body: "" } : item,
+    );
     // Second call: valid items
     const validItems = makeValidItemSet("openbrain");
 
@@ -402,16 +416,15 @@ describe("Budget violation: generateContentWithRetry retries on validation failu
         schema: object;
         options?: GenerationOptions;
       }): Promise<T> {
-        const resp = callCount === 0 ? { items: patchedInvalidItems } : { items: validItems };
+        const resp = callCount === 0 ? { items: invalidItems } : { items: validItems };
         callCount++;
         return resp as T;
       },
     };
 
     const result = await generateContentWithRetry(sequenceProvider, BASE_CONTEXT, "openbrain", ["news"]);
-
     expect(result).not.toBeNull();
-    expect(callCount).toBe(2); // Both calls were made
+    expect(callCount).toBe(2);
   });
 
   it("returns null when both attempts fail validation", async () => {
@@ -441,10 +454,10 @@ describe("Failure modes: validation catches structural violations", () => {
     expect(result.errors.some((e) => e.includes("round"))).toBe(true);
   });
 
-  it("catches empty array (< 15 items)", () => {
+  it("catches empty array (below hard minimum)", () => {
     const result = validateContent([], "openbrain");
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("≥15"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("total items"))).toBe(true);
   });
 
   it("catches items with empty body", () => {
@@ -759,11 +772,12 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it("INV-2: appCount=8 requires scaled minimum — 15 items is too few", () => {
-    const items = makeValidItemSet("openbrain"); // 15 items — valid for 2 apps, too few for 8
+  it("INV-2: appCount=8 hard-rejects when below 50% of scaled minimum", () => {
+    // 15 items for appCount=8 → scaled minTotal=60, hard min = 30. 15 < 30 → error.
+    const items = makeValidItemSet("openbrain"); // 15 items
     const result = validateContent(items, "openbrain", 3, 8);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("≥60"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("total items"))).toBe(true);
   });
 
   it("INV-3: per-item structural validation is unchanged regardless of appCount", () => {
@@ -778,8 +792,7 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.errors.some((e) => e.includes("empty body"))).toBe(true);
   });
 
-  it("failure mode: 15 items for 8 apps → rejected as too few", () => {
-    // Exactly the failure mode described in the task
+  it("failure mode: 15 items for 8 apps → rejected (below hard minimum of 30)", () => {
     const items: ContentItem[] = [];
     for (let i = 0; i < 15; i++)
       items.push(makeItem({ id: `gen-f${i}`, type: "headline", classification: "context", round: 3 }));
