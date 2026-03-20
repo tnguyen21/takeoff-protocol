@@ -159,6 +159,7 @@ export class CapturingProvider implements GenerationProvider {
 // ── MockProvider ──────────────────────────────────────────────────────────────
 
 export class MockProvider implements GenerationProvider {
+  private callCount = 0;
   constructor(private readonly data: unknown) {}
 
   async generate<T>(params: {
@@ -168,6 +169,7 @@ export class MockProvider implements GenerationProvider {
     options?: GenerationOptions;
   }): Promise<T> {
     const timeout = params.options?.timeout ?? 30000;
+    const idx = this.callCount++;
 
     // Validate that the canned data is parseable JSON (non-empty)
     if (this.data === undefined || this.data === null || this.data === "") {
@@ -190,7 +192,17 @@ export class MockProvider implements GenerationProvider {
 
     // Simulate timeout behaviour: if data is a special sentinel, reject after timeout
     void timeout; // timeout is not enforced by mock — it resolves immediately
-    return this.data as T;
+
+    // Deep-clone and vary labels to avoid cross-slot duplicate detection
+    const cloned = JSON.parse(JSON.stringify(this.data));
+    if (cloned && Array.isArray(cloned.options)) {
+      for (const opt of cloned.options) {
+        if (typeof opt.label === "string") {
+          opt.label = `${opt.label} (v${idx})`;
+        }
+      }
+    }
+    return cloned as T;
   }
 }
 

@@ -210,6 +210,7 @@ export function buildDecisionPrompt(
   context: GenerationContext,
   template: DecisionTemplate,
   validationErrors?: string[],
+  otherSlotDecision?: { prompt: string; options: Array<{ label: string }> },
 ): string {
   const parts: string[] = [];
 
@@ -293,6 +294,14 @@ export function buildDecisionPrompt(
   if (context.firedThresholds.length > 0) {
     parts.push(
       `## Events That Have Fired\n${context.firedThresholds.map((t) => `- ${t}`).join("\n")}`,
+    );
+  }
+
+  // Other-slot context (slot 2 sees slot 1's output to avoid duplication)
+  if (otherSlotDecision) {
+    const labels = otherSlotDecision.options.map((o) => `"${o.label}"`).join(", ");
+    parts.push(
+      `## Already-Generated Decision for This Role\nThis role already has another decision this round with these options: ${labels}\n\nYour decision prompt: "${otherSlotDecision.prompt.slice(0, 200)}..."\n\n**You MUST generate a completely different decision.** Different theme, different option labels, different strategic axis. Do NOT repeat or rephrase any of the above options.`,
     );
   }
 
@@ -386,6 +395,7 @@ async function generateSingleDecision(
   template: DecisionTemplate,
   round: number,
   options?: GenerationOptions,
+  otherSlotDecision?: { prompt: string; options: Array<{ label: string }> },
 ): Promise<{ prompt: string; options: DecisionOption[] } | null> {
   const roleOrFaction = template.role ?? template.faction ?? "unknown";
 
@@ -396,7 +406,7 @@ async function generateSingleDecision(
       () =>
         provider.generate<GeneratedDecision>({
           systemPrompt: DECISION_SYSTEM_PROMPT,
-          userPrompt: buildDecisionPrompt(context, template),
+          userPrompt: buildDecisionPrompt(context, template, undefined, otherSlotDecision),
           schema: DECISION_SCHEMA,
           options,
         }),
@@ -423,7 +433,7 @@ async function generateSingleDecision(
       () =>
         provider.generate<GeneratedDecision>({
           systemPrompt: DECISION_SYSTEM_PROMPT,
-          userPrompt: buildDecisionPrompt(context, template, validation.errors),
+          userPrompt: buildDecisionPrompt(context, template, validation.errors, otherSlotDecision),
           schema: DECISION_SCHEMA,
           options,
         }),
@@ -465,22 +475,67 @@ export async function generateDecisions(
 ): Promise<RoundDecisions | null> {
   const roundTemplates = templates.filter((t) => t.round === round);
 
-  // Parallelize all decision generation (semaphore in provider handles concurrency)
-  const results = await Promise.all(
-    roundTemplates.map(async (template) => {
+  // Split into slot 1 (primary) and slot 2 (secondary individual) templates.
+  // Slot 2 decisions need slot 1's output to avoid generating duplicates.
+  const slot1Templates = roundTemplates.filter((t) => !t.slot || t.slot !== 2);
+  const slot2Templates = roundTemplates.filter((t) => t.slot === 2);
+
+  // Phase 1: generate all slot 1 decisions in parallel
+  const slot1Results = await Promise.all(
+    slot1Templates.map(async (template) => {
       const result = await generateSingleDecision(provider, context, template, round, options);
       return { template, result };
     }),
   );
 
+  // Check for slot 1 failures
+  for (const { result } of slot1Results) {
+    if (result === null) return null;
+  }
+
+  // Build lookup: role → slot 1 result (for injecting into slot 2 prompts)
+  const slot1ByRole = new Map<string, { prompt: string; options: Array<{ label: string }> }>();
+  for (const { template, result } of slot1Results) {
+    if (template.role && result) {
+      slot1ByRole.set(template.role, result);
+    }
+  }
+
+  // Phase 2: generate slot 2 decisions in parallel, with slot 1 context
+  const slot2Results = await Promise.all(
+    slot2Templates.map(async (template) => {
+      const otherSlot = template.role ? slot1ByRole.get(template.role) : undefined;
+      const result = await generateSingleDecision(
+        provider, context, template, round, options, otherSlot,
+      );
+
+      // Post-hoc: reject if any slot 2 label duplicates a slot 1 label
+      if (result && otherSlot) {
+        const slot1Labels = new Set(otherSlot.options.map((o) => o.label.toLowerCase().trim()));
+        const hasDuplicate = result.options.some((o) => slot1Labels.has(o.label.toLowerCase().trim()));
+        if (hasDuplicate) {
+          console.error(
+            `[decision:${template.role}] Slot 2 duplicated slot 1 label — rejecting`,
+          );
+          return { template, result: null };
+        }
+      }
+
+      return { template, result };
+    }),
+  );
+
+  // Check for slot 2 failures
+  for (const { result } of slot2Results) {
+    if (result === null) return null;
+  }
+
+  // Assemble all results
   const individual: IndividualDecision[] = [];
   const team: TeamDecision[] = [];
 
-  for (const { template, result } of results) {
-    if (result === null) {
-      // Any single decision failure → fall back entire round to pre-authored
-      return null;
-    }
+  for (const { template, result } of [...slot1Results, ...slot2Results]) {
+    if (result === null) return null;
 
     if (template.role !== undefined) {
       individual.push({ role: template.role, prompt: result.prompt, options: result.options });
