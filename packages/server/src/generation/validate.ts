@@ -241,10 +241,10 @@ export function validateNpcTriggers(triggers: NpcTrigger[]): ValidationResult {
 
 const ALL_FACTIONS: Faction[] = ["openbrain", "prometheus", "china", "external"];
 
-const COMMON_MIN_WORDS = 150;
-const COMMON_MAX_WORDS = 300;
-const VARIANT_MIN_WORDS = 40;
-const VARIANT_MAX_WORDS = 80;
+const COMMON_MIN_WORDS = 100;
+const COMMON_MAX_WORDS = 500;
+const VARIANT_MIN_WORDS = 30;
+const VARIANT_MAX_WORDS = 150;
 
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -256,9 +256,9 @@ function wordCount(text: string): number {
  * Validates a generated briefing object.
  *
  * Invariants:
- * - common must be 150–300 words
+ * - common must be 100–500 words
  * - factionVariants must have entries for all 4 factions
- * - each faction variant must be 40–80 words
+ * - each faction variant must be 30–150 words
  * - no empty strings anywhere
  */
 export function validateBriefing(briefing: {

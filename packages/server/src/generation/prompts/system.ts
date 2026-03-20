@@ -13,8 +13,8 @@ You write the briefing that the game master reads aloud at the start of each rou
 
 Your output is a JSON object matching this schema:
 {
-  "common": string,          // 150-300 words, present tense, GM reads aloud to everyone
-  "factionVariants": {       // 40-80 words each, second person ("You built this...")
+  "common": string,          // 150-400 words, present tense, GM reads aloud to everyone
+  "factionVariants": {       // 50-120 words each, second person ("You built this...")
     "openbrain": string,
     "prometheus": string,
     "china": string,

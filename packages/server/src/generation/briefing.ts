@@ -79,7 +79,7 @@ function buildBriefingUserPrompt(context: GenerationContext, validationErrors?: 
 
   // Retry context: inject previous validation errors so the model knows what to fix
   if (validationErrors && validationErrors.length > 0) {
-    parts.push(`## Validation Errors from Previous Attempt\nYour previous output failed validation. Fix these issues:\n${validationErrors.map((e) => `- ${e}`).join("\n")}\n\nEnsure common text is 150–300 words and each faction variant is 40–80 words.`);
+    parts.push(`## Validation Errors from Previous Attempt\nYour previous output failed validation. Fix these issues:\n${validationErrors.map((e) => `- ${e}`).join("\n")}\n\nEnsure common text is 100–500 words and each faction variant is 30–150 words.`);
   }
 
   parts.push(`## Task\nGenerate the round ${context.targetRound} briefing. Return structured JSON only.`);

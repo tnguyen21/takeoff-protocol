@@ -35,7 +35,7 @@ export function getGenerationConfig(): GenerationConfig {
     rawProvider === "mock" ? "mock" : "anthropic";
 
   const briefingModel =
-    env.GEN_BRIEFING_MODEL ?? "claude-sonnet-4-5-20250514";
+    env.GEN_BRIEFING_MODEL ?? "claude-sonnet-4-6";
 
   const contentModel =
     env.GEN_CONTENT_MODEL ?? "claude-haiku-4-5-20251001";

@@ -326,26 +326,26 @@ function renderGame() {
 function renderRound(parent, round) {
   // Briefing
   if (round.artifacts.briefing) {
-    parent.appendChild(makeSection("Briefing", () => renderBriefing(round.artifacts.briefing)));
+    parent.appendChild(makeSection("Briefing", renderBriefing(round.artifacts.briefing)));
   }
 
   // Content
   if (round.artifacts.content) {
-    parent.appendChild(makeSection("Content", () => renderContent(round.artifacts.content, round.artifacts.sharedContent)));
+    parent.appendChild(makeSection("Content", renderContent(round.artifacts.content, round.artifacts.sharedContent)));
   }
 
   // NPC Triggers
   if (round.artifacts.npcTriggers?.length) {
-    parent.appendChild(makeSection("NPC Triggers", () => renderNpcTriggers(round.artifacts.npcTriggers)));
+    parent.appendChild(makeSection("NPC Triggers", renderNpcTriggers(round.artifacts.npcTriggers)));
   }
 
   // Decisions
   if (round.artifacts.decisions) {
-    parent.appendChild(makeSection("Decisions", () => renderDecisions(round.artifacts.decisions, round.chosenLabels)));
+    parent.appendChild(makeSection("Decisions", renderDecisions(round.artifacts.decisions, round.chosenLabels)));
   }
 
   // Resolution
-  parent.appendChild(makeSection("Resolution", () => renderResolution(round)));
+  parent.appendChild(makeSection("Resolution", renderResolution(round)));
 }
 
 function makeSection(title, renderFn, badge) {

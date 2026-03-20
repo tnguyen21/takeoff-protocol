@@ -10,11 +10,15 @@
 ├── logs
 │   ├── 3H6H_2026-03-20T02-40-00-434Z.jsonl
 │   ├── BYKY_2026-03-20T02-24-04-800Z.jsonl
+│   ├── CWRP_2026-03-20T04-01-26-845Z.jsonl
 │   ├── LVMD_2026-03-20T01-40-16-916Z.jsonl
 │   ├── NLUT_2026-03-20T02-30-08-106Z.jsonl
-│   └── SW8L_2026-03-20T02-56-32-378Z.jsonl
+│   ├── SW8L_2026-03-20T02-56-32-378Z.jsonl
+│   └── VEYL_2026-03-20T05-14-10-276Z.jsonl
 ├── output
-│   └── game-2026-03-20T02-05-48.json
+│   ├── game-2026-03-20T02-05-48.json
+│   ├── game-2026-03-20T04-27-03.json
+│   └── game-2026-03-20T05-33-03.json
 ├── packages
 │   ├── client
 │   │   ├── src
@@ -371,4 +375,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-25 directories, 347 files
+25 directories, 351 files

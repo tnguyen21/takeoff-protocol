@@ -658,7 +658,7 @@ describe("triggerGeneration — model plumbing (M-INV-5)", () => {
         await triggerGeneration(room, 2, provider);
 
         // Briefing calls should use the Sonnet default
-        const sonnetCalls = provider.calls.filter((c) => c.model === "claude-sonnet-4-5-20250514");
+        const sonnetCalls = provider.calls.filter((c) => c.model === "claude-sonnet-4-6");
         expect(sonnetCalls.length).toBeGreaterThan(0);
       },
     ),
