@@ -62,3 +62,34 @@ export function computeLikeCount(baseLikes: number, interaction: TweetInteractio
 export function computeRetweetCount(baseRetweets: number, interaction: TweetInteraction): number {
   return baseRetweets + (interaction.retweeted ? 1 : 0);
 }
+
+/** Simple deterministic hash for seeding engagement numbers from a tweet ID. */
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+/** Generate stable random base engagement for a generated NPC tweet. */
+export function randomEngagement(id: string, verified: boolean): { likes: number; retweets: number; replies: number } {
+  const h = hashCode(id);
+  const baseLikes = verified ? 2000 : 200;
+  const rangeLikes = verified ? 15000 : 4000;
+  const likes = baseLikes + (h % rangeLikes);
+  const retweets = Math.floor(likes * (0.15 + ((h >> 8) % 20) / 100));
+  const replies = Math.floor(likes * (0.05 + ((h >> 16) % 10) / 100));
+  return { likes, retweets, replies };
+}
+
+/** Smaller base engagement for player tweets (just posted, building traction). */
+export function playerTweetEngagement(id: string): { likes: number; retweets: number; replies: number } {
+  const h = hashCode(id);
+  return {
+    likes: 30 + (h % 300),
+    retweets: 5 + ((h >> 8) % 60),
+    replies: 2 + ((h >> 16) % 30),
+  };
+}

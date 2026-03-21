@@ -35,8 +35,8 @@ export function Dock() {
       minimizeWindow(w.id);
     } else {
       openWindow(w.appId, w.title);
-      // Clear unread badge and toasts when opening slack or signal
-      if (w.appId === "slack" || w.appId === "signal") {
+      // Clear unread badge and toasts when opening messaging/social apps
+      if (w.appId === "slack" || w.appId === "signal" || w.appId === "twitter") {
         markRead(w.appId);
         useNotificationsStore.getState().dismissByApp(w.appId);
       }
@@ -94,7 +94,7 @@ export function Dock() {
               {/* Unread badge */}
               {unread > 0 && (
                 <span className="absolute -top-1 -right-1 bg-[#ff3b30] text-white text-[10px] font-bold rounded-full min-w-4 h-4 flex items-center justify-center px-[3px]">
-                  {unread > 9 ? "9+" : unread}
+                  {unread > 99 ? "99+" : unread}
                 </span>
               )}
 

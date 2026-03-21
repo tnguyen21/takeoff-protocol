@@ -2,7 +2,9 @@ import React from "react";
 import type { AppProps } from "./types.js";
 import type { PlayerTweet } from "@takeoff/shared";
 import { useGameStore } from "../stores/game.js";
-import { assignStableIds } from "./twitterUtils.js";
+import { useMessagesStore } from "../stores/messages.js";
+import { useUIStore } from "../stores/ui.js";
+import { assignStableIds, randomEngagement, playerTweetEngagement } from "./twitterUtils.js";
 import { socket } from "../socket.js";
 
 const STATIC_TWEETS = assignStableIds([
@@ -182,6 +184,28 @@ const MEDIA_CYCLE_TRENDING: Record<number, { header: string; tags: string[] }> =
 
 const MAX_CHARS = 280;
 
+// Global notification ticker — accumulates "engagement" notifications when Twitter isn't focused
+let _notifTickerStarted = false;
+function ensureNotifTicker() {
+  if (_notifTickerStarted) return;
+  _notifTickerStarted = true;
+  setInterval(() => {
+    const content = useGameStore.getState().content;
+    const hasTweets = content.some((c) => c.app === "twitter");
+    if (!hasTweets) return;
+
+    const windows = useUIStore.getState().windows;
+    const twitterWin = windows.find((w) => w.appId === "twitter");
+    const isFocused = twitterWin?.isOpen && !twitterWin?.isMinimized;
+    if (isFocused) return;
+
+    const bump = 1 + Math.floor(Math.random() * 4);
+    useMessagesStore.setState((s) => ({
+      unreadCounts: { ...s.unreadCounts, twitter: (s.unreadCounts.twitter ?? 0) + bump },
+    }));
+  }, 4000);
+}
+
 function fmt(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
@@ -267,18 +291,20 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
 
   const baseTweets: Tweet[] =
     tweetItems.length > 0
-      ? tweetItems.map((item, i) => {
+      ? tweetItems.map((item) => {
           const handle = `@${(item.sender ?? "unknown").toLowerCase().replace(/[\s.]/g, "_")}`;
+          const verified = VERIFIED_HANDLES.has(handle);
+          const eng = randomEngagement(item.id, verified);
           return {
-            id: `content_${i}`,
+            id: item.id,
             name: item.sender ?? "Unknown",
             handle,
             time: item.timestamp,
             text: item.body,
-            likes: 0,
-            retweets: 0,
-            replies: 0,
-            verified: VERIFIED_HANDLES.has(handle),
+            likes: eng.likes,
+            retweets: eng.retweets,
+            replies: eng.replies,
+            verified,
           };
         })
       : STATIC_TWEETS;
@@ -301,20 +327,63 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
 
   // For You: generated/NPC tweets only (algorithmic feed)
   // Following: player tweets only (shared social timeline — self + others)
-  const followingTweets: Tweet[] = playerTweets.map((tweet: PlayerTweet) => ({
-    id: tweet.id,
-    name: tweet.playerName,
-    handle: `@${tweet.playerName.toLowerCase().replace(/[\s.]/g, "_")}`,
-    time: "now",
-    text: tweet.text,
-    likes: 0,
-    retweets: 0,
-    replies: 0,
-    verified: false,
-  }));
+  const followingTweets: Tweet[] = playerTweets.map((tweet: PlayerTweet) => {
+    const eng = playerTweetEngagement(tweet.id);
+    return {
+      id: tweet.id,
+      name: tweet.playerName,
+      handle: `@${tweet.playerName.toLowerCase().replace(/[\s.]/g, "_")}`,
+      time: "now",
+      text: tweet.text,
+      likes: eng.likes,
+      retweets: eng.retweets,
+      replies: eng.replies,
+      verified: false,
+    };
+  });
   const displayTweets = activeTab === "following"
     ? followingTweets
     : baseTweets;
+
+  // Live engagement bumps — accumulate over time to simulate real-time activity
+  const [engBumps, setEngBumps] = React.useState<Map<string, { likes: number; retweets: number }>>(new Map());
+  const allTweetsRef = React.useRef([...baseTweets, ...followingTweets]);
+  allTweetsRef.current = [...baseTweets, ...followingTweets];
+
+  // Clear notifications when Twitter is open
+  React.useEffect(() => {
+    useMessagesStore.getState().markRead("twitter");
+  }, []);
+
+  // Start the global notification ticker (once per app lifetime)
+  React.useEffect(() => {
+    ensureNotifTicker();
+  }, []);
+
+  // Engagement ticker — bump random tweets every 4s
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const tweets = allTweetsRef.current;
+      if (tweets.length === 0) return;
+      const numBumps = 2 + Math.floor(Math.random() * 3);
+      setEngBumps((prev) => {
+        const next = new Map(prev);
+        for (let n = 0; n < numBumps; n++) {
+          const idx = Math.floor(Math.random() * tweets.length);
+          const tweet = tweets[idx];
+          const isV = tweet.verified || VERIFIED_HANDLES.has(tweet.handle);
+          const existing = next.get(tweet.id) ?? { likes: 0, retweets: 0 };
+          const likeBump = isV ? 5 + Math.floor(Math.random() * 100) : 1 + Math.floor(Math.random() * 30);
+          const rtBump = Math.random() > 0.5
+            ? (isV ? 1 + Math.floor(Math.random() * 30) : Math.floor(Math.random() * 10))
+            : 0;
+          next.set(tweet.id, { likes: existing.likes + likeBump, retweets: existing.retweets + rtBump });
+        }
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   function getInteraction(id: string): TweetState {
     return tweetInteractions.get(id) ?? { liked: false, retweeted: false };
@@ -468,8 +537,9 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
 
         {displayTweets.map((t) => {
           const interaction = getInteraction(t.id);
-          const likeCount = t.likes + (interaction.liked ? 1 : 0);
-          const rtCount = t.retweets + (interaction.retweeted ? 1 : 0);
+          const bump = engBumps.get(t.id);
+          const likeCount = t.likes + (bump?.likes ?? 0) + (interaction.liked ? 1 : 0);
+          const rtCount = t.retweets + (bump?.retweets ?? 0) + (interaction.retweeted ? 1 : 0);
           const isVerified = t.verified || VERIFIED_HANDLES.has(t.handle);
 
           return (
