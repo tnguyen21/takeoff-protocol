@@ -28,6 +28,7 @@ import { AnthropicProvider, CapturingProvider, type GenerationOptions, type Gene
 import { validateBriefing, validateFogSafety } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
+import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
 
 // ── Factions for content generation ───────────────────────────────────────────
 
@@ -121,7 +122,11 @@ export async function triggerGeneration(
     }
 
     // ── Briefing generation ─────────────────────────────────────────────────
-    if (briefingsEnabled) {
+    // Round 1 uses a pre-authored briefing for tone-setting consistency.
+    if (round === 1) {
+      setGeneratedBriefing(room, round, ROUND_1_BRIEFING);
+      logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: "briefing", durationMs: 0, preAuthored: true }, { round, actorId: "system" });
+    } else if (briefingsEnabled) {
       const briefingArtifact = "briefing";
       const startTs = Date.now();
       logGenerationStart(round, briefingArtifact);

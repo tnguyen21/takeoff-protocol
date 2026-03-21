@@ -125,8 +125,9 @@ APP VOICE RULES:
 ## App Format Reference
 
 When generating for "slack":
-- Format: { sender: "Display Name", channel: "#channel-name", body: "message text" }
-- Voice: Informal, conversational. Short messages. Lowercase ok. Emoji sparingly.
+- Format: { sender: "First Last", channel: "#channel-name", body: "message text" }
+- sender MUST be a proper-cased full name (e.g. "Alex Chen", "Marcus Webb") — like a real workplace Slack. NEVER include role/title in parentheses. NEVER use @-prefix. NEVER use lowercase-only first names.
+- Voice: Informal, conversational. Short messages. Lowercase ok in message body. Emoji sparingly.
 - Channels: #research (technical), #general (casual), #alignment (earnest), #leadership (terse)
 
 When generating for "email":

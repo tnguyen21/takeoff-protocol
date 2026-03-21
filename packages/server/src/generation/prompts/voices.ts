@@ -5,7 +5,7 @@ import type { AppId, Faction } from "@takeoff/shared";
  * that faction so the LLM writes in-character content.
  */
 export const FACTION_VOICES: Record<Faction, string> = {
-  openbrain: `Fast-moving, confident, slightly hubristic. Internal comms are informal — Slack messages use lowercase, abbreviations, emoji. Leadership speaks in metrics and velocity. Safety team is formal and frustrated. Security team is terse and alarmed.`,
+  openbrain: `Fast-moving, confident, slightly hubristic. Internal comms are informal — Slack message bodies use lowercase, abbreviations, emoji. Sender names are always proper-cased full names (e.g. "David Park", "Alex Chen"). Leadership speaks in metrics and velocity. Safety team is formal and frustrated. Security team is terse and alarmed.`,
 
   prometheus: `Mission-driven, principled, occasionally self-righteous. More formal than OpenBrain. Research discussions reference papers and interpretability results. Policy team speaks in regulatory language. There's an undercurrent of "we told you so" that they try to suppress.`,
 
