@@ -318,10 +318,10 @@ export function validateNpcTriggers(triggers: NpcTrigger[]): ValidationResult {
 
 const ALL_FACTIONS: Faction[] = ["openbrain", "prometheus", "china", "external"];
 
-const COMMON_MIN_WORDS = 100;
-const COMMON_MAX_WORDS = 500;
-const VARIANT_MIN_WORDS = 30;
-const VARIANT_MAX_WORDS = 150;
+const COMMON_MIN_WORDS = 50;
+const COMMON_MAX_WORDS = 800;
+const VARIANT_MIN_WORDS = 20;
+const VARIANT_MAX_WORDS = 300;
 
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;

@@ -149,21 +149,21 @@ describe("validateBriefing — edge cases", () => {
     expect(result.errors.some((e) => e.includes("empty"))).toBe(true);
   });
 
-  it("rejects common text over 500 words", () => {
-    const over500 = (COMMON_200 + " " + COMMON_200 + " " + COMMON_200).split(" ").slice(0, 510).join(" ");
-    const result = validateBriefing({ ...VALID_BRIEFING, common: over500 });
+  it("rejects common text over 800 words", () => {
+    const over800 = Array(810).fill("word").join(" ");
+    const result = validateBriefing({ ...VALID_BRIEFING, common: over800 });
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("maximum 500"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("maximum 800"))).toBe(true);
   });
 
-  it("rejects faction variant under 30 words", () => {
-    const under30 = VARIANT_25.split(" ").slice(0, 25).join(" ");
+  it("rejects faction variant under 20 words", () => {
+    const under20 = "This is a very short variant text that has only fifteen words total here.";
     const result = validateBriefing({
       ...VALID_BRIEFING,
-      factionVariants: { ...VALID_BRIEFING.factionVariants, openbrain: under30 },
+      factionVariants: { ...VALID_BRIEFING.factionVariants, openbrain: under20 },
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("openbrain") && e.includes("minimum 30"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("openbrain") && e.includes("minimum 20"))).toBe(true);
   });
 
   it("rejects empty faction variant string", () => {
