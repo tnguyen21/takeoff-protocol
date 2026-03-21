@@ -51,13 +51,13 @@ export function getGenerationConfig(): GenerationConfig {
   const timeout =
     rawTimeout !== undefined && rawTimeout !== ""
       ? Number(rawTimeout)
-      : 30000;
+      : 90000;
 
   const rawMaxConcurrent = env.GEN_MAX_CONCURRENT;
   const maxConcurrent =
     rawMaxConcurrent !== undefined && rawMaxConcurrent !== ""
       ? Number(rawMaxConcurrent)
-      : 5;
+      : 15;
 
   return {
     enabled,
@@ -69,7 +69,7 @@ export function getGenerationConfig(): GenerationConfig {
     contentModel,
     signalModel,
     decisionModel,
-    timeout: Number.isFinite(timeout) ? timeout : 30000,
-    maxConcurrent: Number.isFinite(maxConcurrent) && maxConcurrent > 0 ? Math.floor(maxConcurrent) : 5,
+    timeout: Number.isFinite(timeout) ? timeout : 90000,
+    maxConcurrent: Number.isFinite(maxConcurrent) && maxConcurrent > 0 ? Math.floor(maxConcurrent) : 15,
   };
 }

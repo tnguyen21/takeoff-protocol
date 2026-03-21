@@ -120,12 +120,12 @@ it("GEN_DECISION_MODEL fallback: defaults to briefingModel, follows overridden b
 
 // ── Timeout ───────────────────────────────────────────────────────────────────
 
-it("GEN_TIMEOUT_MS: default 30000, parses numeric, falls back for non-numeric", () => {
-  expect(getGenerationConfig().timeout).toBe(30000);
+it("GEN_TIMEOUT_MS: default 90000, parses numeric, falls back for non-numeric", () => {
+  expect(getGenerationConfig().timeout).toBe(90000);
 
   const cleanup = withEnv({ GEN_TIMEOUT_MS: "60000" });
   try { expect(getGenerationConfig().timeout).toBe(60000); } finally { cleanup(); }
 
   const cleanup2 = withEnv({ GEN_TIMEOUT_MS: "notanumber" });
-  try { expect(getGenerationConfig().timeout).toBe(30000); } finally { cleanup2(); }
+  try { expect(getGenerationConfig().timeout).toBe(90000); } finally { cleanup2(); }
 });
