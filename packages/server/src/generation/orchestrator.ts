@@ -172,6 +172,7 @@ export async function triggerGeneration(
           logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
 
           // Generate feed and signal tiers in parallel with their respective models
+          console.log(`[orchestrator:${faction}] feed=[${feedApps.join(",")}] signal=[${signalApps.join(",")}]`);
           const [feedResult, signalResult] = await Promise.all([
             feedApps.length > 0
               ? generateContentWithRetry(resolvedProvider, context, faction, feedApps, feedContentOptions)
@@ -180,6 +181,8 @@ export async function triggerGeneration(
               ? generateContentWithRetry(resolvedProvider, context, faction, signalApps, signalContentOptions)
               : Promise.resolve([] as AppContent[]),
           ]);
+
+          console.log(`[orchestrator:${faction}] feed=${feedResult === null ? "FAILED" : `${feedResult.length} apps`}, signal=${signalResult === null ? "FAILED" : `${signalResult.length} apps`}`);
 
           // Merge: null from either tier means that tier failed
           const contentResult = feedResult === null || signalResult === null

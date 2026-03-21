@@ -345,6 +345,7 @@ export async function generateContent(
       const tier = APP_CONTENT_TIER[app] ?? "feed";
       const targetMin = TIER_BUDGETS[tier].min;
       let allItems: ContentItem[] = [];
+      console.log(`[content:${faction}:${app}] Starting generation (tier=${tier}, target=${targetMin})`);
 
       for (let rollout = 0; rollout < MAX_ROLLOUTS; rollout++) {
         // Build rollout-aware prompt: after the first call, tell the LLM what exists
@@ -356,12 +357,14 @@ export async function generateContent(
             + `You already generated ${allItems.length} items (IDs: ${existingIds}). Generate ${remaining}+ MORE items with NEW unique IDs. Do NOT repeat any existing items.`;
         }
 
+        console.log(`[content:${faction}:${app}] Rollout ${rollout + 1}/${MAX_ROLLOUTS} — calling provider (have ${allItems.length} items)`);
         const raw = await provider.generate<{ items: ContentItem[] }>({
           systemPrompt: CONTENT_SYSTEM_PROMPT,
           userPrompt: buildUserPrompt(context, faction, app, type, rolloutFeedback, apps.length),
           schema: buildContentSchema(type),
           options,
         });
+        console.log(`[content:${faction}:${app}] Rollout ${rollout + 1} returned ${Array.isArray(raw?.items) ? raw.items.length : 0} items`);
 
         let items: ContentItem[] = Array.isArray(raw?.items) ? raw.items : [];
         items = items.map(({ condition: _condition, ...rest }) => rest as ContentItem);
@@ -411,12 +414,14 @@ export async function generateContentWithRetry(
   options?: GenerationOptions,
 ): Promise<AppContent[] | null> {
   // Attempt 1 (transient errors retried with backoff)
+  console.log(`[content:${faction}] Starting attempt 1 for apps=[${apps.join(",")}] model=${options?.model ?? "default"}`);
   let result: AppContent[];
   try {
     result = await retryWithBackoff(
       () => generateContent(provider, context, faction, apps, undefined, options),
       TRANSIENT_RETRY_OPTS,
     );
+    console.log(`[content:${faction}] Attempt 1 completed — ${result.flatMap(ac => ac.items).length} items across ${result.length} apps`);
   } catch (err) {
     console.error(`[content:${faction}] Attempt 1 threw:`, String(err));
     return null;

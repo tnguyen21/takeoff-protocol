@@ -337,7 +337,11 @@ export class AnthropicProvider implements GenerationProvider {
     const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
     const maxTokens = options?.maxTokens ?? DEFAULT_MAX_TOKENS;
 
+    const semStatus = getSemaphore().status();
+    console.log(`[provider] acquire semaphore (active=${semStatus.active}, queued=${semStatus.queued}, limit=${semStatus.limit}, model=${model})`);
     await getSemaphore().acquire();
+    console.log(`[provider] acquired — calling ${model} (timeout=${timeout}ms, maxTokens=${maxTokens})`);
+    const callStart = Date.now();
     try {
       const toolName = "structured_output";
       const toolDef: Anthropic.Tool = {
@@ -367,6 +371,8 @@ export class AnthropicProvider implements GenerationProvider {
       try {
         response = await Promise.race([apiCall, timeoutPromise]);
       } catch (err) {
+        const elapsed = Date.now() - callStart;
+        console.error(`[provider] API call failed after ${elapsed}ms: ${String(err)}`);
         if (err instanceof GenerationTimeoutError) throw err;
         // Detect rate limit (thrown after SDK's own 5 retries are exhausted)
         if (err instanceof Anthropic.RateLimitError) {
@@ -387,12 +393,16 @@ export class AnthropicProvider implements GenerationProvider {
         clearTimeout(timeoutId);
       }
 
+      const elapsed = Date.now() - callStart;
+      console.log(`[provider] API response OK after ${elapsed}ms (model=${model}, stop=${response.stop_reason})`);
+
       // Extract tool_use block
       const toolUseBlock = response.content.find(
         (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
       );
 
       if (!toolUseBlock) {
+        console.error(`[provider] No tool_use block — response blocks: ${response.content.map(b => b.type).join(", ")}`);
         throw new GenerationParseError("No tool_use block in Anthropic response");
       }
 
