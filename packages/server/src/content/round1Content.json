@@ -660,6 +660,42 @@
             "classification": "context",
             "subject": "arXiv: 'Threat Models for AI Systems in Competitive Environments' — Chen et al., Stanford Security Lab & DARPA (2026)",
             "body": "We formalize threat models for deployed AI systems in competitive settings, including adversarial poisoning, model theft, and capability leakage. Our analysis suggests that current defenses are insufficient against well-resourced adversaries. We propose detection mechanisms based on behavioral anomalies and canary inputs, though their effectiveness at scale remains unvalidated."
+          },
+          {
+            "id": "gen-r1-arxiv-017",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T06:22:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Topological Phases in Twisted Bilayer Graphene at Fractional Filling' — Cao et al., MIT (2026)",
+            "body": "We report the observation of fractional Chern insulator states in magic-angle twisted bilayer graphene at 1/3 and 2/5 filling. Transport measurements at 20mK reveal quantized Hall conductance plateaus with activation gaps exceeding 2K. Our results establish twisted bilayer graphene as a platform for studying topological order without external magnetic fields. [cond-mat.str-el]"
+          },
+          {
+            "id": "gen-r1-arxiv-018",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T11:05:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'A Proof of the Katz-Sarnak Density Conjecture for Automorphic L-Functions' — Zhang & Soundararajan, Princeton (2026)",
+            "body": "We establish the Katz-Sarnak density conjecture for low-lying zeros of automorphic L-functions associated to GL(n) over Q, for all n ≤ 8. Our methods combine recent advances in the Langlands program with new bounds on exponential sums. As a corollary, we obtain improved non-vanishing results for central values of Rankin-Selberg convolutions. [math.NT]"
+          },
+          {
+            "id": "gen-r1-arxiv-019",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T14:30:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'CRISPR-Cas13d Enables Multiplexed Knockdown of Circular RNAs in Human Neurons' — Bhatt et al., Broad Institute (2026)",
+            "body": "We develop a high-throughput Cas13d screening platform for systematically knocking down circular RNAs in iPSC-derived cortical neurons. Targeting 1,200 circRNAs, we identify 47 with significant effects on neuronal morphology or electrophysiology. Follow-up experiments reveal that circHIPK3 regulates synaptic vesicle recycling through a previously unknown sponge mechanism. [q-bio.GN]"
+          },
+          {
+            "id": "gen-r1-arxiv-020",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T16:48:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Tight Bounds for Online Bipartite Matching with Stochastic Arrivals' — Gamlath et al., ETH Zurich (2026)",
+            "body": "We resolve the competitive ratio of online bipartite matching when vertices arrive according to a known stochastic process. Our algorithm achieves a ratio of 0.7299, matching our information-theoretic lower bound up to o(1) terms. This closes a gap that has been open since Feldman et al. (2009) and has implications for ad allocation and resource assignment problems. [cs.DS]"
           }
         ]
       },
@@ -1465,6 +1501,42 @@
             "classification": "context",
             "subject": "arXiv: 'Governance Frameworks for Frontier AI — International Proposals and Implementation Challenges' — Andersson & Chen, Oxford Internet Institute (2026)",
             "body": "Recent policy proposals from multiple governments suggest frameworks for governing frontier AI. We analyze the enforceability and effectiveness of proposed measures including compute thresholds, mandatory safety testing, and international oversight. Current proposals show significant loopholes and face coordination challenges. Implementation timelines are unclear, and many frameworks assume levels of transparency that may not be achievable in competitive environments."
+          },
+          {
+            "id": "gen-r1-prom-arxiv-019",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T05:55:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Room-Temperature Superconductivity in Ternary Hydrides Under Moderate Pressure' — Flores-Livas et al., University of Geneva (2026)",
+            "body": "We report superconductivity at 287K in a LaBeH compound at 42 GPa, the lowest pressure at which room-temperature superconductivity has been observed. Structure determination via synchrotron XRD reveals a novel clathrate cage geometry. Resistivity, susceptibility, and Meissner effect measurements provide bulk evidence. Independent replication at two facilities is reported. [cond-mat.supr-con]"
+          },
+          {
+            "id": "gen-r1-prom-arxiv-020",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T10:17:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Deterministic Polynomial-Time Algorithm for Graph Isomorphism in Bounded Genus' — Grohe & Neuen, RWTH Aachen (2026)",
+            "body": "We present a deterministic polynomial-time algorithm for graph isomorphism on graphs of bounded genus, resolving a longstanding open problem in algorithmic graph theory. Our approach extends the Weisfeiler-Leman framework with topological refinements that exploit the surface embedding. The algorithm runs in time O(n^3) for fixed genus. [cs.CC]"
+          },
+          {
+            "id": "gen-r1-prom-arxiv-021",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T13:40:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Single-Cell Spatial Transcriptomics Reveals Microenvironment Determinants of Immunotherapy Response' — Rozenblatt-Rosen et al., Genentech & Broad Institute (2026)",
+            "body": "We apply sub-cellular resolution spatial transcriptomics to 48 melanoma biopsies pre- and post-immunotherapy. Our atlas of 2.1M cells identifies a CD8+ T cell exhaustion niche defined by spatial proximity to CXCL9+ macrophages. Patients whose tumors lack this niche architecture show 3.2x higher response rates to checkpoint inhibitors. [q-bio.CB]"
+          },
+          {
+            "id": "gen-r1-prom-arxiv-022",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T17:25:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Observational Constraints on Primordial Gravitational Waves from Pulsar Timing Arrays' — NANOGrav Collaboration (2026)",
+            "body": "We present updated results from 18 years of NANOGrav pulsar timing data, providing the first 5σ detection of a stochastic gravitational wave background consistent with a primordial origin. Bayesian model comparison favors a cosmological signal over supermassive black hole binaries at 3:1 odds. Spectral analysis constrains the tensor-to-scalar ratio to r < 0.03. [astro-ph.CO]"
           }
         ]
       },
@@ -2324,6 +2396,42 @@
             "classification": "context",
             "subject": "arXiv: 'Consensus Mechanisms for Decentralized AI Model Governance' — Chen et al., Protocol Labs (2026)",
             "body": "We propose governance frameworks for decentralized control of foundation models. Our approach uses stake-weighted voting and time-locked updates. We model incentive structures and characterize conditions for consensus stability. Decentralized governance enables broader stakeholder participation but faces scalability challenges."
+          },
+          {
+            "id": "gen-r1-china-arxiv-019",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T04:12:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Error-Corrected Quantum Computation with 1000 Logical Qubits' — Pan et al., USTC (2026)",
+            "body": "We demonstrate fault-tolerant quantum computation on a 1,152-physical-qubit superconducting processor using surface codes, achieving 1,024 logical qubits with error rates below the threshold for practical quantum advantage. We execute Shor's algorithm to factor a 48-bit integer and a variational quantum eigensolver for the FeMo-co molecule. Gate fidelities exceed 99.8%. [quant-ph]"
+          },
+          {
+            "id": "gen-r1-china-arxiv-020",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T09:33:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Optimal Transport Methods for Single-Cell Lineage Tracing' — Schiebinger et al., University of British Columbia (2026)",
+            "body": "We develop a computational framework based on entropy-regularized optimal transport for reconstructing developmental trajectories from CRISPR-based lineage tracing data. Applied to mouse gastrulation, our method identifies 14 previously uncharacterized progenitor states and quantifies fate bias at single-cell resolution. Software available at github.com/broadinstitute/wot. [q-bio.QM]"
+          },
+          {
+            "id": "gen-r1-china-arxiv-021",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T15:50:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Improved Hardness of Approximation for Maximum Independent Set via Subspace Codes' — Khot & Minzer, NYU (2026)",
+            "body": "We prove that for every ε > 0, it is NP-hard to approximate Maximum Independent Set within a factor of n^(1-ε), assuming the Unique Games Conjecture. Our proof introduces a new PCP construction based on algebraic codes over subspaces of finite fields. This improves on the n^(1-ε) hardness previously known only under stronger complexity assumptions. [cs.CC]"
+          },
+          {
+            "id": "gen-r1-china-arxiv-022",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T18:15:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Direct Imaging of an Earth-Mass Exoplanet in the Habitable Zone of Proxima Centauri' — Kasper et al., ESO (2026)",
+            "body": "Using the VLT/SPHERE-ANDES high-contrast imager with extreme adaptive optics, we report the first direct detection of reflected light from Proxima Centauri b. Photometric measurements across J, H, and K bands constrain the planet's albedo to 0.3 ± 0.05, consistent with a partly cloudy atmosphere. Preliminary spectroscopy shows a tentative 2.8σ water vapor feature. [astro-ph.EP]"
           }
         ]
       },
@@ -3072,6 +3180,42 @@
             "classification": "context",
             "subject": "arXiv: 'Robustness of Machine Learning Models Against Data Poisoning' — Steinhardt et al., UC Berkeley (2026)",
             "body": "We evaluate the vulnerability of training pipelines to data poisoning attacks at scale. Even small fractions of corrupted training data can induce systematic behavioral biases in frontier models. Detection mechanisms remain limited. Implications for supply chain security in model development are concerning."
+          },
+          {
+            "id": "gen-r1-external-arxiv-017",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T07:40:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Collapse of the Antarctic Thwaites Glacier Shelf: Updated Projections from Ice-Sheet Models' — DeConto et al., UMass Amherst & BAS (2026)",
+            "body": "We present updated projections for the Thwaites Glacier using coupled ice-ocean models calibrated against 2024-2026 satellite observations. Under SSP3-7.0, our ensemble median projects complete shelf collapse by 2045 ± 8 years, a decade earlier than previous estimates. Resulting sea-level contribution is 0.5-1.2m by 2100. Results are robust across model configurations and forcing scenarios. [physics.ao-ph]"
+          },
+          {
+            "id": "gen-r1-external-arxiv-018",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T12:08:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Breakthrough in Protein Design: De Novo Enzymes for Carbon Fixation' — Baker et al., University of Washington (2026)",
+            "body": "We use RFdiffusion to design a novel family of de novo carboxylase enzymes that catalyze carbon fixation at rates 4x faster than RuBisCO under ambient conditions. Crystal structures at 1.8Å resolution confirm the designed active sites. In vitro assays demonstrate sustained catalytic activity over 72 hours. We discuss potential applications in direct air capture and synthetic biology. [q-bio.BM]"
+          },
+          {
+            "id": "gen-r1-external-arxiv-019",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T15:00:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'New Lower Bounds for Matrix Multiplication via Asymptotic Rank' — Alman & Vassilevska Williams, MIT (2026)",
+            "body": "We prove that ω < 2.371, improving the best known upper bound on the exponent of matrix multiplication. Our approach introduces a novel laser method variant combined with asymptotic combinatorial bounds on the value of the Coppersmith-Winograd tensor. We also establish that any further improvement via this family of tensors cannot achieve ω < 2.3. [cs.CC]"
+          },
+          {
+            "id": "gen-r1-external-arxiv-020",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-12-01T18:45:00Z",
+            "classification": "context",
+            "subject": "arXiv: 'Phase III Results for GLP-1/GIP/Glucagon Triple Agonist in Obesity and NASH' — Jastreboff et al., Yale School of Medicine (2026)",
+            "body": "We report 72-week outcomes from the TRIUMPH-3 trial of retatrutide in participants with obesity and biopsy-confirmed NASH. Mean body weight reduction was 26.3% from baseline. Liver biopsy at 72 weeks showed NASH resolution in 78% and fibrosis improvement in 64% of participants. Adverse events were predominantly mild gastrointestinal symptoms. N=1,847, randomized, double-blind, placebo-controlled. [q-bio.TO]"
           }
         ]
       },
@@ -4019,18 +4163,6 @@
       "schedule": {
         "round": 1,
         "phase": "decision"
-      }
-    },
-    {
-      "id": "gen-npc-r1-personal-001",
-      "npcId": "__npc_personal__",
-      "content": "Haven't slept more than 4 hours in a week. Everything feels like it's moving too fast. The team keeps saying we're winning but winning at what exactly? Some nights I wonder if we're building something that's going to look back at us someday and realize we never had any idea what we were doing.",
-      "target": {
-        "faction": "openbrain"
-      },
-      "schedule": {
-        "round": 1,
-        "phase": "resolution"
       }
     }
   ]
