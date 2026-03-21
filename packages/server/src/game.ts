@@ -1030,8 +1030,29 @@ function emitResolution(io: Server, room: GameRoom) {
   }
 
   // Team decisions: faction → optionId
+  // If the leader didn't explicitly lock a decision, fall back to majority vote.
+  const effectiveTeamDecisions: Record<string, string> = { ...room.teamDecisions };
+  if (roundDecisions) {
+    for (const teamDec of roundDecisions.team) {
+      const faction = teamDec.faction;
+      if (effectiveTeamDecisions[faction]) continue; // leader already locked
+      const factionVotes = room.teamVotes[faction];
+      if (!factionVotes || Object.keys(factionVotes).length === 0) continue;
+      // Tally votes and pick majority
+      const tally: Record<string, number> = {};
+      for (const optionId of Object.values(factionVotes)) {
+        tally[optionId] = (tally[optionId] ?? 0) + 1;
+      }
+      const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+      if (sorted.length > 0) {
+        effectiveTeamDecisions[faction] = sorted[0][0];
+        console.log(`[resolution] Faction ${faction}: no leader lock, using majority vote → ${sorted[0][0]} (${sorted[0][1]} votes)`);
+      }
+    }
+  }
+
   const teamDecisionSummary: Record<string, { optionId: string; label: string }> = {};
-  for (const [faction, optionId] of Object.entries(room.teamDecisions)) {
+  for (const [faction, optionId] of Object.entries(effectiveTeamDecisions)) {
     if (!roundDecisions) continue;
     const teamDec = roundDecisions.team.find((t) => t.faction === (faction as Faction));
     if (!teamDec) continue;
@@ -1075,7 +1096,7 @@ function emitResolution(io: Server, room: GameRoom) {
     round: room.round,
     decisions: { ...room.decisions },
     decisions2: { ...room.decisions2 },
-    teamDecisions: { ...room.teamDecisions },
+    teamDecisions: { ...effectiveTeamDecisions },
     stateBefore,
     stateAfter: { ...room.state },
     ...(Object.keys(roleDecisions).length > 0 ? { roleDecisions } : {}),

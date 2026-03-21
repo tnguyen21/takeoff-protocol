@@ -465,7 +465,7 @@ describe("INV-5: Activity penalties applied at resolution", () => {
 
 const NOLOCK_ROOM = "DCNOLK";
 
-describe("INV-6: Team decisions require leader lock", () => {
+describe("INV-6: Team decisions — majority vote fallback when leader doesn't lock", () => {
   const S_VOTER = "s-nolock-voter"; // non-leader casts a team vote
   const S_LEADER = "s-nolock-lead"; // leader but never submits
   let room: GameRoom;
@@ -496,17 +496,17 @@ describe("INV-6: Team decisions require leader lock", () => {
     _clearLoggers();
   });
 
-  it("team effects NOT applied when leader never locked the decision", () => {
-    // ob_team_allincap would give obCapability+6, but no leader locked it
+  it("majority vote applies when leader never locked the decision", () => {
+    // ob_team_allincap gives obCapability+6 — majority vote should apply it
     const stateBefore = { ...room.state };
     advancePhase(io as unknown as import("socket.io").Server, room);
 
-    // obCapability must NOT have increased by 6 (ob_team_allincap is unlocked)
-    // No individual decision either, no penalties (playerActivity set) → unchanged
-    expect(room.state.obCapability).toBe(stateBefore.obCapability);
+    expect(room.state.obCapability).toBe(
+      Math.min(100, stateBefore.obCapability + 6),
+    );
   });
 
-  it("locked team decisions apply, unlocked ones do not", () => {
+  it("leader lock overrides majority vote", () => {
     // Add a china player and lock their team decision
     const S_CHINA = "s-nolock-china";
     room.players[S_CHINA] = makePlayer(S_CHINA, { faction: "china", role: "china_director", isLeader: true });
@@ -516,12 +516,24 @@ describe("INV-6: Team decisions require leader lock", () => {
     const stateBefore = { ...room.state };
     advancePhase(io as unknown as import("socket.io").Server, room);
 
-    // china team decision applied (locked)
+    // china team decision applied (leader locked)
     expect(room.state.chinaCapability).toBe(
       Math.min(100, stateBefore.chinaCapability + 2),
     );
 
-    // openbrain team decision NOT applied (no lock) — no individual decisions either
+    // openbrain team decision also applied (majority vote fallback)
+    expect(room.state.obCapability).toBe(
+      Math.min(100, stateBefore.obCapability + 6),
+    );
+  });
+
+  it("inaction when no votes and no leader lock", () => {
+    // Clear all votes for openbrain
+    room.teamVotes = {};
+    const stateBefore = { ...room.state };
+    advancePhase(io as unknown as import("socket.io").Server, room);
+
+    // No votes, no lock → inaction, no team effects
     expect(room.state.obCapability).toBe(stateBefore.obCapability);
   });
 });
