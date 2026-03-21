@@ -6,8 +6,9 @@ interface GenerationConfig {
   npcEnabled: boolean;        // GEN_NPC_ENABLED, default true
   decisionsEnabled: boolean;  // GEN_DECISIONS_ENABLED, default true
   providerType: "anthropic" | "mock"; // GEN_PROVIDER, default "anthropic"
-  briefingModel: string;      // GEN_BRIEFING_MODEL, default "claude-sonnet-4-5-20250514"
-  contentModel: string;       // GEN_CONTENT_MODEL, default "claude-haiku-4-5-20251001"
+  briefingModel: string;      // GEN_BRIEFING_MODEL, default "claude-sonnet-4-6"
+  contentModel: string;       // GEN_CONTENT_MODEL, default "claude-haiku-4-5-20251001" (feed-tier apps)
+  signalModel: string;        // GEN_SIGNAL_MODEL, default same as briefingModel (signal-tier apps)
   decisionModel: string;      // GEN_DECISION_MODEL, default same as briefingModel
   timeout: number;            // GEN_TIMEOUT_MS, default 30000
   maxConcurrent: number;      // GEN_MAX_CONCURRENT, default 5
@@ -40,6 +41,9 @@ export function getGenerationConfig(): GenerationConfig {
   const contentModel =
     env.GEN_CONTENT_MODEL ?? "claude-haiku-4-5-20251001";
 
+  const signalModel =
+    env.GEN_SIGNAL_MODEL ?? briefingModel;
+
   const decisionModel =
     env.GEN_DECISION_MODEL ?? briefingModel;
 
@@ -63,6 +67,7 @@ export function getGenerationConfig(): GenerationConfig {
     providerType,
     briefingModel,
     contentModel,
+    signalModel,
     decisionModel,
     timeout: Number.isFinite(timeout) ? timeout : 30000,
     maxConcurrent: Number.isFinite(maxConcurrent) && maxConcurrent > 0 ? Math.floor(maxConcurrent) : 5,

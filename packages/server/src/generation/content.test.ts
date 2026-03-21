@@ -3,7 +3,7 @@ import type { AppContent, ContentItem, Faction, StateVariables } from "@takeoff/
 import type { GenerationContext } from "./context.js";
 import type { GenerationOptions, GenerationProvider } from "./provider.js";
 import { MockProvider } from "./provider.js";
-import { validateContent, validateFogSafety, contentBudget } from "./validate.js";
+import { validateContent, validateFogSafety, scrubFogLeaks, contentBudget } from "./validate.js";
 import { generateContent, generateContentWithRetry, forceSlackChannel, VALID_SLACK_CHANNELS } from "./content.js";
 import { ROUND_ARCS } from "./prompts/arcs.js";
 
@@ -157,15 +157,15 @@ describe("INV-2: validateContent — classification budget violations are warnin
 // ── INV-3: Hard reject only for grossly out-of-range totals ───────────────────
 
 describe("INV-3: validateContent — total count bounds", () => {
-  it("passes with 31 items (within 2x max)", () => {
+  it("passes with 55 items (over soft max, under hard max)", () => {
     const items: ContentItem[] = [];
-    for (let i = 0; i < 3; i++)
+    for (let i = 0; i < 6; i++)
       items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round: 3 }));
-    for (let i = 0; i < 26; i++)
+    for (let i = 0; i < 45; i++)
       items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round: 3 }));
-    for (let i = 0; i < 2; i++)
+    for (let i = 0; i < 4; i++)
       items.push(makeItem({ id: `gen-rh${i}`, type: "headline", classification: "red-herring", round: 3 }));
-    // 31 items total — over soft max (30) but under hard max (60)
+    // 55 items total — over soft max (50) but under hard max (100)
 
     const result = validateContent(items, "external");
     expect(result.valid).toBe(true);
@@ -181,8 +181,9 @@ describe("INV-3: validateContent — total count bounds", () => {
 
   it("fails when array exceeds 2x maximum", () => {
     const items: ContentItem[] = [];
-    for (let i = 0; i < 65; i++)
+    for (let i = 0; i < 105; i++)
       items.push(makeItem({ id: `gen-x${i}`, type: "headline", classification: "context", round: 3 }));
+    // 105 items > 2 * maxTotal (2 * 50 = 100) → hard error
     const result = validateContent(items, "openbrain");
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes("total items"))).toBe(true);
@@ -337,6 +338,83 @@ describe("INV-5: validateFogSafety — warns when hidden variable value appears 
     // Should NOT warn for china (visible)
     const chinaResult = validateFogSafety(items, state, "china");
     expect(chinaResult.warnings).toHaveLength(0);
+  });
+});
+
+// ── scrubFogLeaks: deterministic fog leak removal ────────────────────────────
+
+describe("scrubFogLeaks — replaces hidden variable values near keywords", () => {
+  it("replaces leaked value with offset (+3)", () => {
+    const state: StateVariables = { ...BASE_STATE, chinaWeightTheftProgress: 45 };
+    const items: ContentItem[] = [
+      makeItem({
+        id: "gen-scrub-1",
+        type: "headline",
+        classification: "context",
+        body: "Intelligence agencies report weight theft progress at 45 percent.",
+        round: 3,
+      }),
+    ];
+
+    const { items: scrubbed, scrubCount } = scrubFogLeaks(items, state, "openbrain");
+    expect(scrubCount).toBe(1);
+    expect(scrubbed[0]!.body).not.toContain("45");
+    expect(scrubbed[0]!.body).toContain("48"); // 45 + 3
+  });
+
+  it("does not scrub values not near keywords", () => {
+    const state: StateVariables = { ...BASE_STATE, chinaWeightTheftProgress: 45 };
+    const items: ContentItem[] = [
+      makeItem({
+        id: "gen-scrub-2",
+        type: "headline",
+        classification: "context",
+        body: "There are 45 countries represented at the summit today.",
+        round: 3,
+      }),
+    ];
+
+    const { items: scrubbed, scrubCount } = scrubFogLeaks(items, state, "openbrain");
+    expect(scrubCount).toBe(0);
+    expect(scrubbed[0]!.body).toContain("45");
+  });
+
+  it("does not scrub visible variables", () => {
+    const state: StateVariables = { ...BASE_STATE, obCapability: 55 };
+    const items: ContentItem[] = [
+      makeItem({
+        id: "gen-scrub-3",
+        type: "headline",
+        classification: "context",
+        body: "OpenBrain capability reaches 55 on internal benchmarks.",
+        round: 3,
+      }),
+    ];
+
+    const { items: scrubbed, scrubCount } = scrubFogLeaks(items, state, "openbrain");
+    expect(scrubCount).toBe(0);
+    expect(scrubbed[0]!.body).toContain("55");
+  });
+
+  it("clamps replacement to variable range max", () => {
+    // chinaWeightTheftProgress range is [0, 100], value 99 + 3 = 102 → clamped to 100
+    // but 100 !== 99, so it stays at 100... actually let's use 98 to be clearer
+    const state: StateVariables = { ...BASE_STATE, chinaWeightTheftProgress: 99 };
+    const items: ContentItem[] = [
+      makeItem({
+        id: "gen-scrub-4",
+        type: "headline",
+        classification: "context",
+        body: "Weight theft progress estimated at 99 percent completion.",
+        round: 3,
+      }),
+    ];
+
+    const { items: scrubbed, scrubCount } = scrubFogLeaks(items, state, "openbrain");
+    expect(scrubCount).toBe(1);
+    expect(scrubbed[0]!.body).not.toContain("99");
+    // 99 + 3 = 102, clamped to 100
+    expect(scrubbed[0]!.body).toContain("100");
   });
 });
 
@@ -683,46 +761,46 @@ describe("Context: round arcs are defined and usable", () => {
 describe("contentBudget — scales budgets by appCount", () => {
   it("returns baseline budgets when appCount is undefined (INV-1)", () => {
     const b = contentBudget(undefined);
-    expect(b.minTotal).toBe(15);
-    expect(b.maxTotal).toBe(30);
-    expect(b.minCritical).toBe(3);
-    expect(b.maxCritical).toBe(5);
-    expect(b.minContext).toBe(5);
-    expect(b.maxContext).toBe(10);
-    expect(b.minRedHerring).toBe(1);
-    expect(b.maxRedHerring).toBe(2);
+    expect(b.minTotal).toBe(25);
+    expect(b.maxTotal).toBe(50);
+    expect(b.minCritical).toBe(5);
+    expect(b.maxCritical).toBe(10);
+    expect(b.minContext).toBe(10);
+    expect(b.maxContext).toBe(25);
+    expect(b.minRedHerring).toBe(2);
+    expect(b.maxRedHerring).toBe(5);
   });
 
   it("returns baseline budgets when appCount=2 (INV-1)", () => {
     const b = contentBudget(2);
-    expect(b.minTotal).toBe(15);
-    expect(b.maxTotal).toBe(30);
-    expect(b.minCritical).toBe(3);
-    expect(b.maxCritical).toBe(5);
-    expect(b.minContext).toBe(5);
-    expect(b.maxContext).toBe(10);
-    expect(b.minRedHerring).toBe(1);
-    expect(b.maxRedHerring).toBe(2);
+    expect(b.minTotal).toBe(25);
+    expect(b.maxTotal).toBe(50);
+    expect(b.minCritical).toBe(5);
+    expect(b.maxCritical).toBe(10);
+    expect(b.minContext).toBe(10);
+    expect(b.maxContext).toBe(25);
+    expect(b.minRedHerring).toBe(2);
+    expect(b.maxRedHerring).toBe(5);
   });
 
   it("scales to 4x for appCount=8 (INV-2: scale=ceil(8/2)=4)", () => {
     const b = contentBudget(8);
-    expect(b.minTotal).toBe(60);
-    expect(b.maxTotal).toBe(120);
-    expect(b.minCritical).toBe(12);
-    expect(b.maxCritical).toBe(20);
-    expect(b.minContext).toBe(20);
-    expect(b.maxContext).toBe(40);
-    expect(b.minRedHerring).toBe(4);
-    expect(b.maxRedHerring).toBe(8);
+    expect(b.minTotal).toBe(100);
+    expect(b.maxTotal).toBe(200);
+    expect(b.minCritical).toBe(20);
+    expect(b.maxCritical).toBe(40);
+    expect(b.minContext).toBe(40);
+    expect(b.maxContext).toBe(100);
+    expect(b.minRedHerring).toBe(8);
+    expect(b.maxRedHerring).toBe(20);
   });
 
   it("uses scale=2 for appCount=3 (ceil(3/2)=2)", () => {
     const b = contentBudget(3);
-    expect(b.minTotal).toBe(30);
-    expect(b.maxTotal).toBe(60);
-    expect(b.minCritical).toBe(6);
-    expect(b.maxCritical).toBe(10);
+    expect(b.minTotal).toBe(50);
+    expect(b.maxTotal).toBe(100);
+    expect(b.minCritical).toBe(10);
+    expect(b.maxCritical).toBe(20);
   });
 });
 
@@ -732,11 +810,11 @@ describe("contentBudget — scales budgets by appCount", () => {
 function makeScaledItemSet(_faction: Faction, appCount: number, round = 3): ContentItem[] {
   const scale = Math.ceil(appCount / 2);
   const items: ContentItem[] = [];
-  for (let i = 0; i < 3 * scale; i++)
+  for (let i = 0; i < 5 * scale; i++)
     items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round }));
-  for (let i = 0; i < 7 * scale; i++)
+  for (let i = 0; i < 12 * scale; i++)
     items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round }));
-  for (let i = 0; i < scale; i++)
+  for (let i = 0; i < 2 * scale; i++)
     items.push(makeItem({ id: `gen-rh${i}`, type: "headline", classification: "red-herring", round }));
   for (let i = 0; i < 4; i++)
     items.push(makeItem({ id: `gen-bc${i}`, type: "headline", classification: "breadcrumb", round }));
@@ -756,24 +834,21 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("INV-2: appCount=8 accepts 50+ items that satisfy scaled budget", () => {
-    // 50 items across categories that fit 60-120 total... wait, 50 is too few for scaled min=60
-    // Make 64 items (scale=4: 12 critical, 28 context, 4 red-herring, 4 breadcrumb = 48, not enough)
-    // Use makeScaledItemSet for proper scaling
-    const items = makeScaledItemSet("openbrain", 8); // 12 crit + 28 ctx + 4 rh + 4 bc = 48 < 60 :(
-    // makeScaledItemSet gives 3*4=12 crit, 7*4=28 ctx, 1*4=4 rh, 4 bc = 48 items → below minTotal=60
-    // We need at least 60 total: add more context items
-    const extra = 12;
+  it("INV-2: appCount=8 accepts items that satisfy scaled budget", () => {
+    // makeScaledItemSet gives 5*4=20 crit, 12*4=48 ctx, 2*4=8 rh, 4 bc = 80 items
+    // scaled minTotal=100 → 80 is below min but above hard min (50). Add more context.
+    const items = makeScaledItemSet("openbrain", 8);
+    const extra = 20;
     for (let i = 0; i < extra; i++)
       items.push(makeItem({ id: `gen-extra${i}`, type: "headline", classification: "context", round: 3 }));
-    // Now: 12 crit, 40 ctx, 4 rh, 4 bc = 60 total ✓
+    // Now: 20 crit, 68 ctx, 8 rh, 4 bc = 100 total ✓
     const result = validateContent(items, "openbrain", 3, 8);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
 
   it("INV-2: appCount=8 hard-rejects when below 50% of scaled minimum", () => {
-    // 15 items for appCount=8 → scaled minTotal=60, hard min = 30. 15 < 30 → error.
+    // 15 items for appCount=8 → scaled minTotal=100, hard min = 50. 15 < 50 → error.
     const items = makeValidItemSet("openbrain"); // 15 items
     const result = validateContent(items, "openbrain", 3, 8);
     expect(result.valid).toBe(false);
@@ -792,7 +867,7 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.errors.some((e) => e.includes("empty body"))).toBe(true);
   });
 
-  it("failure mode: 15 items for 8 apps → rejected (below hard minimum of 30)", () => {
+  it("failure mode: 15 items for 8 apps → rejected (below hard minimum of 50)", () => {
     const items: ContentItem[] = [];
     for (let i = 0; i < 15; i++)
       items.push(makeItem({ id: `gen-f${i}`, type: "headline", classification: "context", round: 3 }));
@@ -801,17 +876,17 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.errors.length).toBeGreaterThan(0);
   });
 
-  it("critical path: 2-app generation with 20 items still passes (backward compat)", () => {
+  it("critical path: 2-app generation with 30 items passes (backward compat)", () => {
     const items: ContentItem[] = [];
-    for (let i = 0; i < 4; i++)
+    for (let i = 0; i < 6; i++)
       items.push(makeItem({ id: `gen-c${i}`, type: "headline", classification: "critical", round: 3 }));
-    for (let i = 0; i < 10; i++)
+    for (let i = 0; i < 15; i++)
       items.push(makeItem({ id: `gen-ctx${i}`, type: "headline", classification: "context", round: 3 }));
-    for (let i = 0; i < 2; i++)
+    for (let i = 0; i < 3; i++)
       items.push(makeItem({ id: `gen-rh${i}`, type: "headline", classification: "red-herring", round: 3 }));
-    for (let i = 0; i < 4; i++)
+    for (let i = 0; i < 6; i++)
       items.push(makeItem({ id: `gen-bc${i}`, type: "headline", classification: "breadcrumb", round: 3 }));
-    // 20 items: 4 crit, 10 context, 2 rh, 4 bc — valid for 2 apps
+    // 30 items: 6 crit, 15 context, 3 rh, 6 bc — valid for 2 apps
     const result = validateContent(items, "openbrain", 3, 2);
     expect(result.valid).toBe(true);
   });

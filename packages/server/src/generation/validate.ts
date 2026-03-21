@@ -17,6 +17,11 @@ interface ValidationResult {
  * For appCount <= 2 (or undefined), returns baseline budgets.
  * For appCount > 2, scales by Math.ceil(appCount / 2).
  * Breadcrumb is always 1-4 regardless of scale.
+ *
+ * Base budgets are sized for the two-tier content system:
+ *   feed apps (slack, twitter, news, etc): 12-20 items each
+ *   signal apps (signal, memo, intel, email): 3-6 items each
+ * A typical faction has ~5 feed + ~3 signal apps → ~75-130 items total.
  */
 export function contentBudget(appCount?: number): {
   minTotal: number;
@@ -30,14 +35,14 @@ export function contentBudget(appCount?: number): {
 } {
   const scale = appCount !== undefined && appCount > 2 ? Math.ceil(appCount / 2) : 1;
   return {
-    minTotal: 15 * scale,
-    maxTotal: 30 * scale,
-    minCritical: 3 * scale,
-    maxCritical: 5 * scale,
-    minContext: 5 * scale,
-    maxContext: 10 * scale,
-    minRedHerring: 1 * scale,
-    maxRedHerring: 2 * scale,
+    minTotal: 25 * scale,
+    maxTotal: 50 * scale,
+    minCritical: 5 * scale,
+    maxCritical: 10 * scale,
+    minContext: 10 * scale,
+    maxContext: 25 * scale,
+    minRedHerring: 2 * scale,
+    maxRedHerring: 5 * scale,
   };
 }
 
@@ -186,6 +191,78 @@ export function validateFogSafety(
   }
 
   return { valid: true, errors: [], warnings };
+}
+
+// ── Fog Leak Scrubbing ──────────────────────────────────────────────────────
+
+/**
+ * Deterministically scrub fog leaks from generated content.
+ * Uses the same detection heuristic as validateFogSafety: when an exact hidden
+ * variable value appears near a related keyword, replace the number with a
+ * nearby but incorrect value (offset by +3, clamped to variable range).
+ *
+ * Returns a new array of items with scrubbed bodies and the count of scrubs.
+ */
+export function scrubFogLeaks(
+  items: ContentItem[],
+  state: StateVariables,
+  faction: Faction,
+): { items: ContentItem[]; scrubCount: number } {
+  const fogView = computeFogView(state, faction, 1);
+
+  const hiddenVars: Array<{ key: string; value: number; keywords: string[] }> = [];
+  for (const [key, fogVar] of Object.entries(fogView) as [string, FogVariable][]) {
+    if (fogVar.accuracy === "hidden") {
+      const trueValue = (state as unknown as Record<string, number>)[key];
+      if (trueValue !== 0 && trueValue !== undefined) {
+        hiddenVars.push({ key, value: trueValue, keywords: camelKeywords(key) });
+      }
+    }
+  }
+
+  if (hiddenVars.length === 0) return { items, scrubCount: 0 };
+
+  let scrubCount = 0;
+  const scrubbed = items.map((item) => {
+    let body = item.body;
+    let changed = false;
+
+    for (const { key, value, keywords } of hiddenVars) {
+      const valueStr = String(value);
+      const lowerBody = body.toLowerCase();
+      let searchFrom = 0;
+
+      while (true) {
+        const pos = lowerBody.indexOf(valueStr, searchFrom);
+        if (pos === -1) break;
+
+        const windowStart = Math.max(0, pos - 80);
+        const windowEnd = Math.min(lowerBody.length, pos + valueStr.length + 80);
+        const window = lowerBody.slice(windowStart, windowEnd);
+
+        if (keywords.some((kw) => window.includes(kw))) {
+          // Compute replacement: offset by +3, clamp to variable range
+          const range = STATE_VARIABLE_RANGES[key as keyof typeof STATE_VARIABLE_RANGES];
+          let replacement = value + 3;
+          if (range) {
+            replacement = Math.min(replacement, range[1]);
+            if (replacement === value) replacement = Math.max(value - 3, range[0]);
+          }
+          body = body.slice(0, pos) + String(replacement) + body.slice(pos + valueStr.length);
+          scrubCount++;
+          changed = true;
+          // Re-scan from the replacement position (replacement may be different length)
+          break; // Move to next variable — one scrub per variable per item is sufficient
+        }
+
+        searchFrom = pos + 1;
+      }
+    }
+
+    return changed ? { ...item, body } : item;
+  });
+
+  return { items: scrubbed, scrubCount };
 }
 
 // ── NPC Trigger Validation ────────────────────────────────────────────────────

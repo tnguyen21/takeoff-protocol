@@ -557,10 +557,11 @@ describe("triggerGeneration — model plumbing (M-INV-1)", () => {
 
 describe("triggerGeneration — model plumbing (M-INV-2)", () => {
   it(
-    "passes GEN_CONTENT_MODEL as options.model to content provider calls",
+    "passes GEN_CONTENT_MODEL to feed-tier and GEN_SIGNAL_MODEL to signal-tier content calls",
     withModelEnv(
       {
         GEN_CONTENT_MODEL: "claude-opus-4-6",
+        GEN_SIGNAL_MODEL: "custom-signal-model",
         GEN_BRIEFINGS_ENABLED: "false",
         GEN_NPC_ENABLED: "false",
         GEN_DECISIONS_ENABLED: "false",
@@ -571,11 +572,12 @@ describe("triggerGeneration — model plumbing (M-INV-2)", () => {
         const room = makeRoom();
         await triggerGeneration(room, 2, provider);
 
-        // Content is generated for 4 factions × N apps — all should use the content model
+        // Feed-tier calls use GEN_CONTENT_MODEL, signal-tier use GEN_SIGNAL_MODEL
         expect(provider.calls.length).toBeGreaterThan(0);
-        for (const c of provider.calls) {
-          expect(c.model).toBe("claude-opus-4-6");
-        }
+        const feedCalls = provider.calls.filter((c) => c.model === "claude-opus-4-6");
+        const signalCalls = provider.calls.filter((c) => c.model === "custom-signal-model");
+        expect(feedCalls.length).toBeGreaterThan(0);
+        expect(signalCalls.length).toBeGreaterThan(0);
       },
     ),
   );
@@ -665,10 +667,11 @@ describe("triggerGeneration — model plumbing (M-INV-5)", () => {
   );
 
   it(
-    "uses Haiku default for content calls when GEN_CONTENT_MODEL is not set",
+    "uses Haiku for feed-tier and Sonnet for signal-tier content when models are not set",
     withModelEnv(
       {
         GEN_CONTENT_MODEL: undefined,
+        GEN_SIGNAL_MODEL: undefined,
         GEN_BRIEFINGS_ENABLED: "false",
         GEN_NPC_ENABLED: "false",
         GEN_DECISIONS_ENABLED: "false",
@@ -679,11 +682,12 @@ describe("triggerGeneration — model plumbing (M-INV-5)", () => {
         const room = makeRoom();
         await triggerGeneration(room, 2, provider);
 
-        // Content is generated for 4 factions × N apps — all should use the Haiku default
+        // Content calls: feed-tier uses Haiku, signal-tier uses Sonnet (briefingModel default)
         expect(provider.calls.length).toBeGreaterThan(0);
-        for (const c of provider.calls) {
-          expect(c.model).toBe("claude-haiku-4-5-20251001");
-        }
+        const haikuCalls = provider.calls.filter((c) => c.model === "claude-haiku-4-5-20251001");
+        const sonnetCalls = provider.calls.filter((c) => c.model === "claude-sonnet-4-6");
+        expect(haikuCalls.length).toBeGreaterThan(0); // feed apps
+        expect(sonnetCalls.length).toBeGreaterThan(0); // signal apps
       },
     ),
   );

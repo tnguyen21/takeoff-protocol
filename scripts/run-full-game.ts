@@ -334,7 +334,7 @@ async function main() {
   process.env.GEN_DECISIONS_ENABLED = "true";
   process.env.LOG_ENABLED = "true";
   process.env.GEN_TIMEOUT_MS ??= "120000";       // 2min per call (default 30s too tight)
-  process.env.GEN_MAX_CONCURRENT ??= "10";        // more parallelism for batch
+  process.env.GEN_MAX_CONCURRENT ??= "25";        // high parallelism for batch (feed+signal across 4 factions)
 
   const { io, emissions } = createMockIO();
 

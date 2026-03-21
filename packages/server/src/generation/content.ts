@@ -32,6 +32,31 @@ export const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
   arxiv: "document",
 };
 
+// ── Content tiers ────────────────────────────────────────────────────────────
+// Feed-tier: high volume, information overload. Critical intel buried in noise.
+// Signal-tier: low volume, every item matters. Private/direct channels.
+
+export type ContentTier = "feed" | "signal";
+
+export const APP_CONTENT_TIER: Partial<Record<AppId, ContentTier>> = {
+  slack: "feed",
+  twitter: "feed",
+  news: "feed",
+  bloomberg: "feed",
+  arxiv: "feed",
+  substack: "feed",
+  signal: "signal",
+  memo: "signal",
+  intel: "signal",
+  email: "signal",
+};
+
+/** Per-app item count targets by tier. */
+export const TIER_BUDGETS: Record<ContentTier, { min: number; max: number }> = {
+  feed: { min: 12, max: 20 },
+  signal: { min: 3, max: 6 },
+};
+
 // ── Schema Builder ────────────────────────────────────────────────────────────
 
 /**
@@ -202,35 +227,34 @@ No player messages in Slack last round. Generate standalone contextual messages 
   // App voice guide and generation instructions
   const appVoice = APP_VOICES[app];
   const structuralHint = APP_STRUCTURAL_HINTS[app];
+  const tier = APP_CONTENT_TIER[app] ?? "feed";
+  const tierBudget = TIER_BUDGETS[tier];
   const budget = contentBudget(appCount);
-  const numApps = appCount ?? 2;
-  const perAppMin = Math.max(1, Math.round(budget.minTotal / numApps));
-  const perAppMax = Math.max(1, Math.round(budget.maxTotal / numApps));
-  const perAppCritical = Math.max(1, Math.round((budget.minCritical + budget.maxCritical) / 2 / numApps));
-  const perAppContext = Math.max(1, Math.round((budget.minContext + budget.maxContext) / 2 / numApps));
-  const perAppRedHerring = Math.max(0, Math.round((budget.minRedHerring + budget.maxRedHerring) / 2 / numApps));
+
+  // Tier-specific generation guidance
+  const tierGuidance = tier === "feed"
+    ? `This is a FEED app — high volume, information overload. Generate ${tierBudget.min}-${tierBudget.max} items.
+Players should feel like they're doom-scrolling a real ${app === "slack" ? "workplace Slack" : app === "twitter" ? "Twitter feed" : app === "news" ? "news wire" : app === "bloomberg" ? "Bloomberg terminal" : app === "arxiv" ? "arXiv feed" : "Substack inbox"} during a crisis.
+Most items are atmospheric context. Critical intel should be BURIED — same tone, same style as everything else. A critical item should NOT stand out visually or stylistically. The player has to actually read and think to find what matters.
+Classification targets: ~2-3 critical (hidden in the noise), ~${Math.round((tierBudget.min + tierBudget.max) / 2 * 0.6)} context, ~1-2 red-herring, ~1 breadcrumb.`
+    : `This is a SIGNAL app — low volume, high stakes. Generate ${tierBudget.min}-${tierBudget.max} items.
+Every item in ${app === "signal" ? "a Signal DM" : app === "memo" ? "an internal memo" : app === "intel" ? "an intelligence brief" : "an email"} should feel urgent and actionable. No filler. These are the "if you only have 60 seconds, check these" channels.
+Players who are overwhelmed by the feed apps should still get critical information from here.
+Classification targets: ~1-2 critical, ~${Math.max(1, tierBudget.min - 1)} context (still substantive, not filler). No red-herrings in signal channels — people trust these.`;
+
   parts.push(
-    `## TARGET APP: ${app.toUpperCase()}
+    `## TARGET APP: ${app.toUpperCase()} [${tier.toUpperCase()} TIER]
 Voice guide: ${appVoice ?? "Standard format."}
 Content type: ${type}
 ${structuralHint ? `\nStructural requirements: ${structuralHint}` : ""}
-Generate ${perAppMin}-${perAppMax} items for the "${app}" app for faction ${faction} in round ${targetRound}.
+
+${tierGuidance}
+
 All items MUST have:
 - type="${type}"
 - round=${targetRound}
 - id starting with "gen-" (e.g. "gen-r${targetRound}-${faction}-${app}-001")
 - A non-empty body field
-
-CONTENT BUDGET across all apps for this faction this round (faction totals):
-- ${budget.minCritical}-${budget.maxCritical} items classified "critical"
-- ${budget.minContext}-${budget.maxContext} items classified "context"
-- ${budget.minRedHerring}-${budget.maxRedHerring} items classified "red-herring"
-- 1-4 items classified "breadcrumb"
-
-Per-app target for this app (~1/${numApps} of total):
-- ~${perAppCritical} critical, ~${perAppContext} context, ~${perAppRedHerring} red-herring
-
-For this app, distribute your classifications so the faction's total budget is met.
 
 IMPORTANT: Never reveal exact values of hidden state variables. Reference observable consequences, not raw numbers.`,
   );

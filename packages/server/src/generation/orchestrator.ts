@@ -1,5 +1,5 @@
 import type { Server } from "socket.io";
-import type { AppId, ContentItem, Faction, GameRoom } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, Faction, GameRoom } from "@takeoff/shared";
 import { FACTIONS } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
@@ -9,7 +9,7 @@ import {
   logValidationFailure,
 } from "./metrics.js";
 import { generateBriefingWithRetry } from "./briefing.js";
-import { APP_TYPE_MAP, generateContentWithRetry } from "./content.js";
+import { APP_TYPE_MAP, APP_CONTENT_TIER, generateContentWithRetry } from "./content.js";
 import { generateNpcMessagesWithRetry } from "./npc.js";
 import { generateDecisionsWithRetry } from "./decisions.js";
 import { getTemplatesForRound } from "./templates/decisions.js";
@@ -25,7 +25,7 @@ import {
   setGenerationStatus,
 } from "./cache.js";
 import { AnthropicProvider, CapturingProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
-import { validateBriefing, validateFogSafety } from "./validate.js";
+import { validateBriefing, validateFogSafety, scrubFogLeaks } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
@@ -79,7 +79,8 @@ export async function triggerGeneration(
 
   // ── Generation options (model + timeout from config) ──────────────────────
   const briefingOptions: GenerationOptions = { model: config.briefingModel, timeout: config.timeout };
-  const contentOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
+  const feedContentOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
+  const signalContentOptions: GenerationOptions = { model: config.signalModel, timeout: config.timeout };
   const decisionOptions: GenerationOptions = { model: config.decisionModel, timeout: config.timeout };
   const npcOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
 
@@ -157,22 +158,33 @@ export async function triggerGeneration(
     }
 
     // ── Content generation ──────────────────────────────────────────────────
+    // Split apps into feed-tier (Haiku, high volume) and signal-tier (Sonnet, high quality).
+    // Both tiers run in parallel across all factions.
     if (allContentApps.length > 0) {
       const factionResults = await Promise.all(
         ALL_FACTIONS.map(async (faction) => {
           const factionApps = factionAppMap.get(faction) ?? allContentApps;
+          const feedApps = factionApps.filter(app => (APP_CONTENT_TIER[app] ?? "feed") === "feed");
+          const signalApps = factionApps.filter(app => APP_CONTENT_TIER[app] === "signal");
           const contentArtifact = `content:${faction}`;
           const startTs = Date.now();
           logGenerationStart(round, contentArtifact);
           logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
 
-          const contentResult = await generateContentWithRetry(
-            resolvedProvider,
-            context,
-            faction,
-            factionApps,
-            contentOptions,
-          );
+          // Generate feed and signal tiers in parallel with their respective models
+          const [feedResult, signalResult] = await Promise.all([
+            feedApps.length > 0
+              ? generateContentWithRetry(resolvedProvider, context, faction, feedApps, feedContentOptions)
+              : Promise.resolve([] as AppContent[]),
+            signalApps.length > 0
+              ? generateContentWithRetry(resolvedProvider, context, faction, signalApps, signalContentOptions)
+              : Promise.resolve([] as AppContent[]),
+          ]);
+
+          // Merge: null from either tier means that tier failed
+          const contentResult = feedResult === null || signalResult === null
+            ? null
+            : [...(feedResult ?? []), ...(signalResult ?? [])];
 
           const durationMs = Date.now() - startTs;
           return { faction, contentResult, contentArtifact, durationMs };
@@ -185,8 +197,19 @@ export async function triggerGeneration(
           logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: contentArtifact, reason: "generateContentWithRetry returned null", durationMs }, { round, actorId: "system" });
           contentOk = false;
         } else {
+          // Scrub fog leaks: replace hidden variable values that appear near keywords
           const allItems = contentResult.flatMap(ac => ac.items);
-          const fogResult = validateFogSafety(allItems, room.state, faction);
+          const { items: scrubbedItems, scrubCount } = scrubFogLeaks(allItems, room.state, faction);
+          if (scrubCount > 0) {
+            console.log(`[fog-scrub:${faction}] Scrubbed ${scrubCount} fog leak(s) in round ${round}`);
+            // Rebuild contentResult with scrubbed items
+            const scrubbedMap = new Map(scrubbedItems.map(i => [i.id, i]));
+            for (const appContent of contentResult) {
+              appContent.items = appContent.items.map((i: ContentItem) => scrubbedMap.get(i.id) ?? i);
+            }
+          }
+          // Log any remaining fog warnings (scrubbing may not catch everything)
+          const fogResult = validateFogSafety(scrubbedItems, room.state, faction);
           if (fogResult.warnings.length > 0) {
             logValidationFailure(round, `fog-safety:${faction}`, fogResult.warnings);
           }
