@@ -69,7 +69,7 @@ const TYPE_REQUIRED_FIELDS: Record<ContentItemType, string[]> = {
   document: ["subject", "body"],
   memo: ["subject", "body"],
   headline: ["body"],
-  tweet: ["body"],
+  tweet: ["sender", "body"],
   row: ["body"],
   chart: ["body"],
 };
@@ -134,6 +134,7 @@ const APP_STRUCTURAL_HINTS: Partial<Record<AppId, string>> = {
   memo: `Each item MUST include "subject" (memo title/header, e.g. "RE: Safety Review Q3"). Keep the subject concise (≤60 chars) — it appears as the sidebar page title in the UI. Format the body as an internal memo or report, not a chat message (use formal headers, paragraph structure). Content should reference and build on events from prior rounds since memos accumulate and players see the progression across rounds.`,
   signal: `Each item MUST include "sender" (handle or name). Keep messages short and paranoid.`,
   intel: `Each item MUST include "subject" (report title). Use ICD 203 format with classification headers.`,
+  twitter: `Each item MUST include "sender" (display name, e.g. "Dr. Lin Wei", "Marcus Chen" — no @-prefix, no handle). 280 chars max for body.`,
   bloomberg: `Use financial shorthand. Include ticker symbols, basis points, source attribution ("Sources say").`,
   arxiv: `Each item MUST include "subject" (paper title with authors/institution, e.g. "arXiv: 'Scaling Laws for X' — Smith et al., MIT (2027)") and "body" (abstract-style summary). Use realistic author names and institutions. Mix of AI safety, ML, policy, and adjacent CS topics.`,
 };

@@ -180,8 +180,9 @@ When generating for "news":
 - Voice: Reuters/AP wire style. Terse. Lead with the news.
 
 When generating for "twitter":
-- Format: { body: "tweet text with #hashtags @mentions" }
+- Format: { sender: "Display Name", body: "tweet text with #hashtags @mentions" }
 - Voice: Hot takes, ratio bait, doom posting, hype posting. 280 chars max.
+- sender MUST be a realistic display name (e.g. "Dr. Lin Wei", "Marcus Chen", "AI Safety Memes") — NOT a handle, NOT a role.
 
 When generating for "arxiv":
 - Format: { subject: "arXiv: 'Paper Title' — Author et al., Institution (Year)", body: "Abstract text. 3-5 sentences covering methodology, key findings, and implications." }
