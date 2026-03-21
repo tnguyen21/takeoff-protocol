@@ -462,12 +462,17 @@ function getContentForPlayer(room: GameRoom, player: Player): AppContent[] {
   if (room.round === 0) {
     return TUTORIAL_CONTENT.filter((c) => c.faction === player.faction!);
   }
-  const factionContent = getGeneratedContent(room, room.round, player.faction!) ?? [];
-  const sharedContent = (getGeneratedSharedContent(room, room.round) ?? []).map((appContent) => ({
-    ...appContent,
-    faction: player.faction!,
-  }));
-  return [...factionContent, ...sharedContent];
+  // Accumulate content from ALL rounds (1 through current) so history persists
+  const allContent: AppContent[] = [];
+  for (let r = 1; r <= room.round; r++) {
+    const factionContent = getGeneratedContent(room, r, player.faction!) ?? [];
+    const sharedContent = (getGeneratedSharedContent(room, r) ?? []).map((appContent) => ({
+      ...appContent,
+      faction: player.faction!,
+    }));
+    allContent.push(...factionContent, ...sharedContent);
+  }
+  return allContent;
 }
 
 export function emitContent(io: Server, room: GameRoom) {

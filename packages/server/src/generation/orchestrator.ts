@@ -28,7 +28,7 @@ import { AnthropicProvider, CapturingProvider, type GenerationOptions, type Gene
 import { validateBriefing, validateFogSafety, scrubFogLeaks } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
-import { emitContentBatch } from "../game.js";
+import { emitBriefing, emitContentBatch } from "../game.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
 import round1ContentData from "../content/round1Content.json";
 
@@ -154,6 +154,12 @@ export async function triggerGeneration(
           setGeneratedBriefing(room, round, briefingResult);
           logGenerationSuccess(round, briefingArtifact, durationMs);
           logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: briefingArtifact, durationMs }, { round, actorId: "system" });
+          // Re-emit briefing if game has already advanced to this round
+          // (generation runs async after resolution, briefing phase may have started)
+          if (io && room.round === round) {
+            console.log(`[orchestrator] Re-emitting briefing for round ${round} (phase=${room.phase})`);
+            emitBriefing(io, room);
+          }
         }
       }
       flushPrompts("briefing");

@@ -160,7 +160,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
       result[id] = Math.max(0, result[id] - read);
     }
     return result;
-  }, [messages, playerId]);
+  }, [messages, playerId, selectedPlayerId]);
 
   // Unread counts for content contacts
   const unreadPerContent = useMemo(() => {
@@ -170,7 +170,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
       result[cc.id] = Math.max(0, cc.messages.length - read);
     }
     return result;
-  }, [contentContacts]);
+  }, [contentContacts, selectedPlayerId]);
 
   // NPC contacts sorted by most recent message timestamp descending
   const sortedNpcContacts = useMemo(
