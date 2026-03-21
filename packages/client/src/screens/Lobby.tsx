@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGameStore } from "../stores/game.js";
 import { FactionGrid, PlayerList, RoomBrowser } from "./lobby/index.js";
+import { AboutModal } from "./lobby/AboutModal.js";
 
 export function Lobby() {
   const {
@@ -19,15 +20,26 @@ export function Lobby() {
 
   const [nameInput, setNameInput] = useState("");
   const [allowOverride, setAllowOverride] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   // ── Step 1: Name entry ──
   if (!playerName) {
     return (
       <div className="h-screen w-screen bg-neutral-950 flex flex-col items-center justify-center">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Takeoff Protocol</h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <h1 className="text-4xl font-bold text-white tracking-tight">Takeoff Protocol</h1>
+            <button
+              onClick={() => setShowAbout(true)}
+              className="w-7 h-7 rounded-full border border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors text-sm flex items-center justify-center"
+              title="About this game"
+            >
+              ?
+            </button>
+          </div>
           <p className="text-neutral-400 text-base">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
         </div>
+        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
         <div className="bg-neutral-900 rounded-xl p-8 w-96 shadow-2xl border border-neutral-800">
           <label className="block text-neutral-400 text-xs uppercase tracking-widest mb-2">Your Name</label>
           <input
@@ -56,9 +68,19 @@ export function Lobby() {
     return (
       <div className="h-screen w-screen bg-neutral-950 flex flex-col items-center justify-center">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Takeoff Protocol</h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <h1 className="text-4xl font-bold text-white tracking-tight">Takeoff Protocol</h1>
+            <button
+              onClick={() => setShowAbout(true)}
+              className="w-7 h-7 rounded-full border border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors text-sm flex items-center justify-center"
+              title="About this game"
+            >
+              ?
+            </button>
+          </div>
           <p className="text-neutral-400 text-base">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
         </div>
+        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
         <p className="text-neutral-300 font-medium mb-6">
           Welcome, <span className="text-white">{playerName}</span>
         </p>
@@ -74,11 +96,22 @@ export function Lobby() {
 
   return (
     <div className="h-screen w-screen bg-neutral-950 flex flex-col overflow-hidden">
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+
       {/* Header bar */}
       <div className="border-b border-neutral-800/80 px-8 py-4 flex items-center justify-between bg-neutral-950/90 backdrop-blur-sm sticky top-0 z-10">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Takeoff Protocol</h1>
-          <p className="text-neutral-500 text-xs mt-0.5">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Takeoff Protocol</h1>
+            <p className="text-neutral-500 text-xs mt-0.5">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
+          </div>
+          <button
+            onClick={() => setShowAbout(true)}
+            className="w-6 h-6 rounded-full border border-neutral-600 text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors text-xs flex items-center justify-center"
+            title="About this game"
+          >
+            ?
+          </button>
         </div>
         <div className="flex items-center gap-8">
           <div className="text-right">
