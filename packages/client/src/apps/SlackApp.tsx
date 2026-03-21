@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppProps } from "./types.js";
 import { useMessagesStore } from "../stores/messages.js";
 import { useNotificationsStore } from "../stores/notifications.js";
@@ -114,6 +114,47 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
 
   const hasAnyMessages = unifiedMessages.length > 0;
 
+  // ── Typing indicator: cycle through NPC sender names ──────────────────────
+  const channelSenders = useMemo(() => {
+    const names = new Set<string>();
+    for (const msg of channelIntelMessages) {
+      if (msg.sender) names.add(msg.sender);
+    }
+    return [...names];
+  }, [channelIntelMessages]);
+
+  const [typingName, setTypingName] = useState<string | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (channelSenders.length === 0) {
+      setTypingName(null);
+      return;
+    }
+
+    let cancelled = false;
+    const cycle = () => {
+      const delay = 8_000 + Math.random() * 7_000; // 8-15s gap
+      typingTimerRef.current = setTimeout(() => {
+        if (cancelled) return;
+        const name = channelSenders[Math.floor(Math.random() * channelSenders.length)];
+        setTypingName(name);
+        typingTimerRef.current = setTimeout(() => {
+          if (cancelled) return;
+          setTypingName(null);
+          cycle();
+        }, 2_000 + Math.random() * 1_000); // show for 2-3s
+      }, delay);
+    };
+
+    cycle();
+    return () => {
+      cancelled = true;
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      setTypingName(null);
+    };
+  }, [channelSenders]);
+
   return (
     <div className="flex h-full bg-[#1a1d21] text-white text-sm font-sans">
       {/* Sidebar */}
@@ -214,6 +255,14 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
           )}
           <div ref={messagesEndRef} />
         </div>
+
+        {typingName && (
+          <div className="px-4 py-1 text-neutral-500 text-[11px] shrink-0">
+            <span className="font-medium text-neutral-400">{typingName}</span>
+            {" is typing"}
+            <span className="inline-flex w-4 tracking-widest animate-pulse">...</span>
+          </div>
+        )}
 
         <div className="px-4 py-2 border-t border-white/10 shrink-0">
           <div className="flex gap-2 items-center bg-[#2c2f33] rounded border border-white/10 px-3 py-1.5">

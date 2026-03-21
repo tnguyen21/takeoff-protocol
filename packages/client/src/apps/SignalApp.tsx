@@ -216,13 +216,14 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
     return () => clearInterval(id);
   }, []);
 
-  // Typing indicator: fires every ~20-30s for active real-player conversations
+  // Typing indicator: fires for any active conversation (real players, NPC, content contacts)
   const isNpcSelected = selectedPlayerId ? isNpcId(selectedPlayerId) : false;
   const isContentSelected = selectedPlayerId ? isContentContactId(selectedPlayerId) : false;
   const isRealDmActive = !!selectedPlayerId && !isNpcSelected && !isContentSelected;
+  const isAnyContactActive = !!selectedPlayerId;
 
   useEffect(() => {
-    if (!isRealDmActive) {
+    if (!isAnyContactActive) {
       setShowTyping(false);
       return;
     }
@@ -230,7 +231,10 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
     let cancelled = false;
 
     const cycle = () => {
-      const delay = 20_000 + Math.random() * 10_000; // 20–30s
+      // Real players: longer gap (20-30s). NPC/content: faster (8-15s)
+      const delay = isRealDmActive
+        ? 20_000 + Math.random() * 10_000
+        : 8_000 + Math.random() * 7_000;
       typingTimerRef.current = setTimeout(() => {
         if (cancelled) return;
         setShowTyping(true);
@@ -238,7 +242,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
           if (cancelled) return;
           setShowTyping(false);
           cycle();
-        }, 3_000);
+        }, 2_000 + Math.random() * 1_000);
       }, delay);
     };
 
@@ -248,7 +252,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       setShowTyping(false);
     };
-  }, [isRealDmActive]);
+  }, [isAnyContactActive, isRealDmActive]);
 
   const sendMessage = useCallback(() => {
     const text = input.trim();
@@ -430,6 +434,12 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                   </div>
                 </div>
               ))}
+              {showTyping && (
+                <div className="flex items-center gap-2">
+                  <TypingDots />
+                  <span className="text-neutral-500 text-[10px]">{selectedContent.name}</span>
+                </div>
+              )}
             </div>
 
             {/* No compose input for content contacts — read only */}
@@ -468,6 +478,12 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                   </div>
                 </div>
               ))}
+              {showTyping && (
+                <div className="flex items-center gap-2">
+                  <TypingDots />
+                  <span className="text-neutral-500 text-[10px]">{selectedNpc.name}</span>
+                </div>
+              )}
             </div>
 
             {/* No compose input for NPC contacts — read only */}
