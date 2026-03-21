@@ -84,12 +84,25 @@ export function randomEngagement(id: string, verified: boolean): { likes: number
   return { likes, retweets, replies };
 }
 
-/** Smaller base engagement for player tweets (just posted, building traction). */
-export function playerTweetEngagement(id: string): { likes: number; retweets: number; replies: number } {
-  const h = hashCode(id);
+/**
+ * Deterministic time-based engagement for player tweets.
+ * All clients compute the same values from the same tweetId + timestamp,
+ * so engagement is effectively shared state without server coordination.
+ * Starts at 0, begins ticking ~1s after posting.
+ */
+export function timeBasedEngagement(tweetId: string, timestamp: number, now?: number): { likes: number; retweets: number; replies: number } {
+  const elapsed = ((now ?? Date.now()) - timestamp) / 1000;
+  if (elapsed < 1) return { likes: 0, retweets: 0, replies: 0 };
+
+  const h = hashCode(tweetId);
+  const likeRate = 3 + (h % 15);       // 3–17 likes per tick
+  const rtRate = 1 + ((h >> 8) % 5);   // 1–5 retweets per tick
+  const replyRate = (h >> 16) % 3;     // 0–2 replies per tick
+
+  const ticks = Math.floor((elapsed - 1) / 3); // one tick every 3s after 1s delay
   return {
-    likes: 30 + (h % 300),
-    retweets: 5 + ((h >> 8) % 60),
-    replies: 2 + ((h >> 16) % 30),
+    likes: ticks * likeRate,
+    retweets: ticks * rtRate,
+    replies: ticks * replyRate,
   };
 }

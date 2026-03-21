@@ -2,9 +2,7 @@ import React from "react";
 import type { AppProps } from "./types.js";
 import type { PlayerTweet } from "@takeoff/shared";
 import { useGameStore } from "../stores/game.js";
-import { useMessagesStore } from "../stores/messages.js";
-import { useUIStore } from "../stores/ui.js";
-import { assignStableIds, randomEngagement, playerTweetEngagement } from "./twitterUtils.js";
+import { assignStableIds, randomEngagement, timeBasedEngagement } from "./twitterUtils.js";
 import { socket } from "../socket.js";
 
 const STATIC_TWEETS = assignStableIds([
@@ -184,28 +182,6 @@ const MEDIA_CYCLE_TRENDING: Record<number, { header: string; tags: string[] }> =
 
 const MAX_CHARS = 280;
 
-// Global notification ticker — accumulates "engagement" notifications when Twitter isn't focused
-let _notifTickerStarted = false;
-function ensureNotifTicker() {
-  if (_notifTickerStarted) return;
-  _notifTickerStarted = true;
-  setInterval(() => {
-    const content = useGameStore.getState().content;
-    const hasTweets = content.some((c) => c.app === "twitter");
-    if (!hasTweets) return;
-
-    const windows = useUIStore.getState().windows;
-    const twitterWin = windows.find((w) => w.appId === "twitter");
-    const isFocused = twitterWin?.isOpen && !twitterWin?.isMinimized;
-    if (isFocused) return;
-
-    const bump = 1 + Math.floor(Math.random() * 4);
-    useMessagesStore.setState((s) => ({
-      unreadCounts: { ...s.unreadCounts, twitter: (s.unreadCounts.twitter ?? 0) + bump },
-    }));
-  }, 4000);
-}
-
 function fmt(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
@@ -325,10 +301,19 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
     : null;
   const cycleData = mediaCycle !== null ? (MEDIA_CYCLE_TRENDING[Math.min(5, Math.max(0, mediaCycle))] ?? MEDIA_CYCLE_TRENDING[0]) : null;
 
+  // Re-render timer so time-based engagement counters tick up
+  const [, tick] = React.useReducer((x: number) => x + 1, 0);
+  React.useEffect(() => {
+    if (playerTweets.length === 0) return;
+    const interval = setInterval(tick, 3000);
+    return () => clearInterval(interval);
+  }, [playerTweets.length]);
+
   // For You: generated/NPC tweets only (algorithmic feed)
-  // Following: player tweets only (shared social timeline — self + others)
+  // Following: player tweets only — engagement is deterministic from timestamp,
+  // so all clients show the same numbers (shared state without server coordination)
   const followingTweets: Tweet[] = playerTweets.map((tweet: PlayerTweet) => {
-    const eng = playerTweetEngagement(tweet.id);
+    const eng = timeBasedEngagement(tweet.id, tweet.timestamp);
     return {
       id: tweet.id,
       name: tweet.playerName,
@@ -345,25 +330,14 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
     ? followingTweets
     : baseTweets;
 
-  // Live engagement bumps — accumulate over time to simulate real-time activity
+  // Live engagement bumps for NPC tweets (For You tab)
   const [engBumps, setEngBumps] = React.useState<Map<string, { likes: number; retweets: number }>>(new Map());
-  const allTweetsRef = React.useRef([...baseTweets, ...followingTweets]);
-  allTweetsRef.current = [...baseTweets, ...followingTweets];
+  const npcTweetsRef = React.useRef(baseTweets);
+  npcTweetsRef.current = baseTweets;
 
-  // Clear notifications when Twitter is open
-  React.useEffect(() => {
-    useMessagesStore.getState().markRead("twitter");
-  }, []);
-
-  // Start the global notification ticker (once per app lifetime)
-  React.useEffect(() => {
-    ensureNotifTicker();
-  }, []);
-
-  // Engagement ticker — bump random tweets every 4s
   React.useEffect(() => {
     const interval = setInterval(() => {
-      const tweets = allTweetsRef.current;
+      const tweets = npcTweetsRef.current;
       if (tweets.length === 0) return;
       const numBumps = 2 + Math.floor(Math.random() * 3);
       setEngBumps((prev) => {
