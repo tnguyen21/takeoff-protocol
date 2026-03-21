@@ -172,8 +172,9 @@ describe("INV-3: validateContent — total count bounds", () => {
     expect(result.warnings.some((w) => w.includes("total items"))).toBe(true);
   });
 
-  it("fails when array has fewer than 50% of minimum", () => {
+  it("fails when array has fewer than 30% of minimum", () => {
     const items = makeValidItemSet("openbrain").slice(0, 5);
+    // 5 items < 30% of minTotal (25 * 0.3 = 7) → hard error
     const result = validateContent(items, "openbrain");
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes("total items"))).toBe(true);
@@ -847,8 +848,8 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it("INV-2: appCount=8 hard-rejects when below 50% of scaled minimum", () => {
-    // 15 items for appCount=8 → scaled minTotal=100, hard min = 50. 15 < 50 → error.
+  it("INV-2: appCount=8 hard-rejects when below 30% of scaled minimum", () => {
+    // 15 items for appCount=8 → scaled minTotal=100, hard min = 30. 15 < 30 → error.
     const items = makeValidItemSet("openbrain"); // 15 items
     const result = validateContent(items, "openbrain", 3, 8);
     expect(result.valid).toBe(false);
@@ -867,7 +868,7 @@ describe("validateContent with appCount (backward compat + scaling)", () => {
     expect(result.errors.some((e) => e.includes("empty body"))).toBe(true);
   });
 
-  it("failure mode: 15 items for 8 apps → rejected (below hard minimum of 50)", () => {
+  it("failure mode: 15 items for 8 apps → rejected (below hard minimum of 30)", () => {
     const items: ContentItem[] = [];
     for (let i = 0; i < 15; i++)
       items.push(makeItem({ id: `gen-f${i}`, type: "headline", classification: "context", round: 3 }));

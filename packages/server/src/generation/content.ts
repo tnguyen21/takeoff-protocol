@@ -324,6 +324,9 @@ export function forceSlackChannel(items: ContentItem[]): ContentItem[] {
  * @param retryFeedback - When retrying after validation failure, pass the error strings so the
  *   LLM can correct them. Internal use by generateContentWithRetry.
  */
+/** Max rollout calls per app (including the initial call). */
+const MAX_ROLLOUTS = 3;
+
 export async function generateContent(
   provider: GenerationProvider,
   context: GenerationContext,
@@ -339,23 +342,45 @@ export async function generateContent(
         throw new Error(`generateContent: app "${app}" is not supported (gamestate, sheets, compute, wandb, and similar apps do not generate content)`);
       }
 
-      const raw = await provider.generate<{ items: ContentItem[] }>({
-        systemPrompt: CONTENT_SYSTEM_PROMPT,
-        userPrompt: buildUserPrompt(context, faction, app, type, retryFeedback, apps.length),
-        schema: buildContentSchema(type),
-        options,
-      });
+      const tier = APP_CONTENT_TIER[app] ?? "feed";
+      const targetMin = TIER_BUDGETS[tier].min;
+      let allItems: ContentItem[] = [];
 
-      let items: ContentItem[] = Array.isArray(raw?.items) ? raw.items : [];
-      items = items.map(({ condition: _condition, ...rest }) => rest as ContentItem);
-      items = ensureGenPrefix(items);
-      items = forceRound(items, context.targetRound);
-      items = forceType(items, type);
-      if (app === "slack") {
-        items = forceSlackChannel(items);
+      for (let rollout = 0; rollout < MAX_ROLLOUTS; rollout++) {
+        // Build rollout-aware prompt: after the first call, tell the LLM what exists
+        let rolloutFeedback = retryFeedback;
+        if (rollout > 0) {
+          const existingIds = allItems.map(i => i.id).join(", ");
+          const remaining = targetMin - allItems.length;
+          rolloutFeedback = (rolloutFeedback ? rolloutFeedback + "\n\n" : "")
+            + `You already generated ${allItems.length} items (IDs: ${existingIds}). Generate ${remaining}+ MORE items with NEW unique IDs. Do NOT repeat any existing items.`;
+        }
+
+        const raw = await provider.generate<{ items: ContentItem[] }>({
+          systemPrompt: CONTENT_SYSTEM_PROMPT,
+          userPrompt: buildUserPrompt(context, faction, app, type, rolloutFeedback, apps.length),
+          schema: buildContentSchema(type),
+          options,
+        });
+
+        let items: ContentItem[] = Array.isArray(raw?.items) ? raw.items : [];
+        items = items.map(({ condition: _condition, ...rest }) => rest as ContentItem);
+        items = ensureGenPrefix(items);
+        items = forceRound(items, context.targetRound);
+        items = forceType(items, type);
+        if (app === "slack") {
+          items = forceSlackChannel(items);
+        }
+
+        // Deduplicate by ID against existing items
+        const existingIds = new Set(allItems.map(i => i.id));
+        const newItems = items.filter(i => !existingIds.has(i.id));
+        allItems.push(...newItems);
+
+        if (allItems.length >= targetMin) break;
       }
 
-      return { faction, app, items } as AppContent;
+      return { faction, app, items: allItems } as AppContent;
     }),
   );
 
