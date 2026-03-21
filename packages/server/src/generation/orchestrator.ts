@@ -1,5 +1,5 @@
 import type { Server } from "socket.io";
-import type { AppContent, AppId, ContentItem, Faction, GameRoom } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, Faction, GameRoom, NpcTrigger } from "@takeoff/shared";
 import { FACTIONS } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
@@ -29,6 +29,7 @@ import { validateBriefing, validateFogSafety, scrubFogLeaks } from "./validate.j
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
+import round1ContentData from "../content/round1Content.json";
 
 // ── Factions for content generation ───────────────────────────────────────────
 
@@ -158,9 +159,29 @@ export async function triggerGeneration(
     }
 
     // ── Content generation ──────────────────────────────────────────────────
+    // Round 1 uses pre-seeded content for instant availability.
+    if (round === 1 && round1ContentData?.content) {
+      const r1 = round1ContentData as {
+        content: Record<string, AppContent[]>;
+        sharedContent?: AppContent[];
+        npcTriggers?: NpcTrigger[];
+      };
+      for (const faction of ALL_FACTIONS) {
+        const factionContent = r1.content[faction];
+        if (factionContent) {
+          setGeneratedContent(room, round, faction, factionContent);
+        }
+      }
+      if (r1.sharedContent) {
+        setGeneratedSharedContent(room, round, r1.sharedContent);
+      }
+      if (r1.npcTriggers) {
+        setGeneratedNpcTriggers(room, round, r1.npcTriggers);
+      }
+      console.log(`[orchestrator] Seeded pre-authored round 1 content + NPC triggers`);
+    } else if (allContentApps.length > 0) {
     // Split apps into feed-tier (Haiku, high volume) and signal-tier (Sonnet, high quality).
     // Both tiers run in parallel across all factions.
-    if (allContentApps.length > 0) {
       const factionResults = await Promise.all(
         ALL_FACTIONS.map(async (faction) => {
           const factionApps = factionAppMap.get(faction) ?? allContentApps;
@@ -238,7 +259,8 @@ export async function triggerGeneration(
     }
 
     // ── NPC generation ───────────────────────────────────────────────────────
-    if (npcEnabled) {
+    // Round 1 NPC triggers are seeded above with content.
+    if (npcEnabled && round !== 1) {
       const npcArtifact = "npc";
       const startTs = Date.now();
       logGenerationStart(round, npcArtifact);
