@@ -264,7 +264,7 @@ let _defaultMaxConcurrent: number | undefined;
 function getSemaphore(): Semaphore {
   if (!_semaphore) {
     const raw = Number(process.env.GEN_MAX_CONCURRENT);
-    const limit = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 5;
+    const limit = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 15;
     _defaultMaxConcurrent = limit;
     _semaphore = new Semaphore(limit);
   }
