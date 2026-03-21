@@ -16,8 +16,11 @@ interface FeedPost {
 }
 
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
-  const { selectedRole, publishArticle, publications } = useGameStore();
+  const { selectedRole, publishArticle, publications, round } = useGameStore();
   const canWrite = canWriteSubstack(selectedRole);
+  const hasPublishedThisRound = publications.some(
+    (p) => p.publishedBy === selectedRole && p.round === round,
+  );
 
   const docItems = content.filter((i) => i.type === "document");
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -71,10 +74,10 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   }, [docItems, publications, roleLabels]);
 
   React.useEffect(() => {
-    if (!canWrite && composing) {
+    if ((!canWrite || hasPublishedThisRound) && composing) {
       setComposing(false);
     }
-  }, [canWrite, composing]);
+  }, [canWrite, hasPublishedThisRound, composing]);
 
   React.useEffect(() => {
     if (posts.length === 0) {
@@ -154,9 +157,10 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
           <div className="p-3 border-t border-neutral-200">
             <button
               onClick={() => setComposing(true)}
-              className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600"
+              disabled={hasPublishedThisRound}
+              className="w-full bg-[#ff6719] text-white text-xs py-2 rounded font-semibold hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              New post
+              {hasPublishedThisRound ? "Published this round" : "New post"}
             </button>
           </div>
         )}
@@ -255,7 +259,7 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
             )}
 
             <div className="border-t border-neutral-200 px-4 py-2 flex gap-2 items-center shrink-0">
-              {canWrite && (
+              {canWrite && !hasPublishedThisRound && (
                 <>
                   <button
                     onClick={() => setComposing(true)}
@@ -272,7 +276,11 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
                 <span className="text-[10px] text-green-600 font-semibold ml-2">✓ Published to the public feed</span>
               )}
               <span className="text-[10px] text-neutral-400 ml-auto">
-                {canWrite ? "Writers can shape the public narrative from here." : "Read-only access"}
+                {canWrite
+                  ? hasPublishedThisRound
+                    ? "You've published this round."
+                    : "Writers can shape the public narrative from here."
+                  : "Read-only access"}
               </span>
             </div>
           </>
