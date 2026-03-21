@@ -25,6 +25,8 @@ export function Lobby() {
   // ── Step 1: Name entry ──
   if (!playerName) {
     return (
+      <>
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       <div className="h-screen w-screen bg-neutral-950 flex flex-col items-center justify-center">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -39,7 +41,6 @@ export function Lobby() {
           </div>
           <p className="text-neutral-400 text-base">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
         </div>
-        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
         <div className="bg-neutral-900 rounded-xl p-8 w-96 shadow-2xl border border-neutral-800">
           <label className="block text-neutral-400 text-xs uppercase tracking-widest mb-2">Your Name</label>
           <input
@@ -60,12 +61,15 @@ export function Lobby() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   // ── Step 2: Create or join room ──
   if (!roomCode) {
     return (
+      <>
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       <div className="h-screen w-screen bg-neutral-950 flex flex-col items-center justify-center">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -80,12 +84,12 @@ export function Lobby() {
           </div>
           <p className="text-neutral-400 text-base">AI 2027 Tabletop Exercise — Will humanity survive the intelligence explosion?</p>
         </div>
-        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
         <p className="text-neutral-300 font-medium mb-6">
           Welcome, <span className="text-white">{playerName}</span>
         </p>
         <RoomBrowser />
       </div>
+      </>
     );
   }
 
