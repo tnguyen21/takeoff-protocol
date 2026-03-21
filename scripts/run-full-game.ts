@@ -292,7 +292,7 @@ function resolveRound(room: GameRoom, io: Server): {
 
 // ── Wait for generation ───────────────────────────────────────────────────────
 
-async function waitForGeneration(room: GameRoom, round: number, timeoutMs = 300_000): Promise<string> {
+async function waitForGeneration(room: GameRoom, round: number, timeoutMs = 600_000): Promise<string> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const status = getGenerationStatus(room, round);

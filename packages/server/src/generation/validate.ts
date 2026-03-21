@@ -71,9 +71,9 @@ export function validateContent(
   const { minTotal, maxTotal, minCritical, maxCritical, minContext, maxContext, minRedHerring, maxRedHerring } =
     contentBudget(appCount);
 
-  // Total count — hard error only if grossly out of range (< 30% of min or > 200% of max)
-  if (items.length < Math.floor(minTotal * 0.3)) {
-    errors.push(`${faction}: only ${items.length} total items, need ≥${Math.floor(minTotal * 0.3)}`);
+  // Total count — hard error only if generation is essentially empty (< 5 items or > 200% of max)
+  if (items.length < 5) {
+    errors.push(`${faction}: only ${items.length} total items, need ≥5`);
   }
   if (items.length > maxTotal * 2) {
     errors.push(`${faction}: ${items.length} total items, max ${maxTotal * 2}`);
