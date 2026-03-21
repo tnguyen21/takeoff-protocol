@@ -1,5 +1,5 @@
 import type { Server } from "socket.io";
-import type { AppContent, AppId, ContentItem, Faction, GameRoom, NpcTrigger } from "@takeoff/shared";
+import type { AppContent, AppId, ContentItem, Faction, GameRoom, NpcTrigger, RoundDecisions } from "@takeoff/shared";
 import { FACTIONS } from "@takeoff/shared";
 import { getGenerationConfig } from "./config.js";
 import {
@@ -158,6 +158,20 @@ export async function triggerGeneration(
       flushPrompts("briefing");
     }
 
+    // ── Launch decision generation early (runs in parallel with content/NPC) ─
+    let decisionsPromise: Promise<RoundDecisions | null> | undefined;
+    let decisionsStartTs: number | undefined;
+    if (decisionsEnabled) {
+      const templates = getTemplatesForRound(round);
+      if (templates.length > 0) {
+        decisionsStartTs = Date.now();
+        logGenerationStart(round, "decisions");
+        logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: "decisions" }, { round, actorId: "system" });
+        decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
+        console.log(`[orchestrator] Launched decision generation for round ${round} in parallel with content`);
+      }
+    }
+
     // ── Content generation ──────────────────────────────────────────────────
     // Round 1 uses pre-seeded content for instant availability.
     if (round === 1 && round1ContentData?.content) {
@@ -282,17 +296,22 @@ export async function triggerGeneration(
       flushPrompts("npc");
     }
 
-    // ── Decision generation ───────────────────────────────────────────────────
+    // ── Decision generation (await the promise we launched earlier) ──────────
     let decisionsOk = true;
     if (decisionsEnabled) {
       const templates = getTemplatesForRound(round);
       if (templates.length > 0) {
+        // If decisions were launched in parallel with content, await the result.
+        // Otherwise launch now (fallback for round 1 or if parallel launch was skipped).
         const decisionsArtifact = "decisions";
-        const startTs = Date.now();
-        logGenerationStart(round, decisionsArtifact);
-        logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: decisionsArtifact }, { round, actorId: "system" });
+        const startTs = decisionsStartTs ?? Date.now();
+        if (!decisionsPromise) {
+          logGenerationStart(round, decisionsArtifact);
+          logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: decisionsArtifact }, { round, actorId: "system" });
+          decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
+        }
 
-        const decisionsResult = await generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
+        const decisionsResult = await decisionsPromise;
 
         const durationMs = Date.now() - startTs;
 
