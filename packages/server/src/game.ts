@@ -480,6 +480,23 @@ export function emitContent(io: Server, room: GameRoom) {
   }
 }
 
+/**
+ * Emit an incremental batch of content to a single faction's connected players.
+ * Used by the orchestrator to deliver content as each tier resolves, before
+ * the full emitContent() catch-up at phase transition.
+ */
+export function emitContentBatch(io: Server, room: GameRoom, faction: Faction, content: AppContent[]): void {
+  if (content.length === 0) return;
+  const nameMap = buildNameMap(room);
+  const factionContent = content.map((ac) => ({ ...ac, faction }));
+  const personalized = personalizeContent(factionContent, nameMap);
+  for (const [socketId, player] of Object.entries(room.players)) {
+    if (!player.faction || !player.role) continue;
+    if (player.faction !== faction) continue;
+    io.to(socketId).emit("game:content-batch", { content: personalized });
+  }
+}
+
 // ── Threshold Events ──
 
 // ── Threshold Registry Types ─────────────────────────────────────────────────

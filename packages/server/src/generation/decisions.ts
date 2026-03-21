@@ -409,6 +409,7 @@ async function generateSingleDecision(
           userPrompt: buildDecisionPrompt(context, template, undefined, otherSlotDecision),
           schema: DECISION_SCHEMA,
           options,
+          cacheSystem: true,
         }),
       TRANSIENT_RETRY_OPTS,
     );
@@ -436,6 +437,7 @@ async function generateSingleDecision(
           userPrompt: buildDecisionPrompt(context, template, validation.errors, otherSlotDecision),
           schema: DECISION_SCHEMA,
           options,
+          cacheSystem: true,
         }),
       TRANSIENT_RETRY_OPTS,
     );

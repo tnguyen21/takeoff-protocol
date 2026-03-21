@@ -113,15 +113,30 @@ export async function retryWithBackoff<T>(
   throw lastError;
 }
 
+// ── Prompt caching ───────────────────────────────────────────────────────────
+
+/** A text block in the user message, optionally marked for prompt caching. */
+export interface CacheableBlock {
+  text: string;
+  /** If true, mark this block with cache_control: { type: "ephemeral" }. */
+  cache?: boolean;
+}
+
 // ── Provider interface ────────────────────────────────────────────────────────
 
+export interface GenerateParams {
+  systemPrompt: string;
+  userPrompt: string;
+  schema: object;
+  options?: GenerationOptions;
+  /** Structured user message blocks. When provided, userPrompt is ignored. */
+  userBlocks?: CacheableBlock[];
+  /** If true, mark the system prompt with cache_control for prompt caching. */
+  cacheSystem?: boolean;
+}
+
 export interface GenerationProvider {
-  generate<T>(params: {
-    systemPrompt: string;
-    userPrompt: string;
-    schema: object;
-    options?: GenerationOptions;
-  }): Promise<T>;
+  generate<T>(params: GenerateParams): Promise<T>;
 }
 
 // ── CapturingProvider (wraps any provider, records all prompts) ───────────────
@@ -141,12 +156,7 @@ export class CapturingProvider implements GenerationProvider {
 
   constructor(private readonly inner: GenerationProvider) {}
 
-  async generate<T>(params: {
-    systemPrompt: string;
-    userPrompt: string;
-    schema: object;
-    options?: GenerationOptions;
-  }): Promise<T> {
+  async generate<T>(params: GenerateParams): Promise<T> {
     this.calls.push({
       systemPrompt: params.systemPrompt,
       userPrompt: params.userPrompt,
@@ -162,12 +172,7 @@ export class MockProvider implements GenerationProvider {
   private callCount = 0;
   constructor(private readonly data: unknown) {}
 
-  async generate<T>(params: {
-    systemPrompt: string;
-    userPrompt: string;
-    schema: object;
-    options?: GenerationOptions;
-  }): Promise<T> {
+  async generate<T>(params: GenerateParams): Promise<T> {
     const timeout = params.options?.timeout ?? 30000;
     const idx = this.callCount++;
 
@@ -326,13 +331,8 @@ export class AnthropicProvider implements GenerationProvider {
     this.client = new Anthropic({ apiKey, maxRetries: 5 });
   }
 
-  async generate<T>(params: {
-    systemPrompt: string;
-    userPrompt: string;
-    schema: object;
-    options?: GenerationOptions;
-  }): Promise<T> {
-    const { systemPrompt, userPrompt, schema, options } = params;
+  async generate<T>(params: GenerateParams): Promise<T> {
+    const { systemPrompt, userPrompt, schema, options, userBlocks, cacheSystem } = params;
     const model = options?.model ?? DEFAULT_MODEL;
     const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
     const maxTokens = options?.maxTokens ?? DEFAULT_MAX_TOKENS;
@@ -340,7 +340,7 @@ export class AnthropicProvider implements GenerationProvider {
     const semStatus = getSemaphore().status();
     console.log(`[provider] acquire semaphore (active=${semStatus.active}, queued=${semStatus.queued}, limit=${semStatus.limit}, model=${model})`);
     await getSemaphore().acquire();
-    console.log(`[provider] acquired — calling ${model} (timeout=${timeout}ms, maxTokens=${maxTokens})`);
+    console.log(`[provider] acquired — calling ${model} (timeout=${timeout}ms, maxTokens=${maxTokens}, cache=${!!cacheSystem})`);
     const callStart = Date.now();
     try {
       const toolName = "structured_output";
@@ -350,15 +350,31 @@ export class AnthropicProvider implements GenerationProvider {
         input_schema: schema as Anthropic.Tool["input_schema"],
       };
 
+      // Build system parameter: content blocks with optional cache_control
+      const systemParam: Anthropic.TextBlockParam[] = [{
+        type: "text" as const,
+        text: systemPrompt,
+        ...(cacheSystem ? { cache_control: { type: "ephemeral" as const } } : {}),
+      }];
+
+      // Build user message content: structured blocks or plain string
+      const userContent: Anthropic.TextBlockParam[] | string = userBlocks
+        ? userBlocks.map((block) => ({
+            type: "text" as const,
+            text: block.text,
+            ...(block.cache ? { cache_control: { type: "ephemeral" as const } } : {}),
+          }))
+        : userPrompt;
+
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
       const apiCall = this.client.messages.create({
         model,
         max_tokens: maxTokens,
-        system: systemPrompt,
+        system: systemParam,
         tools: [toolDef],
         tool_choice: { type: "tool", name: toolName },
-        messages: [{ role: "user", content: userPrompt }],
+        messages: [{ role: "user", content: userContent }],
       });
 
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -394,7 +410,11 @@ export class AnthropicProvider implements GenerationProvider {
       }
 
       const elapsed = Date.now() - callStart;
-      console.log(`[provider] API response OK after ${elapsed}ms (model=${model}, stop=${response.stop_reason})`);
+      // Log cache metrics when available
+      const usage = response.usage as unknown as Record<string, unknown>;
+      const cacheRead = usage.cache_read_input_tokens ?? 0;
+      const cacheCreate = usage.cache_creation_input_tokens ?? 0;
+      console.log(`[provider] API response OK after ${elapsed}ms (model=${model}, stop=${response.stop_reason}, cacheRead=${cacheRead}, cacheCreate=${cacheCreate})`);
 
       // Extract tool_use block
       const toolUseBlock = response.content.find(

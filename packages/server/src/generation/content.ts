@@ -1,6 +1,6 @@
 import type { AppContent, AppId, ContentItem, ContentItemType, Faction } from "@takeoff/shared";
 import type { GenerationContext, PlayerSlackMessage } from "./context.js";
-import type { GenerationOptions, GenerationProvider } from "./provider.js";
+import type { CacheableBlock, GenerationOptions, GenerationProvider } from "./provider.js";
 import { retryWithBackoff } from "./provider.js";
 import { APP_VOICES, CONTENT_SYSTEM_PROMPT, FACTION_VOICES } from "./prompts/index.js";
 import { contentBudget, validateContent } from "./validate.js";
@@ -125,26 +125,49 @@ function formatPlayerSlackContext(messages: Record<string, PlayerSlackMessage[]>
   return channelSections.join("\n\n");
 }
 
-function buildUserPrompt(
+// ── Per-app structural hints ────────────────────────────────────────────────
+
+const APP_STRUCTURAL_HINTS: Partial<Record<AppId, string>> = {
+  slack: `Each item MUST include "sender" (proper-cased full name, e.g. "Alex Chen", "Sarah Kim" — no role/title in parentheses, no @-prefix) and "channel" (e.g. "#research", "#general").`,
+  email: `Each item MUST include "sender" (email address or display name) and "subject" (email subject line).`,
+  substack: `Each item MUST include "sender" (publication or byline) and "subject" (article headline). Write as a public-facing essay, newsletter post, or reported analysis piece. Do not write internal memos, DMs, or private correspondence.`,
+  memo: `Each item MUST include "subject" (memo title/header, e.g. "RE: Safety Review Q3"). Keep the subject concise (≤60 chars) — it appears as the sidebar page title in the UI. Format the body as an internal memo or report, not a chat message (use formal headers, paragraph structure). Content should reference and build on events from prior rounds since memos accumulate and players see the progression across rounds.`,
+  signal: `Each item MUST include "sender" (handle or name). Keep messages short and paranoid.`,
+  intel: `Each item MUST include "subject" (report title). Use ICD 203 format with classification headers.`,
+  bloomberg: `Use financial shorthand. Include ticker symbols, basis points, source attribution ("Sources say").`,
+  arxiv: `Each item MUST include "subject" (paper title with authors/institution, e.g. "arXiv: 'Scaling Laws for X' — Smith et al., MIT (2027)") and "body" (abstract-style summary). Use realistic author names and institutions. Mix of AI safety, ML, policy, and adjacent CS topics.`,
+};
+
+// ── Prompt Blocks Builder ────────────────────────────────────────────────────
+
+/**
+ * Build user prompt as structured blocks for prompt caching.
+ *
+ * Block 1 (cached): shared context — identical across all content calls within a round.
+ * Block 2 (not cached): per-call specifics — faction, app, tier, retry feedback.
+ */
+function buildUserPromptBlocks(
   context: GenerationContext,
   faction: Faction,
   app: AppId,
   type: ContentItemType,
   retryFeedback?: string,
   appCount?: number,
-): string {
+): CacheableBlock[] {
   const { storyBible, roundArc, currentState, history, firedThresholds, publications, targetRound, playerSlackMessages } = context;
-  const parts: string[] = [];
 
-  // Layer 2: Story Bible
+  // ── Block 1: shared context (cacheable) ─────────────────────────────────
+  const shared: string[] = [];
+
+  // Story Bible
   if (storyBible) {
-    parts.push(`## STORY BIBLE\n${JSON.stringify(storyBible, null, 2)}`);
+    shared.push(`## STORY BIBLE\n${JSON.stringify(storyBible, null, 2)}`);
   } else {
-    parts.push("## STORY BIBLE\n(Not yet available — this is round 1 or generation started before the bible was initialized.)");
+    shared.push("## STORY BIBLE\n(Not yet available — this is round 1 or generation started before the bible was initialized.)");
   }
 
-  // Layer 3: Round-specific instructions
-  parts.push(
+  // Round arc
+  shared.push(
     `## ROUND ${targetRound} — "${roundArc.title}" — ${roundArc.era}
 
 Narrative beat: ${roundArc.narrativeBeat}
@@ -158,7 +181,7 @@ ${roundArc.keyTensions.map((t) => `- ${t}`).join("\n")}`,
   // Prior decisions
   if (history.length > 0) {
     const last = history[history.length - 1];
-    parts.push(
+    shared.push(
       `## PRIOR ROUND DECISIONS (Round ${last.round})
 Team decisions: ${JSON.stringify(last.teamDecisions, null, 2)}
 Individual decisions: ${JSON.stringify(last.decisions, null, 2)}`,
@@ -166,7 +189,7 @@ Individual decisions: ${JSON.stringify(last.decisions, null, 2)}`,
   }
 
   // Threshold events
-  parts.push(
+  shared.push(
     firedThresholds.length > 0
       ? `## FIRED THRESHOLD EVENTS\n${firedThresholds.join("\n")}`
       : "## FIRED THRESHOLD EVENTS\nNone",
@@ -177,16 +200,19 @@ Individual decisions: ${JSON.stringify(last.decisions, null, 2)}`,
     const pubLines = publications
       .map((p) => `- [${p.type}] "${p.title}" published by ${p.publishedBy}: ${p.content.slice(0, 200)}`)
       .join("\n");
-    parts.push(`## PUBLICATIONS\n${pubLines}`);
+    shared.push(`## PUBLICATIONS\n${pubLines}`);
   } else {
-    parts.push("## PUBLICATIONS\nNone");
+    shared.push("## PUBLICATIONS\nNone");
   }
 
   // Current game state
-  parts.push(`## CURRENT STATE SNAPSHOT\n${JSON.stringify(currentState, null, 2)}`);
+  shared.push(`## CURRENT STATE SNAPSHOT\n${JSON.stringify(currentState, null, 2)}`);
+
+  // ── Block 2: per-call specifics (not cached) ───────────────────────────
+  const perCall: string[] = [];
 
   // Faction voice guide
-  parts.push(
+  perCall.push(
     `## TARGET FACTION: ${faction.toUpperCase()}
 Voice guide: ${FACTION_VOICES[faction]}`,
   );
@@ -196,7 +222,7 @@ Voice guide: ${FACTION_VOICES[faction]}`,
     const factionMessages = playerSlackMessages[faction];
     if (factionMessages && Object.keys(factionMessages).length > 0) {
       const formatted = formatPlayerSlackContext(factionMessages);
-      parts.push(
+      perCall.push(
         `## PLAYER SLACK DISCUSSION (previous round)
 The following are recent messages players sent in their Slack channels last round.
 Use these as thematic inspiration — have NPCs react to the *topics and concerns* raised,
@@ -205,24 +231,12 @@ NOT quote players directly. If no messages exist for a channel, generate standal
 ${formatted}`,
       );
     } else {
-      parts.push(
+      perCall.push(
         `## PLAYER SLACK DISCUSSION (previous round)
 No player messages in Slack last round. Generate standalone contextual messages as usual.`,
       );
     }
   }
-
-  // Per-app structural hints
-  const APP_STRUCTURAL_HINTS: Partial<Record<AppId, string>> = {
-    slack: `Each item MUST include "sender" (proper-cased full name, e.g. "Alex Chen", "Sarah Kim" — no role/title in parentheses, no @-prefix) and "channel" (e.g. "#research", "#general").`,
-    email: `Each item MUST include "sender" (email address or display name) and "subject" (email subject line).`,
-    substack: `Each item MUST include "sender" (publication or byline) and "subject" (article headline). Write as a public-facing essay, newsletter post, or reported analysis piece. Do not write internal memos, DMs, or private correspondence.`,
-    memo: `Each item MUST include "subject" (memo title/header, e.g. "RE: Safety Review Q3"). Keep the subject concise (≤60 chars) — it appears as the sidebar page title in the UI. Format the body as an internal memo or report, not a chat message (use formal headers, paragraph structure). Content should reference and build on events from prior rounds since memos accumulate and players see the progression across rounds.`,
-    signal: `Each item MUST include "sender" (handle or name). Keep messages short and paranoid.`,
-    intel: `Each item MUST include "subject" (report title). Use ICD 203 format with classification headers.`,
-    bloomberg: `Use financial shorthand. Include ticker symbols, basis points, source attribution ("Sources say").`,
-    arxiv: `Each item MUST include "subject" (paper title with authors/institution, e.g. "arXiv: 'Scaling Laws for X' — Smith et al., MIT (2027)") and "body" (abstract-style summary). Use realistic author names and institutions. Mix of AI safety, ML, policy, and adjacent CS topics.`,
-  };
 
   // App voice guide and generation instructions
   const appVoice = APP_VOICES[app];
@@ -242,7 +256,7 @@ Every item in ${app === "signal" ? "a Signal DM" : app === "memo" ? "an internal
 Players who are overwhelmed by the feed apps should still get critical information from here.
 Classification targets: ~1-2 critical, ~${Math.max(1, tierBudget.min - 1)} context (still substantive, not filler). No red-herrings in signal channels — people trust these.`;
 
-  parts.push(
+  perCall.push(
     `## TARGET APP: ${app.toUpperCase()} [${tier.toUpperCase()} TIER]
 Voice guide: ${appVoice ?? "Standard format."}
 Content type: ${type}
@@ -261,14 +275,34 @@ IMPORTANT: Never reveal exact values of hidden state variables. Reference observ
 
   // Retry feedback
   if (retryFeedback) {
-    parts.push(
+    perCall.push(
       `## VALIDATION FEEDBACK — PLEASE FIX THESE ISSUES
 The previous generation attempt was rejected. Fix all of the following:
 ${retryFeedback}`,
     );
   }
 
-  return parts.join("\n\n");
+  // Suppress unused var — budget is used by validateContent, not the prompt
+  void budget;
+
+  return [
+    { text: shared.join("\n\n"), cache: true },
+    { text: perCall.join("\n\n") },
+  ];
+}
+
+/** Legacy string-based prompt builder — joins blocks for backward compat. */
+function buildUserPrompt(
+  context: GenerationContext,
+  faction: Faction,
+  app: AppId,
+  type: ContentItemType,
+  retryFeedback?: string,
+  appCount?: number,
+): string {
+  return buildUserPromptBlocks(context, faction, app, type, retryFeedback, appCount)
+    .map((b) => b.text)
+    .join("\n\n");
 }
 
 // ── Post-Processing ───────────────────────────────────────────────────────────
@@ -360,9 +394,11 @@ export async function generateContent(
         console.log(`[content:${faction}:${app}] Rollout ${rollout + 1}/${MAX_ROLLOUTS} — calling provider (have ${allItems.length} items)`);
         const raw = await provider.generate<{ items: ContentItem[] }>({
           systemPrompt: CONTENT_SYSTEM_PROMPT,
-          userPrompt: buildUserPrompt(context, faction, app, type, rolloutFeedback, apps.length),
+          userPrompt: "",
           schema: buildContentSchema(type),
           options,
+          userBlocks: buildUserPromptBlocks(context, faction, app, type, rolloutFeedback, apps.length),
+          cacheSystem: true,
         });
         console.log(`[content:${faction}:${app}] Rollout ${rollout + 1} returned ${Array.isArray(raw?.items) ? raw.items.length : 0} items`);
 

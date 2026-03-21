@@ -109,6 +109,7 @@ async function generateBriefing(
     userPrompt,
     schema: BRIEFING_SCHEMA,
     options,
+    cacheSystem: true,
   });
 }
 

@@ -28,6 +28,7 @@ import { AnthropicProvider, CapturingProvider, type GenerationOptions, type Gene
 import { validateBriefing, validateFogSafety, scrubFogLeaks } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
+import { emitContentBatch } from "../game.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
 import round1ContentData from "../content/round1Content.json";
 
@@ -195,7 +196,24 @@ export async function triggerGeneration(
       console.log(`[orchestrator] Seeded pre-authored round 1 content + NPC triggers`);
     } else if (allContentApps.length > 0) {
     // Split apps into feed-tier (Haiku, high volume) and signal-tier (Sonnet, high quality).
-    // Both tiers run in parallel across all factions.
+    // Both tiers run in parallel across all factions. Each tier emits content
+    // incrementally to players as it resolves (via game:content-batch), so
+    // feed-tier items (Haiku, faster) appear within seconds.
+
+      /** Scrub fog leaks on a tier result and return the scrubbed content. */
+      function scrubTierResult(tierResult: AppContent[], faction: Faction): AppContent[] {
+        const allItems = tierResult.flatMap(ac => ac.items);
+        const { items: scrubbedItems, scrubCount } = scrubFogLeaks(allItems, room.state, faction);
+        if (scrubCount > 0) {
+          console.log(`[fog-scrub:${faction}] Scrubbed ${scrubCount} fog leak(s) in round ${round}`);
+          const scrubbedMap = new Map(scrubbedItems.map(i => [i.id, i]));
+          for (const appContent of tierResult) {
+            appContent.items = appContent.items.map((i: ContentItem) => scrubbedMap.get(i.id) ?? i);
+          }
+        }
+        return tierResult;
+      }
+
       const factionResults = await Promise.all(
         ALL_FACTIONS.map(async (faction) => {
           const factionApps = factionAppMap.get(faction) ?? allContentApps;
@@ -206,14 +224,32 @@ export async function triggerGeneration(
           logGenerationStart(round, contentArtifact);
           logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
 
-          // Generate feed and signal tiers in parallel with their respective models
+          // Generate feed and signal tiers in parallel with their respective models.
+          // Each tier emits incrementally to players as it resolves.
           console.log(`[orchestrator:${faction}] feed=[${feedApps.join(",")}] signal=[${signalApps.join(",")}]`);
           const [feedResult, signalResult] = await Promise.all([
             feedApps.length > 0
               ? generateContentWithRetry(resolvedProvider, context, faction, feedApps, feedContentOptions)
+                  .then(result => {
+                    if (result && io) {
+                      const scrubbed = scrubTierResult(result, faction);
+                      const nonSubstack = scrubbed.filter(ac => ac.app !== "substack");
+                      if (nonSubstack.length > 0) emitContentBatch(io, room, faction, nonSubstack);
+                      console.log(`[orchestrator:${faction}] feed tier emitted ${nonSubstack.flatMap(ac => ac.items).length} items incrementally`);
+                    }
+                    return result;
+                  })
               : Promise.resolve([] as AppContent[]),
             signalApps.length > 0
               ? generateContentWithRetry(resolvedProvider, context, faction, signalApps, signalContentOptions)
+                  .then(result => {
+                    if (result && io) {
+                      const scrubbed = scrubTierResult(result, faction);
+                      emitContentBatch(io, room, faction, scrubbed);
+                      console.log(`[orchestrator:${faction}] signal tier emitted ${scrubbed.flatMap(ac => ac.items).length} items incrementally`);
+                    }
+                    return result;
+                  })
               : Promise.resolve([] as AppContent[]),
           ]);
 
@@ -235,19 +271,9 @@ export async function triggerGeneration(
           logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: contentArtifact, reason: "generateContentWithRetry returned null", durationMs }, { round, actorId: "system" });
           contentOk = false;
         } else {
-          // Scrub fog leaks: replace hidden variable values that appear near keywords
+          // Log any remaining fog warnings
           const allItems = contentResult.flatMap(ac => ac.items);
-          const { items: scrubbedItems, scrubCount } = scrubFogLeaks(allItems, room.state, faction);
-          if (scrubCount > 0) {
-            console.log(`[fog-scrub:${faction}] Scrubbed ${scrubCount} fog leak(s) in round ${round}`);
-            // Rebuild contentResult with scrubbed items
-            const scrubbedMap = new Map(scrubbedItems.map(i => [i.id, i]));
-            for (const appContent of contentResult) {
-              appContent.items = appContent.items.map((i: ContentItem) => scrubbedMap.get(i.id) ?? i);
-            }
-          }
-          // Log any remaining fog warnings (scrubbing may not catch everything)
-          const fogResult = validateFogSafety(scrubbedItems, room.state, faction);
+          const fogResult = validateFogSafety(allItems, room.state, faction);
           if (fogResult.warnings.length > 0) {
             logValidationFailure(round, `fog-safety:${faction}`, fogResult.warnings);
           }

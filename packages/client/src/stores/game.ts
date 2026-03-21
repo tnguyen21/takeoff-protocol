@@ -497,6 +497,24 @@ socket.on("game:content", (data: { content: AppContent[] }) => {
   useGameStore.setState({ content: stamped });
 });
 
+// Incremental content delivery — appends items as each generation tier resolves.
+// The full game:content event at phase transition serves as the authoritative catch-up.
+socket.on("game:content-batch", (data: { content: AppContent[] }) => {
+  const stamped = data.content.map((appContent) => ({
+    ...appContent,
+    items: appContent.items.map((item) => {
+      const existing = _contentSeqMap.get(item.id);
+      if (existing !== undefined) return { ...item, _seq: existing };
+      const seq = nextSeq();
+      _contentSeqMap.set(item.id, seq);
+      return { ...item, _seq: seq };
+    }),
+  }));
+  useGameStore.setState((state) => ({
+    content: [...state.content, ...stamped],
+  }));
+});
+
 type GamePublishPayload =
   | { publication?: { type?: string; headline?: string; title?: string }; summary?: string }
   | { publication: Publication; newsContent: AppContent; twitterContent: AppContent; summary: string };

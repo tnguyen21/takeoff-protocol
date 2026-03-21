@@ -236,6 +236,7 @@ async function generateNpcMessages(
     userPrompt,
     schema: NPC_SCHEMA,
     options,
+    cacheSystem: true,
   });
 
   return postProcessNpcTriggers(raw, context.targetRound);

@@ -1009,11 +1009,17 @@ describe("INV-2 (slack): generation succeeds when no player messages exist", () 
 // ── INV-3 (slack): player messages appear in the generation prompt ────────────
 
 describe("INV-3 (slack): player messages are included in the slack generation prompt", () => {
+  /** Collect all text from userBlocks (prompt caching) or fall back to userPrompt. */
+  function extractPromptText(params: { userPrompt: string; userBlocks?: Array<{ text: string; cache?: boolean }> }): string {
+    if (params.userBlocks) return params.userBlocks.map(b => b.text).join("\n\n");
+    return params.userPrompt;
+  }
+
   it("prompt includes channel name and content when player messages exist", async () => {
     let capturedPrompt = "";
     const capturingProvider: GenerationProvider = {
-      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions }): Promise<T> {
-        capturedPrompt = params.userPrompt;
+      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions; userBlocks?: Array<{ text: string; cache?: boolean }> }): Promise<T> {
+        capturedPrompt = extractPromptText(params);
         return { items: [{ ...makeItem({ id: "gen-slack-captured", type: "message", classification: "context" }), channel: "#research" }] } as T;
       },
     };
@@ -1037,8 +1043,8 @@ describe("INV-3 (slack): player messages are included in the slack generation pr
   it("prompt contains fallback text when no player messages exist", async () => {
     let capturedPrompt = "";
     const capturingProvider: GenerationProvider = {
-      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions }): Promise<T> {
-        capturedPrompt = params.userPrompt;
+      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions; userBlocks?: Array<{ text: string; cache?: boolean }> }): Promise<T> {
+        capturedPrompt = extractPromptText(params);
         return { items: [] } as T;
       },
     };
@@ -1051,8 +1057,8 @@ describe("INV-3 (slack): player messages are included in the slack generation pr
   it("prompt does NOT include player message section when generating for non-slack app", async () => {
     let capturedPrompt = "";
     const capturingProvider: GenerationProvider = {
-      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions }): Promise<T> {
-        capturedPrompt = params.userPrompt;
+      async generate<T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: GenerationOptions; userBlocks?: Array<{ text: string; cache?: boolean }> }): Promise<T> {
+        capturedPrompt = extractPromptText(params);
         return { items: [] } as T;
       },
     };
