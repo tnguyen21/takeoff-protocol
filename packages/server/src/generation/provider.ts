@@ -314,7 +314,7 @@ export function _resetSemaphoreForTesting(): void {
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
 const DEFAULT_TIMEOUT = 30000;
-const DEFAULT_MAX_TOKENS = 4096;
+const DEFAULT_MAX_TOKENS = 16384;
 
 export class AnthropicProvider implements GenerationProvider {
   private readonly client: Anthropic;
