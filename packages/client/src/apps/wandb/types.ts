@@ -45,10 +45,6 @@ export interface SweepProbe {
   lastRun: string;           // ISO timestamp
 }
 
-export interface SweepData {
-  probes: SweepProbe[];
-  accessDenied: boolean;
-}
 
 export type RunStatus = "running" | "finished" | "crashed" | "failed" | "queued";
 

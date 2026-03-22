@@ -141,7 +141,7 @@ export interface GenerationProvider {
 
 // ── CapturingProvider (wraps any provider, records all prompts) ───────────────
 
-export interface CapturedPrompt {
+interface CapturedPrompt {
   systemPrompt: string;
   userPrompt: string;
   model?: string;

@@ -36,7 +36,7 @@ export const APP_TYPE_MAP: Partial<Record<AppId, ContentItemType>> = {
 // Feed-tier: high volume, information overload. Critical intel buried in noise.
 // Signal-tier: low volume, every item matters. Private/direct channels.
 
-export type ContentTier = "feed" | "signal";
+type ContentTier = "feed" | "signal";
 
 export const APP_CONTENT_TIER: Partial<Record<AppId, ContentTier>> = {
   slack: "feed",

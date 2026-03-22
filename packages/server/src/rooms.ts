@@ -5,7 +5,7 @@ import { createLoggerForRoom } from "./logger/registry.js";
 export const MAX_CONCURRENT_ROOMS = parseInt(process.env.MAX_CONCURRENT_ROOMS || "5", 10);
 
 export const rooms = new Map<string, GameRoom>();
-export const roomCreatedAt = new Map<string, number>();
+const roomCreatedAt = new Map<string, number>();
 /**
  * Tracks the timestamp (ms) when a room's last player disconnected.
  * Cleared when any player reconnects. Used by pruneAbandonedRooms to
