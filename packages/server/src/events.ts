@@ -9,12 +9,15 @@ import { getLoggerForRoom } from "./logger/registry.js";
 import { extendUses, cleanupRoom } from "./extendUses.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { applyMicroAction } from "./microActions.js";
+import { generatePublicationDraft } from "./generation/publicationDraft.js";
 
 // ── Input length limits ────────────────────────────────────────────────────────
 const MAX_CHAT_LENGTH = 2000;
 const MAX_PUBLISH_TITLE_LENGTH = 200;
 const MAX_PUBLISH_CONTENT_LENGTH = 5000;
 const MAX_TWEET_LENGTH = 280;
+const VALID_PUBLICATION_ANGLES: PublicationAngle[] = ["safety", "hype", "geopolitics"];
+const VALID_PUBLICATION_TARGETS: PublicationTarget[] = ["openbrain", "prometheus", "china", "general"];
 
 // ── Room validation helpers ────────────────────────────────────────────────────
 function getSocketRoom(socket: Socket): GameRoom | null {
@@ -27,6 +30,16 @@ function getGmRoom(socket: Socket): GameRoom | null {
   const room = getSocketRoom(socket);
   if (!room || room.gmId !== socket.id) return null;
   return room;
+}
+
+function hasPublishedThisRound(room: GameRoom, role: Role, round: number): boolean {
+  return room.publications.some((publication) => publication.publishedBy === role && publication.round === round);
+}
+
+function getCachedPublicationDraft(room: GameRoom, role: Role) {
+  const draft = room.generatedPublicationDrafts?.[role];
+  if (!draft || draft.round !== room.round) return null;
+  return draft;
 }
 
 export function registerGameEvents(io: Server, socket: Socket) {
@@ -510,6 +523,68 @@ export function registerGameEvents(io: Server, socket: Socket) {
   // ── Publishing ──
 
   socket.on(
+    "publish:draft-generate",
+    async (
+      { angle, targetFaction }: { angle: PublicationAngle; targetFaction: PublicationTarget },
+      callback?: (res: { ok: boolean; title?: string; body?: string; error?: string }) => void,
+    ) => {
+      const room = getSocketRoom(socket);
+      if (!room) {
+        callback?.({ ok: false, error: "Not in a room" });
+        return;
+      }
+
+      const player = room.players[socket.id];
+      if (!player || !player.role || !player.faction) {
+        callback?.({ ok: false, error: "Player context unavailable" });
+        return;
+      }
+
+      if (!canWriteSubstack(player.role)) {
+        callback?.({ ok: false, error: "This role cannot publish to Substack" });
+        return;
+      }
+
+      if (!VALID_PUBLICATION_ANGLES.includes(angle) || !VALID_PUBLICATION_TARGETS.includes(targetFaction)) {
+        callback?.({ ok: false, error: "Invalid draft parameters" });
+        return;
+      }
+
+      if (hasPublishedThisRound(room, player.role, room.round)) {
+        callback?.({ ok: false, error: "Already published this round" });
+        return;
+      }
+
+      const cached = getCachedPublicationDraft(room, player.role);
+      if (cached) {
+        callback?.({ ok: true, title: cached.title, body: cached.body });
+        return;
+      }
+
+      try {
+        const draft = await generatePublicationDraft({
+          room,
+          role: player.role,
+          faction: player.faction,
+          angle,
+          targetFaction,
+        });
+        room.generatedPublicationDrafts ??= {};
+        room.generatedPublicationDrafts[player.role] = draft;
+        getLoggerForRoom(room.code).log(
+          "publish.draft_generated",
+          { playerName: player.name, role: player.role, angle, targetFaction },
+          { actorId: player.name, round: room.round, phase: room.phase },
+        );
+        callback?.({ ok: true, title: draft.title, body: draft.body });
+      } catch (error) {
+        console.error(`[publish:draft-generate] failed for ${room.code}/${player.role}:`, error);
+        callback?.({ ok: false, error: "Draft generation failed" });
+      }
+    },
+  );
+
+  socket.on(
     "publish:submit",
     ({ type, title, content, source, angle, targetFaction }: { type: PublicationType; title: string; content: string; source: string; angle?: PublicationAngle; targetFaction?: PublicationTarget }) => {
       const room = getSocketRoom(socket);
@@ -519,12 +594,11 @@ export function registerGameEvents(io: Server, socket: Socket) {
       if (!player || !player.role || !player.faction) return;
 
       if (!canWriteSubstack(player.role)) return;
+      if (hasPublishedThisRound(room, player.role, room.round)) return;
 
       // Validate angle/target if provided
-      const VALID_ANGLES: PublicationAngle[] = ["safety", "hype", "geopolitics"];
-      const VALID_TARGETS: PublicationTarget[] = ["openbrain", "prometheus", "china", "general"];
-      if (angle !== undefined && !VALID_ANGLES.includes(angle)) return;
-      if (targetFaction !== undefined && !VALID_TARGETS.includes(targetFaction)) return;
+      if (angle !== undefined && !VALID_PUBLICATION_ANGLES.includes(angle)) return;
+      if (targetFaction !== undefined && !VALID_PUBLICATION_TARGETS.includes(targetFaction)) return;
 
       title = title.slice(0, MAX_PUBLISH_TITLE_LENGTH);
       content = content.slice(0, MAX_PUBLISH_CONTENT_LENGTH);

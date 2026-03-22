@@ -28,6 +28,7 @@ import { clearPhaseTimer } from "./game.js";
 import { extendUses, cleanupRoom } from "./extendUses.js";
 import { NPC_PERSONAS } from "./content/npcPersonas.js";
 import { setGeneratedDecisions } from "./generation/cache.js";
+import { _setPublicationDraftProviderForTests } from "./generation/publicationDraft.js";
 import { ROUND1_DECISIONS } from "./test-fixtures.js";
 import { getLoggerForRoom, _setLoggerForRoom, _clearLoggers } from "./logger/registry.js";
 import type { EventContext } from "./logger/types.js";
@@ -37,7 +38,7 @@ import type { EventContext } from "./logger/types.js";
 interface EmittedEvent { event: string; data: unknown }
 
 function createSocket(id: string) {
-  const handlers = new Map<string, (...args: unknown[]) => void>();
+  const handlers = new Map<string, (...args: unknown[]) => unknown>();
   const selfEmits: EmittedEvent[] = [];
 
   const socket = {
@@ -76,13 +77,13 @@ function createIo() {
 
 /** Fire a registered socket event handler by name */
 function fire(
-  handlers: Map<string, (...args: unknown[]) => void>,
+  handlers: Map<string, (...args: unknown[]) => unknown>,
   event: string,
   ...args: unknown[]
 ) {
   const h = handlers.get(event);
   if (!h) throw new Error(`Handler not registered: ${event}`);
-  h(...args);
+  return h(...args);
 }
 
 // ── Room setup helpers ────────────────────────────────────────────────────────
@@ -1473,6 +1474,7 @@ describe("publish:submit — real handler", () => {
 
   afterEach(() => {
     rooms.delete(PUB_ROOM);
+    _setPublicationDraftProviderForTests(null);
   });
 
   it("ob_cto cannot publish — non-writer role is rejected", () => {
@@ -1553,6 +1555,152 @@ describe("publish:submit — real handler", () => {
     for (const pid of [PUB_JOURNALIST, PUB_OTHER]) {
       expect((io.emits[pid] ?? []).some((e) => e.event === "game:notification")).toBe(true);
     }
+  });
+
+  it("server-enforces one publication per writer per round", () => {
+    fire(journalistSocket.handlers, "publish:submit", { type: "article", title: "First", content: "News", source: "Press" });
+    fire(journalistSocket.handlers, "publish:submit", { type: "article", title: "Second", content: "More", source: "Press" });
+    expect(room.publications).toHaveLength(1);
+    expect(room.publications[0].title).toBe("First");
+  });
+});
+
+describe("publish:draft-generate — real handler", () => {
+  let room: GameRoom;
+  let io: ReturnType<typeof createIo>;
+  let journalistSocket: ReturnType<typeof createSocket>;
+
+  beforeEach(() => {
+    io = createIo();
+    room = makeTestRoom(PUB_GM_ID, PUB_ROOM);
+    room.round = 2;
+    room.phase = "intel";
+    room.players[PUB_JOURNALIST] = makePlayer(PUB_JOURNALIST, { faction: "external", role: "ext_journalist" });
+    room.players[PUB_OTHER] = makePlayer(PUB_OTHER, { faction: "openbrain", role: "ob_cto" });
+    journalistSocket = createSocket(PUB_JOURNALIST);
+    journalistSocket.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, journalistSocket as unknown as import("socket.io").Socket);
+  });
+
+  afterEach(() => {
+    rooms.delete(PUB_ROOM);
+    _setPublicationDraftProviderForTests(null);
+  });
+
+  it("rejects non-writer roles", async () => {
+    const nonWriter = createSocket(PUB_OTHER);
+    nonWriter.data.roomCode = PUB_ROOM;
+    registerGameEvents(io as unknown as import("socket.io").Server, nonWriter as unknown as import("socket.io").Socket);
+
+    let result: { ok: boolean; error?: string } | undefined;
+    await fire(
+      nonWriter.handlers,
+      "publish:draft-generate",
+      { angle: "safety", targetFaction: "general" },
+      (res: { ok: boolean; error?: string }) => {
+        result = res;
+      },
+    );
+
+    expect(result).toEqual({ ok: false, error: "This role cannot publish to Substack" });
+  });
+
+  it("returns a generated draft and caches it for the round", async () => {
+    let callCount = 0;
+    _setPublicationDraftProviderForTests({
+      async generate<T>() {
+        callCount++;
+        return {
+          title: "The Compute Panic Is Finally Public",
+          body: "Draft body about public risk and market structure.",
+        } as T;
+      },
+    });
+
+    let firstResult: { ok: boolean; title?: string; body?: string; error?: string } | undefined;
+    await fire(
+      journalistSocket.handlers,
+      "publish:draft-generate",
+      { angle: "safety", targetFaction: "openbrain" },
+      (res: { ok: boolean; title?: string; body?: string; error?: string }) => {
+        firstResult = res;
+      },
+    );
+
+    let secondResult: { ok: boolean; title?: string; body?: string; error?: string } | undefined;
+    await fire(
+      journalistSocket.handlers,
+      "publish:draft-generate",
+      { angle: "hype", targetFaction: "china" },
+      (res: { ok: boolean; title?: string; body?: string; error?: string }) => {
+        secondResult = res;
+      },
+    );
+
+    expect(firstResult?.ok).toBe(true);
+    expect(firstResult?.title).toBe("The Compute Panic Is Finally Public");
+    expect(firstResult?.body).toContain("market structure");
+    expect(secondResult).toEqual(firstResult);
+    expect(callCount).toBe(1);
+    expect(room.generatedPublicationDrafts?.ext_journalist?.round).toBe(2);
+  });
+
+  it("rejects draft generation after the writer already published this round", async () => {
+    fire(journalistSocket.handlers, "publish:submit", {
+      type: "article",
+      title: "Already live",
+      content: "Body",
+      source: "Press",
+      angle: "safety",
+      targetFaction: "general",
+    });
+
+    let result: { ok: boolean; error?: string } | undefined;
+    await fire(
+      journalistSocket.handlers,
+      "publish:draft-generate",
+      { angle: "safety", targetFaction: "general" },
+      (res: { ok: boolean; error?: string }) => {
+        result = res;
+      },
+    );
+
+    expect(result).toEqual({ ok: false, error: "Already published this round" });
+  });
+
+  it("allows a fresh draft in the next round", async () => {
+    let callCount = 0;
+    _setPublicationDraftProviderForTests({
+      async generate<T>() {
+        callCount++;
+        return {
+          title: `Draft ${callCount}`,
+          body: `Body ${callCount}`,
+        } as T;
+      },
+    });
+
+    await fire(
+      journalistSocket.handlers,
+      "publish:draft-generate",
+      { angle: "safety", targetFaction: "general" },
+      () => {},
+    );
+    room.round = 3;
+
+    let result: { ok: boolean; title?: string; body?: string } | undefined;
+    await fire(
+      journalistSocket.handlers,
+      "publish:draft-generate",
+      { angle: "safety", targetFaction: "general" },
+      (res: { ok: boolean; title?: string; body?: string }) => {
+        result = res;
+      },
+    );
+
+    expect(callCount).toBe(2);
+    expect(result?.title).toBe("Draft 2");
+    expect(room.generatedPublicationDrafts?.ext_journalist?.round).toBe(3);
   });
 });
 

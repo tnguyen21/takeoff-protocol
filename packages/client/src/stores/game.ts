@@ -110,6 +110,7 @@ interface GameStore {
   // Actions
   setPlayerName: (name: string) => void;
   publishArticle: (payload: { type: PublicationType; title: string; content: string; source: string; angle?: PublicationAngle; targetFaction?: PublicationTarget }) => void;
+  generatePublicationDraft: (payload: { angle: PublicationAngle; targetFaction: PublicationTarget }) => Promise<{ ok: boolean; title?: string; body?: string; error?: string }>;
   dismissNotification: (id: string) => void;
   createRoom: () => Promise<string | null>;
   joinRoom: (code: string) => Promise<boolean>;
@@ -175,6 +176,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   publishArticle: ({ type, title, content, source, angle, targetFaction }) => {
     socket.emit("publish:submit", { type, title, content, source, angle, targetFaction });
   },
+
+  generatePublicationDraft: ({ angle, targetFaction }) =>
+    new Promise((resolve) => {
+      socket.emit(
+        "publish:draft-generate",
+        { angle, targetFaction },
+        (res: { ok: boolean; title?: string; body?: string; error?: string }) => {
+          resolve(res);
+        },
+      );
+    }),
 
   dismissNotification: (id) => {
     set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) }));

@@ -260,6 +260,15 @@ export interface Publication {
   targetFaction?: PublicationTarget;
 }
 
+export interface GeneratedPublicationDraft {
+  round: number;
+  title: string;
+  body: string;
+  angle: PublicationAngle;
+  targetFaction: PublicationTarget;
+  generatedAt: number;
+}
+
 // ── Notifications ──
 
 export interface GameNotification {
@@ -303,6 +312,7 @@ export interface GameRoom {
   storyBible?: StoryBible; // initialized when generation starts; undefined until then
   generatedRounds?: Partial<Record<number, GeneratedRoundArtifacts>>; // cached LLM artifacts by round
   generationStatus?: Partial<Record<number, GenerationStatus>>; // per-round generation state
+  generatedPublicationDrafts?: Partial<Record<Role, GeneratedPublicationDraft>>; // one cached writer-assist draft per role
   microActionCounts?: Record<string, Record<string, number>>; // microActionCounts[socketId][actionType] = count; resets each round
   playerTweets?: PlayerTweet[];
 }

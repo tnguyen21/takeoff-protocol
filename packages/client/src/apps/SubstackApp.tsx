@@ -16,7 +16,7 @@ interface FeedPost {
 }
 
 export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps) {
-  const { selectedRole, publishArticle, publications, round } = useGameStore();
+  const { selectedRole, publishArticle, generatePublicationDraft, publications, round } = useGameStore();
   const canWrite = canWriteSubstack(selectedRole);
   const hasPublishedThisRound = publications.some(
     (p) => p.publishedBy === selectedRole && p.round === round,
@@ -30,6 +30,9 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   const [composeAngle, setComposeAngle] = React.useState<PublicationAngle | "">("");
   const [composeTarget, setComposeTarget] = React.useState<PublicationTarget | "">("");
   const [justPublished, setJustPublished] = React.useState(false);
+  const [draftGenerating, setDraftGenerating] = React.useState(false);
+  const [draftError, setDraftError] = React.useState<string | null>(null);
+  const [draftGeneratedRound, setDraftGeneratedRound] = React.useState<number | null>(null);
 
   const roleLabels = React.useMemo(
     () =>
@@ -80,6 +83,12 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   }, [canWrite, hasPublishedThisRound, composing]);
 
   React.useEffect(() => {
+    if (draftGeneratedRound !== round) {
+      setDraftError(null);
+    }
+  }, [draftGeneratedRound, round]);
+
+  React.useEffect(() => {
     if (posts.length === 0) {
       if (selectedId !== null) setSelectedId(null);
       return;
@@ -90,6 +99,7 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
   }, [posts, selectedId]);
 
   const selected = posts.find((post) => post.id === selectedId) ?? null;
+  const hasGeneratedDraftThisRound = draftGeneratedRound === round;
 
   function handlePublish() {
     if (!canWrite) return;
@@ -108,7 +118,29 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
     setComposeBody("");
     setComposeAngle("");
     setComposeTarget("");
+    setDraftGeneratedRound(round);
+    setDraftError(null);
     setTimeout(() => setJustPublished(false), 3000);
+  }
+
+  async function handleGenerateDraft() {
+    if (!composeAngle || !composeTarget || draftGenerating || hasGeneratedDraftThisRound || hasPublishedThisRound) {
+      return;
+    }
+    setDraftGenerating(true);
+    setDraftError(null);
+    const result = await generatePublicationDraft({
+      angle: composeAngle,
+      targetFaction: composeTarget,
+    });
+    setDraftGenerating(false);
+    if (!result.ok || !result.title || !result.body) {
+      setDraftError(result.error || "Draft generation failed");
+      return;
+    }
+    setComposeTitle(result.title);
+    setComposeBody(result.body);
+    setDraftGeneratedRound(round);
   }
 
   return (
@@ -194,7 +226,10 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
             <div className="flex gap-2 shrink-0">
               <select
                 value={composeAngle}
-                onChange={(e) => setComposeAngle(e.target.value as PublicationAngle | "")}
+                onChange={(e) => {
+                  setComposeAngle(e.target.value as PublicationAngle | "");
+                  setDraftError(null);
+                }}
                 className="flex-1 border border-neutral-300 rounded px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
               >
                 <option value="">Angle…</option>
@@ -204,7 +239,10 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
               </select>
               <select
                 value={composeTarget}
-                onChange={(e) => setComposeTarget(e.target.value as PublicationTarget | "")}
+                onChange={(e) => {
+                  setComposeTarget(e.target.value as PublicationTarget | "");
+                  setDraftError(null);
+                }}
                 className="flex-1 border border-neutral-300 rounded px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white"
               >
                 <option value="">Target…</option>
@@ -214,6 +252,21 @@ export const SubstackApp = React.memo(function SubstackApp({ content }: AppProps
                 <option value="general">General</option>
               </select>
             </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  void handleGenerateDraft();
+                }}
+                disabled={!composeAngle || !composeTarget || draftGenerating || hasGeneratedDraftThisRound || hasPublishedThisRound}
+                className="text-neutral-700 text-xs px-4 py-2 rounded border border-neutral-200 hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {draftGenerating ? "Generating…" : hasGeneratedDraftThisRound ? "Draft generated this round" : "Generate draft"}
+              </button>
+              <span className="text-[11px] text-neutral-500">
+                One assisted draft per round. You can edit before publishing.
+              </span>
+            </div>
+            {draftError && <div className="text-[11px] text-red-600">{draftError}</div>}
             <div className="flex gap-2 items-center shrink-0">
               <button
                 onClick={handlePublish}
