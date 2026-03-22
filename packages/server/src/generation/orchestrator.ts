@@ -371,14 +371,14 @@ export async function triggerGeneration(
       });
     }
   } catch (err) {
-    // INV-1: triggerGeneration must never throw — all errors result in fallback
+    // INV-1: triggerGeneration must never throw — unexpected errors degrade generation for this round
     console.error(`[generation] Unexpected error for round ${round} in room ${room.code}:`, err);
     setGenerationStatus(room, round, "failed");
     if (io) {
       io.to(room.code).emit("game:generation-status", {
         round,
         status: "degraded",
-        message: "Content generation failed — fallback content will be used",
+        message: "Content generation failed — some round content may be unavailable",
       });
     }
   }

@@ -6,7 +6,7 @@ Last updated: 2026-03-19
 
 ## Overall
 
-The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,292 passing tests** (0 failures, 50 test files). LLM generation is the sole content path (no pre-authored fallback by design). **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
+The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/intel/deliberation/decision/resolution → composite endings. The codebase is **~23K source LOC** across server/client/shared with **1,292 passing tests** (0 failures, 50 test files). Content delivery is **hybrid by round**: Round 1 briefing/content/NPC triggers are pre-seeded for instant availability and tone-setting; Rounds 2-5 rely on LLM generation. There is **no full multi-round pre-authored fallback**. **Deployed to Fly.io** with password gate, room cap (max 5), and GitHub Actions CI/CD.
 
 **Ready for first playtest.** The blocking item is: schedule humans.
 
@@ -22,7 +22,7 @@ The core game loop is **functional end-to-end**: lobby → 5 rounds of briefing/
 - **Fog-of-war** — corrected noise formula, faction-based hash seeding, comprehensive property tests
 - **Decision/resolution engine** — effects with conditional multipliers, canonical clamping via `STATE_VARIABLE_RANGES`
 - **9 ending arcs** — all resolvers implemented, thresholds tuned via 10K-trial Monte Carlo simulation, full branch coverage in tests
-- **Content generation** — briefing + app content + NPC trigger + decision generation via Claude API, with retry/validation, fog-safety validation, generation metrics in JSONL, client degradation toast. Model selection: Sonnet for briefings/decisions, Haiku for content/NPC. Role identity context injected into all 16 role + 4 faction decision prompts. No pre-authored fallback by design.
+- **Content generation** — Round 1 briefing/content/NPC triggers are pre-seeded; Rounds 2-5 use Claude-generated briefings + app content + NPC triggers + decisions with retry/validation, fog-safety validation, generation metrics in JSONL, and a client degradation toast. Model selection: Sonnet for briefings/decisions, Haiku for content/NPC. Role identity context injected into all 16 role + 4 faction decision prompts.
 - **Decision templates** — 104 templates covering all 5 rounds, all 8 faction/role types, with hard/soft constraint validation and distinctness checks
 - **Logging** — buffered JSONL per-room, envelope validation, graceful shutdown on SIGINT/SIGTERM, generation metrics, `scripts/analyze-game.ts` for post-game analysis
 - **Dev tools** — URL bootstrap (`?dev=1&round=3&phase=intel&faction=openbrain&role=ob_cto&botMode=all_roles`), GM state sliders, jump-to-phase, fog inspector, endings preview
@@ -102,16 +102,16 @@ No known bugs (server, client, or shared).
 
 ### Content Generation
 
-**Status: Full pipeline implemented. LLM generation is the sole content path. Real API quality untested.**
+**Status: Full pipeline implemented. Round 1 is seeded; Rounds 2-5 depend on LLM generation. Real API quality remains largely untested.**
 
 Design principles:
 - **Skeleton + flesh** — narrative skeleton (5-round arc, thresholds, endings) is pre-authored; LLM generates the flesh (messages, headlines, decisions) reactive to game state
 - **State is source of truth** — LLM reads `StateVariables`, `RoundHistory[]`, `firedThresholds`; never invents state
 - **Structured output** — typed JSON matching existing schemas, validated server-side, no client protocol changes
 - **No free lunches** — every decision option must have >= 2 positive and >= 2 negative effects, enforced by validation
-- **No fallback by design** — if API is down, content is simply missing; degradation toast notifies players
+- **No full fallback by design** — Round 1 is seeded, but if Rounds 2-5 generation fails the affected artifacts are missing/degraded; the client toast notifies players
 
-What's fixed (pre-authored, all rounds): Round 1 content, state variable definitions, fog-of-war rules, threshold events, ending arc resolvers, phase structure, activity penalties.
+What's fixed (pre-authored): Round 1 briefing, Round 1 content, Round 1 NPC triggers, state variable definitions, fog-of-war rules, threshold events, ending arc resolvers, phase structure, activity penalties.
 
 What's generated (Rounds 2-5): briefings, app content (all apps), decisions (template-constrained), NPC messages. Pipeline triggers during resolution of round R-1, caches in `room.generatedRounds[R]`.
 

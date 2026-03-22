@@ -109,14 +109,14 @@ fly secrets set ANTHROPIC_API_KEY="sk-ant-api03-YOUR-KEY-HERE"
 
 ### Generation control
 
-For the first playtest, you may want generation **off** (uses pre-authored fallback content) to isolate testing from API issues:
+If `GEN_ENABLED=false`, the app still has seeded Round 1 briefing/content/NPC triggers, but Rounds 2-5 will not have generated artifacts. That is useful for UI smoke tests, not for a full playtest:
 
 ```bash
-# Generation OFF (safe default for first deploy)
+# Generation OFF (safe default for smoke-testing deploy/auth/room flow only)
 fly secrets set GEN_ENABLED=false
 ```
 
-Or to enable generation:
+For a full five-round playtest, enable generation:
 
 ```bash
 # Generation ON
@@ -148,14 +148,14 @@ These are non-sensitive and already in `fly.toml` `[env]`:
 | `NODE_ENV` | `production` | No | Environment mode |
 | `LOG_DIR` | `logs` | No | JSONL game log directory |
 | `LOG_ENABLED` | `true` | No | Set `false` to disable logging |
-| `GEN_ENABLED` | `false` | No | Master switch for all LLM generation |
+| `GEN_ENABLED` | `false` | No | Master switch for Rounds 2-5 LLM generation. When false, only seeded Round 1 assets are available. |
 | `GEN_BRIEFINGS_ENABLED` | `false` | No | Generate round briefings |
 | `GEN_NPC_ENABLED` | `false` | No | Generate NPC trigger messages |
 | `GEN_PROVIDER` | `anthropic` | No | `anthropic` or `mock` |
 | `GEN_BRIEFING_MODEL` | `claude-sonnet-4-5-20250514` | No | Model for briefings |
 | `GEN_CONTENT_MODEL` | `claude-haiku-4-5-20251001` | No | Model for app content |
 | `GEN_TIMEOUT_MS` | `30000` | No | Generation request timeout (ms) |
-| `ANTHROPIC_API_KEY` | — | If `GEN_ENABLED=true` | Anthropic API key |
+| `ANTHROPIC_API_KEY` | — | If `GEN_ENABLED=true` | Anthropic API key for Rounds 2-5 generation |
 | `SITE_PASSWORD` | _(unset)_ | No | Shared passphrase for site-wide access gate. Unset = no auth. |
 | `MAX_CONCURRENT_ROOMS` | `5` | No | Max simultaneous rooms (limits LLM cost runaway) |
 

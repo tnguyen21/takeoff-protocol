@@ -52,9 +52,10 @@ fly secrets set SITE_PASSWORD="$SITE_PASSWORD" GEN_ENABLED=false
 
 if [[ -n "$ANTHROPIC_API_KEY" ]]; then
   fly secrets set ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
-  echo "Anthropic key set. Generation is OFF — enable later with: fly secrets set GEN_ENABLED=true"
+  echo "Anthropic key set. Generation is still OFF — enable later with: fly secrets set GEN_ENABLED=true"
+  echo "With GEN_ENABLED=false, only seeded Round 1 assets are available; Rounds 2-5 will not generate."
 else
-  echo "No API key set. Generation will use fallback content."
+  echo "No API key set. The app can still smoke-test auth/rooms/seeded Round 1 content, but Rounds 2-5 will not generate."
 fi
 
 # ── Deploy ─────────────────────────────────────────────────────────────────────
