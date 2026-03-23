@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-61dc292d40bf
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-81faf81a41cf
 ├── docs
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
@@ -33,6 +33,7 @@
 │   ├── server
 │   │   ├── src
 │   │   │   ├── content
+│   │   │   ├── events
 │   │   │   ├── generation
 │   │   │   ├── logger
 │   │   │   ├── activity.test.ts
@@ -44,7 +45,6 @@
 │   │   │   ├── devBots.test.ts
 │   │   │   ├── devBots.ts
 │   │   │   ├── events.test.ts
-│   │   │   ├── events.ts
 │   │   │   ├── extendUses.ts
 │   │   │   ├── game.test.ts
 │   │   │   ├── game.ts
@@ -80,10 +80,6 @@
 │   ├── extract-prose.ts
 │   ├── fly-setup.sh
 │   ├── gen-tree.sh
-│   ├── report-chaotic.md
-│   ├── report-dove.md
-│   ├── report-hawk.md
-│   ├── report-random.md
 │   ├── run-full-game.ts
 │   ├── simulate-core.ts
 │   ├── simulate-generated.test.ts
@@ -99,4 +95,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 78 files
+23 directories, 73 files

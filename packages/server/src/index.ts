@@ -3,7 +3,7 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { join, extname } from "node:path";
 import { Server as SocketIOServer } from "socket.io";
-import { registerGameEvents } from "./events.js";
+import { registerGameEvents } from "./events/index.js";
 import { rooms, pruneAbandonedRooms, deleteRoom, MAX_CONCURRENT_ROOMS } from "./rooms.js";
 import { closeAllLoggers, closeLoggerForRoom } from "./logger/registry.js";
 import { clearPhaseTimer } from "./game.js";

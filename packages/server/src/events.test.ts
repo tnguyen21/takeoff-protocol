@@ -23,7 +23,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { rooms, deleteRoom, MAX_CONCURRENT_ROOMS } from "./rooms.js";
-import { registerGameEvents } from "./events.js";
+import { registerGameEvents } from "./events/index.js";
 import { clearPhaseTimer } from "./game.js";
 import { extendUses, cleanupRoom } from "./extendUses.js";
 import { NPC_PERSONAS } from "./content/npcPersonas.js";

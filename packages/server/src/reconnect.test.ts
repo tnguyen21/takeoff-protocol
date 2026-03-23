@@ -20,7 +20,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameMessage, GameRoom, Player } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { rooms } from "./rooms.js";
-import { registerGameEvents } from "./events.js";
+import { registerGameEvents } from "./events/index.js";
 import { setGeneratedBriefing, setGeneratedContent, setGeneratedDecisions } from "./generation/cache.js";
 import { emitBriefing } from "./game.js";
 import { ROUND1_DECISIONS } from "./test-fixtures.js";

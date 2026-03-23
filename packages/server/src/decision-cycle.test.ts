@@ -18,7 +18,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom, Player, ResolutionData } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
 import { rooms } from "./rooms.js";
-import { registerGameEvents } from "./events.js";
+import { registerGameEvents } from "./events/index.js";
 import { emitDecisions, advancePhase, clearPhaseTimer } from "./game.js";
 import { _clearLoggers } from "./logger/registry.js";
 import { setGeneratedDecisions } from "./generation/cache.js";
