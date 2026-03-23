@@ -463,6 +463,59 @@ describe("triggerGeneration — decisions fallback on failure (D-INV-3)", () => 
   );
 });
 
+// ── INV-3: Ending phase guard — abort mid-generation ─────────────────────────
+
+describe("triggerGeneration — ending phase abort (INV-3)", () => {
+  it(
+    "sets status to failed and does not call provider when phase is 'ending' before briefing",
+    withGenEnabled(async () => {
+      let providerCalled = false;
+      const trackingProvider = {
+        generate: async <T>() => {
+          providerCalled = true;
+          return VALID_BRIEFING as T;
+        },
+      };
+      const room = makeRoom({ phase: "ending" });
+      await triggerGeneration(room, 2, trackingProvider);
+      expect(providerCalled).toBe(false);
+      expect(getGenerationStatus(room, 2)).toBe("failed");
+    }),
+  );
+
+  it(
+    "sets status to failed and does not call provider when phase becomes 'ending' before content",
+    withGenEnabled(async () => {
+      // Simulate: briefing is already done (round 1 path), but phase goes to ending before content
+      // Use round 1 — it skips briefing generation entirely via pre-authored path,
+      // then hits the content checkpoint. Set phase=ending to abort before content.
+      let providerCalled = false;
+      const trackingProvider = {
+        generate: async <T>() => {
+          providerCalled = true;
+          return {} as T;
+        },
+      };
+      const room = makeRoom({ phase: "ending", round: 1 });
+      // Trigger for round 1 — round 1 uses pre-authored briefing+content, so the content
+      // checkpoint is only reached in the else-if branch. Instead, verify the guard works
+      // by testing a non-round-1 case where we can observe the abort.
+      // For round 2, briefings are enabled by default; we'll disable briefings to skip
+      // checkpoint 1 and land at checkpoint 2 first.
+      const savedBriefings = process.env.GEN_BRIEFINGS_ENABLED;
+      process.env.GEN_BRIEFINGS_ENABLED = "false";
+      try {
+        const room2 = makeRoom({ phase: "ending" });
+        await triggerGeneration(room2, 2, trackingProvider);
+        expect(providerCalled).toBe(false);
+        expect(getGenerationStatus(room2, 2)).toBe("failed");
+      } finally {
+        process.env.GEN_BRIEFINGS_ENABLED = savedBriefings;
+      }
+    }),
+  );
+});
+
 // ── Model plumbing: options recorded by a capturing provider ──────────────────
 
 /**

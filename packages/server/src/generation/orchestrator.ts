@@ -135,6 +135,12 @@ export async function triggerGeneration(
       logGenerationStart(round, briefingArtifact);
       logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: briefingArtifact }, { round, actorId: "system" });
 
+      if (room.phase === "ending") {
+        console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
+        setGenerationStatus(room, round, "failed");
+        return;
+      }
+
       const briefingResult = await generateBriefingWithRetry(resolvedProvider, context, briefingOptions);
 
       const durationMs = Date.now() - startTs;
@@ -218,6 +224,12 @@ export async function triggerGeneration(
           }
         }
         return tierResult;
+      }
+
+      if (room.phase === "ending") {
+        console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
+        setGenerationStatus(room, round, "failed");
+        return;
       }
 
       const factionResults = await Promise.all(
@@ -312,6 +324,12 @@ export async function triggerGeneration(
       logGenerationStart(round, npcArtifact);
       logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: npcArtifact }, { round, actorId: "system" });
 
+      if (room.phase === "ending") {
+        console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
+        setGenerationStatus(room, round, "failed");
+        return;
+      }
+
       const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context, npcOptions);
 
       const durationMs = Date.now() - startTs;
@@ -341,6 +359,12 @@ export async function triggerGeneration(
           logGenerationStart(round, decisionsArtifact);
           logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: decisionsArtifact }, { round, actorId: "system" });
           decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
+        }
+
+        if (room.phase === "ending") {
+          console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
+          setGenerationStatus(room, round, "failed");
+          return;
         }
 
         const decisionsResult = await decisionsPromise;
