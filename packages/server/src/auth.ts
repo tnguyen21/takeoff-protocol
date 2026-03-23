@@ -156,4 +156,4 @@ ${errorHtml}
 </html>`;
 }
 
-export { COOKIE_NAME, rateLimitStore };
+export { rateLimitStore };
