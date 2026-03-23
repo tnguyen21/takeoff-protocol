@@ -88,17 +88,6 @@ export function registerGmControlEvents(io: Server, socket: Socket) {
     getLoggerForRoom(room.code).log("state.gm_override", { variable, oldValue: oldVal, newValue: room.state[key], gmId: socket.id }, { actorId: "gm", round: room.round, phase: room.phase });
   });
 
-  socket.on("gm:set-generation", ({ enabled }: { enabled: boolean }, callback?: (res: { ok: boolean; error?: string }) => void) => {
-    const room = getGmRoom(socket);
-    if (!room) { callback?.({ ok: false, error: "Only GM can toggle generation" }); return; }
-    if (room.phase !== "lobby") { callback?.({ ok: false, error: "Can only toggle generation in lobby" }); return; }
-
-    room.generationEnabled = enabled;
-    socket.emit("gm:generation-updated", { enabled: room.generationEnabled });
-    console.log(`[gm:set-generation] ${enabled ? "enabled" : "disabled"} for room ${room.code}`);
-    callback?.({ ok: true });
-  });
-
   socket.on("gm:set-timers", (overrides: Partial<Record<GamePhase, number>>) => {
     const room = getGmRoom(socket);
     if (!room) return;

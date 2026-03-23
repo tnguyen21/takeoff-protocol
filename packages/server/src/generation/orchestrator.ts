@@ -103,14 +103,11 @@ export async function triggerGeneration(
     return;
   }
 
-  // ── Kill switch (room toggle takes precedence over env) ──────────────────
+  // ── Kill switch (env-based) ─────────────────────────────────────────────
   const config = getGenerationConfig();
-  const roomEnabled = room.generationEnabled;
-  if (roomEnabled === false) return;               // GM explicitly disabled
-  if (roomEnabled === undefined && !config.enabled) return; // no GM preference, check env
+  if (!config.enabled) return;
 
-  // When room toggle is on, enable everything; otherwise use env config
-  const briefingsEnabled = roomEnabled === true ? true : config.briefingsEnabled;
+  const briefingsEnabled = config.briefingsEnabled;
   const allContentApps: AppId[] = Object.keys(APP_TYPE_MAP) as AppId[];
   // Build per-faction app list: only generate for apps the faction actually has
   const factionAppMap = new Map<Faction, AppId[]>();
@@ -119,8 +116,8 @@ export async function triggerGeneration(
     const factionApps = allContentApps.filter(app => factionConfig.apps.includes(app));
     factionAppMap.set(factionId, factionApps);
   }
-  const npcEnabled = roomEnabled === true ? true : config.npcEnabled;
-  const decisionsEnabled = roomEnabled === true ? true : config.decisionsEnabled;
+  const npcEnabled = config.npcEnabled;
+  const decisionsEnabled = config.decisionsEnabled;
 
   // ── Generation options (model + timeout from config) ──────────────────────
   const briefingOptions: GenerationOptions = { model: config.briefingModel, timeout: config.timeout };

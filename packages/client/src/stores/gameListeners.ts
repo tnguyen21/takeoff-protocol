@@ -288,6 +288,3 @@ socket.on("gm:timers-updated", (data: { timerOverrides: Partial<Record<GamePhase
   useGameStore.setState({ gmTimerOverrides: data.timerOverrides });
 });
 
-socket.on("gm:generation-updated", (data: { enabled: boolean }) => {
-  useGameStore.setState({ gmGenerationEnabled: data.enabled });
-});

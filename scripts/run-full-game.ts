@@ -340,7 +340,6 @@ async function main() {
 
   // Create room
   const room = createRoom("__sim__");
-  room.generationEnabled = true;
   log(`Created room ${room.code}`);
 
   // Seed all 16 bots

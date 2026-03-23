@@ -13,8 +13,6 @@ export function Lobby() {
     setPlayerName,
     startGame,
     startTutorial,
-    gmGenerationEnabled,
-    gmSetGeneration,
     devFillBots,
   } = useGameStore();
 
@@ -152,34 +150,6 @@ export function Lobby() {
         <FactionGrid />
 
         <PlayerList />
-
-        {/* AI Generation toggle */}
-        {isGM && (
-          <div className="border border-neutral-800 rounded-xl p-5 bg-neutral-900/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-white font-semibold mb-1">AI Generation</h3>
-                <p className="text-neutral-500 text-sm">
-                  {gmGenerationEnabled
-                    ? "Briefings, content, and NPC messages will be AI-generated based on game state"
-                    : "Using pre-authored content only"}
-                </p>
-              </div>
-              <button
-                onClick={() => gmSetGeneration(!gmGenerationEnabled)}
-                className={`flex-shrink-0 relative w-11 h-6 rounded-full border-none cursor-pointer transition-[background] duration-200 ${
-                  gmGenerationEnabled ? "bg-cyan-500" : "bg-gray-700"
-                }`}
-              >
-                <div
-                  className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-[left] duration-200 ${
-                    gmGenerationEnabled ? "left-[23px]" : "left-[3px]"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* GM start game panel */}
         {isGM && (
