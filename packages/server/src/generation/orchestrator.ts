@@ -24,7 +24,7 @@ import {
   setGeneratedSharedContent,
   setGenerationStatus,
 } from "./cache.js";
-import { AnthropicProvider, CapturingProvider, type GenerationOptions, type GenerationProvider } from "./provider.js";
+import { AnthropicProvider, CapturingProvider, type GenerationOptions, type GenerationProvider, type TokenUsage } from "./provider.js";
 import { validateBriefing, validateFogSafety, scrubFogLeaks } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
@@ -35,6 +35,20 @@ import round1ContentData from "../content/round1Content.json";
 // ── Factions for content generation ───────────────────────────────────────────
 
 const ALL_FACTIONS: Faction[] = ["openbrain", "prometheus", "china", "external"];
+
+// ── Usage accumulator ─────────────────────────────────────────────────────────
+
+/** Creates a fresh zero-valued TokenUsage accumulator and an onUsage callback that sums into it. */
+function makeUsageTracker(): { usage: TokenUsage; onUsage: (u: TokenUsage) => void } {
+  const usage: TokenUsage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 };
+  const onUsage = (u: TokenUsage): void => {
+    usage.inputTokens += u.inputTokens;
+    usage.outputTokens += u.outputTokens;
+    usage.cacheReadTokens += u.cacheReadTokens;
+    usage.cacheCreationTokens += u.cacheCreationTokens;
+  };
+  return { usage, onUsage };
+}
 
 // ── triggerGeneration ─────────────────────────────────────────────────────────
 
@@ -81,8 +95,8 @@ export async function triggerGeneration(
 
   // ── Generation options (model + timeout from config) ──────────────────────
   const briefingOptions: GenerationOptions = { model: config.briefingModel, timeout: config.timeout };
-  const feedContentOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
-  const signalContentOptions: GenerationOptions = { model: config.signalModel, timeout: config.timeout };
+  const feedContentBaseOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
+  const signalContentBaseOptions: GenerationOptions = { model: config.signalModel, timeout: config.timeout };
   const decisionOptions: GenerationOptions = { model: config.decisionModel, timeout: config.timeout };
   const npcOptions: GenerationOptions = { model: config.contentModel, timeout: config.timeout };
 
@@ -141,7 +155,8 @@ export async function triggerGeneration(
         return;
       }
 
-      const briefingResult = await generateBriefingWithRetry(resolvedProvider, context, briefingOptions);
+      const briefingTracker = makeUsageTracker();
+      const briefingResult = await generateBriefingWithRetry(resolvedProvider, context, { ...briefingOptions, onUsage: briefingTracker.onUsage });
 
       const durationMs = Date.now() - startTs;
 
@@ -158,8 +173,9 @@ export async function triggerGeneration(
           briefingOk = false;
         } else {
           setGeneratedBriefing(room, round, briefingResult);
-          logGenerationSuccess(round, briefingArtifact, durationMs);
-          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: briefingArtifact, durationMs }, { round, actorId: "system" });
+          const briefingUsage = briefingTracker.usage;
+          logGenerationSuccess(round, briefingArtifact, durationMs, briefingUsage);
+          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: briefingArtifact, durationMs, usage: briefingUsage }, { round, actorId: "system" });
           // Re-emit briefing if game has already advanced to this round
           // (generation runs async after resolution, briefing phase may have started)
           if (io && room.round === round) {
@@ -174,13 +190,14 @@ export async function triggerGeneration(
     // ── Launch decision generation early (runs in parallel with content/NPC) ─
     let decisionsPromise: Promise<RoundDecisions | null> | undefined;
     let decisionsStartTs: number | undefined;
+    const decisionsTracker = makeUsageTracker();
     if (decisionsEnabled) {
       const templates = getTemplatesForRound(round);
       if (templates.length > 0) {
         decisionsStartTs = Date.now();
         logGenerationStart(round, "decisions");
         logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: "decisions" }, { round, actorId: "system" });
-        decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
+        decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, { ...decisionOptions, onUsage: decisionsTracker.onUsage });
         console.log(`[orchestrator] Launched decision generation for round ${round} in parallel with content`);
       }
     }
@@ -242,6 +259,11 @@ export async function triggerGeneration(
           logGenerationStart(round, contentArtifact);
           logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
 
+          // Per-faction usage tracker accumulates across both feed and signal tiers
+          const factionTracker = makeUsageTracker();
+          const feedContentOptions: GenerationOptions = { ...feedContentBaseOptions, onUsage: factionTracker.onUsage };
+          const signalContentOptions: GenerationOptions = { ...signalContentBaseOptions, onUsage: factionTracker.onUsage };
+
           // Generate feed and signal tiers in parallel with their respective models.
           // Each tier emits incrementally to players as it resolves.
           console.log(`[orchestrator:${faction}] feed=[${feedApps.join(",")}] signal=[${signalApps.join(",")}]`);
@@ -279,11 +301,11 @@ export async function triggerGeneration(
             : [...(feedResult ?? []), ...(signalResult ?? [])];
 
           const durationMs = Date.now() - startTs;
-          return { faction, contentResult, contentArtifact, durationMs };
+          return { faction, contentResult, contentArtifact, durationMs, contentUsage: factionTracker.usage };
         }),
       );
 
-      for (const { faction, contentResult, contentArtifact, durationMs } of factionResults) {
+      for (const { faction, contentResult, contentArtifact, durationMs, contentUsage } of factionResults) {
         if (contentResult === null) {
           logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
           logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: contentArtifact, reason: "generateContentWithRetry returned null", durationMs }, { round, actorId: "system" });
@@ -301,8 +323,8 @@ export async function triggerGeneration(
             sharedSubstackItems.push(...substackContent.items);
           }
           setGeneratedContent(room, round, faction, factionContent);
-          logGenerationSuccess(round, contentArtifact, durationMs);
-          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: contentArtifact, durationMs }, { round, actorId: "system" });
+          logGenerationSuccess(round, contentArtifact, durationMs, contentUsage);
+          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: contentArtifact, durationMs, usage: contentUsage }, { round, actorId: "system" });
         }
       }
       if (sharedSubstackItems.length > 0) {
@@ -330,7 +352,8 @@ export async function triggerGeneration(
         return;
       }
 
-      const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context, npcOptions);
+      const npcTracker = makeUsageTracker();
+      const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context, { ...npcOptions, onUsage: npcTracker.onUsage });
 
       const durationMs = Date.now() - startTs;
 
@@ -340,8 +363,9 @@ export async function triggerGeneration(
         npcOk = false;
       } else {
         setGeneratedNpcTriggers(room, round, npcResult);
-        logGenerationSuccess(round, npcArtifact, durationMs);
-        logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: npcArtifact, durationMs }, { round, actorId: "system" });
+        const npcUsage = npcTracker.usage;
+        logGenerationSuccess(round, npcArtifact, durationMs, npcUsage);
+        logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: npcArtifact, durationMs, usage: npcUsage }, { round, actorId: "system" });
       }
       flushPrompts("npc");
     }
@@ -358,7 +382,7 @@ export async function triggerGeneration(
         if (!decisionsPromise) {
           logGenerationStart(round, decisionsArtifact);
           logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: decisionsArtifact }, { round, actorId: "system" });
-          decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, decisionOptions);
+          decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, { ...decisionOptions, onUsage: decisionsTracker.onUsage });
         }
 
         if (room.phase === "ending") {
@@ -377,8 +401,9 @@ export async function triggerGeneration(
           decisionsOk = false;
         } else {
           setGeneratedDecisions(room, round, decisionsResult);
-          logGenerationSuccess(round, decisionsArtifact, durationMs);
-          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: decisionsArtifact, durationMs }, { round, actorId: "system" });
+          const decisionsUsage = decisionsTracker.usage;
+          logGenerationSuccess(round, decisionsArtifact, durationMs, decisionsUsage);
+          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: decisionsArtifact, durationMs, usage: decisionsUsage }, { round, actorId: "system" });
         }
       }
       flushPrompts("decisions");

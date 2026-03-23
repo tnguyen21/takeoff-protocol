@@ -5,6 +5,8 @@
 //
 // No external metrics service — stdout is sufficient for V1.
 
+import type { TokenUsage } from "./provider.js";
+
 function emit(payload: Record<string, unknown>): void {
   const line = JSON.stringify({ ...payload, timestamp: new Date().toISOString() });
   console.log(`[generation] ${line}`);
@@ -18,8 +20,9 @@ export function logGenerationSuccess(
   round: number,
   artifactType: string,
   durationMs: number,
+  usage?: TokenUsage,
 ): void {
-  emit({ event: "success", round, artifact: artifactType, durationMs });
+  emit({ event: "success", round, artifact: artifactType, durationMs, ...(usage ? { usage } : {}) });
 }
 
 export function logGenerationFailure(

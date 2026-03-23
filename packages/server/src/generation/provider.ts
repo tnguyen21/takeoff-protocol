@@ -2,10 +2,20 @@ import Anthropic from "@anthropic-ai/sdk";
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
+/** Token usage from a single Anthropic API call. */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}
+
 export interface GenerationOptions {
   model?: string;
   timeout?: number;   // ms, default 30000
   maxTokens?: number; // default 4096
+  /** Called after each successful API call with the token usage for that call. */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 // ── Errors ────────────────────────────────────────────────────────────────────
@@ -410,11 +420,17 @@ export class AnthropicProvider implements GenerationProvider {
       }
 
       const elapsed = Date.now() - callStart;
-      // Log cache metrics when available
-      const usage = response.usage as unknown as Record<string, unknown>;
-      const cacheRead = usage.cache_read_input_tokens ?? 0;
-      const cacheCreate = usage.cache_creation_input_tokens ?? 0;
-      console.log(`[provider] API response OK after ${elapsed}ms (model=${model}, stop=${response.stop_reason}, cacheRead=${cacheRead}, cacheCreate=${cacheCreate})`);
+      // Extract all token usage fields
+      const rawUsage = response.usage as unknown as Record<string, unknown>;
+      const tokenUsage: TokenUsage = {
+        inputTokens: (rawUsage.input_tokens as number) ?? 0,
+        outputTokens: (rawUsage.output_tokens as number) ?? 0,
+        cacheReadTokens: (rawUsage.cache_read_input_tokens as number) ?? 0,
+        cacheCreationTokens: (rawUsage.cache_creation_input_tokens as number) ?? 0,
+      };
+      console.log(`[provider] API response OK after ${elapsed}ms (model=${model}, stop=${response.stop_reason}, inputTokens=${tokenUsage.inputTokens}, outputTokens=${tokenUsage.outputTokens}, cacheRead=${tokenUsage.cacheReadTokens}, cacheCreate=${tokenUsage.cacheCreationTokens})`);
+      // Notify caller with token usage if a callback was provided
+      params.options?.onUsage?.(tokenUsage);
 
       // Extract tool_use block
       const toolUseBlock = response.content.find(
