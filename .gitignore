@@ -9,6 +9,7 @@ output/
 .hive
 .hive.toml
 .hive-notes.jsonl
+.hive-result.jsonl
 .claude/
 .worktrees
 .vscode
