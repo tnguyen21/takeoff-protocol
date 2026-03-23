@@ -333,7 +333,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
   // Live engagement bumps for NPC tweets (For You tab)
   const [engBumps, setEngBumps] = React.useState<Map<string, { likes: number; retweets: number }>>(new Map());
   const npcTweetsRef = React.useRef(baseTweets);
-  npcTweetsRef.current = baseTweets;
+  React.useEffect(() => { npcTweetsRef.current = baseTweets; }, [baseTweets]);
 
   React.useEffect(() => {
     const interval = setInterval(() => {

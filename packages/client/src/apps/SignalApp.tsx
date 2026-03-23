@@ -13,19 +13,7 @@ import {
   isNpcId,
   isContentContactId,
 } from "./signalUtils.js";
-
-function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-function initials(name: string): string {
-  return name
-    .split(/[\s_]/)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
+import { initials, formatTimestamp } from "../utils.js";
 
 // ── Read-receipt checkmark renderer ─────────────────────────────────────────
 
@@ -348,7 +336,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                     <span className="font-semibold text-xs truncate">{npc.name}</span>
                     {lastMsg && (
                       <span className="text-neutral-500 text-[10px] shrink-0 ml-1">
-                        {formatTime(lastMsg.timestamp)}
+                        {formatTimestamp(lastMsg.timestamp)}
                       </span>
                     )}
                   </div>
@@ -390,7 +378,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                   <div className="flex justify-between items-baseline">
                     <span className="font-semibold text-xs truncate">{p.name}</span>
                     {lastMsg && (
-                      <span className="text-neutral-500 text-[10px] shrink-0 ml-1">{formatTime(lastMsg.timestamp)}</span>
+                      <span className="text-neutral-500 text-[10px] shrink-0 ml-1">{formatTimestamp(lastMsg.timestamp)}</span>
                     )}
                   </div>
                   <p className="text-neutral-400 text-xs truncate mt-0.5">
@@ -474,7 +462,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                         <span className="ml-1.5 opacity-40" title="Disappears after viewing">⏱</span>
                       )}
                     </p>
-                    <p className="text-neutral-500 text-[10px] mt-1">{formatTime(m.timestamp)}</p>
+                    <p className="text-neutral-500 text-[10px] mt-1">{formatTimestamp(m.timestamp)}</p>
                   </div>
                 </div>
               ))}
@@ -532,7 +520,7 @@ export const SignalApp = React.memo(function SignalApp({ content }: AppProps) {
                       </p>
                       <div className={`flex items-center gap-0.5 mt-1 ${sent ? "justify-end" : ""}`}>
                         <span className={`text-[10px] ${sent ? "text-blue-200" : "text-neutral-500"}`}>
-                          {formatTime(m.timestamp)}
+                          {formatTimestamp(m.timestamp)}
                         </span>
                         {sent && hasDisappearingTimer(m.id) && (
                           <span className="text-[9px] text-blue-200/50 ml-1" title="Disappears after viewing">⏱</span>

@@ -10,23 +10,9 @@ import {
   EMAIL_FOLDERS,
 } from "./emailUtils.js";
 import type { EmailFolder, EmailItem } from "./emailUtils.js";
+import { avatarColor } from "../utils.js";
 
 type EmailWithId = EmailItem & { id: string };
-
-// ── Avatar color helper ───────────────────────────────────────────────────────
-
-function avatarColor(name: string): string {
-  const palette = [
-    "bg-blue-600",
-    "bg-purple-600",
-    "bg-emerald-600",
-    "bg-amber-600",
-    "bg-rose-600",
-    "bg-cyan-600",
-    "bg-indigo-600",
-  ];
-  return palette[name.charCodeAt(0) % palette.length];
-}
 
 // ── Folder display config ─────────────────────────────────────────────────────
 

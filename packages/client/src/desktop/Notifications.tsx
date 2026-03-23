@@ -3,16 +3,12 @@ import { useNotificationsStore, type ToastNotification } from "../stores/notific
 import { useUIStore } from "../stores/ui.js";
 import { AppIcon } from "../apps/icons.js";
 import { soundManager } from "../sounds/index.js";
+import { formatTimestamp } from "../utils.js";
 
 const MENUBAR_HEIGHT = 28;
 const AUTO_DISMISS_MS = 5000;
 const TOAST_GAP = 10;
 const TOAST_HEIGHT = 76; // approximate height of each toast for stacking
-
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
 
 function Toast({ notif, index }: { notif: ToastNotification; index: number }) {
   const { dismissNotification } = useNotificationsStore();
@@ -64,7 +60,7 @@ function Toast({ notif, index }: { notif: ToastNotification; index: number }) {
             {notif.title}
           </span>
           <span className="text-[11px] text-white/35 shrink-0 tabular-nums">
-            {formatTime(notif.timestamp)}
+            {formatTimestamp(notif.timestamp)}
           </span>
         </div>
         <p

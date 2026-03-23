@@ -6,21 +6,7 @@ import { useGameStore } from "../stores/game.js";
 import { socket } from "../socket.js";
 import { soundManager } from "../sounds/index.js";
 import { SLACK_CHANNELS, assignChannelToMessage, getChannelMessages, computeUnreadCounts } from "./slackUtils.js";
-
-function initials(name: string): string {
-  return name
-    .split(/[\s_]/)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function formatTime(ts: number | string): string {
-  const d = typeof ts === "string" ? new Date(ts) : new Date(ts);
-  if (isNaN(d.getTime())) return String(ts);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
+import { initials, formatTimestamp } from "../utils.js";
 
 
 export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
@@ -228,7 +214,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-xs text-blue-300">{msg.sender ?? "System"}</span>
-                    <span className="text-neutral-500 text-xs">{formatTime(msg.timestamp)}</span>
+                    <span className="text-neutral-500 text-xs">{formatTimestamp(msg.timestamp)}</span>
                     {msg.channel && assignChannelToMessage(msg) !== "#general" && (
                       <span className="text-neutral-600 text-[10px]">· {assignChannelToMessage(msg)}</span>
                     )}
@@ -246,7 +232,7 @@ export const SlackApp = React.memo(function SlackApp({ content }: AppProps) {
                     <span className={`font-semibold text-xs ${msg.from === playerId ? "text-yellow-300" : "text-white"}`}>
                       {msg.fromName}
                     </span>
-                    <span className="text-neutral-500 text-xs">{formatTime(msg.timestamp)}</span>
+                    <span className="text-neutral-500 text-xs">{formatTimestamp(msg.timestamp)}</span>
                   </div>
                   <p className="text-neutral-300 text-xs mt-0.5 leading-relaxed">{msg.content}</p>
                 </div>

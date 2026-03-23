@@ -52,7 +52,7 @@ export const APP_CONTENT_TIER: Partial<Record<AppId, ContentTier>> = {
 };
 
 /** Per-app item count targets by tier. */
-export const TIER_BUDGETS: Record<ContentTier, { min: number; max: number }> = {
+const TIER_BUDGETS: Record<ContentTier, { min: number; max: number }> = {
   feed: { min: 12, max: 20 },
   signal: { min: 3, max: 6 },
 };
