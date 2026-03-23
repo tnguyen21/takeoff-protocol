@@ -28,7 +28,8 @@ import { AnthropicProvider, CapturingProvider, type GenerationOptions, type Gene
 import { validateBriefing, validateFogSafety, scrubFogLeaks } from "./validate.js";
 import { getLoggerForRoom } from "../logger/registry.js";
 import { EVENT_NAMES } from "../logger/types.js";
-import { emitBriefing, emitContentBatch } from "../game.js";
+import { emitBriefing } from "../game.js";
+import { enqueueDrip } from "../contentDrip.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
 import round1ContentData from "../content/round1Content.json";
 
@@ -280,7 +281,7 @@ export async function triggerGeneration(
                     if (result && io) {
                       const scrubbed = scrubTierResult(result, faction);
                       const nonSubstack = scrubbed.filter(ac => ac.app !== "substack");
-                      if (nonSubstack.length > 0) emitContentBatch(io, room, faction, nonSubstack);
+                      if (nonSubstack.length > 0) enqueueDrip(room.code, faction, nonSubstack);
                       console.log(`[orchestrator:${faction}] feed tier emitted ${nonSubstack.flatMap(ac => ac.items).length} items incrementally`);
                     }
                     return result;
@@ -291,7 +292,7 @@ export async function triggerGeneration(
                   .then(result => {
                     if (result && io) {
                       const scrubbed = scrubTierResult(result, faction);
-                      emitContentBatch(io, room, faction, scrubbed);
+                      enqueueDrip(room.code, faction, scrubbed);
                       console.log(`[orchestrator:${faction}] signal tier emitted ${scrubbed.flatMap(ac => ac.items).length} items incrementally`);
                     }
                     return result;

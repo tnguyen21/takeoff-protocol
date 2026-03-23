@@ -185,9 +185,15 @@ socket.on("game:content-batch", (data: { content: AppContent[] }) => {
       return { ...item, _seq: seq };
     }),
   }));
-  useGameStore.setState((state) => ({
-    content: [...state.content, ...stamped],
-  }));
+  useGameStore.setState((state) => {
+    // Deduplicate: filter out items already present in state
+    const existingIds = new Set(state.content.flatMap((ac) => ac.items.map((i) => i.id)));
+    const deduped = stamped
+      .map((ac) => ({ ...ac, items: ac.items.filter((i) => !existingIds.has(i.id)) }))
+      .filter((ac) => ac.items.length > 0);
+    if (deduped.length === 0) return state;
+    return { content: [...state.content, ...deduped] };
+  });
 });
 
 type GamePublishPayload =

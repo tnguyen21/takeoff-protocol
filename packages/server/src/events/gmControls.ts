@@ -8,6 +8,7 @@ import { extendUses } from "../extendUses.js";
 import { EVENT_NAMES } from "../logger/index.js";
 import type { Faction, GameMessage } from "@takeoff/shared";
 import { getGmRoom } from "./helpers.js";
+import { pauseDrip, resumeDrip, flushDrip } from "../contentDrip.js";
 
 export function registerGmControlEvents(io: Server, socket: Socket) {
   socket.on("game:start", (_, callback) => {
@@ -57,8 +58,10 @@ export function registerGmControlEvents(io: Server, socket: Socket) {
       const pausedDuration = Date.now() - room.timer.pausedAt;
       room.timer.endsAt += pausedDuration;
       room.timer.pausedAt = undefined;
+      resumeDrip(room.code);
     } else {
       room.timer.pausedAt = Date.now();
+      pauseDrip(room.code);
     }
     syncPhaseTimer(io, room);
     const remainingMs = room.timer.endsAt - Date.now();

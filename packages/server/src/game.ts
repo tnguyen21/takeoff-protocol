@@ -11,6 +11,7 @@ import { applyActivityPenalties } from "./activityPenalties.js";
 import { updateStoryBible } from "./generation/context.js";
 import { cleanupRoom } from "./extendUses.js";
 import { resetMicroActionCounts } from "./microActions.js";
+import { startDrip, flushDrip, clearDrip } from "./contentDrip.js";
 
 const PHASE_ORDER: GamePhase[] = ["briefing", "intel", "deliberation", "decision", "resolution"];
 const phaseTimers = new Map<string, ReturnType<typeof setTimeout>>(); // roomCode → timer
@@ -54,7 +55,7 @@ export function personalizeContent(content: AppContent[], nameMap: Map<string, s
   }));
 }
 
-function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
+export function getPhaseDuration(room: GameRoom, phase: GamePhase): number {
   // GM overrides take precedence; fall back to round-specific or default durations
   const override = room.timerOverrides?.[phase];
   if (override !== undefined) return override * 1000;
@@ -231,6 +232,7 @@ export function endGame(io: Server, room: GameRoom, endedBy: "system" | "gm" = "
     endedEarly: endedBy === "gm",
   }, { round: room.round, phase: room.phase, actorId: endedBy });
   void closeLoggerForRoom(room.code);
+  clearDrip(room.code);
   cleanupRoom(room.code);
 }
 
@@ -240,6 +242,9 @@ export function advancePhase(io: Server, room: GameRoom) {
     endTutorial(io, room);
     return;
   }
+
+  // Flush any active content drip before transitioning
+  flushDrip(io, room);
 
   const prevPhase = room.phase;
   const currentIndex = PHASE_ORDER.indexOf(room.phase as GamePhase);
@@ -314,7 +319,7 @@ export function advancePhase(io: Server, room: GameRoom) {
   }
 
   if (room.phase === "intel") {
-    emitContent(io, room);
+    startDrip(io, room);
   }
 
   if (room.phase === "decision") {
@@ -486,9 +491,33 @@ export function emitContent(io: Server, room: GameRoom) {
 }
 
 /**
+ * Emit content from all rounds PRIOR to the current round via game:content.
+ * Used by the drip scheduler so players see historical items immediately
+ * while current-round items trickle in via game:content-batch.
+ */
+export function emitHistoricalContent(io: Server, room: GameRoom): void {
+  if (room.round <= 1) return; // No history for round 1
+  const nameMap = buildNameMap(room);
+  for (const [socketId, player] of Object.entries(room.players)) {
+    if (!player.faction || !player.role) continue;
+    const allContent: AppContent[] = [];
+    for (let r = 1; r < room.round; r++) {
+      const factionContent = getGeneratedContent(room, r, player.faction) ?? [];
+      const sharedContent = (getGeneratedSharedContent(room, r) ?? []).map((appContent) => ({
+        ...appContent,
+        faction: player.faction!,
+      }));
+      allContent.push(...factionContent, ...sharedContent);
+    }
+    const personalized = personalizeContent(allContent, nameMap);
+    io.to(socketId).emit("game:content", { content: personalized });
+  }
+}
+
+/**
  * Emit an incremental batch of content to a single faction's connected players.
- * Used by the orchestrator to deliver content as each tier resolves, before
- * the full emitContent() catch-up at phase transition.
+ * Used by the drip scheduler to deliver content gradually, and by the
+ * orchestrator for late-arriving content.
  */
 export function emitContentBatch(io: Server, room: GameRoom, faction: Faction, content: AppContent[]): void {
   if (content.length === 0) return;
