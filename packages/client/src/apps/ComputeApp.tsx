@@ -3,6 +3,7 @@ import type { AppProps } from "./types.js";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer, ErrorBar } from "recharts";
 import { useGameStore } from "../stores/game.js";
 import { gpuTileColor, jobProgressRatio, deriveCost } from "./computeUtils.js";
+import { DashboardIcon, ClustersIcon, JobsIcon, StorageIcon, AlertsIcon, BillingIcon } from "./icons.js";
 
 const CLUSTERS = [
   { name: "Cluster A (H100 x512)", gpus: 512, util: 94, jobs: 3, reserved: "frontier-model-v3", status: "healthy", memUtil: 87 },
@@ -32,57 +33,6 @@ const STATUS_COLOR: Record<string, string> = {
   degraded: "text-yellow-400",
   down: "text-red-400",
 };
-
-// ── Nav sidebar icons ──
-
-const DashboardIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <rect x="1" y="1" width="6" height="6" rx="1" />
-    <rect x="9" y="1" width="6" height="6" rx="1" />
-    <rect x="1" y="9" width="6" height="6" rx="1" />
-    <rect x="9" y="9" width="6" height="6" rx="1" />
-  </svg>
-);
-
-const ClustersIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <rect x="1" y="2" width="14" height="3" rx="1" />
-    <rect x="1" y="6.5" width="14" height="3" rx="1" />
-    <rect x="1" y="11" width="14" height="3" rx="1" />
-  </svg>
-);
-
-const JobsIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <rect x="3" y="3" width="10" height="1.5" rx="0.5" />
-    <rect x="3" y="7" width="10" height="1.5" rx="0.5" />
-    <rect x="3" y="11" width="6" height="1.5" rx="0.5" />
-  </svg>
-);
-
-const StorageIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <ellipse cx="8" cy="4" rx="6" ry="2" />
-    <path d="M2 4v4c0 1.1 2.7 2 6 2s6-.9 6-2V4" opacity="0.7" />
-    <path d="M2 8v4c0 1.1 2.7 2 6 2s6-.9 6-2V8" opacity="0.45" />
-  </svg>
-);
-
-const AlertsIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <path d="M8 1.5 L14 12.5 H2 Z" />
-    <rect x="7.25" y="5.5" width="1.5" height="4" rx="0.5" fill="#0d0d0d" />
-    <circle cx="8" cy="11" r="0.85" fill="#0d0d0d" />
-  </svg>
-);
-
-const BillingIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-    <rect x="1" y="3" width="14" height="10" rx="1.5" />
-    <rect x="1" y="6" width="14" height="2.5" fill="#0d0d0d" opacity="0.6" />
-    <rect x="3" y="9.5" width="3" height="1.5" rx="0.3" fill="#0d0d0d" opacity="0.6" />
-  </svg>
-);
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", Icon: DashboardIcon, active: true },

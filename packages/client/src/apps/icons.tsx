@@ -52,6 +52,113 @@ function WandBIcon({ className, style }: { className?: string; style?: React.CSS
   );
 }
 
+// ── ComputeApp nav icons ──
+
+export const DashboardIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <rect x="1" y="1" width="6" height="6" rx="1" />
+    <rect x="9" y="1" width="6" height="6" rx="1" />
+    <rect x="1" y="9" width="6" height="6" rx="1" />
+    <rect x="9" y="9" width="6" height="6" rx="1" />
+  </svg>
+);
+
+export const ClustersIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <rect x="1" y="2" width="14" height="3" rx="1" />
+    <rect x="1" y="6.5" width="14" height="3" rx="1" />
+    <rect x="1" y="11" width="14" height="3" rx="1" />
+  </svg>
+);
+
+export const JobsIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <rect x="3" y="3" width="10" height="1.5" rx="0.5" />
+    <rect x="3" y="7" width="10" height="1.5" rx="0.5" />
+    <rect x="3" y="11" width="6" height="1.5" rx="0.5" />
+  </svg>
+);
+
+export const StorageIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <ellipse cx="8" cy="4" rx="6" ry="2" />
+    <path d="M2 4v4c0 1.1 2.7 2 6 2s6-.9 6-2V4" opacity="0.7" />
+    <path d="M2 8v4c0 1.1 2.7 2 6 2s6-.9 6-2V8" opacity="0.45" />
+  </svg>
+);
+
+export const AlertsIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M8 1.5 L14 12.5 H2 Z" />
+    <rect x="7.25" y="5.5" width="1.5" height="4" rx="0.5" fill="#0d0d0d" />
+    <circle cx="8" cy="11" r="0.85" fill="#0d0d0d" />
+  </svg>
+);
+
+export const BillingIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <rect x="1" y="3" width="14" height="10" rx="1.5" />
+    <rect x="1" y="6" width="14" height="2.5" fill="#0d0d0d" opacity="0.6" />
+    <rect x="3" y="9.5" width="3" height="1.5" rx="0.3" fill="#0d0d0d" opacity="0.6" />
+  </svg>
+);
+
+// ── TwitterApp nav icons ──
+
+export function HomeIcon({ active }: { active?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill={active ? "white" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
+      <path d="M9 21V12h6v9" />
+    </svg>
+  );
+}
+
+export function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+export function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+export function TwitterMailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </svg>
+  );
+}
+
+export function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+export function VerifiedBadge() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" className="inline-block ml-0.5 text-blue-400" fill="currentColor">
+      <circle cx="12" cy="12" r="11" fill="#1d9bf0" />
+      <polyline points="7,12 10.5,15.5 17,9" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // Map AppId to Lucide icons (for generic apps)
 const LUCIDE_ICON_MAP: Record<string, LucideIcon> = {
   news: Newspaper,

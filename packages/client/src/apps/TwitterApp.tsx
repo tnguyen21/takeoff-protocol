@@ -4,6 +4,7 @@ import type { PlayerTweet } from "@takeoff/shared";
 import { useGameStore } from "../stores/game.js";
 import { assignStableIds, randomEngagement, timeBasedEngagement } from "./twitterUtils.js";
 import { socket } from "../socket.js";
+import { HomeIcon, SearchIcon, BellIcon, TwitterMailIcon, UserIcon, VerifiedBadge } from "./icons.js";
 
 const STATIC_TWEETS = assignStableIds([
   {
@@ -186,61 +187,6 @@ function fmt(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
-// SVG icon components matching X's dark mode aesthetic
-function HomeIcon({ active }: { active?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill={active ? "white" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
-      <path d="M9 21V12h6v9" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-    </svg>
-  );
-}
-
-function MailIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-      <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function VerifiedBadge() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" className="inline-block ml-0.5 text-blue-400" fill="currentColor">
-      <circle cx="12" cy="12" r="11" fill="#1d9bf0" />
-      <polyline points="7,12 10.5,15.5 17,9" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 interface TweetState {
   liked: boolean;
   retweeted: boolean;
@@ -405,7 +351,7 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
           { icon: <HomeIcon active />, label: "Home" },
           { icon: <SearchIcon />, label: "Explore" },
           { icon: <BellIcon />, label: "Notifications" },
-          { icon: <MailIcon />, label: "Messages" },
+          { icon: <TwitterMailIcon />, label: "Messages" },
           { icon: <UserIcon />, label: "Profile" },
         ].map(({ icon, label }) => (
           <button
