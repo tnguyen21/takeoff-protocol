@@ -50,6 +50,35 @@ function makeUsageTracker(): { usage: TokenUsage; onUsage: (u: TokenUsage) => vo
   return { usage, onUsage };
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+type GameLogger = ReturnType<typeof getLoggerForRoom>;
+
+/** Check if the game has ended during async generation; if so, mark failed and signal abort. */
+function checkAbort(room: GameRoom, round: number): boolean {
+  if (room.phase === "ending") {
+    console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
+    setGenerationStatus(room, round, "failed");
+    return true;
+  }
+  return false;
+}
+
+function logArtifactStart(round: number, artifact: string, logger: GameLogger): void {
+  logGenerationStart(round, artifact);
+  logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact }, { round, actorId: "system" });
+}
+
+function logArtifactFailure(round: number, artifact: string, reason: string, durationMs: number, logger: GameLogger): void {
+  logGenerationFailure(round, artifact, reason, durationMs);
+  logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact, reason, durationMs }, { round, actorId: "system" });
+}
+
+function logArtifactSuccess(round: number, artifact: string, durationMs: number, usage: TokenUsage, logger: GameLogger): void {
+  logGenerationSuccess(round, artifact, durationMs, usage);
+  logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact, durationMs, usage }, { round, actorId: "system" });
+}
+
 // ── triggerGeneration ─────────────────────────────────────────────────────────
 
 /**
@@ -144,40 +173,26 @@ export async function triggerGeneration(
       setGeneratedBriefing(room, round, ROUND_1_BRIEFING);
       logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: "briefing", durationMs: 0, preAuthored: true }, { round, actorId: "system" });
     } else if (briefingsEnabled) {
-      const briefingArtifact = "briefing";
       const startTs = Date.now();
-      logGenerationStart(round, briefingArtifact);
-      logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: briefingArtifact }, { round, actorId: "system" });
-
-      if (room.phase === "ending") {
-        console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
-        setGenerationStatus(room, round, "failed");
-        return;
-      }
+      logArtifactStart(round, "briefing", logger);
+      if (checkAbort(room, round)) return;
 
       const briefingTracker = makeUsageTracker();
       const briefingResult = await generateBriefingWithRetry(resolvedProvider, context, { ...briefingOptions, onUsage: briefingTracker.onUsage });
-
       const durationMs = Date.now() - startTs;
 
       if (briefingResult === null) {
-        logGenerationFailure(round, briefingArtifact, "generateBriefingWithRetry returned null", durationMs);
-        logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: briefingArtifact, reason: "generateBriefingWithRetry returned null", durationMs }, { round, actorId: "system" });
+        logArtifactFailure(round, "briefing", "generateBriefingWithRetry returned null", durationMs, logger);
         briefingOk = false;
       } else {
         const validation = validateBriefing(briefingResult);
         if (!validation.valid) {
-          // Should not happen — generateBriefingWithRetry only returns on valid — but guard anyway
-          logValidationFailure(round, briefingArtifact, validation.errors);
-          logger.log(EVENT_NAMES.GENERATION_VALIDATION_FAILURE, { artifact: briefingArtifact, errors: validation.errors }, { round, actorId: "system" });
+          logValidationFailure(round, "briefing", validation.errors);
+          logger.log(EVENT_NAMES.GENERATION_VALIDATION_FAILURE, { artifact: "briefing", errors: validation.errors }, { round, actorId: "system" });
           briefingOk = false;
         } else {
           setGeneratedBriefing(room, round, briefingResult);
-          const briefingUsage = briefingTracker.usage;
-          logGenerationSuccess(round, briefingArtifact, durationMs, briefingUsage);
-          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: briefingArtifact, durationMs, usage: briefingUsage }, { round, actorId: "system" });
-          // Re-emit briefing if game has already advanced to this round
-          // (generation runs async after resolution, briefing phase may have started)
+          logArtifactSuccess(round, "briefing", durationMs, briefingTracker.usage, logger);
           if (io && room.round === round) {
             console.log(`[orchestrator] Re-emitting briefing for round ${round} (phase=${room.phase})`);
             emitBriefing(io, room);
@@ -195,8 +210,7 @@ export async function triggerGeneration(
       const templates = getTemplatesForRound(round);
       if (templates.length > 0) {
         decisionsStartTs = Date.now();
-        logGenerationStart(round, "decisions");
-        logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: "decisions" }, { round, actorId: "system" });
+        logArtifactStart(round, "decisions", logger);
         decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, { ...decisionOptions, onUsage: decisionsTracker.onUsage });
         console.log(`[orchestrator] Launched decision generation for round ${round} in parallel with content`);
       }
@@ -243,11 +257,7 @@ export async function triggerGeneration(
         return tierResult;
       }
 
-      if (room.phase === "ending") {
-        console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
-        setGenerationStatus(room, round, "failed");
-        return;
-      }
+      if (checkAbort(room, round)) return;
 
       const factionResults = await Promise.all(
         ALL_FACTIONS.map(async (faction) => {
@@ -256,8 +266,7 @@ export async function triggerGeneration(
           const signalApps = factionApps.filter(app => APP_CONTENT_TIER[app] === "signal");
           const contentArtifact = `content:${faction}`;
           const startTs = Date.now();
-          logGenerationStart(round, contentArtifact);
-          logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: contentArtifact }, { round, actorId: "system" });
+          logArtifactStart(round, contentArtifact, logger);
 
           // Per-faction usage tracker accumulates across both feed and signal tiers
           const factionTracker = makeUsageTracker();
@@ -307,11 +316,9 @@ export async function triggerGeneration(
 
       for (const { faction, contentResult, contentArtifact, durationMs, contentUsage } of factionResults) {
         if (contentResult === null) {
-          logGenerationFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs);
-          logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: contentArtifact, reason: "generateContentWithRetry returned null", durationMs }, { round, actorId: "system" });
+          logArtifactFailure(round, contentArtifact, "generateContentWithRetry returned null", durationMs, logger);
           contentOk = false;
         } else {
-          // Log any remaining fog warnings
           const allItems = contentResult.flatMap(ac => ac.items);
           const fogResult = validateFogSafety(allItems, room.state, faction);
           if (fogResult.warnings.length > 0) {
@@ -323,8 +330,7 @@ export async function triggerGeneration(
             sharedSubstackItems.push(...substackContent.items);
           }
           setGeneratedContent(room, round, faction, factionContent);
-          logGenerationSuccess(round, contentArtifact, durationMs, contentUsage);
-          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: contentArtifact, durationMs, usage: contentUsage }, { round, actorId: "system" });
+          logArtifactSuccess(round, contentArtifact, durationMs, contentUsage, logger);
         }
       }
       if (sharedSubstackItems.length > 0) {
@@ -341,31 +347,20 @@ export async function triggerGeneration(
     // ── NPC generation ───────────────────────────────────────────────────────
     // Round 1 NPC triggers are seeded above with content.
     if (npcEnabled && round !== 1) {
-      const npcArtifact = "npc";
       const startTs = Date.now();
-      logGenerationStart(round, npcArtifact);
-      logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: npcArtifact }, { round, actorId: "system" });
-
-      if (room.phase === "ending") {
-        console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
-        setGenerationStatus(room, round, "failed");
-        return;
-      }
+      logArtifactStart(round, "npc", logger);
+      if (checkAbort(room, round)) return;
 
       const npcTracker = makeUsageTracker();
       const npcResult = await generateNpcMessagesWithRetry(resolvedProvider, context, { ...npcOptions, onUsage: npcTracker.onUsage });
-
       const durationMs = Date.now() - startTs;
 
       if (npcResult === null) {
-        logGenerationFailure(round, npcArtifact, "generateNpcMessagesWithRetry returned null", durationMs);
-        logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: npcArtifact, reason: "generateNpcMessagesWithRetry returned null", durationMs }, { round, actorId: "system" });
+        logArtifactFailure(round, "npc", "generateNpcMessagesWithRetry returned null", durationMs, logger);
         npcOk = false;
       } else {
         setGeneratedNpcTriggers(room, round, npcResult);
-        const npcUsage = npcTracker.usage;
-        logGenerationSuccess(round, npcArtifact, durationMs, npcUsage);
-        logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: npcArtifact, durationMs, usage: npcUsage }, { round, actorId: "system" });
+        logArtifactSuccess(round, "npc", durationMs, npcTracker.usage, logger);
       }
       flushPrompts("npc");
     }
@@ -375,35 +370,23 @@ export async function triggerGeneration(
     if (decisionsEnabled) {
       const templates = getTemplatesForRound(round);
       if (templates.length > 0) {
-        // If decisions were launched in parallel with content, await the result.
-        // Otherwise launch now (fallback for round 1 or if parallel launch was skipped).
-        const decisionsArtifact = "decisions";
         const startTs = decisionsStartTs ?? Date.now();
         if (!decisionsPromise) {
-          logGenerationStart(round, decisionsArtifact);
-          logger.log(EVENT_NAMES.GENERATION_STARTED, { artifact: decisionsArtifact }, { round, actorId: "system" });
+          logArtifactStart(round, "decisions", logger);
           decisionsPromise = generateDecisionsWithRetry(resolvedProvider, context, templates, round, { ...decisionOptions, onUsage: decisionsTracker.onUsage });
         }
 
-        if (room.phase === "ending") {
-          console.log(`[orchestrator] Game ended during generation for round ${round}, aborting`);
-          setGenerationStatus(room, round, "failed");
-          return;
-        }
+        if (checkAbort(room, round)) return;
 
         const decisionsResult = await decisionsPromise;
-
         const durationMs = Date.now() - startTs;
 
         if (decisionsResult === null) {
-          logGenerationFailure(round, decisionsArtifact, "generateDecisionsWithRetry returned null", durationMs);
-          logger.log(EVENT_NAMES.GENERATION_FAILURE, { artifact: decisionsArtifact, reason: "generateDecisionsWithRetry returned null", durationMs }, { round, actorId: "system" });
+          logArtifactFailure(round, "decisions", "generateDecisionsWithRetry returned null", durationMs, logger);
           decisionsOk = false;
         } else {
           setGeneratedDecisions(room, round, decisionsResult);
-          const decisionsUsage = decisionsTracker.usage;
-          logGenerationSuccess(round, decisionsArtifact, durationMs, decisionsUsage);
-          logger.log(EVENT_NAMES.GENERATION_SUCCESS, { artifact: decisionsArtifact, durationMs, usage: decisionsUsage }, { round, actorId: "system" });
+          logArtifactSuccess(round, "decisions", durationMs, decisionsTracker.usage, logger);
         }
       }
       flushPrompts("decisions");
