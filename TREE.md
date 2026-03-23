@@ -1,4 +1,4 @@
-/Users/tau/projects/takeoff-protocol/.worktrees/worker-ef86d185b771
+/Users/tau/projects/takeoff-protocol/.worktrees/worker-61dc292d40bf
 ├── docs
 │   ├── DEPLOY-RUNBOOK.md
 │   ├── DESIGN.md
@@ -85,7 +85,6 @@
 │   ├── report-hawk.md
 │   ├── report-random.md
 │   ├── run-full-game.ts
-│   ├── scale-deltas.ts
 │   ├── simulate-core.ts
 │   ├── simulate-generated.test.ts
 │   ├── simulate-generated.ts
@@ -100,4 +99,4 @@
 ├── TREE.md
 └── tsconfig.json
 
-22 directories, 79 files
+22 directories, 78 files
