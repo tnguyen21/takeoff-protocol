@@ -3,7 +3,8 @@ import type { GameMessage } from "@takeoff/shared";
 import { socket } from "../socket.js";
 import { useNotificationsStore } from "./notifications.js";
 import { useUIStore } from "./ui.js";
-import { useGameStore, nextSeq } from "./game.js";
+import { useGameStore } from "./game.js";
+import { nextSeq } from "./gameListeners.js";
 import { soundManager } from "../sounds/index.js";
 
 interface MessagesStore {

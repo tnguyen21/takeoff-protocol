@@ -16,7 +16,9 @@
  */
 
 import { describe, it, expect, beforeEach } from "bun:test";
-import { loadSession, saveSession, clearSession, useGameStore, nextSeq } from "./game.js";
+import { useGameStore } from "./game.js";
+import { loadSession, saveSession, clearSession } from "./session.js";
+import { nextSeq } from "./gameListeners.js";
 
 const SESSION_KEY = "takeoff:session";
 
