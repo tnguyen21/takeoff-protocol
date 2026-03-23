@@ -180,7 +180,7 @@ export type ContentClassification =
   | "breadcrumb"
   | "flavor";
 
-export interface ContentCondition {
+interface ContentCondition {
   variable: keyof StateVariables;
   operator: "gt" | "lt" | "eq";
   value: number;
@@ -342,7 +342,7 @@ export interface StoryEvent {
   narrativeWeight: "major" | "minor";
 }
 
-export interface PlayerActionSummary {
+interface PlayerActionSummary {
   round: number;
   playerId: string;
   faction: Faction;
