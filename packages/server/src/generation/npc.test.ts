@@ -215,29 +215,29 @@ describe("postProcessNpcTriggers — schedule.round forced to targetRound", () =
 // ── validateNpcTriggers ────────────────────────────────────────────────────────
 
 describe("validateNpcTriggers", () => {
-  it("rejects when fewer than 4 triggers", () => {
-    const triggers = makeValidTriggers(3);
+  it("rejects when fewer than 10 triggers", () => {
+    const triggers = makeValidTriggers(8);
     const result = validateNpcTriggers(triggers);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("need ≥4"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("need ≥10"))).toBe(true);
   });
 
-  it("rejects when more than 8 triggers", () => {
-    const triggers = makeValidTriggers(9);
+  it("rejects when more than 24 triggers", () => {
+    const triggers = makeValidTriggers(25);
     const result = validateNpcTriggers(triggers);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("max 8"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("max 24"))).toBe(true);
   });
 
-  it("passes for 4-8 triggers with valid fields", () => {
-    const triggers = makeValidTriggers(5);
+  it("passes for 10-24 triggers with valid fields", () => {
+    const triggers = makeValidTriggers(15);
     const result = validateNpcTriggers(triggers);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
 
   it("rejects trigger with empty content", () => {
-    const triggers = makeValidTriggers(5);
+    const triggers = makeValidTriggers(12);
     triggers[0].content = "";
     const result = validateNpcTriggers(triggers);
     expect(result.valid).toBe(false);
@@ -245,7 +245,7 @@ describe("validateNpcTriggers", () => {
   });
 
   it("rejects trigger with unknown npcId", () => {
-    const triggers = makeValidTriggers(5);
+    const triggers = makeValidTriggers(12);
     triggers[0].npcId = "__npc_fake__";
     const result = validateNpcTriggers(triggers);
     expect(result.valid).toBe(false);
@@ -291,6 +291,13 @@ const VALID_MOCK_NPC_OUTPUT = {
     { id: "gen-npc-r2-003", npcId: "__npc_ob_engineer__", content: "Message three", target: { faction: "openbrain" }, schedule: { round: 2, phase: "decision" } },
     { id: "gen-npc-r2-004", npcId: "__npc_personal__", content: "Message four", target: { faction: "china" }, schedule: { round: 2, phase: "resolution" } },
     { id: "gen-npc-r2-005", npcId: "__npc_china_liaison__", content: "Message five for condition", target: { faction: "china" }, condition: { variable: "chinaWeightTheftProgress", operator: "gte", value: 30 } },
+    { id: "gen-npc-r2-006", npcId: "__npc_ob_board__", content: "Message six", target: { faction: "openbrain", role: "ob_ceo" }, schedule: { round: 2, phase: "intel" } },
+    { id: "gen-npc-r2-007", npcId: "__npc_prom_researcher__", content: "Message seven", target: { faction: "prometheus", role: "prom_scientist" }, schedule: { round: 2, phase: "intel" } },
+    { id: "gen-npc-r2-008", npcId: "__npc_china_engineer__", content: "Message eight", target: { faction: "china", role: "china_scientist" }, schedule: { round: 2, phase: "briefing" } },
+    { id: "gen-npc-r2-009", npcId: "__npc_intel_analyst__", content: "Message nine", target: { faction: "external", role: "ext_nsa" }, schedule: { round: 2, phase: "intel" } },
+    { id: "gen-npc-r2-010", npcId: "__npc_spouse__", content: "Message ten", target: { faction: "openbrain", role: "ob_safety" }, schedule: { round: 2, phase: "decision" } },
+    { id: "gen-npc-r2-011", npcId: "__npc_editor__", content: "Message eleven", target: { faction: "external", role: "ext_journalist" }, schedule: { round: 2, phase: "deliberation" } },
+    { id: "gen-npc-r2-012", npcId: "__npc_portfolio_ceo__", content: "Message twelve", target: { faction: "external", role: "ext_vc" }, schedule: { round: 2, phase: "decision" } },
   ],
 };
 
@@ -321,7 +328,7 @@ describe("generateNpcMessagesWithRetry", () => {
     const context = makeContext();
     const result = await generateNpcMessagesWithRetry(provider, context);
     expect(result).not.toBeNull();
-    expect(result!.length).toBeGreaterThanOrEqual(4);
+    expect(result!.length).toBeGreaterThanOrEqual(10);
     expect(result!.every((t) => t.id.startsWith("gen-npc-"))).toBe(true);
   });
 

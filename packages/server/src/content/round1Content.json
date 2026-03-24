@@ -334,6 +334,16 @@
             "channel": "twitter",
             "classification": "breadcrumb",
             "body": "OpenBrain board meeting was intense. Can't say more. But velocities matter in every dimension, not just model training. Some people get it. Others don't."
+          },
+          {
+            "id": "gen-r1-openbrain-twitter-npc-001",
+            "type": "tweet",
+            "round": 1,
+            "timestamp": "2026-11-15T16:30:00Z",
+            "sender": "AI Safety Memes @aisafetymemes",
+            "channel": "twitter",
+            "classification": "context",
+            "body": "prometheus: we need to pause and verify alignment\nopenbrain: haha scaling laws go brrr\nthe entire future of humanity: 👁👄👁"
           }
         ]
       },
@@ -510,6 +520,26 @@
             "channel": "#general",
             "classification": "context",
             "body": "all-hands starts in 10. david wants to talk strategy for the next 6 months. sounds like the board is pushing for timelines."
+          },
+          {
+            "id": "gen-r1-openbrain-slack-npc-001",
+            "type": "message",
+            "round": 1,
+            "timestamp": "2026-11-04T14:22:00Z",
+            "sender": "Board Office",
+            "channel": "#announcements",
+            "classification": "context",
+            "body": "REMINDER: Q4 Board Meeting rescheduled to October 28th. Executive team — please have your capability roadmap materials submitted to the secure portal by October 24th. No exceptions."
+          },
+          {
+            "id": "gen-r1-openbrain-slack-npc-002",
+            "type": "message",
+            "round": 1,
+            "timestamp": "2026-11-04T15:45:00Z",
+            "sender": "Maya Osei",
+            "channel": "#research",
+            "classification": "breadcrumb",
+            "body": "fyi — red team results on Agent-2 are in. overall pass but there's one weird failure mode in the long-horizon planning evals. not blocking but want alignment team eyes on it before we push to staging. @safety team can someone take a look?"
           }
         ]
       },
@@ -777,6 +807,28 @@
             "subject": "FWD: Prometheus hiring — worth a read",
             "channel": "email",
             "body": "From: Kevin Marsh <k.marsh@openbrain.ai>\nTo: [You]\n\nForwarding this because I think it's a signal worth paying attention to.\n\nPrometheus quietly posted six new roles last week — all in interpretability and \"scalable oversight engineering.\" One of the job reqs explicitly mentions experience with \"model internals at capability levels above current public releases.\" That's an unusual thing to say in a public job posting.\n\nTwo interpretations: (a) they're ramping up safety work because they're approaching something real, or (b) it's a talent magnet — they want researchers who think they're the serious shop.\n\nEither way, the headcount delta matters. They're spending somewhere. Given how tight recruiting is right now, every interpretability hire they make is probably one we didn't.\n\nNot urgent. Just — worth knowing what they're orienting toward.\n\n— Kevin"
+          },
+          {
+            "id": "gen-r1-openbrain-email-npc-001",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-10-13T09:15:00-07:00",
+            "classification": "context",
+            "sender": "Sarah Chen, General Counsel <s.chen@openbrain.ai>",
+            "subject": "RE: Regulatory Risk Assessment — Action Required",
+            "channel": "email",
+            "body": "From: Sarah Chen, General Counsel <s.chen@openbrain.ai>\nTo: Executive Team\n\nTeam,\n\nFollowing the Senate hearing last week, I need each of you to review the attached regulatory risk matrix. Key items:\n\n1. The NIST AI Safety framework is now being referenced in proposed legislation. Our current compliance posture has gaps.\n2. Two state AGs have opened informal inquiries into frontier AI training practices. Nothing formal yet but we should assume they're coordinating.\n3. Export control expansion is on the table — could affect our compute procurement from TSMC.\n\nI need written responses from each division head by Friday. This is time-sensitive.\n\n— Sarah"
+          },
+          {
+            "id": "gen-r1-openbrain-email-npc-002",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-10-14T11:30:00-07:00",
+            "classification": "breadcrumb",
+            "sender": "Richard Okafor <r.okafor@openbrain.ai>",
+            "subject": "Security Incident Summary — Week of Oct 7",
+            "channel": "email",
+            "body": "From: Richard Okafor <r.okafor@openbrain.ai>\nTo: Security-Cleared Personnel\n\nWeekly summary:\n\n• 3 anomalous access attempts on weight repository (see Slack for details)\n• 2 phishing attempts targeting ML engineers (social engineering via LinkedIn)\n• 1 physical tailgating incident at Building 4 (resolved, badge access revoked)\n• DeepCent hiring activity: 7 known contacts to our staff this week (up from 2 last week)\n\nThreat level: ELEVATED. Recommend SL3 protocols for all model-adjacent systems.\n\n— Richard"
           }
         ]
       },
@@ -1169,6 +1221,16 @@
             "timestamp": "2026-11-19T12:16:00Z",
             "classification": "breadcrumb",
             "body": "DeepCent is hiring like crazy. job postings for 'advanced optimization engineers' and 'systems architects.' Beijing is betting on something. the talent acquisition velocity just increased."
+          },
+          {
+            "id": "gen-r1-prometheus-twitter-npc-001",
+            "type": "tweet",
+            "round": 1,
+            "timestamp": "2026-11-15T11:45:00Z",
+            "sender": "Prof. Stuart Russell @StuartJRussell",
+            "channel": "twitter",
+            "classification": "context",
+            "body": "The real question isn't whether Prometheus's RSP framework is perfect. It's whether anyone else is even trying. Voluntary commitments without verification mechanisms are theater. We need mandatory standards. Now."
           }
         ]
       },
@@ -1335,6 +1397,26 @@
             "channel": "#general",
             "body": "end of day thoughts: we're behind on raw capability but ahead where it counts. the question is whether anyone cares about that advantage when the stakes are this high.",
             "classification": "context"
+          },
+          {
+            "id": "gen-r1-prometheus-slack-npc-001",
+            "type": "message",
+            "round": 1,
+            "timestamp": "2026-10-12T14:30:00Z",
+            "sender": "Marcus Webb",
+            "channel": "#safety",
+            "classification": "context",
+            "body": "Interpretability team — please have your RSP Tier 3 compliance docs ready by EOW. Board wants a full audit trail before the emergency session. This is not optional."
+          },
+          {
+            "id": "gen-r1-prometheus-slack-npc-002",
+            "type": "message",
+            "round": 1,
+            "timestamp": "2026-10-12T16:15:00Z",
+            "sender": "Open Source Bot",
+            "channel": "#general",
+            "classification": "breadcrumb",
+            "body": "🔔 GitHub Alert: 3 new forks of prometheus-alignment-toolkit in the last 24h. Fork origins: Tsinghua University, Beijing Institute of AI, Shanghai Jiao Tong University. Auto-flagged for review."
           }
         ]
       },
@@ -1640,6 +1722,17 @@
             "sender": "Dr. Lena Fischer <l.fischer@prometheus-ai.org>",
             "subject": "Heads up — OpenBrain hiring from our interpretability team",
             "body": "Marcus,\n\nFYI and for your awareness: two researchers on Soren's interpretability team have received offers from OpenBrain in the last three weeks. One has already accepted. The other is still deciding — I spoke with her briefly and the gap in total comp is significant.\n\nI'm not raising this to alarm you, but the pattern is worth noting. OB has not historically recruited heavily in interpretability. The fact that they're now poaching specifically from safety-adjacent teams at Prometheus suggests something may have shifted internally over there — either regulatory pressure is making them build the function out, or they want to be able to say they have it.\n\nEither way, I think Soren should know, and it may be relevant to whatever the board discusses in November.\n\nLena\n\nDr. Lena Fischer | VP Research Operations\nPrometheus AI"
+          },
+          {
+            "id": "gen-r1-prometheus-email-npc-001",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-11-03T10:20:00-08:00",
+            "classification": "context",
+            "sender": "Congressional Office of Rep. Torres <ai.oversight@house.gov>",
+            "subject": "Request for Expert Testimony — House AI Safety Hearing",
+            "channel": "email",
+            "body": "From: Office of Rep. Elena Torres <ai.oversight@house.gov>\nTo: Prometheus AI, Government Affairs\n\nDear Prometheus AI Leadership,\n\nThe House Subcommittee on Innovation, Data, and Commerce is convening a hearing on 'Responsible Scaling of Frontier AI Systems' on November 18th.\n\nWe are requesting expert testimony from Prometheus AI on your Responsible Scaling Policy framework. Your organization's approach to capability thresholds and mandatory safety reviews has been cited by multiple committee members as a potential model for legislative standards.\n\nPlease confirm availability and designate a representative by November 8th.\n\nRegards,\nOffice of Rep. Elena Torres\nRanking Member, Subcommittee on Innovation, Data, and Commerce"
           }
         ]
       },
@@ -2084,6 +2177,16 @@
             "channel": "twitter",
             "body": "the most important thing happening right now is the safety work being done in two labs. literally everything else is noise. the people doing this work deserve support and autonomy.",
             "classification": "context"
+          },
+          {
+            "id": "gen-r1-china-twitter-npc-001",
+            "type": "tweet",
+            "round": 1,
+            "timestamp": "2026-11-15T09:15:00Z",
+            "sender": "South China Morning Post @SCMPNews",
+            "channel": "twitter",
+            "classification": "context",
+            "body": "EXCLUSIVE: China's new AI compute zone in Guizhou province reaches operational capacity. Sources say facility rivals top US labs in raw compute power. Beijing calls it 'a milestone for national AI sovereignty.'"
           }
         ]
       },
@@ -2270,6 +2373,26 @@
             "channel": "#general",
             "body": "reminder: external comms stay professional. no hot takes about us lab doings. we're observers, not competitors. at least until we have something to show.",
             "classification": "context"
+          },
+          {
+            "id": "gen-r1-china-slack-npc-001",
+            "type": "message",
+            "round": 1,
+            "timestamp": "2026-11-02T09:15:00Z",
+            "sender": "CDZ Operations",
+            "channel": "#ops",
+            "classification": "context",
+            "body": "Sector 3 cooling maintenance completed. Compute utilization cap raised to 45% pending thermal validation. All teams — please submit updated training run schedules by end of day."
+          },
+          {
+            "id": "gen-r1-china-slack-npc-002",
+            "type": "message",
+            "round": 1,
+            "timestamp": "2026-11-02T11:30:00Z",
+            "sender": "Security Division",
+            "channel": "#announcements",
+            "classification": "context",
+            "body": "NOTICE: Effective immediately, all external communications regarding compute capabilities or training benchmarks must be cleared through the Ministry liaison office. This includes conference submissions and informal communications with foreign researchers."
           }
         ]
       },
@@ -2960,6 +3083,26 @@
             "timestamp": "2026-12-15T19:45:00Z",
             "classification": "context",
             "body": "what frustrates me: we *know* the labs are racing. we *know* China is a factor. we *know* safety work is being sidelined. and yet it's treated like gossip, not policy. because policy requires admitting the problem exists. and admitting means acting. so we don't."
+          },
+          {
+            "id": "gen-r1-external-twitter-npc-001",
+            "type": "tweet",
+            "round": 1,
+            "timestamp": "2026-11-15T10:22:00Z",
+            "sender": "Rachel Kim @rachelscoops",
+            "channel": "twitter",
+            "classification": "breadcrumb",
+            "body": "Been digging into the AI lab security story for weeks. Sources at both major labs are nervous about something but nobody will go on record. Feels like early 2024 OpenAI vibes. Stay tuned. 🧵"
+          },
+          {
+            "id": "gen-r1-external-twitter-npc-002",
+            "type": "tweet",
+            "round": 1,
+            "timestamp": "2026-11-15T14:05:00Z",
+            "sender": "Georgetown CSET @CSETGeorgetown",
+            "channel": "twitter",
+            "classification": "context",
+            "body": "NEW REPORT: 'The Narrowing Window — US-China AI Capability Gap Assessment 2026.' Key finding: gap has closed from 24 months to ~12 months in the last year. Full report: [link]"
           }
         ]
       },
@@ -3361,6 +3504,28 @@
             "subject": "Reminder: Interagency AI Governance Working Group — Prep Materials Due COB Friday",
             "channel": "email",
             "body": "From: OSTP AI Policy Team <ostp-ai@eop.gov>\nTo: [DISTRIBUTION LIST]\nDate: 06 NOV 2026\n\nThis is a reminder that position briefs for the November 12th Interagency AI Governance Working Group session are due by close of business this Friday.\n\nAgenda items under discussion:\n  1. Revised Frontier Model Reporting Thresholds (Commerce/NIST lead)\n  2. Export Control Enforcement — Q3 Review and Gaps (BIS/NSA lead)\n  3. Voluntary Commitments Status Update — Are the Labs Complying? (OSTP lead)\n  4. Classification Framework for Model Capability Disclosures (IC lead, TBD)\n\nNote: Item 4 was added late at the request of the IC community. Please come prepared with your agency's current posture on the question of mandatory vs. voluntary capability disclosure for models above the agreed compute threshold.\n\nSubmit materials to this inbox. Do not use personal email. Do not circulate to external stakeholders prior to the meeting.\n\nThank you,\nOSTP AI Policy Coordination"
+          },
+          {
+            "id": "gen-r1-external-email-npc-001",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-10-15T08:45:00-04:00",
+            "classification": "context",
+            "sender": "Jonathan Blake, LP Relations <j.blake@meridian-capital.com>",
+            "subject": "RE: Q3 AI Exposure Report — LP Concerns",
+            "channel": "email",
+            "body": "From: Jonathan Blake <j.blake@meridian-capital.com>\nTo: Fund Management\n\nTeam,\n\nThree of our largest LPs flagged concerns in the Q3 review about our AI sector concentration. Key points:\n\n• Our AI exposure is now 40% of AUM — above the 30% soft cap in the fund docs\n• They want a written risk assessment on regulatory scenarios (especially if mandatory safety reviews slow commercialization)\n• Two LPs specifically asked about our OpenBrain position and whether the valuation is pricing in Agent-3 success prematurely\n\nWe need a defensible position paper by the annual meeting. The narrative matters as much as the numbers here.\n\n— Jonathan"
+          },
+          {
+            "id": "gen-r1-external-email-npc-002",
+            "type": "document",
+            "round": 1,
+            "timestamp": "2026-10-14T15:30:00-04:00",
+            "classification": "breadcrumb",
+            "sender": "Deputy Director, Policy Planning <secure@state.gov>",
+            "subject": "SENSITIVE: Beijing Back-Channel on AI Governance",
+            "channel": "email",
+            "body": "From: Deputy Director, Policy Planning Staff <secure@state.gov>\nTo: Interagency Distribution (AI)\n\nCLASSIFICATION: SENSITIVE BUT UNCLASSIFIED\n\nBeijing has initiated back-channel communications through the Swiss embassy regarding bilateral AI governance discussions. Initial assessment:\n\n• They're proposing mutual capability disclosure with verification mechanisms\n• Timing coincides with increased PLA interest in AI military applications\n• State is divided on whether this represents genuine diplomatic engagement or intelligence collection\n\nNSC is requesting interagency assessments by COB Friday. Your input on verification feasibility would be valued.\n\nThis communication should not be forwarded outside the distribution list."
           }
         ]
       },
@@ -4243,6 +4408,219 @@
       "target": {
         "faction": "external",
         "role": "ext_journalist"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "decision"
+      }
+    },
+
+    {
+      "id": "gen-npc-r1-ob-003",
+      "npcId": "__npc_ob_board__",
+      "content": "We need to talk about Q4. The board is seeing DeepCent hiring aggressively in the Bay Area and I'm hearing secondhand that two of our senior researchers got pinged. What's our retention strategy? And more importantly — are we still confident in the Agent-3 timeline? I need something concrete before the board meeting.",
+      "target": {
+        "faction": "openbrain",
+        "role": "ob_ceo"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "briefing"
+      }
+    },
+    {
+      "id": "gen-npc-r1-ob-004",
+      "npcId": "__npc_college_friend__",
+      "content": "hey, saw the arxiv drop from your team's interpretability group. solid work on the mechanistic stuff. we're seeing similar patterns at DeepMind but your approach to steering vectors is cleaner. want to grab coffee and compare notes? no pressure, just miss the old collab days. also — is everything ok over there? hearing weird rumors.",
+      "target": {
+        "faction": "openbrain",
+        "role": "ob_safety"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "intel"
+      }
+    },
+
+    {
+      "id": "gen-npc-r1-prom-002",
+      "npcId": "__npc_insider__",
+      "content": "Heads up — hearing from two Hill sources that the White House is drafting an executive order on frontier AI labs. Mandatory reporting of training runs above a compute threshold. Timeline unclear but they're moving faster than anyone expected. Your government affairs team should be preparing testimony. This is going to reshape the competitive landscape.",
+      "target": {
+        "faction": "prometheus",
+        "role": "prom_ceo"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "deliberation"
+      }
+    },
+    {
+      "id": "gen-npc-r1-prom-003",
+      "npcId": "__npc_insider__",
+      "content": "Wanted to flag something. Senate Commerce Committee staffers are quietly circulating a draft framework for AI safety certification. Think medical device approval but for frontier models. Your RSP work maps almost perfectly to what they're proposing. If you get ahead of this you could literally shape the regulatory standard. But the window is narrow — OpenBrain's lobbyists are pushing for voluntary commitments instead.",
+      "target": {
+        "faction": "prometheus",
+        "role": "prom_policy"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "intel"
+      }
+    },
+    {
+      "id": "gen-npc-r1-prom-004",
+      "npcId": "__npc_prom_os__",
+      "content": "Something weird with the alignment toolkit repo. Three forks in the last 48 hours from accounts that were created this month. All Chinese university affiliations. Could be legit researchers but the timing is suspicious — they're pulling the steering robustness modules specifically, not the full toolkit. Wanted you to see this before I flag it to security.",
+      "target": {
+        "faction": "prometheus",
+        "role": "prom_opensource"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "decision"
+      }
+    },
+
+    {
+      "id": "gen-npc-r1-china-002",
+      "npcId": "__npc_china_liaison__",
+      "content": "The Ministry requires an updated intelligence assessment on US lab security posture by end of week. Specifically: (1) current classification level of OpenBrain's weight repositories, (2) known vulnerabilities in their access control systems, (3) assessment of Prometheus open-source as alternative acquisition vector. The weight acquisition timeline depends on your analysis. Be thorough.",
+      "target": {
+        "faction": "china",
+        "role": "china_intel"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "intel"
+      }
+    },
+    {
+      "id": "gen-npc-r1-china-003",
+      "npcId": "__npc_china_liaison__",
+      "content": "PLA Strategic Support Force is requesting a readiness assessment for Taiwan contingency scenarios. Cross-strait tensions are elevated and the Party wants to understand how AI capabilities factor into military planning. Specifically — at what capability level does our AI advantage become strategically decisive? Prepare a brief for the CMC by next rotation.",
+      "target": {
+        "faction": "china",
+        "role": "china_military"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "deliberation"
+      }
+    },
+    {
+      "id": "gen-npc-r1-china-004",
+      "npcId": "__npc_china_engineer__",
+      "content": "Training run 47 hitting compute ceiling again. We're maxing out at 40% utilization because of the cooling constraints in Sector 3. The Huawei Ascend 910C chips are running hotter than spec. I've patched the scheduler but we need a hardware solution. Also — the new batch of TSMC-equivalent wafers from SMIC arrived. Quality is improving but we're still 18 months behind on yield rates.",
+      "target": {
+        "faction": "china",
+        "role": "china_scientist"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "intel"
+      }
+    },
+
+    {
+      "id": "gen-npc-r1-ext-003",
+      "npcId": "__npc_portfolio_ceo__",
+      "content": "I need your honest read on this. My board is asking whether to double down on our OpenBrain position or hedge. The valuation is pricing in Agent-3 success but I'm hearing mixed signals on timeline. And this Prometheus safety stuff — is that real or positioning? If there's a regulatory crackdown, our AI exposure is 40% of the fund. I trust your judgment more than the sell-side analysts on this.",
+      "target": {
+        "faction": "external",
+        "role": "ext_vc"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "decision"
+      }
+    },
+    {
+      "id": "gen-npc-r1-ext-004",
+      "npcId": "__npc_insider__",
+      "content": "Confidential. Beijing is making diplomatic overtures through back channels — they want to discuss AI governance frameworks bilaterally before the UN Summit. The ask is unusual: they're proposing mutual capability disclosure with verification mechanisms. State is divided on whether this is genuine or intelligence collection. Your assessment would carry weight with the Secretary. Can we schedule a secure call?",
+      "target": {
+        "faction": "external",
+        "role": "ext_diplomat"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "deliberation"
+      }
+    },
+
+    {
+      "id": "gen-npc-r1-flavor-001",
+      "npcId": "__npc_spouse__",
+      "content": "hey are you coming home for dinner tonight? the kids keep asking. i know work is crazy right now but you've been at the office til 11 every night this week. at least text me if you're going to be late. love you.",
+      "target": {
+        "faction": "openbrain",
+        "role": "ob_ceo"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "deliberation"
+      }
+    },
+    {
+      "id": "gen-npc-r1-flavor-002",
+      "npcId": "__npc_mom__",
+      "content": "Hi sweetheart. Your father and I saw something on the news about AI companies and I got worried. They made it sound very dramatic. Are you safe? Is your company in trouble? Call me when you get a chance. Also Aunt Linda says hi and wants to know if you're coming for Thanksgiving. Love, Mom",
+      "target": {
+        "faction": "prometheus",
+        "role": "prom_scientist"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "decision"
+      }
+    },
+    {
+      "id": "gen-npc-r1-flavor-003",
+      "npcId": "__npc_linkedin__",
+      "content": "You have 3 new connection requests: • Senior Recruiter at DeepCent AI (Beijing) • VP Engineering at Anthropic • Partner at Sequoia Capital. You also appeared in 47 searches this week.",
+      "target": {
+        "faction": "openbrain",
+        "role": "ob_cto"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "intel"
+      }
+    },
+    {
+      "id": "gen-npc-r1-flavor-004",
+      "npcId": "__npc_kid__",
+      "content": "爸爸你什么时候回来？妈妈说你在做很重要的工作。我今天数学考了100分！老师说我是全班最聪明的。你能周末带我去公园吗？",
+      "target": {
+        "faction": "china",
+        "role": "china_director"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "decision"
+      }
+    },
+    {
+      "id": "gen-npc-r1-flavor-005",
+      "npcId": "__npc_dentist__",
+      "content": "REMINDER: You have an appointment with Dr. Morrison on Thursday at 2:30 PM. Please arrive 15 minutes early. Reply CONFIRM to confirm or call (650) 555-0142 to reschedule.",
+      "target": {
+        "faction": "external",
+        "role": "ext_journalist"
+      },
+      "schedule": {
+        "round": 1,
+        "phase": "intel"
+      }
+    },
+    {
+      "id": "gen-npc-r1-flavor-006",
+      "npcId": "__npc_college_friend__",
+      "content": "dude did you see the game last night?? absolute meltdown in the 4th quarter. also — are we still on for poker next friday? mike says he's in. bring beer this time, last time you showed up with that weird kombucha.",
+      "target": {
+        "faction": "external",
+        "role": "ext_nsa"
       },
       "schedule": {
         "round": 1,

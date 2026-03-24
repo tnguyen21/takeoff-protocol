@@ -284,11 +284,11 @@ const VALID_FACTIONS_SET: ReadonlySet<string> = new Set<Faction>([
 export function validateNpcTriggers(triggers: NpcTrigger[]): ValidationResult {
   const errors: string[] = [];
 
-  if (triggers.length < 4) {
-    errors.push(`only ${triggers.length} NPC triggers, need ≥4`);
+  if (triggers.length < 10) {
+    errors.push(`only ${triggers.length} NPC triggers, need ≥10`);
   }
-  if (triggers.length > 8) {
-    errors.push(`${triggers.length} NPC triggers, max 8`);
+  if (triggers.length > 24) {
+    errors.push(`${triggers.length} NPC triggers, max 24`);
   }
 
   for (const trigger of triggers) {

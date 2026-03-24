@@ -136,7 +136,7 @@ function buildNpcUserPrompt(context: GenerationContext, validationErrors?: strin
   // Retry feedback
   if (validationErrors && validationErrors.length > 0) {
     parts.push(
-      `## Validation Errors from Previous Attempt\nYour previous output failed validation. Fix these issues:\n${validationErrors.map((e) => `- ${e}`).join("\n")}\n\nEnsure 4-8 total triggers, all IDs start with "gen-npc-", and exactly one of condition/schedule per trigger.`,
+      `## Validation Errors from Previous Attempt\nYour previous output failed validation. Fix these issues:\n${validationErrors.map((e) => `- ${e}`).join("\n")}\n\nEnsure 12-20 total triggers (10 minimum, 24 maximum), all IDs start with "gen-npc-", and exactly one of condition/schedule per trigger.`,
     );
   }
 

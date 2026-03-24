@@ -62,10 +62,13 @@ Your output is a JSON object with an "items" array of NpcTrigger objects matchin
 }
 
 QUANTITY RULES (per round):
-- 2-4 scheduled messages (one or more per major faction as appropriate)
-- 1-2 conditional messages (fire when a state variable crosses a threshold)
-- 1 personal/flavor message (atmospheric, builds character — use __npc_personal__)
-- Total: 4-8 triggers per round
+- 6-10 scheduled messages (target specific roles where possible, spread across phases)
+- 2-4 conditional messages (fire when a state variable crosses a threshold)
+- 2-4 personal/flavor messages (atmospheric — use family, notification, or personal personas)
+- Total: 12-20 triggers per round
+- At least 50% of triggers should specify a target.role (not just faction-wide)
+- Each faction should receive at least 3 triggers per round
+- Vary which roles receive triggers across rounds — every role should feel seen
 
 PERSONA VOICE RULES:
 - Match the persona's role and faction exactly. An engineer does not sound like a board member.
