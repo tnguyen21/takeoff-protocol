@@ -4576,19 +4576,6 @@
       }
     },
     {
-      "id": "gen-npc-r1-flavor-003",
-      "npcId": "__npc_linkedin__",
-      "content": "You have 3 new connection requests: • Senior Recruiter at DeepCent AI (Beijing) • VP Engineering at Anthropic • Partner at Sequoia Capital. You also appeared in 47 searches this week.",
-      "target": {
-        "faction": "openbrain",
-        "role": "ob_cto"
-      },
-      "schedule": {
-        "round": 1,
-        "phase": "intel"
-      }
-    },
-    {
       "id": "gen-npc-r1-flavor-004",
       "npcId": "__npc_kid__",
       "content": "爸爸你什么时候回来？妈妈说你在做很重要的工作。我今天数学考了100分！老师说我是全班最聪明的。你能周末带我去公园吗？",
