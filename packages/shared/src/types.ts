@@ -198,6 +198,7 @@ export interface ContentItem {
   timestamp: string;
   classification?: ContentClassification;
   condition?: ContentCondition;
+  category?: string;
 }
 
 export interface AppContent {

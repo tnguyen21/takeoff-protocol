@@ -188,8 +188,8 @@ export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
           title: item.subject ?? item.body.split("\n")[0] ?? "(untitled)",
           authors: item.sender ?? "Unknown",
           date: item.timestamp,
-          category: "cs.AI",
-          categories: ["cs.AI"],
+          category: item.category ?? "cs.AI",
+          categories: item.category ? [item.category] : ["cs.AI"],
           abstract: item.subject ? item.body : item.body.slice(item.body.indexOf("\n") + 1),
           citations: 0,
         }))

@@ -11,7 +11,7 @@ import { getRoom } from "./rooms.js";
 const ALL_FACTIONS: Faction[] = ["openbrain", "prometheus", "china", "external"];
 const DRIP_WINDOW_RATIO = 0.75;
 const WAVE_INTERVAL_MS = 30_000;
-const INITIAL_BATCH_RATIO = 0.4;
+const INITIAL_BATCH_RATIO = 0.7;
 
 interface DripState {
   round: number;

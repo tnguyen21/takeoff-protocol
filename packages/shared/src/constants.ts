@@ -187,20 +187,20 @@ export function isLeaderRole(role: Role): boolean {
 // ── Phase Durations (seconds) ──
 
 export const PHASE_DURATIONS: Record<string, number> = {
-  briefing: 120,
-  intel: 300,
-  deliberation: 300,
-  decision: 300,
-  resolution: 180,
+  briefing: 60,
+  intel: 180,
+  deliberation: 180,
+  decision: 120,
+  resolution: 60,
 };
 
 // Round 4 has a special structure with cross-faction negotiation
 export const ROUND4_PHASE_DURATIONS: Record<string, number> = {
-  briefing: 180,
-  intel: 300,
-  deliberation: 420, // 7 min for cross-faction negotiation
-  decision: 300,
-  resolution: 300,
+  briefing: 120,
+  intel: 180,
+  deliberation: 240, // 4 min for cross-faction negotiation
+  decision: 120,
+  resolution: 60,
 };
 
 // ── Initial State ──
