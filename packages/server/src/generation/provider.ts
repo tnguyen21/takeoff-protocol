@@ -338,7 +338,7 @@ export class AnthropicProvider implements GenerationProvider {
     // maxRetries: 5 — SDK handles transient 429/5xx with built-in exponential
     // backoff before throwing. The game retry layer adds further resilience on
     // top of these SDK retries.
-    this.client = new Anthropic({ apiKey, maxRetries: 5 });
+    this.client = new Anthropic({ apiKey, maxRetries: 5, dangerouslyAllowBrowser: true });
   }
 
   async generate<T>(params: GenerateParams): Promise<T> {

@@ -1,0 +1,5 @@
+# Root-level test config: preload happy-dom so `bun test` from the repo root
+# provides browser globals needed by client tests. Server tests that construct
+# a real Anthropic SDK client opt out via dangerouslyAllowBrowser.
+[test]
+preload = ["./packages/client/src/test-preload.ts"]
