@@ -16,6 +16,8 @@ import { getTemplatesForRound } from "./templates/decisions.js";
 import { buildGenerationContext } from "./context.js";
 import {
   appendGeneratedPrompts,
+  getGeneratedContent,
+  getGeneratedSharedContent,
   getGenerationStatus,
   setGeneratedBriefing,
   setGeneratedContent,
@@ -32,7 +34,19 @@ import { emitBriefing } from "../game.js";
 import { enqueueDrip } from "../contentDrip.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
 import round1ContentData from "../content/round1Content.json";
+import round2FillerData from "../content/fillerContent/round2Filler.json";
+import round3FillerData from "../content/fillerContent/round3Filler.json";
+import round4FillerData from "../content/fillerContent/round4Filler.json";
+import round5FillerData from "../content/fillerContent/round5Filler.json";
 import ambientTriggersData from "../content/ambientTriggers.json";
+
+type FillerData = Record<string, AppContent[]> & { sharedContent?: AppContent[] };
+const FILLER_BY_ROUND: Record<number, FillerData> = {
+  2: round2FillerData as unknown as FillerData,
+  3: round3FillerData as unknown as FillerData,
+  4: round4FillerData as unknown as FillerData,
+  5: round5FillerData as unknown as FillerData,
+};
 
 /** Returns ambient (personal/spam) triggers scheduled for the given round. */
 function getAmbientTriggersForRound(round: number): NpcTrigger[] {
@@ -244,7 +258,29 @@ export async function triggerGeneration(
         setGeneratedNpcTriggers(room, round, [...r1.npcTriggers, ...ambient]);
       }
       console.log(`[orchestrator] Seeded pre-authored round 1 content + NPC triggers (${getAmbientTriggersForRound(round).length} ambient)`);
-    } else if (allContentApps.length > 0) {
+    }
+
+    // ── Filler content for rounds 2-5 (seeded immediately, LLM content drips in later) ──
+    const fillerData = FILLER_BY_ROUND[round];
+    if (fillerData) {
+      let fillerCount = 0;
+      for (const faction of ALL_FACTIONS) {
+        const factionFiller = fillerData[faction];
+        if (factionFiller && factionFiller.length > 0) {
+          setGeneratedContent(room, round, faction, factionFiller);
+          fillerCount += factionFiller.reduce((n, ac) => n + ac.items.length, 0);
+        }
+      }
+      if (fillerData.sharedContent && fillerData.sharedContent.length > 0) {
+        setGeneratedSharedContent(room, round, fillerData.sharedContent);
+        fillerCount += fillerData.sharedContent.reduce((n, ac) => n + ac.items.length, 0);
+      }
+      if (fillerCount > 0) {
+        console.log(`[orchestrator] Seeded ${fillerCount} filler items for round ${round}`);
+      }
+    }
+
+    if (round !== 1 && allContentApps.length > 0) {
     // Split apps into feed-tier (Haiku, high volume) and signal-tier (Sonnet, high quality).
     // Both tiers run in parallel across all factions. Each tier emits content
     // incrementally to players as it resolves (via game:content-batch), so
@@ -336,13 +372,16 @@ export async function triggerGeneration(
           if (substackContent) {
             sharedSubstackItems.push(...substackContent.items);
           }
-          setGeneratedContent(room, round, faction, factionContent);
+          // Merge with existing filler content (don't overwrite)
+          const existingContent = getGeneratedContent(room, round, faction) ?? [];
+          setGeneratedContent(room, round, faction, [...existingContent, ...factionContent]);
           logArtifactSuccess(round, contentArtifact, durationMs, contentUsage, logger);
         }
       }
       if (sharedSubstackItems.length > 0) {
         sharedSubstackItems.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-        setGeneratedSharedContent(room, round, [{
+        const existingShared = getGeneratedSharedContent(room, round) ?? [];
+        setGeneratedSharedContent(room, round, [...existingShared, {
           faction: "external",
           app: "substack",
           items: sharedSubstackItems,
