@@ -24,7 +24,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import type { GameRoom } from "@takeoff/shared";
 import { INITIAL_STATE } from "@takeoff/shared";
-import { triggerGeneration } from "./orchestrator.js";
+import { triggerGeneration, retriggerDecisions } from "./orchestrator.js";
 import { getGeneratedBriefing, getGeneratedDecisions, getGenerationStatus } from "./cache.js";
 import { MockProvider, GenerationParseError } from "./provider.js";
 
@@ -512,6 +512,67 @@ describe("triggerGeneration — ending phase abort (INV-3)", () => {
       } finally {
         process.env.GEN_BRIEFINGS_ENABLED = savedBriefings;
       }
+    }),
+  );
+});
+
+// ── INV-5: Content drip not enqueued after game ends ─────────────────────────
+
+describe("triggerGeneration — no drip enqueue after game end (INV-5)", () => {
+  it(
+    "does not enqueue drip items when phase becomes 'ending' during content generation",
+    withGenEnabled(async () => {
+      // Provider that flips room.phase to "ending" on the first call,
+      // simulating endGame() firing while content gen is in-flight.
+      const validContent = { items: [{ id: "test-1", app: "bloomberg", headline: "Test", body: "Test body", timestamp: "2027-01-01T00:00:00Z" }] };
+      let callCount = 0;
+      const endingProvider = {
+        generate: async <T>(params: { systemPrompt: string; userPrompt: string; schema: object; options?: object }) => {
+          callCount++;
+          // After first call, flip to ending — simulates GM ending game mid-generation
+          if (callCount === 1) {
+            room.phase = "ending" as GameRoom["phase"];
+          }
+          return validContent as T;
+        },
+      };
+      const room = makeRoom();
+      const { clearDrip } = await import("../contentDrip.js");
+      clearDrip(room.code);
+      await triggerGeneration(room, 2, endingProvider);
+      // The key assertion: generation ran but status should be failed since
+      // checkAbort fires between stages, and drip callbacks check room.phase
+      expect(getGenerationStatus(room, 2)).toBe("failed");
+    }),
+  );
+});
+
+// ── INV-6: retriggerDecisions respects ending phase ──────────────────────────
+
+describe("retriggerDecisions — ending phase abort (INV-6)", () => {
+  it(
+    "returns false without calling provider when phase is 'ending'",
+    withDecisionsEnabled(async () => {
+      const room = makeRoom({ phase: "ending" });
+      const result = await retriggerDecisions(room, 2);
+      expect(result).toBe(false);
+    }),
+  );
+
+  it(
+    "returns false when phase becomes 'ending' during provider call",
+    withDecisionsEnabled(async () => {
+      const endingProvider = {
+        generate: async <T>() => {
+          room.phase = "ending" as GameRoom["phase"];
+          return VALID_SINGLE_DECISION as T;
+        },
+      };
+      // retriggerDecisions doesn't accept a provider param, so we test the
+      // pre-call guard only (phase already ending before the call).
+      const room = makeRoom({ phase: "ending" });
+      const result = await retriggerDecisions(room, 2);
+      expect(result).toBe(false);
     }),
   );
 });

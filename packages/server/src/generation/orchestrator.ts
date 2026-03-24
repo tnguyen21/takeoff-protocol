@@ -278,7 +278,7 @@ export async function triggerGeneration(
             feedApps.length > 0
               ? generateContentWithRetry(resolvedProvider, context, faction, feedApps, feedContentOptions)
                   .then(result => {
-                    if (result && io) {
+                    if (result && io && room.phase !== "ending") {
                       const scrubbed = scrubTierResult(result, faction);
                       const nonSubstack = scrubbed.filter(ac => ac.app !== "substack");
                       if (nonSubstack.length > 0) enqueueDrip(room.code, faction, nonSubstack);
@@ -290,7 +290,7 @@ export async function triggerGeneration(
             signalApps.length > 0
               ? generateContentWithRetry(resolvedProvider, context, faction, signalApps, signalContentOptions)
                   .then(result => {
-                    if (result && io) {
+                    if (result && io && room.phase !== "ending") {
                       const scrubbed = scrubTierResult(result, faction);
                       enqueueDrip(room.code, faction, scrubbed);
                       console.log(`[orchestrator:${faction}] signal tier emitted ${scrubbed.flatMap(ac => ac.items).length} items incrementally`);
@@ -441,7 +441,9 @@ export async function retriggerDecisions(
 
     const options: GenerationOptions = { model: config.decisionModel, timeout: config.timeout };
     console.log(`[decisions:retry] Retrying decision generation for round ${round}`);
+    if (checkAbort(room, round)) return false;
     const result = await generateDecisionsWithRetry(provider, context, templates, round, options);
+    if (checkAbort(room, round)) return false;
     if (result) {
       setGeneratedDecisions(room, round, result);
       console.log(`[decisions:retry] Success for round ${round}`);
