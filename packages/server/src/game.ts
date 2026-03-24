@@ -4,7 +4,7 @@ import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, ST
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers, getGeneratedSharedContent, getGenerationStatus } from "./generation/cache.js";
-import { triggerGeneration, retriggerDecisions } from "./generation/orchestrator.js";
+import { triggerGeneration, retriggerDecisions, seedFillerContent } from "./generation/orchestrator.js";
 import { TUTORIAL_CONTENT } from "./content/tutorial.js";
 import { getNpcPersona } from "./content/npcPersonas.js";
 import { applyActivityPenalties } from "./activityPenalties.js";
@@ -321,6 +321,7 @@ export function advancePhase(io: Server, room: GameRoom) {
   }
 
   if (room.phase === "intel") {
+    seedFillerContent(room, room.round);
     startDrip(io, room);
   }
 

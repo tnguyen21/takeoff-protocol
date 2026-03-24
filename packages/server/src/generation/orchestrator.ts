@@ -260,25 +260,8 @@ export async function triggerGeneration(
       console.log(`[orchestrator] Seeded pre-authored round 1 content + NPC triggers (${getAmbientTriggersForRound(round).length} ambient)`);
     }
 
-    // ── Filler content for rounds 2-5 (seeded immediately, LLM content drips in later) ──
-    const fillerData = FILLER_BY_ROUND[round];
-    if (fillerData) {
-      let fillerCount = 0;
-      for (const faction of ALL_FACTIONS) {
-        const factionFiller = fillerData[faction];
-        if (factionFiller && factionFiller.length > 0) {
-          setGeneratedContent(room, round, faction, factionFiller);
-          fillerCount += factionFiller.reduce((n, ac) => n + ac.items.length, 0);
-        }
-      }
-      if (fillerData.sharedContent && fillerData.sharedContent.length > 0) {
-        setGeneratedSharedContent(room, round, fillerData.sharedContent);
-        fillerCount += fillerData.sharedContent.reduce((n, ac) => n + ac.items.length, 0);
-      }
-      if (fillerCount > 0) {
-        console.log(`[orchestrator] Seeded ${fillerCount} filler items for round ${round}`);
-      }
-    }
+    // Filler seeding is done synchronously via seedFillerContent() before startDrip,
+    // so it's already in the cache by the time the drip scheduler reads it.
 
     if (round !== 1 && allContentApps.length > 0) {
     // Split apps into feed-tier (Haiku, high volume) and signal-tier (Sonnet, high quality).
@@ -508,5 +491,30 @@ export async function retriggerDecisions(
   } catch (err) {
     console.error(`[decisions:retry] Unexpected error for round ${round}:`, err);
     return false;
+  }
+}
+
+/**
+ * Synchronously seed filler content for rounds 2-5 into the generation cache.
+ * Call this BEFORE startDrip() so the drip scheduler has content to deliver immediately.
+ */
+export function seedFillerContent(room: GameRoom, round: number): void {
+  const fillerData = FILLER_BY_ROUND[round];
+  if (!fillerData) return;
+
+  let fillerCount = 0;
+  for (const faction of ALL_FACTIONS) {
+    const factionFiller = fillerData[faction];
+    if (factionFiller && factionFiller.length > 0) {
+      setGeneratedContent(room, round, faction, factionFiller);
+      fillerCount += factionFiller.reduce((n: number, ac: AppContent) => n + ac.items.length, 0);
+    }
+  }
+  if (fillerData.sharedContent && fillerData.sharedContent.length > 0) {
+    setGeneratedSharedContent(room, round, fillerData.sharedContent);
+    fillerCount += fillerData.sharedContent.reduce((n: number, ac: AppContent) => n + ac.items.length, 0);
+  }
+  if (fillerCount > 0) {
+    console.log(`[orchestrator] Seeded ${fillerCount} filler items for round ${round}`);
   }
 }
