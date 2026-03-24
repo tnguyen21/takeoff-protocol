@@ -209,7 +209,9 @@ export const TwitterApp = React.memo(function TwitterApp({ content }: AppProps) 
   const myName = useGameStore((s) => s.playerName);
   const playerTweets = useGameStore((s) => s.playerTweets);
 
-  const tweetItems = content.filter((i) => i.type === "tweet");
+  const tweetItems = content
+    .filter((i) => i.type === "tweet")
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   const baseTweets: Tweet[] =
     tweetItems.length > 0

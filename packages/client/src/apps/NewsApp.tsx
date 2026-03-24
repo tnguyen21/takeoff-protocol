@@ -227,7 +227,9 @@ function UtcClock() {
 export const NewsApp = React.memo(function NewsApp({ content }: AppProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const headlines = content.filter((i) => i.type === "headline");
+  const headlines = content
+    .filter((i) => i.type === "headline")
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   const stories: Story[] =
     headlines.length > 0

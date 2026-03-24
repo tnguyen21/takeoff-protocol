@@ -215,7 +215,9 @@ function resolveAuthor(senderRole: Role | undefined, sender: string | undefined,
 
 export const MemoApp = React.memo(function MemoApp({ content }: AppProps) {
   const lobbyPlayers = useGameStore((s) => s.lobbyPlayers);
-  const memoItems = content.filter((i) => i.type === "memo" || i.type === "document");
+  const memoItems = content
+    .filter((i) => i.type === "memo" || i.type === "document")
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   // Server-provided pages from content
   const serverPages: Page[] = memoItems.map((item) => ({

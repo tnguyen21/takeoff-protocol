@@ -34,7 +34,9 @@ export const EmailApp = React.memo(function EmailApp({ content }: AppProps) {
 
   // Build email list from game content or fall back to static data
   const allEmails: EmailWithId[] = useMemo(() => {
-    const docItems = content.filter((i) => i.type === "document");
+    const docItems = content
+      .filter((i) => i.type === "document")
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
     const baseEmails: EmailWithId[] =
       docItems.length > 0
         ? docItems.map((item) => ({

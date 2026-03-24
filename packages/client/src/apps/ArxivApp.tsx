@@ -181,7 +181,9 @@ export const ArxivApp = React.memo(function ArxivApp({ content }: AppProps) {
   const [expandedPaperId, setExpandedPaperId] = useState<number | null>(null);
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const docItems = content.filter((i) => i.type === "document");
+  const docItems = content
+    .filter((i) => i.type === "document")
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   const basePapers: PaperWithId[] = assignStableIds(
     docItems.length > 0
       ? docItems.map((item) => ({

@@ -121,7 +121,9 @@ export const BloombergApp = React.memo(function BloombergApp({ content }: AppPro
   const [sortCol, setSortCol] = useState<SortCol>("sym");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const headlineItems = content.filter((i) => i.type === "headline");
+  const headlineItems = content
+    .filter((i) => i.type === "headline")
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   const wireHeadlines: WireHeadline[] =
     headlineItems.length > 0
       ? headlineItems.map((item, idx) => ({
