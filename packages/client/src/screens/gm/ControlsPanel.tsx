@@ -319,35 +319,21 @@ function TimerSettingsPanel({
 
 // ── ControlsPanel ─────────────────────────────────────────────────────────────
 
-interface ControlsPanelProps {
-  round: number;
-  phase: string | null;
-  timer: { endsAt: number; pausedAt?: number };
-  gmRawState: StateVariables | null;
-  gmExtendUsesRemaining: number;
-  gmTimerOverrides: Partial<Record<GamePhase, number>>;
-  gmAdvance: () => void;
-  gmPause: () => void;
-  gmExtend: () => void;
-  gmEndGame: () => void;
-  gmSetTimers: (overrides: Partial<Record<GamePhase, number>>) => void;
-  endTutorial: () => void;
-}
-
-export function ControlsPanel({
-  round,
-  phase,
-  timer,
-  gmRawState,
-  gmExtendUsesRemaining,
-  gmTimerOverrides,
-  gmAdvance,
-  gmPause,
-  gmExtend,
-  gmEndGame,
-  gmSetTimers,
-  endTutorial,
-}: ControlsPanelProps) {
+export function ControlsPanel() {
+  const {
+    round,
+    phase,
+    timer,
+    gmRawState,
+    gmExtendUsesRemaining,
+    gmTimerOverrides,
+    gmAdvance,
+    gmPause,
+    gmExtend,
+    gmEndGame,
+    gmSetTimers,
+    endTutorial,
+  } = useGameStore();
   const [showEndings, setShowEndings] = useState(false);
   const isPaused = !!timer.pausedAt;
   const handleEndGame = useCallback(() => {

@@ -1,17 +1,10 @@
 import { FACTIONS } from "@takeoff/shared";
 import type { Faction } from "@takeoff/shared";
 import { FACTION_COLORS } from "../../constants/factions.js";
-import type { LobbyPlayer } from "../../stores/game.js";
+import { useGameStore } from "../../stores/game.js";
 
-interface PlayerRosterProps {
-  lobbyPlayers: LobbyPlayer[];
-  phase: string | null;
-  roomCode: string | null;
-  gmDecisionStatus: string[];
-  gmPlayerActivity: Record<string, string[]>;
-}
-
-export function PlayerRoster({ lobbyPlayers, phase, roomCode, gmDecisionStatus, gmPlayerActivity }: PlayerRosterProps) {
+export function PlayerRoster() {
+  const { lobbyPlayers, phase, roomCode, gmDecisionStatus, gmPlayerActivity } = useGameStore();
   return (
     <div>
       <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-3">

@@ -1,17 +1,13 @@
 import { useRef, useEffect } from "react";
-import type { GameMessage, Faction } from "@takeoff/shared";
+import type { Faction } from "@takeoff/shared";
 import { FACTION_COLORS } from "../../constants/factions.js";
 import { formatTimestamp } from "./shared.js";
-import type { LobbyPlayer } from "../../stores/game.js";
+import { useGameStore } from "../../stores/game.js";
+import { useMessagesStore } from "../../stores/messages.js";
 
-interface MessageFeedProps {
-  messages: GameMessage[];
-  phase: string | null;
-  gmDecisionStatus: string[];
-  lobbyPlayers: LobbyPlayer[];
-}
-
-export function MessageFeed({ messages, phase, gmDecisionStatus, lobbyPlayers }: MessageFeedProps) {
+export function MessageFeed() {
+  const { phase, gmDecisionStatus, lobbyPlayers } = useGameStore();
+  const { messages } = useMessagesStore();
   const feedRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll message feed

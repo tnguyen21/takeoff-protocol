@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, DecisionOption, Faction, GameMessage, GamePhase, GameRoom, IndividualDecision, Player, Publication, PublicationType, ResolutionData, Role, StateDelta, StateEffect, StateVariables, TeamDecision } from "@takeoff/shared";
-import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, STATE_VARIABLE_RANGES, computeFogView, resolveDecisions, computeEndingArcs, clampState } from "@takeoff/shared";
+import { PHASE_DURATIONS, ROUND4_PHASE_DURATIONS, TOTAL_ROUNDS, STATE_LABELS, STATE_VARIABLE_RANGES, computeFogView, resolveDecisions, computeEndingArcs, clampState, applyEffectList } from "@takeoff/shared";
 import { getLoggerForRoom, closeLoggerForRoom } from "./logger/registry.js";
 import { EVENT_NAMES } from "./logger/index.js";
 import { getGeneratedBriefing, getGeneratedContent, getGeneratedDecisions, getGeneratedNpcTriggers, getGeneratedSharedContent, getGenerationStatus } from "./generation/cache.js";
@@ -115,7 +115,8 @@ export function startGame(io: Server, room: GameRoom) {
   room.teamDecisions = {};
   room.teamVotes = {};
   setPhaseTimer(io, room);
-  void triggerGeneration(room, 1, undefined, io);
+  triggerGeneration(room, 1, undefined, io).catch(err =>
+    console.error(`[game] Generation failed for ${room.code} round 1:`, err));
 
   // Emit phase change
   io.to(room.code).emit("game:phase", {
@@ -184,7 +185,8 @@ export function endTutorial(io: Server, room: GameRoom) {
   room.playerActivity = {};
 
   setPhaseTimer(io, room);
-  void triggerGeneration(room, 1, undefined, io);
+  triggerGeneration(room, 1, undefined, io).catch(err =>
+    console.error(`[game] Generation failed for ${room.code} round 1:`, err));
 
   io.to(room.code).emit("game:phase", {
     phase: room.phase,
@@ -326,9 +328,9 @@ export function advancePhase(io: Server, room: GameRoom) {
     emitDecisions(io, room);
     // Dev bot autoplay — never bundled in production
     if (process.env.NODE_ENV !== "production") {
-      void import("./devBots.js").then(({ scheduleBotDecisionSubmissions }) => {
+      import("./devBots.js").then(({ scheduleBotDecisionSubmissions }) => {
         scheduleBotDecisionSubmissions(io, room, { mode: "all_roles" });
-      });
+      }).catch(err => console.error(`[game] Dev bot scheduling failed:`, err));
     }
   }
 
@@ -383,7 +385,8 @@ export function emitDecisions(io: Server, room: GameRoom) {
 
   // If generation already finished without decisions, retry just the decisions artifact
   if (genStatus === "ready" || genStatus === "failed") {
-    void retriggerDecisions(room, targetRound);
+    retriggerDecisions(room, targetRound).catch(err =>
+      console.error(`[game] Decision retrigger failed for ${room.code} round ${targetRound}:`, err));
   }
 
   const startTime = Date.now();
@@ -855,10 +858,7 @@ export function checkThresholds(io: Server, room: GameRoom): void {
     fired.add(def.id);
 
     // Apply state effects with clamping from canonical ranges
-    for (const effect of def.effects ?? []) {
-      const [min, max] = STATE_VARIABLE_RANGES[effect.variable];
-      (s[effect.variable] as number) = Math.min(max, Math.max(min, (s[effect.variable] as number) + effect.delta));
-    }
+    applyEffectList(s, def.effects ?? []);
 
     // Set room flag if specified
     if (def.roomFlag) {
@@ -1139,7 +1139,8 @@ function emitResolution(io: Server, room: GameRoom) {
   }
 
   // Trigger async generation for next round — fire-and-forget, never blocks resolution
-  void triggerGeneration(room, room.round + 1, undefined, io);
+  triggerGeneration(room, room.round + 1, undefined, io).catch(err =>
+    console.error(`[game] Generation failed for ${room.code} round ${room.round + 1}:`, err));
 
   // Log state delta (decisions + penalties + thresholds) and final snapshot
   resLogger.log(EVENT_NAMES.STATE_DELTA, {

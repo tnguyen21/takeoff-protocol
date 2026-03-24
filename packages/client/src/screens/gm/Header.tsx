@@ -1,14 +1,10 @@
 import { PHASE_LABELS } from "./shared.js";
+import { useGameStore } from "../../stores/game.js";
 
-interface HeaderProps {
-  roomCode: string | null;
-  round: number;
-  phase: string | null;
-  connectedCount: number;
-  totalPlayers: number;
-}
-
-export function Header({ roomCode, round, phase, connectedCount, totalPlayers }: HeaderProps) {
+export function Header() {
+  const { roomCode, round, phase, lobbyPlayers } = useGameStore();
+  const connectedCount = lobbyPlayers.filter((p) => p.connected).length;
+  const totalPlayers = lobbyPlayers.length;
   return (
     <div className="flex items-center gap-6 py-3 px-6 bg-white/[0.03] border-b border-white/[0.08] shrink-0">
       {/* GM badge */}

@@ -43,6 +43,37 @@ export function clampState(state: StateVariables): void {
 }
 
 /**
+ * Apply a list of {variable, delta} effects to state.
+ * Mutates state in-place and clamps to canonical ranges.
+ */
+export function applyEffectList(
+  state: StateVariables,
+  effects: readonly { variable: keyof StateVariables; delta: number }[],
+): void {
+  for (const effect of effects) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (state as any)[effect.variable] += effect.delta;
+  }
+  clampState(state);
+}
+
+/**
+ * Apply a map of state variable deltas (e.g. from publication effects).
+ * Mutates state in-place and clamps to canonical ranges.
+ */
+export function applyDeltaMap(
+  state: StateVariables,
+  deltas: Partial<Record<keyof StateVariables, number>>,
+): void {
+  for (const [key, delta] of Object.entries(deltas) as [keyof StateVariables, number][]) {
+    if (delta === undefined) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (state as any)[key] += delta;
+  }
+  clampState(state);
+}
+
+/**
  * Resolve a set of chosen decisions into a new game state.
  * Returns a copy — does not mutate the input.
  */

@@ -1,6 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import type { AppContent, ContentItem, Faction, GameMessage, Publication, PublicationAngle, PublicationTarget, PublicationType, StateVariables } from "@takeoff/shared";
-import { canWriteSubstack, getPublicationEffects, STATE_VARIABLE_RANGES } from "@takeoff/shared";
+import { canWriteSubstack, getPublicationEffects, applyDeltaMap } from "@takeoff/shared";
 import type { GameRoom, Role } from "@takeoff/shared";
 import { getActiveDecisions } from "../game.js";
 import { getLoggerForRoom } from "../logger/registry.js";
@@ -327,13 +327,7 @@ export function registerPlayerActionEvents(io: Server, socket: Socket) {
         };
         effects = STATE_EFFECTS[type];
       }
-      const stateRec = room.state as unknown as Record<string, number>;
-      for (const [key, delta] of Object.entries(effects) as [keyof StateVariables, number][]) {
-        const range = STATE_VARIABLE_RANGES[key];
-        if (!range) continue;
-        const current = room.state[key];
-        stateRec[key] = Math.max(range[0], Math.min(range[1], current + delta));
-      }
+      applyDeltaMap(room.state, effects);
 
       const summary = `${type === "leak" ? "🔴 LEAK" : type === "research" ? "📄 RESEARCH" : "📰 PUBLISHED"}: ${title}`;
 

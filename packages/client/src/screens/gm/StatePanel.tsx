@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FACTIONS, STATE_VARIABLE_RANGES, computeFogView } from "@takeoff/shared";
 import type { Faction, Role, StateVariables, StateView } from "@takeoff/shared";
 import { STATE_LABELS } from "../../constants/labels.js";
+import { useGameStore } from "../../stores/game.js";
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
@@ -235,13 +236,8 @@ function FogInspector({ gmRawState, round }: { gmRawState: StateVariables; round
 
 // ── StatePanel ────────────────────────────────────────────────────────────────
 
-interface StatePanelProps {
-  gmRawState: StateVariables | null;
-  round: number;
-  gmSetState: (variable: keyof StateVariables, value: number) => void;
-}
-
-export function StatePanel({ gmRawState, round, gmSetState }: StatePanelProps) {
+export function StatePanel() {
+  const { gmRawState, round, gmSetState } = useGameStore();
   return (
     <div className="col-start-2 row-span-2 bg-surface py-5 px-6 overflow-auto border-r border-white/[0.06]">
       <div className="text-text-muted text-[10px] font-semibold uppercase tracking-widest mb-4">
