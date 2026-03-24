@@ -1,0 +1,262 @@
+[
+  {
+    "id": "ambient-ob-ceo-r1",
+    "npcId": "__npc_spouse__",
+    "content": "hey are you coming home for dinner tonight? the kids keep asking. i know work is crazy right now but you've been at the office til 11 every night this week. at least text me if you're going to be late. love you.",
+    "target": { "faction": "openbrain", "role": "ob_ceo" },
+    "schedule": { "round": 1, "phase": "deliberation" }
+  },
+  {
+    "id": "ambient-ob-ceo-r3",
+    "npcId": "__npc_amazon__",
+    "content": "Your Amazon order has been delivered! \"The Hard Thing About Hard Things\" was left at your front door. Rate your delivery experience.",
+    "target": { "faction": "openbrain", "role": "ob_ceo" },
+    "schedule": { "round": 3, "phase": "intel" }
+  },
+  {
+    "id": "ambient-ob-ceo-r5",
+    "npcId": "__npc_spam_loan__",
+    "content": "Congratulations! You've been pre-approved for a $50,000 personal line of credit at 3.9% APR. Act now — this exclusive offer expires in 48 hours. Reply STOP to opt out.",
+    "target": { "faction": "openbrain", "role": "ob_ceo" },
+    "schedule": { "round": 5, "phase": "intel" }
+  },
+
+  {
+    "id": "ambient-ob-cto-r2",
+    "npcId": "__npc_fantasy__",
+    "content": "🏈 TRADE DEADLINE ALERT: Dan offered you Ja'Marr Chase for your Davante Adams + 2nd round pick. Respond by 11:59 PM or the trade expires. Your record: 6-3.",
+    "target": { "faction": "openbrain", "role": "ob_cto" },
+    "schedule": { "round": 2, "phase": "intel" }
+  },
+  {
+    "id": "ambient-ob-cto-r4",
+    "npcId": "__npc_landlord__",
+    "content": "NOTICE: Annual fire safety inspection scheduled for your unit on Thursday between 10am-2pm. Please ensure access to all smoke detectors. Management will enter with master key if no one is home.",
+    "target": { "faction": "openbrain", "role": "ob_cto" },
+    "schedule": { "round": 4, "phase": "briefing" }
+  },
+
+  {
+    "id": "ambient-ob-safety-r1",
+    "npcId": "__npc_gym__",
+    "content": "Hi! You missed your 6AM class today. No worries — your next Barry's Bootcamp session is tomorrow at 6:00 AM. Keep the streak alive! 💪 Reply SKIP to cancel.",
+    "target": { "faction": "openbrain", "role": "ob_safety" },
+    "schedule": { "round": 1, "phase": "intel" }
+  },
+  {
+    "id": "ambient-ob-safety-r3",
+    "npcId": "__npc_mom__",
+    "content": "Hi sweetheart. Your father and I saw something on the news about AI companies and I got worried. They made it sound very dramatic. Are you safe? Is your company in trouble? Call me when you get a chance. Also Aunt Linda says hi and wants to know if you're coming for Thanksgiving. Love, Mom",
+    "target": { "faction": "openbrain", "role": "ob_safety" },
+    "schedule": { "round": 3, "phase": "decision" }
+  },
+
+  {
+    "id": "ambient-ob-security-r2",
+    "npcId": "__npc_defcon__",
+    "content": "DEF CON 35 CFP REMINDER: Your talk proposal \"Supply Chain Attacks on ML Model Registries\" is due in 14 days. Submit at cfp.defcon.org. Early bird registration closes Nov 30.",
+    "target": { "faction": "openbrain", "role": "ob_security" },
+    "schedule": { "round": 2, "phase": "briefing" }
+  },
+  {
+    "id": "ambient-ob-security-r4",
+    "npcId": "__npc_venmo__",
+    "content": "Dan paid you $47.00 for \"poker night 🃏\"",
+    "target": { "faction": "openbrain", "role": "ob_security" },
+    "schedule": { "round": 4, "phase": "intel" }
+  },
+
+  {
+    "id": "ambient-prom-ceo-r2",
+    "npcId": "__npc_drycleaner__",
+    "content": "Your order is ready for pickup! 2 suits, 3 dress shirts. Martinizing Dry Cleaning, 412 University Ave. We close at 7 PM today.",
+    "target": { "faction": "prometheus", "role": "prom_ceo" },
+    "schedule": { "round": 2, "phase": "intel" }
+  },
+  {
+    "id": "ambient-prom-ceo-r4",
+    "npcId": "__npc_spam_insurance__",
+    "content": "IMPORTANT: Your vehicle warranty is about to expire. Call 877-914-6233 NOW to extend your coverage before it's too late. This is your FINAL NOTICE.",
+    "target": { "faction": "prometheus", "role": "prom_ceo" },
+    "schedule": { "round": 4, "phase": "intel" }
+  },
+
+  {
+    "id": "ambient-prom-scientist-r1",
+    "npcId": "__npc_library__",
+    "content": "Stanford Libraries: Your hold on \"Superintelligence: Paths, Dangers, Strategies\" by Nick Bostrom is ready for pickup at Green Library. Hold expires in 7 days.",
+    "target": { "faction": "prometheus", "role": "prom_scientist" },
+    "schedule": { "round": 1, "phase": "decision" }
+  },
+  {
+    "id": "ambient-prom-scientist-r4",
+    "npcId": "__npc_advisor__",
+    "content": "I read your latest preprint. The mechanistic interpretability results are strong but I think you're underselling the steering vector work. Come by office hours Thursday — I'd like to discuss before you submit to NeurIPS. Also: the department holiday party is Dec 15. — Prof. Chen",
+    "target": { "faction": "prometheus", "role": "prom_scientist" },
+    "schedule": { "round": 4, "phase": "deliberation" }
+  },
+
+  {
+    "id": "ambient-prom-policy-r2",
+    "npcId": "__npc_spam_political__",
+    "content": "URGENT: The future of AI regulation is at stake. Donate $25 to the Tech Accountability PAC before midnight to make your voice heard. Every dollar counts. Reply STOP to unsubscribe.",
+    "target": { "faction": "prometheus", "role": "prom_policy" },
+    "schedule": { "round": 2, "phase": "intel" }
+  },
+  {
+    "id": "ambient-prom-policy-r5",
+    "npcId": "__npc_petco__",
+    "content": "Petco Reminder: Oscar is due for his annual wellness exam and vaccinations. Book online or call your local Petco Vet at (650) 555-0199. 🐾",
+    "target": { "faction": "prometheus", "role": "prom_policy" },
+    "schedule": { "round": 5, "phase": "briefing" }
+  },
+
+  {
+    "id": "ambient-prom-opensource-r1",
+    "npcId": "__npc_hackernews__",
+    "content": "Your post \"Why alignment toolkits need to be open source\" is trending on Hacker News (342 points, 187 comments). Top comment: \"This is exactly what we needed. The walled-garden approach to safety research is insane.\"",
+    "target": { "faction": "prometheus", "role": "prom_opensource" },
+    "schedule": { "round": 1, "phase": "intel" }
+  },
+  {
+    "id": "ambient-prom-opensource-r3",
+    "npcId": "__npc_bikeshop__",
+    "content": "Hi! Your bike tune-up is complete. New chain, adjusted derailleurs, trued rear wheel. Total: $127. Ready for pickup at Volta Cycles anytime before 6pm. 🚲",
+    "target": { "faction": "prometheus", "role": "prom_opensource" },
+    "schedule": { "round": 3, "phase": "briefing" }
+  },
+
+  {
+    "id": "ambient-china-director-r1",
+    "npcId": "__npc_kid__",
+    "content": "爸爸你什么时候回来？妈妈说你在做很重要的工作。我今天数学考了100分！老师说我是全班最聪明的。你能周末带我去公园吗？",
+    "target": { "faction": "china", "role": "china_director" },
+    "schedule": { "round": 1, "phase": "decision" }
+  },
+  {
+    "id": "ambient-china-director-r4",
+    "npcId": "__npc_logistics__",
+    "content": "通知：下周一至周三，3号数据中心将进行年度消防演练。届时部分区域将暂时断电。请各部门提前做好数据备份工作。——后勤保障部",
+    "target": { "faction": "china", "role": "china_director" },
+    "schedule": { "round": 4, "phase": "briefing" }
+  },
+
+  {
+    "id": "ambient-china-intel-r2",
+    "npcId": "__npc_comrades__",
+    "content": "老赵发红包了 [¥88.88] 备注：老同学聚会定在下月15号，北京饭店，谁来举个手 🙋",
+    "target": { "faction": "china", "role": "china_intel" },
+    "schedule": { "round": 2, "phase": "intel" }
+  },
+  {
+    "id": "ambient-china-intel-r5",
+    "npcId": "__npc_wechat_classmates__",
+    "content": "刘教授：各位同学，今年的校友年会改为线上举办。请大家填写问卷，链接在群公告里。另外，有人知道张伟的近况吗？好久没联系了。",
+    "target": { "faction": "china", "role": "china_intel" },
+    "schedule": { "round": 5, "phase": "deliberation" }
+  },
+
+  {
+    "id": "ambient-china-military-r1",
+    "npcId": "__npc_spouse__",
+    "content": "你今天能早点回来吗？你妈打了三个电话了。她说你两个星期没给她打电话了。我帮你挡了但你自己打一个吧。晚饭我做好了，在冰箱里。",
+    "target": { "faction": "china", "role": "china_military" },
+    "schedule": { "round": 1, "phase": "deliberation" }
+  },
+  {
+    "id": "ambient-china-military-r3",
+    "npcId": "__npc_discord__",
+    "content": "Server: Genshin Impact CN · #daily-commissions — MiHoYo: Version 5.4 update is live! New character banner: Mavuika rerun. Maintenance compensation: 600 Primogems sent to mailbox.",
+    "target": { "faction": "china", "role": "china_military" },
+    "schedule": { "round": 3, "phase": "intel" }
+  },
+
+  {
+    "id": "ambient-china-scientist-r2",
+    "npcId": "__npc_amazon__",
+    "content": "您的京东订单已发货！《深度学习：花书》预计明天送达。订单号：JD2026110587432。",
+    "target": { "faction": "china", "role": "china_scientist" },
+    "schedule": { "round": 2, "phase": "briefing" }
+  },
+  {
+    "id": "ambient-china-scientist-r4",
+    "npcId": "__npc_mom__",
+    "content": "儿子，妈今天去医院体检了，都挺好的，你别担心。就是血压有点高，医生让少吃盐。你工作别太累了，注意身体。对了，你表姐下个月结婚，你能请假回来吗？",
+    "target": { "faction": "china", "role": "china_scientist" },
+    "schedule": { "round": 4, "phase": "decision" }
+  },
+
+  {
+    "id": "ambient-ext-nsa-r1",
+    "npcId": "__npc_college_friend__",
+    "content": "dude did you see the game last night?? absolute meltdown in the 4th quarter. also — are we still on for poker next friday? mike says he's in. bring beer this time, last time you showed up with that weird kombucha.",
+    "target": { "faction": "external", "role": "ext_nsa" },
+    "schedule": { "round": 1, "phase": "decision" }
+  },
+  {
+    "id": "ambient-ext-nsa-r3",
+    "npcId": "__npc_auto_service__",
+    "content": "Tesla Service: Your Model Y is due for annual maintenance. Schedule your appointment at tesla.com/service or call (703) 555-0188. Estimated service time: 2-3 hours.",
+    "target": { "faction": "external", "role": "ext_nsa" },
+    "schedule": { "round": 3, "phase": "briefing" }
+  },
+
+  {
+    "id": "ambient-ext-journalist-r1",
+    "npcId": "__npc_dentist__",
+    "content": "REMINDER: You have an appointment with Dr. Morrison on Thursday at 2:30 PM. Please arrive 15 minutes early. Reply CONFIRM to confirm or call (650) 555-0142 to reschedule.",
+    "target": { "faction": "external", "role": "ext_journalist" },
+    "schedule": { "round": 1, "phase": "intel" }
+  },
+  {
+    "id": "ambient-ext-journalist-r3",
+    "npcId": "__npc_doordash__",
+    "content": "Your DoorDash order from Thai Basil is on its way! Estimated delivery: 35-45 min. Track your order in the app.",
+    "target": { "faction": "external", "role": "ext_journalist" },
+    "schedule": { "round": 3, "phase": "deliberation" }
+  },
+  {
+    "id": "ambient-ext-journalist-r5",
+    "npcId": "__npc_spam_loan__",
+    "content": "You've been selected for an exclusive 0% balance transfer offer! Move your existing balances to our card and pay NO interest for 18 months. Limited time. Reply STOP to opt out.",
+    "target": { "faction": "external", "role": "ext_journalist" },
+    "schedule": { "round": 5, "phase": "intel" }
+  },
+
+  {
+    "id": "ambient-ext-vc-r2",
+    "npcId": "__npc_venmo__",
+    "content": "Sarah paid you $320.00 for \"ski house deposit 🎿\"",
+    "target": { "faction": "external", "role": "ext_vc" },
+    "schedule": { "round": 2, "phase": "briefing" }
+  },
+  {
+    "id": "ambient-ext-vc-r4",
+    "npcId": "__npc_alumni_chat__",
+    "content": "Chris: anyone going to the Dartmouth-Harvard game next weekend? I can get a table at Canoe Club after. Also Jake just made partner at Sequoia, drinks are on him 🥂",
+    "target": { "faction": "external", "role": "ext_vc" },
+    "schedule": { "round": 4, "phase": "intel" }
+  },
+
+  {
+    "id": "ambient-ext-diplomat-r1",
+    "npcId": "__npc_spouse__",
+    "content": "The school called — Emma got into the spring play! She's so excited. Also the dishwasher is making that noise again. Can you call the repair place? I'm in meetings all afternoon. Miss you.",
+    "target": { "faction": "external", "role": "ext_diplomat" },
+    "schedule": { "round": 1, "phase": "decision" }
+  },
+  {
+    "id": "ambient-ext-diplomat-r3",
+    "npcId": "__npc_groupchat__",
+    "content": "Priya: Is anyone going to reunion this year? I heard they're doing a panel on \"Williams Grads in Public Service\" and they want speakers. Nominating you obviously 😄\nTom: seconded\nMark: lol you'd have to get security clearance for the whole campus",
+    "target": { "faction": "external", "role": "ext_diplomat" },
+    "schedule": { "round": 3, "phase": "intel" }
+  },
+  {
+    "id": "ambient-ext-diplomat-r5",
+    "npcId": "__npc_facilities__",
+    "content": "State Dept Facilities: Building C elevator bank 2 will be out of service Wednesday 7AM-5PM for annual inspection. Please use elevator bank 1 or stairs. We apologize for the inconvenience.",
+    "target": { "faction": "external", "role": "ext_diplomat" },
+    "schedule": { "round": 5, "phase": "briefing" }
+  }
+]

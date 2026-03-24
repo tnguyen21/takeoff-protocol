@@ -32,6 +32,14 @@ import { emitBriefing } from "../game.js";
 import { enqueueDrip } from "../contentDrip.js";
 import { ROUND_1_BRIEFING } from "../content/round1Briefing.js";
 import round1ContentData from "../content/round1Content.json";
+import ambientTriggersData from "../content/ambientTriggers.json";
+
+/** Returns ambient (personal/spam) triggers scheduled for the given round. */
+function getAmbientTriggersForRound(round: number): NpcTrigger[] {
+  return (ambientTriggersData as NpcTrigger[]).filter(
+    (t) => t.schedule?.round === round,
+  );
+}
 
 // ── Factions for content generation ───────────────────────────────────────────
 
@@ -232,9 +240,10 @@ export async function triggerGeneration(
         setGeneratedSharedContent(room, round, r1.sharedContent);
       }
       if (r1.npcTriggers) {
-        setGeneratedNpcTriggers(room, round, r1.npcTriggers);
+        const ambient = getAmbientTriggersForRound(round);
+        setGeneratedNpcTriggers(room, round, [...r1.npcTriggers, ...ambient]);
       }
-      console.log(`[orchestrator] Seeded pre-authored round 1 content + NPC triggers`);
+      console.log(`[orchestrator] Seeded pre-authored round 1 content + NPC triggers (${getAmbientTriggersForRound(round).length} ambient)`);
     } else if (allContentApps.length > 0) {
     // Split apps into feed-tier (Haiku, high volume) and signal-tier (Sonnet, high quality).
     // Both tiers run in parallel across all factions. Each tier emits content
@@ -354,10 +363,16 @@ export async function triggerGeneration(
       const durationMs = Date.now() - startTs;
 
       if (npcResult === null) {
+        // Still merge ambient triggers even if LLM generation failed
+        const ambient = getAmbientTriggersForRound(round);
+        if (ambient.length > 0) {
+          setGeneratedNpcTriggers(room, round, ambient);
+        }
         logArtifactFailure(round, "npc", "generateNpcMessagesWithRetry returned null", durationMs, logger);
         npcOk = false;
       } else {
-        setGeneratedNpcTriggers(room, round, npcResult);
+        const ambient = getAmbientTriggersForRound(round);
+        setGeneratedNpcTriggers(room, round, [...npcResult, ...ambient]);
         logArtifactSuccess(round, "npc", durationMs, npcTracker.usage, logger);
       }
       flushPrompts("npc");

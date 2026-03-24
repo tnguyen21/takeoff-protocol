@@ -384,8 +384,10 @@ describe("triggerGeneration — INV-4: npcEnabled kill switch", () => {
         },
       });
       await triggerGeneration(room, 2, mockProvider);
-      // NPC triggers should NOT be cached
-      expect(getGeneratedNpcTriggers(room, 2)).toBeUndefined();
+      // LLM-generated NPC triggers should NOT be cached, but ambient triggers may still be present
+      const cached = getGeneratedNpcTriggers(room, 2);
+      const ambientOnly = !cached || cached.every((t) => t.id.startsWith("ambient-"));
+      expect(ambientOnly).toBe(true);
     } finally {
       process.env.GEN_ENABLED = savedEnabled;
       process.env.GEN_NPC_ENABLED = savedNpc;

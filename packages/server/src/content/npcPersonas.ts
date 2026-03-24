@@ -334,6 +334,30 @@ export const NPC_PERSONAS: NpcPersona[] = [
     factions: ["prometheus"],
   },
 
+  // ── Spam ───────────────────────────────────────────────────────────────────
+
+  {
+    id: "__npc_spam_loan__",
+    name: "833-291-0472",
+    subtitle: "",
+    avatarColor: "bg-gray-500",
+    factions: ["openbrain", "prometheus", "external"],
+  },
+  {
+    id: "__npc_spam_insurance__",
+    name: "877-914-6233",
+    subtitle: "",
+    avatarColor: "bg-gray-400",
+    factions: ["openbrain", "prometheus", "external"],
+  },
+  {
+    id: "__npc_spam_political__",
+    name: "202-555-0178",
+    subtitle: "",
+    avatarColor: "bg-gray-500",
+    factions: ["openbrain", "prometheus", "external"],
+  },
+
   // ── External ───────────────────────────────────────────────────────────────
 
   {
